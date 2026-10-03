@@ -67,7 +67,15 @@ try {
   await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('30 REM UTIL DRAFT');
   await page.getByRole('tab', { name: /src\/main.bas/ }).click();
   await input.focus(); await page.keyboard.press('Control+z');
-  await page.getByRole('tab', { name: 'src/main.bas', exact: true }).waitFor();
+  // Monaco groups typing into undo elements, not necessarily one whole insertText call.
+  // Observe an actual changed buffer rather than assuming Ctrl Z restores the initial file.
+  await expect(page.locator('.monaco-editor .view-lines')).not.toContainText('DRAFT');
+  await page.getByRole('button', { name: /^Enregistrer Ctrl/ }).click();
+  await page.getByRole('status').filter({ hasText: /Listing enregistré/ }).waitFor();
+  const undone = await readFile(join(root, 'src/main.bas'), 'utf8');
+  assert.notEqual(undone, baseline + '30 REM MAIN DRAFT');
+  assert.equal(await readFile(join(root, 'src/util.bas'), 'utf8'), utilityBaseline);
+  await input.focus();
   await page.keyboard.press('Control+Shift+z');
   await page.getByRole('tab', { name: /src\/main.bas.*modifié/ }).waitFor();
   await page.getByRole('button', { name: /^Enregistrer Ctrl/ }).click();
