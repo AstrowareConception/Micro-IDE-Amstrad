@@ -43,7 +43,8 @@ function route(channel: string, handler: (payload: unknown) => Promise<unknown>)
   });
 }
 
-await app.whenReady();
+// Do not hold the ESM entry point open while waiting for Electron's ready lifecycle.
+void app.whenReady().then(async () => {
 window = new BrowserWindow({ width: 1440, height: 960, minWidth: 900, minHeight: 650,
   backgroundColor: '#10151d', title: 'Micro IDE Amstrad',
   webPreferences: { preload: join(base, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true },
@@ -95,4 +96,5 @@ route('listing:export', async payload => {
   return { name: selection.filePath.split(/[\\/]/).at(-1) };
 });
 await window.loadURL(page);
+}).catch(error => { console.error('Desktop startup failed:', error); app.quit(); });
 app.on('window-all-closed', () => app.quit());
