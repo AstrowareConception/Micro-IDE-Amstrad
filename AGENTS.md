@@ -2,7 +2,7 @@
 
 ## État et périmètre
 
-Le dépôt contient les spécifications et un prototype J0. Ne pas supposer que l'IDE existe. Lire `README.md`, `docs/README.md`, `docs/implementation/j0-report.md` et le jalon demandé dans `docs/specifications/12-feuille-de-route.md` avant de coder. Réaliser l'incrément demandé ; ne pas lancer J1 sur une qualification moteur supposée.
+Le dépôt contient les spécifications, un prototype J0 et une alpha d'édition desktop. Lire `README.md`, `docs/README.md`, les rapports dans `docs/implementation` et le jalon demandé dans `docs/specifications/12-feuille-de-route.md` avant de coder. L'édition peut avancer indépendamment selon l'ADR 0009 ; cela ne qualifie ni le moteur ni l'ensemble de J1/J2.
 
 ## Architecture
 

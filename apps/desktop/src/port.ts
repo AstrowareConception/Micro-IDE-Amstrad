@@ -1,0 +1,38 @@
+import { buildListingDisk } from '../../../packages/basic-language/src/build.ts';
+export interface FileResult { name: string; source?: string }
+export interface Failure { error: string }
+export interface DesktopPort {
+  open(): Promise<FileResult | Failure | null>;
+  save(source: string, saveAs?: boolean): Promise<FileResult | Failure | null>;
+  exportDisk(source: string): Promise<FileResult | Failure | null>;
+  setDirty(dirty: boolean): void;
+}
+declare global { interface Window { desktop?: DesktopPort } }
+
+function download(name: string, bytes: Uint8Array): void {
+  const url = URL.createObjectURL(new Blob([new Uint8Array(bytes)]));
+  const anchor = document.createElement('a'); anchor.href = url; anchor.download = name; anchor.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+/** Preview adapter only: browsers cannot persist a native document handle. */
+const preview: DesktopPort = {
+  open: () => new Promise(resolve => {
+    const input = document.createElement('input'); input.type = 'file'; input.accept = '.bas,.txt';
+    input.addEventListener('cancel', () => resolve(null), { once: true });
+    input.addEventListener('change', async () => {
+      const file = input.files?.[0];
+      if (!file) { resolve(null); return; }
+      if (file.size > 1024 * 1024) { resolve({ error: 'Listing supérieur à 1 Mio.' }); return; }
+      try {
+        const source = new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer()).replace(/\r\n?/g, '\n');
+        if (source.includes('\0')) throw new Error('Listing UTF-8 requis.');
+        resolve({ name: file.name, source });
+      } catch { resolve({ error: 'Listing texte UTF-8 requis.' }); }
+    }, { once: true });
+    input.click();
+  }),
+  save: async source => { download('MAIN.bas', new TextEncoder().encode(source)); return { name: 'MAIN.bas' }; },
+  exportDisk: async source => { download('program.dsk', buildListingDisk(source)); return { name: 'program.dsk' }; },
+  setDirty: () => undefined,
+};
+export const files = window.desktop ?? preview;

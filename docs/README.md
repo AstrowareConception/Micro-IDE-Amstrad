@@ -1,6 +1,6 @@
 # Dossier de conception et première réalisation — version 0.3
 
-Date de référence : **2026-10-03**. Responsable produit : **Térence FERUT / AstroWare Conception**. Les spécifications servent de référence au produit. Le [rapport J0](implementation/j0-report.md) et le [banc local](../tools/j0-harness/README.md) distinguent maintenant le code disponible, les preuves obtenues et la qualification encore bloquée. Les décisions conditionnelles restent explicites.
+Date de référence : **2026-10-03**. Responsable produit : **Térence FERUT / AstroWare Conception**. Les spécifications servent de référence au produit. Le [guide de l'alpha d'édition](implementation/editor-alpha.md), le [rapport J0](implementation/j0-report.md) et le [banc local](../tools/j0-harness/README.md) distinguent code disponible, preuves et qualification encore bloquée. L'[ADR 0009](adr/0009-edition-independante.md) découple l'édition du go moteur.
 
 ## Documents de référence
 
