@@ -26,9 +26,19 @@ Une `projectRevision` est un compteur de révisions applicatives persistées dan
 
 Un verrou applicatif évite deux instances écrivantes dans le même dossier. Une seconde instance ouvre en lecture seule ou passe par un changement de propriétaire explicite. Les watchers ignorent les writes identifiés de l'application mais détectent le contenu réel, pas uniquement les dates. Un antivirus ou un fichier verrouillé peut retarder un remplacement : l'échec laisse anciennes versions et journal exploitables.
 
-## Proposition IA
+## Mission agentique
 
-Le [schéma IA](../../contracts/ai-proposal.schema.json) définit `schemaVersion`, `proposalId`, `requestId`, `baseProjectRevision`, `summary`, `assumptions`, `operations`, `explanation`. Chaque opération est `create` ou `replace`, porte un chemin sous `src/`, le contenu complet et, pour remplacer, `baseSha256`. Les opérations de fichiers ressources pourront être ajoutées dans un contrat suivant après définition de leurs limites ; J5 limite l'IA au texte BASIC.
+Le [schéma de mission](../../contracts/agent-task.schema.json) définit le mode, le périmètre, les outils, les budgets, le corpus et l'état. Les identités d'outils sont une liste fermée ; l'adaptateur fournisseur n'ajoute pas des outils d'après le contenu d'un prompt. Les chemins de lecture/transmission ne sont pas des chemins d'écriture. Les documents et références sont en lecture seule ; les sources et sorties générées sont mutables selon la mission.
+
+Les préfixes transmissibles doivent appartenir au périmètre lisible. Une ressource sous `documents/` doit aussi être identifiée dans `documentIds` ; un préfixe ne contourne pas cette sélection. Tous les outils de lecture, y compris la lecture générique de fichier, appliquent cette intersection. Les sorties d'assets créées par l'agent résident sous `assets/generated/`. Le scope et la liste d'outils sont validés par règles métier en complément du JSON Schema.
+
+Le journal local `.microide/tasks/<taskId>` contient checkpoints et résultats d'outils. Il est exclu du projet partagé et ne stocke pas de secret. Les résultats de mutation portent callId, transactionId, révision et empreintes. Les checkpoints contiennent les contenus nécessaires à une restauration, avec quota et purge contrôlée. Un checkpoint référencé par une tâche active n'est pas supprimé automatiquement.
+
+La réponse modèle est un flux de textes et d'appels d'outils ; le runner attend des arguments complets, valide chaque appel et journalise avant mutation. Une perte réseau ne doit pas réexécuter une mutation confirmée. La reprise vérifie le journal de fichiers et les hashes réels avant de continuer. Le compteur de révisions avance avec les étapes réussies ; la base de départ reste disponible pour le diff cumulé.
+
+## Proposition IA — mode Revue
+
+Le [schéma IA](../../contracts/ai-proposal.schema.json) définit `schemaVersion`, `proposalId`, `requestId`, `baseProjectRevision`, `summary`, `assumptions`, `operations`, `explanation`. Chaque opération est `create` ou `replace`, porte un chemin sous `src/`, le contenu complet et, pour remplacer, `baseSha256`. Les opérations de fichiers ressources pourront être ajoutées dans un contrat suivant après définition de leurs limites ; ce contrat de proposition porte le texte BASIC. Le mode Agent de J5 manipule aussi les ressources via les outils dédiés, distincts de ce schéma.
 
 Limites locales : au plus 10 fichiers proposés, 256 K caractères par source et 1 Mio d'octets de texte au total. Le schéma borne la taille en caractères ; le service valide aussi les octets. Des sorties trop longues sont rejetées, pas tronquées. Les identifiants ont une syntaxe bornée, les chemins ne se répètent pas et le `requestId` doit correspondre à la requête active. Le schéma fournisseur est une aide, jamais la seule validation locale.
 
@@ -49,7 +59,8 @@ Le [schéma rapport](../../contracts/build-report.schema.json) fixe version, ide
 | `build.prepare/run` | Révision, sélection de ressources | Rapport + handles d'artefacts |
 | `emulator.start/control` | Profil, build handle, commande | Session et observation |
 | `asset.import/convert` | Handle choisi, recette | Métadonnées, preview, sortie |
-| `ai.prepare/send/cancel` | Contexte accepté, modèle, requestId | Événements de texte puis proposition |
+| `agent.start/steer/pause/resume/cancel` | Mission, consigne, budget | Activité, appels, checkpoints et bilan |
+| `ai.prepare/send/cancel` | Contexte accepté en mode Revue, modèle, requestId | Événements de texte puis proposition |
 | `proposal.apply/undo` | Proposition + préconditions, sélection | Transaction appliquée ou conflit |
 | `export.build/session` | Handle artefact/session, destination choisie | Chemin final et empreinte |
 

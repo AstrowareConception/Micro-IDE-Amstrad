@@ -11,7 +11,7 @@ Le cœur de valeur est la **création assistée de programmes CPC livrables**. L
 | CpcAssets | Produire des ressources adaptées à la machine | AssetRecipe, CpcAsset, Palette, LoadAddress | Cœur |
 | BuildAndMedia | Préparer la livraison CPC | BuildPlan, BuildArtifact, DiskCatalog, CpcFilename | Cœur |
 | Emulation | Faire vivre une machine et sa session | MachineProfile, EmulatorSession, SessionDisk | Support spécialisé |
-| AiAssistance | Contextualiser et proposer des changements | ContextBundle, AiRequest, ChangeProposal, AppliedChange | Cœur |
+| AiAssistance | Conduire des missions de programmation et le mode revue | AgentTask, ToolCall, TaskCheckpoint, ContextBundle, ChangeProposal | Cœur |
 | ReferenceKnowledge | Fournir des références qualifiées | CommandDefinition, DialectProfile, Provenance | Support |
 | Platform | Accès fichiers, secrets, UI et packaging | Adaptateurs techniques | Infrastructure |
 
@@ -27,11 +27,11 @@ flowchart TD
   W --> I["AiAssistance"]
   L --> I
   E --> I
-  I --> P["Proposition examinée"]
+  I --> P["Transaction autorisée et journalisée"]
   P --> W
 ```
 
-Les flèches signifient données publiées ou orchestration applicative, pas imports directs entre agrégats. Workspace transmet une révision immuable. BasicLanguage publie diagnostics et transformations, CpcAssets publie ressources encodées, BuildAndMedia publie artefacts, Emulation publie captures et observations explicitement sélectionnées. AiAssistance ne devient jamais le propriétaire des sources.
+Les flèches signifient données publiées ou orchestration applicative, pas imports directs entre agrégats. Workspace transmet une révision immuable. BasicLanguage publie diagnostics et transformations, CpcAssets publie ressources encodées, BuildAndMedia publie artefacts, Emulation publie captures et observations dans le périmètre de mission. AiAssistance coordonne les outils et ne devient jamais le propriétaire des sources.
 
 La couche anticorruption de l'émulateur traduit les API C en commandes métier de session ; celle de l'IA traduit les réponses fournisseur en propositions validées. Le format DSK appartient au domaine média et à son codec, pas à l'état interne du moteur.
 
@@ -65,9 +65,17 @@ La session appartient à un profil et à une révision exécutée. Ses états so
 
 Une seule commande de mutation du moteur est traitée à la fois. Reset invalide les observations et les clés pressées. Une capture est liée à une session, une révision et un instant émulé. Une sauvegarde de session interne est compatible uniquement avec la version du moteur et les ROM attendues ; elle n'est pas un fichier SNA public par défaut.
 
-### ChangeProposal
+### AgentTask
 
-La proposition appartient à une requête, un contexte, une révision de base et un ensemble fini d'opérations `create` ou `replace`. Le MVP n'autorise pas suppression ni changement de manifeste par l'IA. Chaque remplacement exige l'empreinte du fichier de base ; une création exige son absence. Les chemins autorisés désignent uniquement sources et, lorsque le cas d'usage le permet, texte de ressources. Aucun texte de réponse ne peut ajouter un nouveau droit.
+La mission est la racine de l'activité agentique : objectif utilisateur, mode, projet, périmètre de lecture/transmission/mutation, capacités, corpus de référence, budgets, état, plan courant, journal et checkpoints. Elle capture une base initiale, puis suit les révisions créées par ses outils. Elle n'exige pas que tous les fichiers restent figés pendant toute la conversation : chaque mutation vérifie la dernière base lue et tient compte des modifications manuelles.
+
+Un `ToolCall` possède identifiant stable, paramètres validés, droits nécessaires, préconditions et résultat public. Un appel mutatif réussi n'est exécuté qu'une fois ; son rejeu rend le résultat journalisé. Les outils retournent données factuelles, diagnostics et preuves, jamais une chaîne de raisonnement privée. Un `TaskCheckpoint` contient l'ensemble cohérent de fichiers requis pour restauration, avec provenance des changements.
+
+Les états couvrent préparation, activité, pause, attente d'une dépendance, fin, échec et annulation. Une mission Agent peut écrire, construire et tester sans revue obligatoire à chaque étape ; une mission Revue produit des changements à accepter et une mission Explication n'a pas de droits de mutation. La tâche termine sur objectif étayé, limite, stagnation, erreur irrécupérable ou arrêt utilisateur. Les appels ne peuvent ni s'octroyer de droits, ni accéder à un fichier hôte hors projet.
+
+### ChangeProposal — mode Revue
+
+La proposition appartient à une requête du mode Revue, un contexte, une révision de base et un ensemble fini d'opérations `create` ou `replace`. Ce contrat de proposition ne comporte ni suppression ni changement arbitraire de manifeste. Le mode Agent possède des outils supplémentaires de renommage et de gestion de ressources, dont l'application maintient le manifeste. Chaque remplacement exige l'empreinte du fichier de base ; une création exige son absence. Aucun texte de réponse ne peut ajouter un nouveau droit.
 
 Son état suit `collecting → validated → reviewed → applied`, avec branches `failed`, `cancelled`, `stale`, `rejected`. Une proposition complète peut contenir des diagnostics bloquants ; elle est visible mais non applicable jusqu'à correction. L'application vérifie à nouveau toutes les préconditions, stocke une sauvegarde transactionnelle puis enregistre les documents. Le retour arrière est une nouvelle opération contrôlée, pas une réécriture de l'historique.
 
@@ -84,10 +92,10 @@ Son état suit `collecting → validated → reviewed → applied`, avec branche
 | MemoryRegion | Intervalle sans débordement, conflits de chargement |
 | CapabilitySet | Opérations réellement disponibles par adaptateur |
 
-Événements applicatifs : `ProjectOpened`, `RevisionCaptured`, `AnalysisCompleted`, `BuildCompleted`, `BuildFailed`, `SessionStarted`, `RuntimeObservationReceived`, `SessionDiskChanged`, `ProposalReady`, `ProposalApplied`. Ce sont des notifications en mémoire avec payload immuable et identifiant de corrélation. Aucun event sourcing ni bus distribué n'est requis. Un résultat périmé est ignoré si sa révision ne correspond plus au contexte d'affichage.
+Événements applicatifs : `ProjectOpened`, `RevisionCaptured`, `AnalysisCompleted`, `BuildCompleted`, `BuildFailed`, `SessionStarted`, `RuntimeObservationReceived`, `SessionDiskChanged`, `AgentTaskStarted`, `ToolCallCompleted`, `CheckpointCreated`, `TaskPaused`, `TaskFinished`, `ProposalReady`, `ProposalApplied`. Ce sont des notifications en mémoire avec payload immuable et identifiant de corrélation. Aucun event sourcing ni bus distribué n'est requis. Un résultat périmé est ignoré si sa révision ne correspond plus au contexte d'affichage.
 
 ## Cas d'usage et transactions
 
-`RunProject` orchestre capture de révision, analyse, construction, préparation session et lancement. Un échec avant lancement préserve la session précédente. Le passage à une nouvelle session est explicite si elle possède des écritures disque non exportées. `ExportBuild` écrit une copie vérifiée ; `ExportSessionDisk` sérialise une provenance mutable. `RequestAiAssistance` fige le contexte avant réseau ; `ApplyProposal` revalide les documents après réseau.
+`RunProject` orchestre capture de révision, analyse, construction, préparation session et lancement. Un échec avant lancement préserve la session précédente. Le passage à une nouvelle session est explicite si elle possède des écritures disque non exportées ; la mission peut prévoir leur checkpoint automatique. `ExportBuild` écrit une copie vérifiée ; `ExportSessionDisk` sérialise une provenance mutable. `StartAgentTask`, `DispatchToolCall`, `SteerTask`, `PauseTask` et `RestoreCheckpoint` coordonnent les contextes. Le mode Revue conserve `RequestAiAssistance` et `ApplyProposal`.
 
 Les transactions métier s'arrêtent à un ensemble de fichiers cohérent. Les appels IA et la machine ne participent pas à une transaction disque : ils utilisent des états observables, annulations et compensations. Un résultat fournisseur n'est pas automatiquement durable ; une tentative de construction n'est pas une sauvegarde du projet. Cette séparation garde le système compréhensible et récupérable.

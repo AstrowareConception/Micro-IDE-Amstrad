@@ -13,7 +13,7 @@ L'outil réunit trois activités qui restent distinctes : concevoir un programme
 | Créateur amateur | Retrouver le BASIC sans configurer plusieurs outils | Créer, exécuter puis exporter son premier programme |
 | Débutant ou étudiant | Comprendre une erreur, une instruction et les contraintes CPC | Relier un diagnostic à sa ligne et corriger avec une explication |
 | Développeur rétro | Conserver le contrôle du listing, de la mémoire et du disque | Reproduire une construction et utiliser le DSK dans un autre émulateur |
-| Auteur assisté par IA | Transformer une intention et des pièces jointes en programme testable | Examiner un diff, l'appliquer, tester et revenir en arrière |
+| Auteur assisté par IA | Confier une mission de programmation et des ressources à un agent | Voir les fichiers évoluer, les essais et corrections, orienter la mission et revenir en arrière |
 
 Le produit est individuel et local. La collaboration Git est possible parce que les sources sont ouvertes et textuelles, mais l'hébergement de projets et l'édition simultanée ne font pas partie de la première version.
 
@@ -30,7 +30,7 @@ La cible initiale est le CPC 6128 classique, 128 Ko de RAM physique, BASIC 1.1 e
 | J0, preuve technique | Boot 6128, BASIC ASCII sur DSK, lecture et écriture disque, clavier, vidéo et son | Décider si le moteur est adapté |
 | J1–J3, alpha locale | Projet, éditeur, diagnostics, exécution intégrée, export DSK | Parcours complet sans IA |
 | J4, ressources | Pièces jointes et conversion d'écran CPC | Alimenter l'IA et embarquer des ressources |
-| J5, MVP produit | IA avec textes, MD, images et PDF, revue des modifications | Réaliser l'intention initiale de bout en bout |
+| J5, MVP produit | Agent avec outils fichiers, références, ressources, construction et essais, plus mode revue optionnel | Réaliser l'intention initiale de bout en bout |
 | J6, version 1.0 | Packaging, reprise après incident, qualification et documentation utilisateur | Diffusion régulière sur Windows |
 | Après 1.0 | BASIC tokenisé, débogage avancé, machines supplémentaires, autres fournisseurs | Étendre sans casser les projets |
 
@@ -38,7 +38,7 @@ Le mode tokenisé natif n'est pas requis pour le premier DSK : AMSDOS sait charg
 
 ## Parcours de référence
 
-**Créer un jeu simple.** L'utilisateur crée un projet 6128, décrit une scène ou une mécanique, donne une image d'inspiration et un document de règles. L'assistant prépare un listing numéroté et précise ses hypothèses. L'utilisateur examine les modifications, les applique, lance le jeu dans l'émulateur, règle le clavier et le son, puis exporte un DSK contenant le programme et les ressources sélectionnées. Une autre personne lance `RUN"MAIN.BAS"` dans un émulateur indépendant.
+**Créer un jeu simple.** L'utilisateur crée un projet 6128, décrit une scène ou une mécanique, donne une image d'inspiration et un document de règles. L'agent explore le projet, consulte les références BASIC, crée et modifie les sources, convertit les ressources utiles, construit puis teste dans le CPC émulé. Il corrige les erreurs observables dans les limites de sa mission. L'utilisateur voit le journal et les fichiers évoluer, oriente ou arrête le travail, puis exporte un DSK. Une autre personne lance `RUN"MAIN.BAS"` dans un émulateur indépendant.
 
 **Reprendre un ancien listing.** L'utilisateur importe du texte, choisit son encodage, détecte des références de lignes absentes et des instructions BASIC 1.1 sur une cible 1.0. Il corrige manuellement ou sollicite l'assistant. Les changements de numérotation sont des refactorings contrôlés, qui ne touchent pas les nombres dans les chaînes ou les données.
 
@@ -46,6 +46,8 @@ Le mode tokenisé natif n'est pas requis pour le premier DSK : AMSDOS sait charg
 
 ## Contraintes de conception
 
-Le travail local ne nécessite ni compte du produit ni connexion réseau. Une panne du fournisseur IA laisse l'éditeur et l'émulateur utilisables. La source manuelle est le format de référence ; le code proposé par l'IA devient du code normal après application. Le disque exporté ne contient ni conversation, ni clé API, ni document de contexte non sélectionné comme ressource CPC.
+Le travail local ne nécessite ni compte du produit ni connexion réseau. Une panne du fournisseur IA laisse l'éditeur et l'émulateur utilisables. La source manuelle est le format de référence ; le code écrit par l'agent est du code normal, avec historique et checkpoints. Le disque exporté ne contient ni conversation, ni clé API, ni document de contexte non sélectionné comme ressource CPC.
+
+Le mode principal est **Agent** : une demande donne une mission de programmation, pas seulement une réponse à copier. Les modes **Revue** et **Explication** restent disponibles. Les documents Locomotive BASIC constituent un corpus que l'agent devra consulter activement et dont les fiches seront qualifiées, couvrant notamment modes graphiques, mémoire, entrées-sorties, son, timers et dialectes. La sélection d'un périmètre de mission remplace les confirmations répétées pour les opérations locales réversibles.
 
 Le succès commercial et pédagogique sera évalué par des essais utilisateurs : accomplissement du parcours de référence, nombre de manipulations nécessaires pour lancer le premier listing, compréhension des erreurs, facilité de récupération et confiance dans l'export. Aucun délai de livraison, budget de développement ou score de satisfaction n'est inventé à ce stade.

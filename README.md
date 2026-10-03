@@ -2,7 +2,7 @@
 
 Un atelier de programmation pour écrire du **Locomotive BASIC**, le tester dans un **Amstrad CPC émulé**, travailler avec une **IA et ses propres documents**, puis partager une **disquette DSK utilisable hors de l'IDE**.
 
-**État au 3 octobre 2026 : conception initiale, version 0.1 des spécifications.** Ce dépôt contient le dossier de conception, des contrats de données et un exemple BASIC. L'application et le moteur d'émulation ne sont pas encore implémentés. Aucun résultat de compatibilité matérielle n'est revendiqué.
+**État au 3 octobre 2026 : conception, version 0.2 des spécifications.** Le mode IA principal est agentique : il travaille sur les fichiers, utilise les ressources et contrôle les essais CPC dans une mission bornée. Ce dépôt contient le dossier de conception, des contrats de données, le corpus fourni et un exemple BASIC. L'application et le moteur d'émulation ne sont pas encore implémentés. Aucun résultat de compatibilité matérielle n'est revendiqué.
 
 ## Direction retenue
 
@@ -15,7 +15,7 @@ Un atelier de programmation pour écrire du **Locomotive BASIC**, le tester dans
 | Émulation | `floooh/chips` en C, compilé en WebAssembly avec Emscripten ; qualification obligatoire au jalon J0 |
 | Programme CPC | BASIC numéroté, exécuté par la ROM de la machine ; export ASCII en premier, tokenisé ensuite |
 | Livraison CPC | DSK standard, format AMSDOS DATA, un lecteur A ; Extended DSK limité à l'import pris en charge |
-| IA | Fournisseurs interchangeables ; premier adaptateur OpenAI, clé personnelle, aucune obligation pour programmer |
+| IA | Agent local à outils métier, fournisseurs interchangeables ; premier adaptateur OpenAI avec tool calling, clé personnelle |
 | Stockage | Projet en dossier ouvert, fichiers texte et manifeste JSON versionné ; aucun serveur imposé |
 
 La préparation d'un programme BASIC n'est pas une compilation Z80. L'IDE analyse, encode, construit le support et pilote l'émulateur. Une véritable chaîne assembleur pourra être ajoutée ultérieurement.
@@ -45,7 +45,8 @@ Ces commandes vérifient la documentation et les exemples ; elles ne testent pas
 
 - Le projet et le code restent lisibles, portables et utilisables sans IA.
 - Le DSK est un véritable artefact CPC, distinct du projet de travail.
-- Les modifications proposées par l'IA sont présentées en diff et appliquées par l'utilisateur.
+- Le mode agent crée et modifie les fichiers autorisés, construit, teste et corrige ; journal, checkpoints et diff rendent le travail contrôlable.
+- Les références Locomotive BASIC sont consultables par l'agent et qualifiées par dialecte ; le mode de revue préalable reste optionnel.
 - La compatibilité est qualifiée par profil de machine et jeux d'essai.
 - Les ROM sont des dépendances distinctes ; aucun firmware tiers n'est inclus dans ce dépôt.
 - Chaque incrément fait évoluer ensemble code, spécifications et preuves de recette.

@@ -2,7 +2,7 @@
 
 ## Décisions prises pour avancer
 
-Application desktop Electron, TypeScript, Monaco, monolithe modulaire DDD, modèle de projet en fichiers, CPC 6128 d'abord, BASIC ASCII et DSK DATA d'abord, IA par proposition examinée, aucun serveur du produit. Le choix du moteur `chips` est **retenu sous condition J0**. Ces décisions donnent une direction concrète sans transformer des bibliothèques disponibles en promesses de compatibilité.
+Application desktop Electron, TypeScript, Monaco, monolithe modulaire DDD, modèle de projet en fichiers, CPC 6128 d'abord, BASIC ASCII et DSK DATA d'abord, IA agentique à outils et corpus BASIC avec mode Revue optionnel, aucun serveur du produit. Le choix du moteur `chips` est **retenu sous condition J0**. Ces décisions donnent une direction concrète sans transformer des bibliothèques disponibles en promesses de compatibilité.
 
 ## Registre des risques
 
@@ -23,6 +23,10 @@ Application desktop Electron, TypeScript, Monaco, monolithe modulaire DDD, modè
 | Modifications simultanées de fichiers | Écrasement de travail | Empreintes, watcher, verrou et transaction journalisée | Conflit avant sauvegarde/application |
 | Multi-plateforme prématuré | Retard du parcours principal | Windows qualifié puis autres plateformes | Demande prioritaire explicite |
 | Développement de toutes les extensions | Produit trop vaste pour une première version | Jalons fermés et scope Suite | Nouvelle fonctionnalité incompatible avec l'incrément |
+| Agent réessaie sans progresser | Dépenses et changements inutiles | Budgets de mission et détection de stagnation | Même état/diagnostic sans changement pertinent |
+| Mutation rejouée après reconnect | Effets dupliqués ou source écrasée | callId, journal durable et rapprochement transactionnel | Résultat fournisseur/réseau ambigu |
+| Corpus synthétique ou contradictoire | Code d'un autre BASIC ou mauvaises signatures | Provenance, fiches qualifiées et couverture par dialecte | Lacune ou divergence avec ROM |
+| Écriture agent concurrente à une saisie | Travail manuel perdu | Hash avant mutation, relecture et rollback contrôlé | Version de document modifiée |
 
 ## Points à décider lors de preuves précises
 

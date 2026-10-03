@@ -35,6 +35,11 @@ La validation distingue cinq niveaux : contrat de données, règles métier, int
 | ACC-23 | Parcours clavier complet, zoom, thèmes, annonce de diagnostics et commandes alternatives au canvas. | J6 |
 | ACC-24 | Benchmark défini ci-dessous et charge PDF/IA/conversion ; UI réactive et annulations bornées. | J0, J6 |
 | ACC-25 | Installer sur hôte propre, configurer ROM, parcourir hello, quitter, mettre à jour et désinstaller en préservant projet. | J6 |
+| ACC-26 | Mission multifichier avec PDF et image : recherche, création, modification, conversion et intégration sans application manuelle à chaque étape ; mode Revue conserve l'étape d'acceptation. | J5 |
+| ACC-27 | Agent construit, exécute et corrige à partir d'un échec réellement renvoyé ; résultats inconnu/bloqué ne deviennent pas des tests réussis. | J5 |
+| ACC-28 | Limite de tours/outils/corrections/temps, stagnation, pause et consigne en cours : arrêt borné et reprise avec objectif/budget cohérents. | J5 |
+| ACC-29 | Mutation rejouée, crash entre journal et write, saisie manuelle concurrente, rollback et scope sortant : idempotence, récupération et aucun écrasement. | J5, complété J6 |
+| ACC-30 | Sources de corpus présentes et hashes identiques ; recherche par commande/dialecte, extraction inerte, correction sourcée d'une faute et consultation des familles de langage utilisées. | J2, intégré J5 |
 
 Les cas « Suite » sont préparés comme contrats de recette, pas ajoutés à la définition de terminé du MVP. Les scénarios associant plusieurs jalons sont raffinés progressivement et rejoués si le composant concerné change.
 
@@ -71,6 +76,6 @@ Ces objectifs peuvent être révisés par ADR après mesures, jamais transformé
 
 Aujourd'hui : liens locaux Markdown, parse JSON, conformité des exemples et cohérence des identifiants. Le workflow se lance sur push et PR, permissions lecture seule. Il n'exécute pas de code utilisateur ni d'appel IA facturable.
 
-Après J1 : lint, types, règles d'import, tests de domaine et codecs ; après J0 : harness WASM avec firmware autorisé dans l'environnement prévu ; après J3 : parcours UI et artefacts DSK ; après J5 : fournisseurs simulés et tests de propositions malveillantes ; après J6 : builds et smoke tests Windows. Les appels IA réels sont volontaires, bornés et hors CI des PR publiques.
+Après J1 : lint, types, règles d'import, tests de domaine et codecs ; après J0 : harness WASM avec firmware autorisé dans l'environnement prévu ; après J2 : corpus et fiches de langage ; après J3 : parcours UI et artefacts DSK ; après J5 : fournisseurs simulés, missions agentiques, retries, interruptions, scope et mode Revue ; après J6 : builds et smoke tests Windows. Les appels IA réels sont volontaires, bornés et hors CI des PR publiques.
 
 Pour éviter les faux succès, le journal d'essai précise la commande, la plateforme, les entrées et le statut. Les tests bloqués par ROM, certificat ou accès fournisseur restent marqués bloqués. Un pourcentage de couverture global ne remplace pas la couverture des invariants critiques, du corpus disque et des scénarios utilisateur.

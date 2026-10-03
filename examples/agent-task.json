@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "taskId": "illustrative-agent-task-001",
+  "kind": "illustrative",
+  "projectId": "e4e85234-e7ec-4c78-b12b-454785450f41",
+  "objective": "Faire évoluer Hello CPC en écran de titre interactif : consulter MODE, INK et INKEY$, modifier la source, construire, tester le démarrage et préparer le DSK. Exemple non exécuté.",
+  "mode": "agent",
+  "status": "prepared",
+  "baseProjectRevision": 1,
+  "corpusVersion": "initial-import-1",
+  "scope": {
+    "readPrefixes": ["src/", "assets/", "documents/"],
+    "transmitPrefixes": ["src/", "assets/"],
+    "writePrefixes": ["src/", "assets/generated/"],
+    "documentIds": [],
+    "allowCorpus": true,
+    "allowSessionCapture": true
+  },
+  "allowedTools": ["project.list_files", "project.search", "project.read_file", "project.create_source", "project.replace_source", "project.rename_source", "reference.search", "reference.read", "assets.inspect", "language.analyze", "language.renumber", "build.project", "emulator.run_build", "emulator.send_input", "emulator.observe", "emulator.control", "artifacts.prepare_export", "task.checkpoint"],
+  "budget": {"maxModelTurns": 20, "maxToolCalls": 100, "maxCorrectionCycles": 5, "maxActiveSeconds": 900, "maxTokenUsage": 60000, "maxEstimatedCostEur": null}
+}

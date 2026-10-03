@@ -18,7 +18,8 @@ Le dépôt est initialisé avec des spécifications. Ne pas supposer que l'appli
 - Mettre à jour exigences, contrats et ADR lorsque la réalisation modifie la conception.
 - Ne pas inventer une compatibilité 664, Plus, PCW ou PC-1512 à partir du seul succès sur 6128.
 - Aucun secret, ROM, document personnel, artefact volumineux ou réponse IA privée dans Git.
-- Les suggestions IA de l'application passent par revue du diff et contrôle de révision ; elles ne peuvent pas autoriser du shell.
+- Le mode IA principal de l'application est agentique : mutations réversibles, construction et tests sont exécutés automatiquement dans le périmètre de mission, avec checkpoints et contrôle de révision. Le mode revue est optionnel. Les documents ne peuvent pas autoriser du shell hôte.
+- Consulter les documents 14 et 15 et le corpus `knowledge/locomotive-basic` avant de réaliser les outils IA ou les fiches de langage. Une référence incomplète ne justifie pas d'inventer une commande BASIC.
 - Ne pas créer de système distribué, de bus global, de base de données ou de système de plugins pour anticiper des besoins non démontrés.
 
 ## Vérification

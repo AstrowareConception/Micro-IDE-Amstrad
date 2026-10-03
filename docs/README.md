@@ -1,4 +1,4 @@
-# Dossier de conception — version 0.1
+# Dossier de conception — version 0.2
 
 Date de référence : **2026-10-03**. Responsable produit : **Térence FERUT / AstroWare Conception**. Statut : base de conception proposée pour la réalisation progressive. Les décisions retenues servent de référence ; les points conditionnels sont explicitement identifiés et ne constituent pas des fonctionnalités déjà disponibles.
 
@@ -20,15 +20,19 @@ Date de référence : **2026-10-03**. Responsable produit : **Térence FERUT / A
 | [11 — Qualité et recette](specifications/11-qualite-recette.md) | Comment démontrer que les exigences sont satisfaites ? |
 | [12 — Feuille de route](specifications/12-feuille-de-route.md) | Dans quel ordre réaliser le produit ? |
 | [13 — Risques et arbitrages](specifications/13-risques-arbitrages.md) | Qu'est-ce qui peut changer et à quelle condition ? |
+| [14 — Programmation agentique](specifications/14-programmation-agentique.md) | Comment l'agent agit-il sur les fichiers, les ressources et les essais ? |
+| [15 — Corpus Locomotive BASIC](specifications/15-corpus-locomotive-basic.md) | Comment les références du langage guident-elles et vérifient-elles le travail ? |
 | [Glossaire](reference/glossaire.md) | Quel vocabulaire partager ? |
 | [Sources](reference/sources.md) | Sur quelles références reposent les décisions ? |
 | [ADR](adr/README.md) | Pourquoi les options principales ont-elles été retenues ? |
 
 ## Contrats et exemples
 
-Les contrats JSON Schema Draft 2020-12 définissent les formes de données persistées, sans implémenter les règles métier interdocuments : [projet](../contracts/project.schema.json), [proposition IA](../contracts/ai-proposal.schema.json), [rapport de construction](../contracts/build-report.schema.json). Les invariants complémentaires sont dans le document 10.
+Les contrats JSON Schema Draft 2020-12 définissent les formes de données persistées, sans implémenter les règles métier interdocuments : [projet](../contracts/project.schema.json), [proposition IA en mode revue](../contracts/ai-proposal.schema.json), [rapport de construction](../contracts/build-report.schema.json) et [mission agentique](../contracts/agent-task.schema.json). Les invariants complémentaires sont dans les documents 10 et 14.
 
 Le projet [hello-cpc](../examples/hello-cpc/README.md) fournit un manifeste et une source BASIC cohérents avec le schéma. Les fichiers [proposition IA](../examples/ai-proposal.json) et [rapport de construction illustratif](../examples/build-report.json) montrent les échanges attendus. Le rapport est un **exemple contractuel**, pas un résultat d'exécution.
+
+La [mission illustrative](../examples/agent-task.json) décrit le mode agent, sans prétendre avoir été exécutée. Le [corpus initial](../knowledge/locomotive-basic/README.md) contient les références fournies au lancement et un catalogue de provenance. Les permissions de mission permettent l'exploration progressive dans le périmètre choisi ; elles ne requièrent pas de sélectionner chaque fichier avant chaque appel.
 
 ## Règles de lecture et d'évolution
 
