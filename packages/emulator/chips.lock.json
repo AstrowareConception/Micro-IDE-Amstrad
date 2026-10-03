@@ -1,0 +1,22 @@
+{
+  "repository": "https://github.com/floooh/chips",
+  "commit": "9e88298ce56319953ac7a43213a1120359f7a3a6",
+  "license": "Zlib",
+  "emscripten": "4.0.15",
+  "emsdkCommit": "389a68bc35dcff7ebae4614e1615099dafda00d1",
+  "files": {
+    "chips/am40010.h": "bc753eabbc6fb16f9a08b0599de7deef02e38cf19413ce03f8c742fd3f5ffd78",
+    "chips/ay38910.h": "17d88a078d197f8fcfa9b3db5881aba01a6e861f0ac1c477045eb3eca4a4afb8",
+    "chips/chips_common.h": "f5992674dc6ddecd88a19b146d2259ba1142e4d2fce9b0620b14c7783965bb7b",
+    "chips/clk.h": "17b8791dbfcbe9d17203ea0b481f7674a8a3558cf4546c3196b6fb6e2736dcd1",
+    "chips/fdd.h": "624b914f7cc550f9cb0996b882afbb445ee1486590335e013f046ff42161576d",
+    "chips/fdd_cpc.h": "49ebc30a56b288d9bb7f56e56923a7c3fe2866f5e7a78af4f16d272e2712560e",
+    "chips/i8255.h": "c22705b2d8352e8541120d8407584fd0933a7810403a0bcb95c08d55988120be",
+    "chips/kbd.h": "18f16af06fa483eebb1a7f6fdcac6299ef6b025198f8623e5b1a2de00218c364",
+    "chips/mc6845.h": "8e4ff622888cfda92ce4357fb5b65933c2a33215bd3ab14115db1faefc7e3c3e",
+    "chips/mem.h": "451a9c9c0545bfe724a164f655df2f255e4741bba1d7e0e7e980af865e9fbb49",
+    "chips/upd765.h": "54ab556274c5f2fa48c1b0817f2bb9dab9dd9ac5d7df750c2abb13d32a160843",
+    "chips/z80.h": "6ca70ffd91b1bdbaf00f7a41e7092b326145fd1c95dcdd7bb01183370de734f3",
+    "systems/cpc.h": "b629b65402df6b44a1eac7d34136163b0551157d0a5edbc28ae110212a915017"
+  }
+}

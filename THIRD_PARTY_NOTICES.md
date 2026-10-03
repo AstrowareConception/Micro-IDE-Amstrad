@@ -8,8 +8,20 @@ La [licence MIT](LICENSE) couvre les contributions originales du projet. Elle ne
 
 Ces documents servent de sources de travail. Les fiches dérivées devront conserver provenance et conditions applicables. La distribution des références dans le paquet de l'application sera vérifiée séparément avant diffusion ; le snapshot HTML ne sera pas chargé comme page privilégiée ou exécuté par l'IDE.
 
-## Composants étudiés
+## Composants utilisés dans J0
 
-`floooh/chips` : zlib/libpng selon les en-têtes ; CPCBasicTS : MIT ; Caprice32 : GPLv2. Ces projets sont étudiés et référencés, pas encore embarqués dans une application de ce dépôt. L'intégration future préservera les notices exactes de chaque version effectivement utilisée.
+| Composant | Version verrouillée | Conditions / usage |
+| --- | --- | --- |
+| floooh/chips | `9e88298ce56319953ac7a43213a1120359f7a3a6` | Zlib ; 13 en-têtes téléchargés avec hashes, notices dans [chips.txt](licenses/chips.txt), moteur compilé |
+| Emscripten / emsdk | 4.0.15 / `389a68bc35dcff7ebae4614e1615099dafda00d1` | MIT ou NCSA pour Emscripten ; [licence](licenses/emscripten.txt), compilation WASM et glue générée |
+| TypeScript | 5.9.3 | Apache-2.0 ; contrôle de types, outil de développement |
+| @types/node / undici-types | 24.0.0 / 7.8.0 | MIT ; déclarations de développement, versions/intégrités dans le lock npm |
+| @playwright/test | 1.56.1 | Apache-2.0 ; essais du navigateur, aucune inclusion produit |
+
+Le SDK comprend aussi LLVM/Binaryen et un Node embarqué, outils de construction avec leurs licences conservées dans l'installation emsdk. Ils ne sont pas distribués par le projet. Les artefacts WASM sont accompagnés des notices du moteur et d'Emscripten. Aucune ROM téléchargée, incorporée ou dérivée des firmwares Amstrad : le test original contient seulement l'instruction Z80 `JP 0`.
+
+## Composants étudiés pour les incréments suivants
+
+CPCBasicTS : MIT ; Caprice32 : GPLv2. Ils sont étudiés et référencés ; Caprice32 est un oracle externe prévu, pas un composant embarqué. L'intégration future préservera les notices exactes de chaque version effectivement utilisée.
 
 Les ROM OS/BASIC/AMSDOS ne sont pas incluses. Les droits firmware sont distincts de ceux des émulateurs.

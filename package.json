@@ -1,0 +1,27 @@
+{
+  "name": "micro-ide-amstrad-j0",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24.12.0 <25"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "build:hello": "node scripts/disk-cli.mjs build examples/hello-cpc/src/main.bas out/hello.dsk MAIN.BAS",
+    "build:probe": "node scripts/build-probe.mjs",
+    "chips:fetch": "python scripts/fetch_chips.py",
+    "build:native": "python scripts/build_emulator.py native",
+    "test:native": "python scripts/build_emulator.py test",
+    "build:wasm": "python scripts/build_emulator.py wasm",
+    "test:wasm": "node tests/wasm-smoke.mjs",
+    "harness": "node scripts/serve-harness.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "@types/node": "24.0.0",
+    "typescript": "5.9.3"
+  }
+}

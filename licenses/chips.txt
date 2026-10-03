@@ -1,0 +1,38 @@
+floooh/chips — pinned source notices
+Commit 9e88298ce56319953ac7a43213a1120359f7a3a6
+
+Files: chips/am40010.h, chips/ay38910.h, chips/chips_common.h, chips/clk.h, chips/fdd.h, chips/fdd_cpc.h, chips/i8255.h, chips/kbd.h, chips/mc6845.h, chips/mem.h, chips/upd765.h, systems/cpc.h
+
+Copyright (c) 2018 Andre Weissflog
+    This software is provided 'as-is', without any express or implied warranty.
+    In no event will the authors be held liable for any damages arising from the
+    use of this software.
+    Permission is granted to anyone to use this software for any purpose,
+    including commercial applications, and to alter it and redistribute it
+    freely, subject to the following restrictions:
+        1. The origin of this software must not be misrepresented; you must not
+        claim that you wrote the original software. If you use this software in a
+        product, an acknowledgment in the product documentation would be
+        appreciated but is not required.
+        2. Altered source versions must be plainly marked as such, and must not
+        be misrepresented as being the original software.
+        3. This notice may not be removed or altered from any source
+        distribution.
+
+Files: chips/z80.h
+
+Copyright (c) 2021 Andre Weissflog
+    This software is provided 'as-is', without any express or implied warranty.
+    In no event will the authors be held liable for any damages arising from the
+    use of this software.
+    Permission is granted to anyone to use this software for any purpose,
+    including commercial applications, and to alter it and redistribute it
+    freely, subject to the following restrictions:
+        1. The origin of this software must not be misrepresented; you must not
+        claim that you wrote the original software. If you use this software in a
+        product, an acknowledgment in the product documentation would be
+        appreciated but is not required.
+        2. Altered source versions must be plainly marked as such, and must not
+        be misrepresented as being the original software.
+        3. This notice may not be removed or altered from any source
+        distribution.

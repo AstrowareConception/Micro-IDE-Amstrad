@@ -2,7 +2,7 @@
 
 ## Mode de progression
 
-La conception est l'incrément actuel. Les consignes suivantes de Térence déclencheront les jalons. Chaque jalon dispose d'une branche, d'une PR ciblée, de documents actualisés et d'une démonstration reproductible. Aucun planning calendaire ou volume horaire n'est fixé sans estimation de l'équipe et disponibilité des dépendances. Les livraisons se font en tranches verticales : un parcours réellement utile vaut mieux que toutes les interfaces vides.
+J0 constitue l'incrément actuel : codecs et harness sont implémentés, qualification moteur en HOLD en l'absence des ROM nécessaires. Le [rapport d'implémentation](../implementation/j0-report.md) tient les preuves et limites. Chaque jalon dispose d'une branche, d'une PR ciblée, de documents actualisés et d'une démonstration reproductible. Aucun planning calendaire ou volume horaire n'est fixé sans estimation de l'équipe et disponibilité des dépendances. Les livraisons se font en tranches verticales : un parcours réellement utile vaut mieux que toutes les interfaces vides.
 
 ```mermaid
 flowchart TD

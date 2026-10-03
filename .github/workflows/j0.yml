@@ -1,0 +1,64 @@
+name: J0 prototype
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  disk-and-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.12.0
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build:hello && npm run build:probe
+      - run: npm run chips:fetch
+      - run: npm run test:native
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: j0-disks
+          path: |
+            out/hello.dsk
+            out/probe.dsk
+          retention-days: 7
+  wasm:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.12.0
+      - run: npm ci --ignore-scripts
+      - run: npm run chips:fetch && npm run build:hello
+      - name: Install pinned Emscripten
+        run: |
+          git clone --depth 1 --branch 4.0.15 https://github.com/emscripten-core/emsdk.git .cache/emsdk
+          test "$(git -C .cache/emsdk rev-parse HEAD)" = "389a68bc35dcff7ebae4614e1615099dafda00d1"
+          .cache/emsdk/emsdk install 4.0.15
+          .cache/emsdk/emsdk activate 4.0.15
+      - name: Compile and exercise WASM transport
+        run: |
+          EMCC=.cache/emsdk/upstream/emscripten/emcc python scripts/build_emulator.py wasm
+          node tests/wasm-smoke.mjs
+      - name: Exercise browser harness with synthetic firmware
+        run: |
+          npx playwright install --with-deps chromium
+          node tests/browser-smoke.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: j0-wasm
+          path: |
+            out/cpc.mjs
+            out/cpc.wasm
+            out/j0-harness.png
+            licenses/chips.txt
+            licenses/emscripten.txt
+          retention-days: 7

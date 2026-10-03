@@ -1,0 +1,6 @@
+{
+  "writer": "data-standard-sequential-v1",
+  "bytes": 194816,
+  "diskSha256": "c36a0f2a041a11f15c2e7438624daad65ae56c1e26b4a8ef83a81a905fc94988",
+  "provenance": "Frozen from J0 writer; additional structural, mutation and upstream reader tests are required."
+}
