@@ -73,7 +73,7 @@ export function App() {
           <p className="muted">Analyse partielle : numéros, chaînes, cibles littérales et contraintes d’export. Un listing sans diagnostic n’est pas garanti exécutable.</p>
           {analysis.diagnostics.length ? <ul>{analysis.diagnostics.map((d, i) => <li key={`${d.line}-${d.start}-${i}`}><button onClick={() => {
             editor.current?.revealLineInCenter(d.line); editor.current?.setPosition({ lineNumber: d.line, column: d.start + 1 }); editor.current?.focus();
-          }}>L{d.line} · {d.message}</button></li>)}</ul> : <p className="success">Aucun problème détecté dans le sous-ensemble analysé.</p>}
+          }}>L{d.line} · {d.severity === 'error' ? 'Erreur' : 'Avertissement'} · {d.message}</button></li>)}</ul> : <p className="success">Aucun problème détecté dans le sous-ensemble analysé.</p>}
         </div>
       </section>
       <aside aria-label="Références et état du produit">

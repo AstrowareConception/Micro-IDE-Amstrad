@@ -4,7 +4,7 @@ Date : 2026-10-03. Incrément demandé : continuer le logiciel, ajouter colorati
 
 ## Parcours disponible
 
-L'application Electron s'ouvre sur un exemple CPC. Elle édite **un seul listing UTF-8**, conserve les lignes vides dans le buffer, signale les changements et propose ouvrir, enregistrer, enregistrer sous et exporter une disquette DATA contenant `MAIN.BAS` ASCII. Les lignes vides sont omises seulement dans cet artefact. La relecture du DSK contrôle la structure, pas l'exécution BASIC.
+L'application Electron s'ouvre sur un exemple CPC. Elle édite **un seul listing UTF-8**, conserve les lignes vides dans le buffer, signale les changements et propose ouvrir, enregistrer, enregistrer sous et exporter une disquette DATA contenant `MAIN.BAS` ASCII. Seulement dans cet artefact, les lignes vides sont omises, l'indentation avant le numéro est retirée et un espace numéro/instruction est ajouté si nécessaire. La relecture du DSK contrôle la structure, pas l'exécution BASIC.
 
 Monaco fournit coloration, annuler/rétablir, recherche, sélection et raccourcis. Les fournisseurs du projet proposent commandes/fonctions du sous-ensemble, identifiants observés et cibles BASIC ; survol et panneau consultent les fiches. `F12` rejoint une cible littérale connue. Cliquer un diagnostic rejoint sa position physique. Aucune modification automatique globale de casse ou renumérotation.
 
@@ -36,7 +36,7 @@ Sur Ubuntu avec Xvfb, l'essai Electron utilise un utilisateur non privilégié e
 xvfb-run -a npm run test:desktop
 ```
 
-Ne pas ajouter `--no-sandbox` pour contourner une restriction de l'hôte. Le workflow `Desktop editor` exécute types, tests unitaires, construction, Chromium et Electron. Les captures sont des preuves de cette application, pas des maquettes.
+Ne pas ajouter `--no-sandbox` pour contourner une restriction de l'hôte. Sur Ubuntu 24.04, le helper Chromium livré par Electron doit être installé avec son propriétaire/mode requis (root, 4755) par l'administrateur ; l'alpha depuis les sources ne réalise aucune élévation automatique. La CI configure uniquement ce binaire fournisseur dans son runner éphémère, sans désactiver AppArmor, modifier le noyau ou lancer l'application en root. Le workflow `Desktop editor` exécute types, tests unitaires, construction, Chromium et Electron. Les captures sont des preuves de cette application, pas des maquettes.
 
 L'aperçu `npm run dev:editor` utilise un autre adaptateur : lecture via sélecteur navigateur, enregistrement/export par téléchargement. Il n'a ni API disque native ni garantie de sauvegarde dans le fichier ouvert.
 
@@ -46,7 +46,7 @@ L'aperçu `npm run dev:editor` utilise un autre adaptateur : lecture via sélect
 | --- | --- | --- |
 | Lexer | Casse, nombres décimaux/hexadécimaux/binaires, suffixes de variables, chaînes, REM/apostrophe, DATA opaque jusqu'au séparateur non cité | Grammaire complète, noms ambigus et toutes les formes compactes |
 | Complétion | 48 fiches éditoriales, identifiants observés, numéros locaux après GOTO/GOSUB/THEN/ELSE/RESTORE/RUN | Variantes qualifiées 1.0/1.1, RSX, toutes les signatures, snippets et paramètres contextuels |
-| Diagnostics | Numéros 1–65535 croissants, chaîne ouverte, cible littérale absente, ASCII exportable | Types, arité, structures de contrôle, mémoire, toutes les erreurs BASIC |
+| Diagnostics | Numéros 1–65535 croissants, cible littérale absente, ASCII exportable ; chaîne ouverte en avertissement non bloquant faute de qualification ROM | Types, arité, structures de contrôle, mémoire, toutes les erreurs BASIC |
 | Références | Cibles numériques directes et listes ON, ON ERROR GOTO 0 exclu ; textes/commentaires/DATA ignorés | Références calculées, externes, RESUME, renumérotation |
 | Fichiers | UTF-8 strict, CRLF normalisé en LF, limite 1 Mio, sauvegarde temporaire + renommage, hash de conflit externe | Projet/manifeste, plusieurs buffers, autosave, reprise après crash, verrouillage interprocessus |
 
@@ -64,7 +64,7 @@ Les effets React nettoient modèle, éditeur, actions et abonnements. Les callba
 
 ## Preuves et exigences
 
-Localement : TypeScript strict, 28 tests de domaine/codecs et construction desktop exécutés. Le premier téléchargement automatique de navigateur a échoué ; le miroir officiel Playwright a ensuite fourni Chromium. Le contrôle `agent-browser` a échoué au démarrage de son daemon ; les parcours reproductibles Playwright sont utilisés pour les preuves effectives. Le test Electron local exige un environnement graphique non privilégié ; son résultat doit être lu dans le workflow, pas déduit du build.
+Localement : TypeScript strict, 29 tests de domaine/codecs, construction desktop et parcours Chromium exécutés. Complétion acceptée, coloration, aide, diagnostics, navigation F12, téléchargements source/DSK et protection du buffer sont vérifiés. Le premier téléchargement automatique de navigateur a échoué ; le miroir officiel Playwright a ensuite fourni Chromium. Le contrôle `agent-browser` a échoué au démarrage de son daemon ; les parcours reproductibles Playwright sont utilisés pour les preuves effectives. Le test Electron local exige un environnement graphique non privilégié ; son résultat doit être lu dans le workflow, pas déduit du build.
 
 Le workflow publie les captures et ses résultats. Cette livraison contribue partiellement à REQ-EDT-001/002/003/005, REQ-KNW-001/002/004/005, ACC-02/03/04/06/30. Elle ne ferme pas ces exigences globales : multi-document, qualification par dialecte, transactions et couverture complète restent ouverts.
 

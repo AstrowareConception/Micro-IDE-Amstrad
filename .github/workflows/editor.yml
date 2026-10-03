@@ -17,6 +17,10 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: node node_modules/electron/install.js
+      - name: Configure vendor Chromium sandbox helper on the ephemeral runner
+        run: |
+          sudo chown root:root node_modules/electron/dist/chrome-sandbox
+          sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
       - run: npm run typecheck && npm test && npm run build:desktop
       - run: npx playwright install --with-deps chromium
       - name: Browser editing and exports
@@ -32,4 +36,5 @@ jobs:
           path: |
             out/editor-alpha.png
             out/desktop-alpha.png
+            out/editor-failure.png
           retention-days: 7

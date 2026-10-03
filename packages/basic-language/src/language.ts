@@ -4,7 +4,7 @@ export interface Token {
   start: number; end: number; text: string;
   kind: 'keyword' | 'identifier' | 'number' | 'string' | 'comment' | 'data' | 'operator';
 }
-export interface Diagnostic { line: number; start: number; end: number; message: string; code: string }
+export interface Diagnostic { line: number; start: number; end: number; message: string; code: string; severity: 'error' | 'warning' }
 export interface LineTarget { number: number; line: number; start: number; end: number }
 export interface LineReference extends LineTarget {}
 export interface Analysis { diagnostics: Diagnostic[]; targets: LineTarget[]; references: LineReference[]; variables: string[] }
@@ -86,8 +86,8 @@ export function analyze(source: string): Analysis {
   source.split('\n').forEach((line, index) => {
     const physical = index + 1;
     if (!line.trim()) return;
-    const report = (start: number, end: number, code: string, message: string) =>
-      diagnostics.push({ line: physical, start, end, code, message });
+    const report = (start: number, end: number, code: string, message: string, severity: Diagnostic['severity'] = 'error') =>
+      diagnostics.push({ line: physical, start, end, code, message, severity });
     const prefix = /^\s*(\d+)(?=\s|[a-zA-Z?'&]|$)/.exec(line);
     if (!prefix) report(0, Math.max(1, line.length), 'line-number', 'Le listing doit commencer par un numéro BASIC.');
     else {
@@ -102,7 +102,8 @@ export function analyze(source: string): Analysis {
     const tokens = tokenize(line);
     for (const token of tokens) {
       if (token.kind === 'identifier') variables.add(token.text.toUpperCase());
-      if (token.kind === 'string' && (token.text.length === 1 || !token.text.endsWith('"'))) report(token.start, token.end, 'unclosed-string', 'Chaîne non terminée.');
+      if (token.kind === 'string' && (token.text.length === 1 || !token.text.endsWith('"')))
+        report(token.start, token.end, 'unclosed-string', 'Chaîne ouverte : terminaison à vérifier sur ROM ; analyse partielle.', 'warning');
     }
     references.push(...literalReferences(tokens, physical));
     // Export policy, not a blanket claim about CPC character encoding.
@@ -112,13 +113,14 @@ export function analyze(source: string): Analysis {
     }
   });
   const numbers = new Set(targets.map(t => t.number));
-  for (const ref of references) if (!numbers.has(ref.number)) diagnostics.push({ ...ref, code: 'missing-target', message: `La ligne BASIC ${ref.number} n’existe pas dans ce listing.` });
+  for (const ref of references) if (!numbers.has(ref.number)) diagnostics.push({ ...ref, code: 'missing-target', message: `La ligne BASIC ${ref.number} n’existe pas dans ce listing.`, severity: 'error' });
   return { diagnostics, targets, references, variables: [...variables].sort() };
 }
 
 export function completionContext(line: string, offset: number): 'none' | 'target' | 'code' {
   const tokens = tokenize(line.slice(0, offset));
   const last = tokens.at(-1);
+  if (last?.kind === 'keyword' && last.text.toUpperCase() === 'DATA') return 'none';
   if (last && ['comment', 'data'].includes(last.kind)) return 'none';
   if (last?.kind === 'string' && (last.text.length === 1 || !last.text.endsWith('"'))) return 'none';
   if (/\b(?:GOTO|GOSUB|THEN|ELSE|RESTORE|RUN)\s*\d*$/i.test(line.slice(0, offset))) return 'target';

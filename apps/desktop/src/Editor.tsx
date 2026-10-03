@@ -53,7 +53,7 @@ export function Editor(props: Props) {
     const model = instance.current?.getModel();
     if (model) monaco.editor.setModelMarkers(model, language, props.diagnostics.map(d => ({
       startLineNumber: d.line, endLineNumber: d.line, startColumn: d.start + 1, endColumn: d.end + 1,
-      message: d.message, code: d.code, severity: monaco.MarkerSeverity.Error, source: 'Analyse partielle / export ASCII',
+      message: d.message, code: d.code, severity: d.severity === 'error' ? monaco.MarkerSeverity.Error : monaco.MarkerSeverity.Warning, source: 'Analyse partielle / export ASCII',
     })));
   }, [props.diagnostics]);
   return <div className="editor-host" ref={host} />;

@@ -56,7 +56,10 @@ window.on('close', event => {
   if (dirty && dialog.showMessageBoxSync(window, { type: 'warning', buttons: ['Annuler', 'Quitter sans enregistrer'],
     defaultId: 0, cancelId: 0, message: 'Le listing contient des modifications non enregistrées.' }) === 0) event.preventDefault();
 });
-ipcMain.on('listing:dirty', (event, value: unknown) => { trusted(event); if (typeof value === 'boolean') dirty = value; });
+ipcMain.on('listing:dirty', (event, value: unknown) => {
+  try { trusted(event); if (typeof value === 'boolean') dirty = value; }
+  catch { /* Ignore untrusted notification without terminating the main process. */ }
+});
 route('listing:open', async () => {
   const selection = await dialog.showOpenDialog(window, { properties: ['openFile'], filters: [{ name: 'Listing BASIC', extensions: ['bas', 'txt'] }] });
   if (selection.canceled || !selection.filePaths[0]) return null;

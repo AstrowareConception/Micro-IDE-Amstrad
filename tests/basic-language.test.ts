@@ -58,3 +58,11 @@ test('DSK export preserves source and removes blank lines only from the artifact
   assert.equal(source, '10 PRINT "OK"\n\n20 END\n');
   assert.throws(() => buildListingDisk('10 GOTO 999'), /n’existe pas/);
 });
+test('uncertain string termination warns without blocking export; transport spacing is explicit', () => {
+  const source = ' 10PRINT "OPEN\n20 END';
+  const result = analyze(source);
+  assert.equal(result.diagnostics[0]?.severity, 'warning');
+  const bytes = buildListingDisk(source);
+  assert.equal(new TextDecoder().decode(decodeAsciiRecords(readDataDisk(bytes)[0]!.records)), '10 PRINT "OPEN\r\n20 END\r\n\x1a');
+  assert.equal(completionContext('10 DATA', 7), 'none');
+});
