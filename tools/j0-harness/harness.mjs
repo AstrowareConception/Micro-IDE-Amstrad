@@ -5,6 +5,7 @@ let queue = [], held = null, keyTime = 0, audioPointer = 0, diskPointer = 0, aud
 let nextAudio = 0, sourceNodes = new Set(), timings = [], provenance = {};
 const screen = $('screen'), context = screen.getContext('2d');
 let image;
+const physicalKeys = new Map();
 function check(code, action) { if (code < 0) throw new Error(`${action} : code ${code}`); return code; }
 function clearAudio() {
   for (const node of sourceNodes) { try { node.stop(); } catch {} }
@@ -12,6 +13,7 @@ function clearAudio() {
 }
 function release() {
   queue = []; held = null; keyTime = 0;
+  physicalKeys.clear();
   if (live) cpc._cpc_bridge_release_keys();
 }
 function setPaused(value) {
@@ -39,7 +41,8 @@ function download(bytes, name, type) {
 function observation() {
   const sorted = [...timings].sort((a, b) => a - b);
   return { kind: 'observed-session', core: '9e88298ce56319953ac7a43213a1120359f7a3a6',
-    firmware: provenance, profile: 'cpc6128-classic-v1', qualification: 'experimental',
+    firmware: { os: provenance.os, basic: provenance.basic, amsdos: provenance.amsdos },
+    mountedBuildDisk: provenance.disk, profile: 'cpc6128-classic-v1', qualification: 'experimental',
     promptReadiness: ready ? 'manual-user-observation' : 'not-confirmed',
     emulatedSeconds: cpc._cpc_bridge_ticks() / 4000000, paused,
     physicalRamMarkers: { '8000': cpc._cpc_bridge_peek(0x8000), '8001': cpc._cpc_bridge_peek(0x8001), '9000': cpc._cpc_bridge_peek(0x9000) },
@@ -139,14 +142,14 @@ guarded('export', () => { const count = check(cpc._cpc_bridge_export(diskPointer
 guarded('report', () => download(JSON.stringify(observation(), null, 2), 'j0-session.json', 'application/json'));
 const specials = { Enter: 13, Escape: 3, Backspace: 1, Delete: 12, ArrowLeft: 8, ArrowRight: 9, ArrowDown: 10, ArrowUp: 11 };
 screen.addEventListener('keydown', event => {
-  if (!live || paused || event.ctrlKey || event.metaKey || queue.length || held !== null) return;
+  if (!live || paused || event.ctrlKey || event.metaKey || queue.length || held !== null || event.repeat) return;
   const key = specials[event.key] ?? (event.key.length === 1 && /^[\x20-\x7d]$/.test(event.key) ? event.key.charCodeAt(0) : null);
-  if (key !== null) { event.preventDefault(); check(cpc._cpc_bridge_key(key, 1), 'clavier'); }
+  if (key !== null) { event.preventDefault(); physicalKeys.set(event.code, key); check(cpc._cpc_bridge_key(key, 1), 'clavier'); }
 });
 screen.addEventListener('keyup', event => {
   if (!live) return;
-  const key = specials[event.key] ?? (event.key.length === 1 ? event.key.charCodeAt(0) : null);
-  if (key !== null && key <= 255) { event.preventDefault(); cpc._cpc_bridge_key(key, 0); }
+  const key = physicalKeys.get(event.code);
+  if (key !== undefined) { event.preventDefault(); physicalKeys.delete(event.code); cpc._cpc_bridge_key(key, 0); }
 });
 screen.addEventListener('blur', release);
 window.addEventListener('blur', () => { if (live && !paused) setPaused(true); });
