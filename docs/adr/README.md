@@ -11,5 +11,6 @@ Une ADR explique une décision durable et ses conséquences. **Acceptée** signi
 | [0005](0005-ia-propositions.md) | Agent à outils métier, corpus BASIC, checkpoints et mode Revue optionnel | Acceptée |
 | [0006](0006-projets-fichiers.md) | Projets en dossiers ouverts et formats versionnés | Acceptée |
 | [0007](0007-compatibilite-progressive.md) | Qualification progressive des machines et ROM séparées | Acceptée |
+| [0008](0008-j0-data-harness.md) | DATA séquentiel, parser borné et preuves synthétiques distinctes des essais ROM | Acceptée pour J0 |
 
 Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou preuve technique, pas parce qu'une technologie différente est disponible.

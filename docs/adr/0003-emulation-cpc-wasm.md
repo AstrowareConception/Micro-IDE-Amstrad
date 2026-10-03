@@ -16,6 +16,6 @@ CPCBasicTS est utile comme référence de langage ou éventuel codec MIT, mais s
 
 ## Conséquences
 
-Le commit candidat est connu, mais pas encore testé dans le produit. L'export DSK mutable requiert un wrapper/codec supplémentaire. Les restrictions de CRTC et de géométrie sont visibles. Les snapshots internes sont réservés à leur version ; pas de compatibilité SNA affirmée sans codec. Aucune ROM n'est redistribuée par la seule licence du cœur.
+Le commit candidat et le wrapper disposent désormais de tests de transport J0, sans qualification firmware : voir le [rapport d'implémentation](../implementation/j0-report.md). L'export DSK mutable est implémenté pour DATA ; son emploi via OPENOUT reste à éprouver. Les restrictions de CRTC et de géométrie sont visibles. Les snapshots internes sont réservés à leur version ; pas de compatibilité SNA affirmée sans codec. Aucune ROM n'est redistribuée par la seule licence du cœur.
 
 Critère de confirmation : rapport J0 positif sur tous les usages nécessaires, avec DSK relu dans un autre émulateur. En cas d'échec, nouvelle ADR avant construction de l'UI autour du moteur. Une bibliothèque reconnue ne dispense pas de cette preuve.

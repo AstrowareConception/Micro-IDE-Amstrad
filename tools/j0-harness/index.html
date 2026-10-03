@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Micro IDE Amstrad — banc J0</title><link rel="stylesheet" href="/harness.css"></head>
+<body>
+<header><span class="tag">MICRO IDE AMSTRAD · J0</span><h1>Le banc d’essai CPC 6128</h1><p>Charger ses ROM, monter un DSK et observer une véritable machine émulée.</p></header>
+<main>
+<section class="setup"><h2>Préparer la machine</h2>
+<p>Les fichiers restent dans cette page locale. ROM séparées de 16 Kio ; DSK standard DATA uniquement. Aucun firmware fourni.</p>
+<div class="files">
+<label>ROM OS <input id="os" type="file"></label>
+<label>ROM BASIC 1.1 <input id="basic" type="file"></label>
+<label>ROM AMSDOS <input id="amsdos" type="file"></label>
+<label>Disquette de construction <input id="disk" type="file" accept=".dsk"></label>
+</div>
+<button id="start" disabled>Démarrer avec ces fichiers</button>
+<p id="status" role="status">Chargement du module WebAssembly…</p>
+</section>
+<section class="machine"><div class="bar"><h2>Machine émulée</h2><span id="clock">0 s</span></div>
+<canvas id="screen" width="768" height="272" tabindex="0" aria-label="Écran CPC ; cliquer pour transmettre le clavier"></canvas>
+<p class="hint">Cliquer sur l’écran pour le clavier. Échap = ESC CPC ; flèches et Retour pris en charge.</p>
+<div class="actions">
+<button id="pause" disabled>Pause</button><button id="reset" disabled>Reset</button><button id="break" disabled>ESC CPC</button>
+<button id="sound" disabled>Activer le son</button><button id="export" disabled>Exporter la disquette de session</button>
+</div>
+</section>
+<section class="commands"><h2>Essayer un programme</h2>
+<p>La détection automatique du prompt reste à qualifier. Quand le prompt BASIC est visible, marquer la machine prête.</p>
+<button id="ready" disabled>Le prompt BASIC est visible</button>
+<label>Commande CPC <input id="command" value="RUN&quot;PROBE.BAS&quot;" maxlength="1024" spellcheck="false"></label>
+<button id="type" disabled>Saisir dans le CPC</button>
+<p>Construire <code>out/probe.dsk</code> pour tester LOAD binaire, OPENOUT, son et clavier. Le DSK construit et sa copie mutable sont distincts.</p>
+</section>
+<section class="observations"><h2>Observations de cette session</h2>
+<p>Les marqueurs mémoire sont des observations brutes. Ils ne qualifient pas à eux seuls la machine ou l’émulateur indépendant.</p>
+<pre id="observations">Aucune session démarrée.</pre>
+<button id="report" disabled>Télécharger les observations JSON</button>
+</section>
+</main><footer>Prototype technique J0 · BASIC exécuté par la ROM · aucun fournisseur IA connecté</footer>
+<script type="module" src="/harness.mjs"></script>
+</body></html>

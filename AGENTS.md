@@ -2,7 +2,7 @@
 
 ## État et périmètre
 
-Le dépôt est initialisé avec des spécifications. Ne pas supposer que l'application existe. Lire `README.md`, `docs/README.md` et le jalon demandé dans `docs/specifications/12-feuille-de-route.md` avant de coder. Réaliser l'incrément demandé ; ne pas lancer tous les jalons à la fois.
+Le dépôt contient les spécifications et un prototype J0. Ne pas supposer que l'IDE existe. Lire `README.md`, `docs/README.md`, `docs/implementation/j0-report.md` et le jalon demandé dans `docs/specifications/12-feuille-de-route.md` avant de coder. Réaliser l'incrément demandé ; ne pas lancer J1 sur une qualification moteur supposée.
 
 ## Architecture
 
@@ -24,7 +24,7 @@ Le dépôt est initialisé avec des spécifications. Ne pas supposer que l'appli
 
 ## Vérification
 
-Exécuter `python scripts/check_specs.py --schemas` avec les dépendances de `scripts/requirements-docs.txt` lors d'une modification documentaire ou contractuelle. Pour le code futur, appliquer le plan de recette du jalon. Distinguer tests exécutés, tests bloqués et essais seulement prévus. Un succès dans le moteur intégré ne remplace pas les vérifications externes prescrites au document 11.
+Exécuter `python scripts/check_specs.py --schemas` avec les dépendances de `scripts/requirements-docs.txt` lors d'une modification documentaire ou contractuelle. Pour les codecs : `npm run typecheck` et `npm test` ; pour l'adaptateur : essais natifs, WASM et navigateur du guide J0, puis recette firmware/externe. Distinguer tests exécutés, tests bloqués et essais seulement prévus. Un succès dans le moteur intégré ne remplace pas les vérifications externes prescrites au document 11.
 
 ## Communication
 

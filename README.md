@@ -2,7 +2,7 @@
 
 Un atelier de programmation pour écrire du **Locomotive BASIC**, le tester dans un **Amstrad CPC émulé**, travailler avec une **IA et ses propres documents**, puis partager une **disquette DSK utilisable hors de l'IDE**.
 
-**État au 3 octobre 2026 : conception, version 0.2 des spécifications.** Le mode IA principal est agentique : il travaille sur les fichiers, utilise les ressources et contrôle les essais CPC dans une mission bornée. Ce dépôt contient le dossier de conception, des contrats de données, le corpus fourni et un exemple BASIC. L'application et le moteur d'émulation ne sont pas encore implémentés. Aucun résultat de compatibilité matérielle n'est revendiqué.
+**État au 3 octobre 2026 : prototype technique J0, version 0.3.** Le dépôt contient les spécifications, le corpus BASIC, un codec DSK DATA testé, un wrapper d'émulation C/WASM et un banc local. L'IDE Electron et l'agent IA restent les jalons suivants. La qualification CPC attend les ROM OS/BASIC/AMSDOS et les essais dans un émulateur indépendant ; aucun boot BASIC ou résultat matériel n'est revendiqué.
 
 ## Direction retenue
 
@@ -24,7 +24,19 @@ La préparation d'un programme BASIC n'est pas une compilation Z80. L'IDE analys
 
 Commencer par le [sommaire du dossier](docs/README.md), puis le [cadrage produit](docs/specifications/00-cadrage-produit.md), le [modèle métier](docs/specifications/03-domaines-ddd.md) et l'[architecture](docs/specifications/04-architecture-technique.md).
 
-Les [décisions d'architecture](docs/adr/README.md) expliquent les arbitrages. La [feuille de route](docs/specifications/12-feuille-de-route.md) définit des incréments indépendants avec critères de sortie. Le premier travail d'implémentation sera **J0 : prouver le trajet BASIC → DSK → CPC 6128**, avant de construire l'IDE.
+Les [décisions d'architecture](docs/adr/README.md) expliquent les arbitrages. La [feuille de route](docs/specifications/12-feuille-de-route.md) définit les critères de sortie. **J0 est implémenté partiellement et reste en HOLD** avant J1 : consulter le [rapport réel](docs/implementation/j0-report.md) et le [guide du banc local](tools/j0-harness/README.md).
+
+Avec Node 24.12+ dans la branche 24 et Python 3.12 :
+
+```bash
+npm ci --ignore-scripts
+npm run typecheck
+npm test
+npm run build:hello
+npm run build:probe
+```
+
+Ces commandes produisent `out/hello.dsk` et `out/probe.dsk`, validés structurellement. La [procédure C/WASM](tools/j0-harness/README.md) précise les compilateurs et la fourniture de firmware local. Aucun téléchargement de ROM n'est effectué. Le workflow `J0 prototype` teste codecs et transports avec une ROM synthétique originale ; il ne prétend pas exécuter Locomotive BASIC.
 
 Pour vérifier le dossier avec Python 3.12 ou supérieur :
 
@@ -39,7 +51,7 @@ python -m pip install -r scripts/requirements-docs.txt
 python scripts/check_specs.py --schemas
 ```
 
-Ces commandes vérifient la documentation et les exemples ; elles ne testent pas encore une application. Le workflow GitHub Actions `Specifications` automatise cette vérification.
+Les commandes Python vérifient la documentation et les contrats. Le workflow GitHub Actions `Specifications` automatise ce contrôle, distinct des tests du prototype.
 
 ## Principes de réalisation
 

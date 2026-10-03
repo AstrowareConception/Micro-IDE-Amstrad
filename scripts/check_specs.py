@@ -6,6 +6,7 @@ import argparse
 from collections import Counter
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import sys
@@ -13,6 +14,15 @@ from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 ERRORS: list[str] = []
+
+
+def repository_files(suffix: str) -> list[Path]:
+    ignored = {'.git', '.cache', '.venv', 'node_modules', 'out', 'dist', 'coverage', '__pycache__'}
+    files: list[Path] = []
+    for directory, directories, names in os.walk(ROOT):
+        directories[:] = [name for name in directories if name not in ignored]
+        files.extend(Path(directory) / name for name in names if name.endswith(suffix))
+    return sorted(files)
 
 
 def problem(path: Path, message: str) -> None:
@@ -28,7 +38,7 @@ def read_json(path: Path) -> object | None:
 
 
 def check_markdown() -> int:
-    files = sorted(ROOT.rglob("*.md"))
+    files = repository_files(".md")
     for path in files:
         text = path.read_text(encoding="utf-8")
         inside_fence = False
@@ -64,7 +74,7 @@ def check_traceability() -> tuple[int, int]:
         if not identifiers:
             problem(path, "no identifier definitions found")
     known_requirements, known_scenarios = set(requirements), set(scenarios)
-    for path in ROOT.rglob("*.md"):
+    for path in repository_files(".md"):
         text = path.read_text()
         for identifier in set(re.findall(r"REQ-[A-Z]+-\d{3}", text)):
             if identifier not in known_requirements:
@@ -221,7 +231,7 @@ def main() -> int:
     args = parser.parse_args()
     markdown_count = check_markdown()
     requirement_count, scenario_count = check_traceability()
-    data = {path: read_json(path) for path in sorted(ROOT.rglob("*.json"))}
+    data = {path: read_json(path) for path in repository_files(".json")}
     for path, value in data.items():
         if path.name == "microide.project.json" and isinstance(value, dict):
             check_project(path, value)

@@ -1,6 +1,6 @@
-# Dossier de conception — version 0.2
+# Dossier de conception et première réalisation — version 0.3
 
-Date de référence : **2026-10-03**. Responsable produit : **Térence FERUT / AstroWare Conception**. Statut : base de conception proposée pour la réalisation progressive. Les décisions retenues servent de référence ; les points conditionnels sont explicitement identifiés et ne constituent pas des fonctionnalités déjà disponibles.
+Date de référence : **2026-10-03**. Responsable produit : **Térence FERUT / AstroWare Conception**. Les spécifications servent de référence au produit. Le [rapport J0](implementation/j0-report.md) et le [banc local](../tools/j0-harness/README.md) distinguent maintenant le code disponible, les preuves obtenues et la qualification encore bloquée. Les décisions conditionnelles restent explicites.
 
 ## Documents de référence
 
