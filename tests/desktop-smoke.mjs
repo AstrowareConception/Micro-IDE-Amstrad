@@ -154,11 +154,9 @@ try {
   assert.equal(await readFile(join(moved, 'src/main.bas'), 'utf8'), '10 PRINT "AGENT"\n20 END\n');
   assert.equal(await readFile(join(moved, 'src/help.bas'), 'utf8'), '10 PRINT "HELPER"\n20 END\n');
   assert.equal(JSON.parse(await readFile(join(moved, 'microide.project.json'), 'utf8')).sources.length, 3);
-  const checkpoints = await desktop.evaluate(async ({ app }) => {
-    const { readdir, readFile } = await import('node:fs/promises'); const { join } = await import('node:path');
-    const directory = join(app.getPath('userData'), 'agent-checkpoints');
-    return Promise.all((await readdir(directory)).map(id => readFile(join(directory, id, 'checkpoint.json'), 'utf8')));
-  });
+  const checkpointDirectory = join(await desktop.evaluate(({ app }) => app.getPath('userData')), 'agent-checkpoints');
+  const { readdir } = await import('node:fs/promises');
+  const checkpoints = await Promise.all((await readdir(checkpointDirectory)).map(id => readFile(join(checkpointDirectory, id, 'checkpoint.json'), 'utf8')));
   assert.ok(checkpoints.some(text => text.includes('USER DRAFT')));
   assert.ok(checkpoints.every(text => !text.includes('sk-test-fixture-not-real')));
   await page.locator('.agent-result summary').click();
