@@ -23,6 +23,8 @@ jobs:
         run: npm run test:editor
       - name: Native Electron paths and isolation
         run: xvfb-run -a npm run test:desktop
+        env:
+          DEBUG: pw:browser*
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
