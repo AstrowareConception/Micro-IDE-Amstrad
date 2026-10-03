@@ -2,13 +2,14 @@
 
 ## Mode de progression
 
-J0 constitue l'incrément actuel : codecs et harness sont implémentés, qualification moteur en HOLD en l'absence des ROM nécessaires. Le [rapport d'implémentation](../implementation/j0-report.md) tient les preuves et limites. Chaque jalon dispose d'une branche, d'une PR ciblée, de documents actualisés et d'une démonstration reproductible. Aucun planning calendaire ou volume horaire n'est fixé sans estimation de l'équipe et disponibilité des dépendances. Les livraisons se font en tranches verticales : un parcours réellement utile vaut mieux que toutes les interfaces vides.
+J0 reste en HOLD pour la qualification moteur. Une tranche indépendante J1/J2 livre l'[alpha d'édition 0.4](../implementation/editor-alpha.md), conformément à l'[ADR 0009](../adr/0009-edition-independante.md) : elle n'annonce pas J1/J2 complets. Le [rapport J0](../implementation/j0-report.md) conserve les preuves et limites. Chaque jalon dispose d'une branche, d'une PR ciblée, de documents actualisés et d'une démonstration reproductible. Aucun planning calendaire ou volume horaire n'est fixé sans estimation de l'équipe et disponibilité des dépendances.
 
 ```mermaid
 flowchart TD
   S["Conception initiale"] --> J0["J0 : preuve CPC et DSK"]
-  J0 --> J1["J1 : socle desktop et projet"]
+  S --> J1["J1 : socle desktop et projet"]
   J1 --> J2["J2 : éditeur et langage"]
+  J0 --> J3["J3 : exécution et export"]
   J2 --> J3["J3 : exécution et export"]
   J3 --> J4["J4 : ressources et pièces jointes"]
   J4 --> J5["J5 : IA et MVP produit"]
@@ -29,7 +30,7 @@ Livrer un harness minimal, pas un IDE. Figer le cœur C et Emscripten, importer 
 | J0-05 — OPENOUT et sérialisation disque modifié | J0-04 | Fichier écrit relu dans émulateur indépendant |
 | J0-06 — Rapport go/no-go moteur | Tous J0 | Écarts classés, ADR confirmée ou remplacée |
 
-Condition d'arrêt : pas de ROM utilisable, pas de lecture DSK fiable, pas de récupération des écritures nécessaires ou performances insuffisantes non résolues. Un résultat no-go donne un rapport exploitable et une alternative, pas un lancement de J1 fondé sur une compatibilité supposée. Le harness peut inclure une page de test temporaire locale sans transformer le projet en Site hébergé.
+Condition d'arrêt pour l'intégration de l'exécution : pas de ROM utilisable, pas de lecture DSK fiable, pas de récupération des écritures nécessaires ou performances insuffisantes non résolues. Un résultat no-go donne un rapport exploitable et une alternative. L'édition indépendante est autorisée par l'ADR 0009, sans supposer une compatibilité moteur. Le harness reste un banc local, pas un Site hébergé.
 
 ## J1 — Socle desktop et projets
 
@@ -37,7 +38,7 @@ Fixer versions de runtime, installer monorepo, shell Electron sécurisé et comp
 
 | Tâche | Dépendance | Critère de sortie |
 | --- | --- | --- |
-| J1-01 — Workspaces, builds et qualité | J0 go | Versions figées, builds main/preload/renderer/workers distincts |
+| J1-01 — Workspaces, builds et qualité | Conception ; ADR 0009 | Versions figées, builds main/preload/renderer/workers distincts |
 | J1-02 — Cas d'usage Workspace et manifeste | J1-01 | ACC-01 et contrôles de chemins/existence |
 | J1-03 — Sauvegarde, conflits et migrations | J1-02 | ACC-02, reprise multifichier élémentaire |
 | J1-04 — Shell et configuration ROM | J1-01 | Sécurité IPC, profil lisible et secrets hors renderer |
@@ -122,4 +123,4 @@ Priorités proposées : BASIC tokenisé et import de listings anciens ; debugger
 
 Le cas d'usage demandé fonctionne, ses invariants ont des preuves, les documents reflètent le code final, la CI pertinente passe, les limites sont explicites et la démonstration est reproductible. La PR expose comportement final et validations. Ne pas multiplier les tests qui répètent une implémentation ; privilégier contrats, frontières, cas limites et parcours à risque.
 
-Prochaine consigne suggérée : « Réalise J0 dans le dépôt, avec une preuve BASIC ASCII → DSK → CPC 6128, teste lecture/écriture disque, clavier et son, puis donne le rapport de qualification et la décision moteur. » Cette suggestion ne déclenche pas l'implémentation dans le présent incrément.
+Prochaine tranche indépendante : projets multifichiers durables, manifeste et récupération, puis enrichissement du langage. La qualification ROM de J0 reste requise avant la boucle d'exécution J3. Les ressources et l'agent restent indispensables au MVP.

@@ -2,7 +2,22 @@
 
 Un atelier de programmation pour écrire du **Locomotive BASIC**, le tester dans un **Amstrad CPC émulé**, travailler avec une **IA et ses propres documents**, puis partager une **disquette DSK utilisable hors de l'IDE**.
 
-**État au 3 octobre 2026 : prototype technique J0, version 0.3.** Le dépôt contient les spécifications, le corpus BASIC, un codec DSK DATA testé, un wrapper d'émulation C/WASM et un banc local. L'IDE Electron et l'agent IA restent les jalons suivants. La qualification CPC attend les ROM OS/BASIC/AMSDOS et les essais dans un émulateur indépendant ; aucun boot BASIC ou résultat matériel n'est revendiqué.
+**État au 3 octobre 2026 : alpha d'édition desktop, version 0.4.** Une application Electron/Monaco permet d'écrire un listing avec coloration, complétion, aide, diagnostics partiels, navigation F12, ouverture/enregistrement et export DSK DATA. Ce n'est pas encore le MVP : projets multifichiers, émulation intégrée qualifiée et agent IA restent à construire. J0 attend toujours les ROM OS/BASIC/AMSDOS et les essais dans un émulateur indépendant ; aucun boot BASIC ou résultat matériel n'est revendiqué.
+
+## Lancer l'éditeur
+
+Avec Node 24.12+ dans la branche 24 :
+
+```bash
+npm ci --ignore-scripts
+node node_modules/electron/install.js
+npm run build:desktop
+npm start
+```
+
+L'application s'ouvre sur un exemple BASIC. `Ctrl Espace` complète, `Ctrl S` enregistre et `F12` rejoint une cible littérale. Aucune ROM ou clé IA n'est nécessaire pour éditer et construire un DSK. [Guide, sécurité et limites de cette alpha](docs/implementation/editor-alpha.md).
+
+`npm run dev:editor` démarre uniquement un aperçu navigateur sur localhost : sauvegarder télécharge un fichier, ce n'est pas l'application de bureau.
 
 ## Direction retenue
 
@@ -24,7 +39,7 @@ La préparation d'un programme BASIC n'est pas une compilation Z80. L'IDE analys
 
 Commencer par le [sommaire du dossier](docs/README.md), puis le [cadrage produit](docs/specifications/00-cadrage-produit.md), le [modèle métier](docs/specifications/03-domaines-ddd.md) et l'[architecture](docs/specifications/04-architecture-technique.md).
 
-Les [décisions d'architecture](docs/adr/README.md) expliquent les arbitrages. La [feuille de route](docs/specifications/12-feuille-de-route.md) définit les critères de sortie. **J0 est implémenté partiellement et reste en HOLD** avant J1 : consulter le [rapport réel](docs/implementation/j0-report.md) et le [guide du banc local](tools/j0-harness/README.md).
+Les [décisions d'architecture](docs/adr/README.md) expliquent les arbitrages. La [feuille de route](docs/specifications/12-feuille-de-route.md) définit les critères de sortie. **J0 reste en HOLD pour l'exécution**, mais l'[ADR 0009](docs/adr/0009-edition-independante.md) autorise l'édition indépendante : consulter le [rapport réel J0](docs/implementation/j0-report.md) et le [guide du banc local](tools/j0-harness/README.md).
 
 Avec Node 24.12+ dans la branche 24 et Python 3.12 :
 

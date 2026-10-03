@@ -1,0 +1,69 @@
+import assert from 'node:assert/strict';
+import { chromium } from '@playwright/test';
+import { spawn } from 'node:child_process';
+import { mkdir, readFile } from 'node:fs/promises';
+import { readDataDisk, decodeAsciiRecords } from '../packages/cpc-disk/src/data-disk.ts';
+
+const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--config', 'apps/desktop/vite.config.ts', '--host', '127.0.0.1', '--port', '5173', '--strictPort'], { stdio: ['ignore', 'pipe', 'pipe'] });
+let browser;
+let page;
+const errors = [];
+try {
+  await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('Preview server timeout')), 15000);
+    server.stdout.on('data', chunk => { if (String(chunk).includes('127.0.0.1')) { clearTimeout(timeout); resolve(); } });
+    server.once('exit', code => { clearTimeout(timeout); reject(new Error(`Preview exited ${code}`)); });
+  });
+  browser = await chromium.launch({ headless: true });
+  page = await browser.newPage({ viewport: { width: 1440, height: 960 } });
+  page.on('pageerror', error => errors.push(error.message));
+  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+  await page.goto('http://127.0.0.1:5173');
+  await page.getByRole('heading', { name: 'Micro IDE Amstrad' }).waitFor();
+  await page.locator('.monaco-editor .view-line').first().waitFor();
+  await page.waitForFunction(() => document.querySelectorAll('.monaco-editor .view-lines span[class*="mtk"]').length > 10);
+  const input = page.locator('.monaco-editor textarea');
+  await input.focus(); await page.keyboard.press('Control+Home'); await page.keyboard.press('Control+a');
+  await page.keyboard.insertText('10 PRI');
+  await page.keyboard.press('Control+Space');
+  await page.locator('.suggest-widget.visible').waitFor();
+  await page.keyboard.press('Enter');
+  await page.keyboard.insertText(' "OK"\n20 END\n');
+  await page.getByText('Aucun problème détecté dans le sous-ensemble analysé.').waitFor();
+  await page.getByRole('button', { name: 'PRINT', exact: true }).click();
+  await page.getByRole('heading', { name: 'PRINT', exact: true }).waitFor();
+  const diskEvent = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Exporter DSK', exact: true }).click();
+  const disk = new Uint8Array(await readFile(await (await diskEvent).path()));
+  const files = readDataDisk(disk);
+  assert.equal(files[0].name, 'MAIN.BAS');
+  assert.equal(new TextDecoder().decode(decodeAsciiRecords(files[0].records)), '10 PRINT "OK"\r\n20 END\r\n\x1a');
+  await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText('10 GOTO 999\n20 END');
+  await page.getByRole('button', { name: /La ligne BASIC 999 n’existe/ }).waitFor();
+  await page.getByRole('button', { name: 'Exporter DSK', exact: true }).click();
+  await page.getByRole('status').filter({ hasText: /999 n’existe/ }).waitFor();
+  await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText('10 GOTO 100\n100 END');
+  await page.keyboard.press('Control+Home'); await page.keyboard.press('End'); await page.keyboard.press('F12');
+  await page.getByRole('status').filter({ hasText: /L2 · C/ }).waitFor();
+  await page.keyboard.press('End'); await page.keyboard.insertText(':REM TARGET');
+  const savedEvent = page.waitForEvent('download');
+  await page.getByRole('button', { name: /^Enregistrer Ctrl/ }).click();
+  const saved = await readFile(await (await savedEvent).path(), 'utf8');
+  assert.equal(saved, '10 GOTO 100\n100 END:REM TARGET', 'F12 navigated to BASIC target');
+  // Dirty replacement must not silently discard edits.
+  await input.focus(); await page.keyboard.press('End'); await page.keyboard.insertText(' X');
+  const cancelled = page.waitForEvent('dialog').then(dialog => dialog.dismiss());
+  await page.getByRole('button', { name: 'Ouvrir', exact: true }).click();
+  await cancelled;
+  assert.ok(await page.locator('.tab').textContent().then(text => text.includes('modifié')));
+  await mkdir('out', { recursive: true });
+  await page.screenshot({ path: 'out/editor-alpha.png', fullPage: true });
+  assert.deepEqual(errors, [], 'No browser errors');
+  console.log('Editor browser smoke: completion, coloration, help, diagnostics, F12, source and DSK downloads, dirty protection passed.');
+} catch (error) {
+  await mkdir('out', { recursive: true });
+  await page?.screenshot({ path: 'out/editor-failure.png', fullPage: true, timeout: 5000 }).catch(() => undefined);
+  console.error('Browser errors:', errors);
+  console.error(await page?.locator('.view-lines').textContent());
+  throw error;
+} finally { await browser?.close(); server.kill(); }
