@@ -89,6 +89,8 @@ Sortie : ressources embarquées et contexte multimodal prêts, sans IA réseau i
 
 ## J5 — Assistance IA et MVP produit
 
+À la demande produit, la [tranche indépendante agent 0.6](../implementation/agent-alpha.md) réalise le sous-ensemble BASIC des missions avant J4 complet, selon l'[ADR 0011](../adr/0011-agent-openai-metier.md). Elle n'annonce ni multimodalité, ni exécution CPC, ni reprise après crash qualifiée. Les dépendances et critères de sortie du MVP ci-dessous restent requis.
+
 Implémenter le runner de missions, les outils fichiers/références/documents/ressources/build/émulateur, le premier fournisseur à tool calling, configuration de clé et scope de transmission. Le mode Agent crée, modifie, construit, teste et corrige automatiquement dans ses budgets. Ajouter journal, checkpoints, idempotence, steering et modes Revue/Explication. L'éditeur, la machine et le DSK restent fonctionnels quand l'IA échoue.
 
 | Tâche | Dépendance | Critère de sortie |

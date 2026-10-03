@@ -1,5 +1,6 @@
 import { buildListingDisk } from '../../../packages/basic-language/src/build.ts';
 import type { ProjectManifest, ProjectSnapshot } from '../../../packages/workspace/src/project.ts';
+import type { AgentPort } from '../../../packages/agent/src/types.ts';
 export interface FileResult { name: string; source?: string }
 export interface Failure { error: string }
 export interface DesktopPort {
@@ -7,6 +8,7 @@ export interface DesktopPort {
   save(source: string, saveAs?: boolean): Promise<FileResult | Failure | null>;
   exportDisk(source: string): Promise<FileResult | Failure | null>;
   setDirty(dirty: boolean): void;
+  agent?: AgentPort;
   project?: {
     open(): Promise<ProjectSnapshot | Failure | null>;
     create(name: string): Promise<ProjectSnapshot | Failure | null>;

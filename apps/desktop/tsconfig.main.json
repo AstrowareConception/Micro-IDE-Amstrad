@@ -4,5 +4,5 @@
     "noEmit": false, "rewriteRelativeImportExtensions": true,
     "rootDir": "../..", "outDir": "../../dist", "types": ["node"]
   },
-  "include": ["main.ts", "project-store.ts", "../../packages/**/*.ts"], "exclude": []
+  "include": ["main.ts", "project-store.ts", "agent-controller.ts", "openai-provider.ts", "../../packages/**/*.ts"], "exclude": []
 }

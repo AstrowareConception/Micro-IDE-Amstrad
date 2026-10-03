@@ -2,7 +2,7 @@
 
 Un atelier de programmation pour écrire du **Locomotive BASIC**, le tester dans un **Amstrad CPC émulé**, travailler avec une **IA et ses propres documents**, puis partager une **disquette DSK utilisable hors de l'IDE**.
 
-**État au 3 octobre 2026 : alpha desktop, version 0.5.** Electron/Monaco propose coloration, complétion, aide, diagnostics partiels et F12, ainsi que des projets en dossiers avec manifeste, explorateur, onglets indépendants, sauvegarde active et export DSK de plusieurs fichiers BASIC. Ce n'est pas encore le MVP : durabilité transactionnelle, émulation intégrée qualifiée, ressources et agent IA restent à construire. J0 attend toujours les ROM OS/BASIC/AMSDOS et les essais dans un émulateur indépendant ; aucun boot BASIC ou résultat matériel n'est revendiqué.
+**État au 3 octobre 2026 : alpha desktop, version 0.6.** Electron/Monaco propose édition BASIC, projets multifichiers et export DSK, ainsi qu'un agent OpenAI à outils : exploration, références du corpus fourni, création/remplacement de sources, analyse et construction, journal, avant/après et restauration de la mission courante. Clé API en mémoire côté main. Ce n'est pas encore le MVP : crash recovery complet, pièces jointes et émulation intégrée qualifiée restent à construire. J0 attend toujours les ROM OS/BASIC/AMSDOS et les essais dans un émulateur indépendant ; aucun boot BASIC ou résultat matériel n'est revendiqué.
 
 ## Lancer l'éditeur
 
@@ -18,6 +18,10 @@ npm start
 L'application s'ouvre sur un exemple BASIC. `Ctrl Espace` complète, `Ctrl S` enregistre et `F12` rejoint une cible littérale. Aucune ROM ou clé IA n'est nécessaire pour éditer et construire un DSK. [Guide, sécurité et limites de cette alpha](docs/implementation/editor-alpha.md).
 
 Pour travailler en plusieurs fichiers : **Créer projet dans un dossier vide**, ou **Ouvrir projet** sur `examples/hello-cpc`. [Guide des projets 0.5 et limites de sauvegarde](docs/implementation/projects-alpha.md). L'export utilise tous les buffers ; Enregistrer sauvegarde uniquement l'onglet actif.
+
+Pour l'IA : ouvrir un projet, configurer sa **clé API OpenAI** dans le panneau Agent, puis lancer une mission. Les modifications de sources sont enregistrées automatiquement, avec checkpoint et contrôles de hash. [Guide agent 0.6, confidentialité, budgets et limites](docs/implementation/agent-alpha.md). Les tests automatisés utilisent un transport contrôlé, sans appel OpenAI réel facturé.
+
+Le moteur retenu est **floooh/chips en C/WASM**. [Intégration prévue : worker, ROM, session et outils agent](docs/implementation/emulator-integration.md). Le wrapper/banc existe ; le panneau machine Electron attend le go firmware J0.
 
 `npm run dev:editor` démarre uniquement un aperçu navigateur sur localhost : sauvegarder télécharge un fichier, ce n'est pas l'application de bureau.
 
