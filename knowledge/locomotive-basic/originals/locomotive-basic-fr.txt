@@ -1,0 +1,34 @@
+Locomotive BASIC est un dialecte propriétaire du langage de programmation BASIC écrit par Locomotive Software. Disponible également sous la dénomination Basic 2 sur certains PC compatibles Amstrad (Amstrad PC-1512, par exemple) et tous les Amstrad CPC où l'interpréteur était intégré sur une puce mémoire non modifiable (ROM). C'est le principal ancêtre du Mallard BASIC se trouvant sur les Amstrad PCW.
+
+Il a été décliné en plusieurs versions : la version 1.0 se trouvait sur les modèles CPC 464, la version 1.1 sur les CPC 664, CPC 6128 et la série PLUS. Il n'a jamais existé de versions 1.2 et 1.4 estampillées 1.1[1].
+
+Développement
+Le développement a été basé sur le travail existant récemment entrepris en écrivant Mallard BASIC pour Acorn Computers Z80 addon pour la BBC Micro. Il aurait fallu environ 12 semaines pour améliorer le code existant, et a été très influencé par BBC BASIC, bien qu'ajoutant des fonctions supplémentaires pour faire des choses qui auraient nécessité un langage assembleur sur la BBC[2].
+
+Caractéristiques
+Il s'agissait d'une implémentation BASIC assez simple mais puissante selon les standards de l'époque, avec des commandes dédiées à la manipulation des graphiques (telles que DRAW, PLOT, INK et PAPER dans toutes les versions ; plus FILL dans la v1.1), permettant même la création de plusieurs écrans, fenêtres et autres, bien que le système de couleurs et la gestion des palettes soient gênants. Un tableau donnant les codes numériques des 27 couleurs du système a été imprimé sur le boîtier intégré du lecteur de disque de 3 pouces sur les machines 664 et suivantes. Aussi simple soit-il, il se distinguait cependant des autres BASIC de l'époque en offrant un mécanisme d'interruption logicielle basé sur un minuteur utilisant les commandes EVERY ou AFTER ; cela permettait un appel répété ou unique, respectivement, au numéro de ligne BASIC de son choix.
+
+En outre, par rapport aux autres ordinateurs domestiques de l'époque, le BASIC d'Amstrad via Locomotive offrait un niveau de contrôle relativement élevé sur la puce sonore du CPC, un AY-3-8912 avec 3 canaux mélodiques et 1 canal de bruit. La même puce était également utilisée sur les derniers modèles de spectrum ZX, Oric, ainsi que sur les ordinateurs Atari ST et MSX, mais aucun d'entre eux ne disposait d'une commande sonore intégrée aussi complète. Beaucoup de choses, comme la sélection d'un canal particulier ou d'une combinaison de canaux, le réglage des enveloppes, du volume, de la hauteur, du bruit, etc. pouvaient être faites avec une seule commande SOUND, avec jusqu'à 7 paramètres. Il est vrai que les techniques particulièrement complexes et/ou de bas niveau ne pouvaient pas être réalisées en BASIC car elles nécessitaient un accès plus précis ou direct au matériel, par exemple la musique particulièrement complexe des trackers (y compris les accords simulés à l'aide d'arpèges, etc.), la lecture de sons échantillonnés numériquement comme dans le jeu RoboCop par exemple, et ainsi de suite.
+
+La gestion des disques, des bandes et des fichiers était gérée par le BASIC lui-même, et était généralement suffisante pour une gestion simple des fichiers, avec des commandes telles que GET, PUT, ERASE, SAVE, MERGE, RUN, CAT, LOAD etc. En fait, durant ces années, le BASIC fourni en standard avec chaque ordinateur domestique à bas prix faisait également office de système d'exploitation plus ou moins simple.
+
+Des commandes spéciales pour l'allocation et la gestion de la mémoire étaient également disponibles, comme MEMORY et une commande paramétrique LOAD, permettant, par exemple, de charger un fichier contenant des données d'image brutes dans la mémoire vidéo et de l'afficher, avec quelques instructions BASIC. L'ajout de la ou des bonnes adresses de mémoire comme paramètre aux commandes LOAD ou SAVE permettait de charger facilement des images d'écran brutes non compressées de 16 Ko. L'appel d'une autre adresse donnait une réinitialisation forcée du système (call 0), la fameuse Press Any Key (call &bb18) ou pour éliminer le scintillement dans l'animation en vous permettant de vous synchroniser avec le balayage de l'écran via sync frame-flyback (call &bd19) ; cette commande a reçu sa propre affectation dans Basic 1.1 - FRAME. Avec PEEK et POKE, CALL a fourni une interface pour la programmation en langage assembleur à partir de BASIC.
+
+Rivaux de l'époque
+Par rapport au BASIC du Commodore 64 (Commodore BASIC), qui n'avait pas de commandes dédiées pour les graphiques ou le son, le locomotive BASIC permettait de faire à peu près tout ce qui était dans les capacités standard de la machine. Cela n'était pas sans importance, car certaines autres machines de l'époque utilisant des graphismes ou des sons complets étaient réservées aux programmeurs assembleurs. MSX, Spectrum, Oric et quelques autres offraient un ensemble de commandes similaire, plus ou moins complet, pour leurs capacités graphiques et sonores. Les seules choses qui allaient clairement au-delà des capacités BASIC étaient les modes d'overscan utilisés dans les jeux et les démos, les modes graphiques à 27 couleurs, la lecture de sons numériques et le défilement fluide.
+
+Contrairement au Sinclair BASIC ou au Commodore 64 BASIC, qui disposaient de divers raccourcis de commande au clavier ou de touches spécialisées pour le choix des symboles ou des couleurs, les mots-clés BASIC des locomotives étaient tapés en entier et l'interpréteur les analysait, les reconnaissait et les marquait. Cependant, il y avait des abréviations comme ? pour PRINT et quelques raccourcis. Les programmes pouvaient être enregistrés sur une cassette compacte ou une disquette et être récupérés sous forme de fichiers binaires ou ASCII.
+
+Références
+(en) Cet article est partiellement ou en totalité issu de l’article de Wikipédia en anglais intitulé « Locomotive BASIC » (voir la liste des auteurs).
+(en) « Technical information about Locomotive BASIC [archive] », sur CPC WIKI
+Smith, Tony, « You’re NOT fired: The story of Amstrad’s amazing CPC 464 », The Register,‎ 12 février 2014 (lire en ligne [archive], consulté le 17 février 2014)
+Annexes
+Articles connexes
+BASIC
+Amstrad CPC
+Liens externes
+Locomotive BASIC reference [archive]
+Command reference with code examples [archive]
+Command reference [archive] (incomplète)
+Additional code examples [archive], Rosetta Code

@@ -7,3 +7,4 @@
 *.dsk binary
 *.rom binary
 *.sna binary
+knowledge/locomotive-basic/originals/* -text -whitespace

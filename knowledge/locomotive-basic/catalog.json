@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "corpusVersion": "initial-import-1",
+  "dialects": [
+    "locomotive-1.0",
+    "locomotive-1.1"
+  ],
+  "sources": [
+    {
+      "id": "provided-history-fr",
+      "path": "originals/locomotive-basic-fr.txt",
+      "originalName": "Locomotive-BASIC.txt",
+      "sha256": "cc8bcb6c38e5f841cacb66e9dee66d3644cee114bf73bf6f38146b08896ce9ce",
+      "bytes": 6525,
+      "status": "imported-unqualified",
+      "origin": "user-provided",
+      "licenseStatus": "upstream-terms-preserved-not-relicensed"
+    },
+    {
+      "id": "provided-command-reference",
+      "path": "originals/command-reference.txt",
+      "originalName": "Références.txt",
+      "sha256": "4515b3cda39f3e4a1280bcaa750ecb73729e0e6859532d0623622dfd275ab5ec",
+      "bytes": 10291,
+      "status": "imported-unqualified",
+      "origin": "user-provided",
+      "licenseStatus": "upstream-terms-preserved-not-relicensed"
+    },
+    {
+      "id": "provided-cpcwiki-snapshot",
+      "path": "originals/cpcwiki-locomotive-basic.html",
+      "originalName": "Locomotive BASIC - CPCWiki.html",
+      "sha256": "61169d8794397dcdeb5840e3a49cc15a304c780e9f603528b9f9a5165c96e203",
+      "bytes": 365046,
+      "status": "imported-unqualified",
+      "origin": "user-provided",
+      "licenseStatus": "upstream-terms-preserved-not-relicensed"
+    }
+  ]
+}

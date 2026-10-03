@@ -1,0 +1,330 @@
+Locomotive BASIC Command Reference
+Variables, notation etc
+Special characters
+& or &H	prefix for hex constant
+&X	prefix for binary constant
+:	seperates statements on same line
+#	prefix for stream director
+Strings	0-255 characters long, may be appended by +, $=string
+Integer	-32768...32767, %=integer
+Real	nine digits precision, !=real
+Command reference
+ABS(x)
+returns the absolute value of x
+AFTER delay, timer GOSUB line
+Invoke subroutine at line after a delay of delay 1/50ths of a second using timer timer
+ASC(x$)
+returns ASCII value of x$
+ATN(x)
+returns arctan(x)
+AUTO linenumber, increment
+Generates line numbers as you type in programs. Starting at linenumber and incrementing by increment.
+BIN$(number, digits)
+returns a string of length digits for the binary representation of number
+BORDER colour1, colour2
+Changes border colour. If two colours are specified alternates at the rate determined by the SPEED INK command
+CALL address, list of parameters
+call an external sub-routine from basic
+CAT
+Reads device and lists all files found.
+$ - BASIC program
+% - Protected BASIC program
+* - an ASCII text file
+& - a binary file
+CHAIN
+Loads program from device replacing program in memory.
+CHAIN MERGE
+Merges file from device with program in memory
+CHR$(x)
+returns character equivalent of number x
+CINT(x)
+converts x to rounded integer.
+CLEAR
+clears all variables and files
+CLG
+clears graphics screen
+CLOSEIN
+close cassette input file
+CLOSEOUT
+close output file
+CLS#x
+clears screen window to paper colour
+CONT
+continue program execution after a BREAK, STOP or END
+COS(x)
+returns cos(x) in radians
+CREAL
+converts number to a real number
+DATA
+DATA list of constants
+DEF FN name(parameters)=expression
+Should be written outside the main execution loop. e.g. DEF FNinterest(principle)=1.14*principle.
+DEFINT, DEFSTR, DEFREAL
+Define a range of default data types. The variable is set according to the first letter of the name. e.g. DEFINT I-N. defines all variables beginning I-N as INT
+DEG
+sets results of radial functions to returns degrees rather than radians.
+DELETE number range
+Deletes a range of line numbers.
+DI
+Disable interrupts, other than BREAK, until re-enabled with EI or the return from an interrupt GOSUB
+DIM
+allocate space for arrays e.g. DIM b$(5)
+DRAW x,y,i
+DRAW from current graphics cursor position to x,y using masked ink colour i
+DRAWR x,y,i
+DRAW from current graphics position to relative x,y with masked ink colour i
+EDIT linenumber
+edits a line
+EI
+enable interrupts - after DI command
+END
+end a program
+ENT envelopenumber, envelopesections
+varies tone of a sound
+ENV envelopenumber, envelopesections
+varies volume of a sound
+EOF
+Tests to see if the cassette input is at the end of the file. Returns -1 (true) at the end, otherwise 0 (false).
+ERASE arrayname
+Erases memory allocated to an array
+ERR
+Variable used in error handling.
+ERL
+Variable used in error handling.
+ERROR integer
+Take error action with a given error number.
+EVERY time, timer, GOSUB line
+Calls line at interval time, four timers are available (0..3)
+EXP(number)
+calculates enumber
+FIX(number)
+Leaves integer expression, rounds fraction to zero
+FOR start TO end STEP size
+Standard FOR..NEXT loop
+FRE(0)
+Gives free memory available to BASIC, FRE(&&) forces a 'garbage collection' before returning a value.
+GOSUB line
+Standard GOSUB
+GOTO line
+Standard GOTO
+HEX$ (decimal number)
+Converts decimal to hex
+HIMEM
+Gives highest byte of memory.
+IF expression THEN expression ELSE expression
+Standard IF..THEN..ELSE, can also have IF exp GOTO line ELSE exp
+INK number, colour
+Changes INK number to colour. Number of INKs available graphics mode dependent.
+INKEY number
+Scans keyboard, result is numeric code.
+INKEY$
+Reads a key from the keyboard, results in ASCII character or empty string.
+INP port
+Reads from I/O port.
+INPUT #stream,&prompt&;variable1,variable2...
+INPUT from a stream, giving a 'prompt'.
+INTRS(integer, string1, string2)
+Searches string1 for the first occurence of string2 starting from the optional integer start point.
+INT(number)
+Rounds to nearest lower integer.
+JOY(joystick number)
+Reads from joystick number (0 or 1), result is bit significant.
+Bit	Decimal	Function
+0	1	Up
+1	2	Down
+2	4	Left
+3	8	Right
+4	16	Fire 2
+5	32	Fire 1
+KEY keynumber,string
+Associates a function key with a string definition. Keynumber is in the range 128-159.
+KEY DEF
+Defines what a particular key returns.
+LEFT$ (src$, n)
+Returns leftmost n characters of string src$
+LEN(string)
+Returns length of string
+LET variable=expression
+Associates variable with value of expression.
+LINE INPUT #stream, quotedstring, string variable
+Accepts a line of input from #stream, printing quotedstring as a prompt, leaving result in the string variable.
+LIST numberrange, stream
+Lists program in number range, where number range can be n-m, -m or n-. Can be redirected to a window.
+LOAD filename, address
+Loads a program into memory. LOAD filename used for BASIC programs and LOAD filename, address for binary files.
+LOCATE #stream, x,y
+Moves text cursor in specified stream to position x,y
+LOG(n)
+Returns natural logarithm of n
+LOG10(n)
+Returns base 10 log of n
+LOWER$(string)
+Returns a new string with all lower case characters.
+MAX (a,b,c,d,e)
+Returns max value in the specified list.
+MEMORY &address
+Sets the highest byte available to BASIC
+MERGE filename
+Merges a file into the program in memory.
+MID$ (string, start, number)
+Returns number characters from string starting from start
+MIN a,b,c,d,e,f etc
+Returns least value in the list.
+MODE number
+Changed screen mode.
+MOVE x,y
+moves graphics cursor to x,y
+MOVER x,y
+moves graphics cursor x,y relative to it's current position.
+NEW
+Delete current program and variables.
+NEXT variable
+Delimits FOR statement, the variable name is not needed.
+ON integer expression GOSUB list of line numbers
+integer expression is evaluated and the program branches to corresponding line number. e.g. if expression results in 2 the 2nd line number isused for the GOSUB
+ON integer expression GOTO list of line numbers
+integer expression is evaluated and the program jumps to corresponding line number. e.g. if expression results in 2 the 2nd line number isused for the GOTO
+ON BREAK GOSUB line
+Jumps to a subroutine at line when a program's execution is stopped.
+ON BREAK STOP
+Issued from the commandline prevents an ON BREAK GOSUB from working when the program is run.
+ON ERROR GOTO line
+if an error occurs GOTO line.
+ON SQ (channel) GOSUB line
+Enable an interrupt for when there is a free slow in te given sound queue. 1 for channel A, 2 for channel B, 3 for channel C
+OPENIN "filename"
+Opens a file for reading.
+OPENOUT "filename"
+Opens a file for writing to.
+ORIGIN x,y
+Sets the start point for the graphics cursor. Using origin x,y,left,right,top,bottom sets a new window and the origin within the window.
+OUT &port,integer
+Sends integer to the specified port.
+PAPER
+Sets the background colour.
+PEEK &addr
+Returns contents of an address.
+PEN
+Sets the pen colour on the specified screen.
+PI
+3.14159265
+PLOT x,y,colour
+Moves graphics cursor and plots colour from current position.
+PLOTR
+Moves graphics cursor and plots colour.
+POKE &addr, value
+Pokes value into address.
+POS(#stream)
+Returns x-coord for screen streams, returns carriage position for printer where 1 is left margin.
+PRINT #screen, string
+Prints.
+RAD
+sets radians mode
+RANDOMIZE
+sets initial value for randon number generator.
+READ
+Fetches data from a DATA statement.
+RELEASE sound channel
+When a sound is placed in a sound queue, it may contain a 'hold' state, this command releases the channel.
+REM
+Remark.
+REMAIN(timer)
+Disables the specified delay timer.
+RENUM new line, from old line, increment
+Renumbers BASIC program.
+RESTORE line number
+Restores back to a data statement. Defaults to first.
+RESUME
+Allows program to continue after an ON ERROR GOTO event.
+RETURN
+returns from GOSUB
+RIGHT$(source, number)
+Returns rightmost number of characters from source.
+RND
+random number.
+ROUND number, places
+Rounds number to places.
+RUN <string>
+Runs a program.
+RUN <line number>
+Run program in memory from line number.
+SAVE filename, type, binary
+Saves program.
+Type is
+,A - ASCII
+,P - protects file
+,B - saves as binary
+binary parameters are start, lenght, entry point.
+SGN(number)
+Returns sign of number.
+SIN(angle)
+Sine of angle.
+SOUND channel status, tone period, duration, volume, volume envelope, tone envelope, noise period
+SPACE$(number)
+Create string containing number of spaces.
+SPEED INK time1, time2
+INK and BORDER allow two colours to be associated with each Ink. This command alternated between the two.
+SPEED KEY delay, repeat
+SPEED WRITE integer
+Changes the baud rate of the cassette interface. 1 is 2000 baud, 0 is 1000 baud
+SQ channel
+Checks number of free entries in the queue for a given channel
+SQR(number)
+Square root of a number.
+STOP
+Stops program execution
+STR$(number)
+Converts number to a string.
+STRING$(integer, character)
+Returns a string integer digits long consisting of the character.
+SYMBOL
+Redefines the representation of a character.
+SYMBOL AFTER
+sets number of user definable characters. Default is 240 leaving 16 characters available.
+TAG #stream
+Redirects text sent to the given stream to the graphics cursor.
+TAGOFF #stream
+Cancels TAG for the stream
+TAN
+Tangent of an angle.
+TEST(x,y)
+Returns colour at x,y
+TESTR(x-off, y-off)
+Returns ink at x offset, y offset
+TIME
+Reports elapsed time since system turned on.
+TRON
+Traces exection of a program
+TROFF
+Cancels TRON
+UNT(&addr)
+Converts unsigned 16bit integer to a value in range -32768 to +32767
+UPPER$(string)
+Converts string to uppercase.
+VAL
+Returns numeric evaluation of string.
+VPOS(#stream)
+Returns the vertical position of the text cursor.
+WAIT port, mask, inversion
+Suspends BASIC until i/o port returns a particular value. Value read is X-OR'd with inversion and then ANDed with mask until result is non-zero.
+WEND
+WHILE...WEND loop.
+WHILE
+WHILE condtion ... expressions ... WEND
+WIDTH
+Specifies printer width
+WINDOW #stream, left,right,top,bottom
+Sets a text window for a given stream.
+WINDOW SWAP stream1, stream2
+Swaps text windows.
+WRITE #stream, list
+Writes to a stream.
+XPOS
+Gives x position of graphics cursor.
+YPOS
+Gives x position of graphics cursor.
+ZONE integer
+Changes width of print zone.
+ 
+
+last update: 05.06.2000

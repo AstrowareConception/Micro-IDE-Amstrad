@@ -13,7 +13,7 @@ La barre supérieure affiche le projet, la cible exacte, l'état d'enregistremen
 | Machine | Profil, révision exécutée, état, focus clavier | Pause, ESC, reset, son, zoom, joystick, capture |
 | Problèmes | Gravité, code, fichier, plage, provenance | Aller à la ligne, voir l'aide, donner à l'IA |
 | Disque | Noms 8.3, tailles logiques, allocation, capacité | Export de construction ou copie modifiée en session |
-| Assistant | Intention, contexte choisi, réponse, proposition | Ajouter pièce, envoyer, annuler, comparer, appliquer |
+| Assistant | Mission, plan, outils, fichiers modifiés, preuves et budget | Agent/Revue/Explication, orienter, suspendre, arrêter, comparer, restaurer |
 
 L'écran CPC est affiché à une échelle entière lorsque possible, avec correction optionnelle du rapport d'aspect. Le mode pixel net est le défaut ; un effet CRT est une option cosmétique ultérieure. Aucun effet ne doit changer les données de capture utilisées pour la recette.
 
@@ -35,19 +35,21 @@ Un projet peut être créé et édité avant cette configuration. Exécuter donn
 
 La touche ESC dans la machine correspond à ESC CPC. Un bouton visible permet l'interruption même si le clavier est capturé. La pause de l'émulateur fige aussi le temps émulé et l'audio ; elle ne remplace pas l'instruction BASIC STOP. Un raccourci hôte dédié doit toujours sortir du focus machine, y compris lorsque le programme redéfinit ses touches.
 
-## Décrire une intention avec pièces jointes
+## Confier une mission avec pièces jointes
 
-L'utilisateur écrit sa demande, choisit **Créer**, **Modifier**, **Expliquer** ou **Diagnostiquer**, et sélectionne les sources utiles. Chaque pièce montre type, taille, rôle et mode de transmission : extrait texte, image ou pages rendues. Le volet contexte récapitule explicitement fichiers, pages, sélection de code, capture et cible. Les références de langage fournies par l'application sont identifiées séparément.
+L'utilisateur écrit sa demande et choisit **Agent** par défaut, **Revue** ou **Explication**. Il peut demander création, modification ou diagnostic. La mission montre les dossiers de code et ressources accessibles, les documents choisis, la cible et le budget. Chaque pièce montre type, taille et rôle. L'agent pourra rechercher et lire progressivement les contenus de ce périmètre, y compris les références du langage, sans demander une confirmation pour chaque extrait.
 
-L'envoi démarre un état visible avec possibilité d'annulation. Le texte arrive progressivement, mais les modifications ne deviennent applicables qu'après validation de la réponse complète. Le diff oppose la révision transmise au résultat proposé. Les diagnostics sont recalculés sur cette proposition. Le bouton **Appliquer** indique le nombre de fichiers acceptés ; les opérations sont atomiques sur cette sélection. Les fichiers non acceptés restent hors transaction.
+En mode Agent, le volet affiche plan court, outil en cours, fichiers créés/modifiés, builds et essais. Les changements locaux autorisés sont appliqués par transactions réversibles au fil de la mission et immédiatement visibles dans l'éditeur. L'agent peut convertir une ressource, lancer le CPC, envoyer des touches et lire les observations. Le diff cumulé reste consultable ; il n'est pas une barrière systématique avant chaque écriture.
 
-Si l'utilisateur a changé une source pendant la génération, la proposition devient périmée. L'interface ne transforme pas un diff périmé en remplacement forcé ; elle propose comparaison manuelle ou nouvelle génération. Après application, **Exécuter** reste une action distincte. **Annuler la proposition** restaure la base seulement si les documents concernés n'ont pas changé depuis ; sinon une comparaison évite d'écraser le travail récent.
+L'utilisateur peut préciser « garde cette mécanique », « utilise le mode 0 » ou « arrête les essais » pendant le travail. La consigne prend effet à la prochaine frontière d'outil sûre. Une édition manuelle concurrente fait échouer la précondition d'une écriture ; l'agent relit la source et adapte son travail. Arrêter conserve les transactions terminées ; Restaurer permet de revenir à un checkpoint avec arbitrage des edits manuels plus récents.
+
+En mode Revue, les changements restent des propositions jusqu'à application des fichiers choisis ; une réponse fondée sur une source devenue ancienne est marquée périmée. En mode Explication, aucun fichier n'est modifié. Le bilan de mission expose ce qui a changé, ce qui a été testé et ce qui nécessite encore une vérification utilisateur.
 
 ## Importer et convertir une image
 
-L'import initial ajoute un document. **Convertir pour le CPC** ouvre un outil avec original, aperçu CPC et paramètres : mode, cadrage, fond, palette verrouillée ou optimisée, tramage, adresse standard. Un compteur indique couleurs et taille binaire. Le choix valide une recette reproductible et ajoute une ressource ; une proposition BASIC montre MODE, INK et LOAD requis. L'utilisateur choisit son emplacement dans le listing.
+L'import initial ajoute un document. **Convertir pour le CPC** ouvre un outil avec original, aperçu CPC et paramètres : mode, cadrage, fond, palette verrouillée ou optimisée, tramage, adresse standard. Un compteur indique couleurs et taille binaire. Le choix valide une recette reproductible et ajoute une ressource. En manipulation manuelle, une proposition montre MODE, INK et LOAD ; dans une mission Agent, l'outil peut produire la ressource puis intégrer ces instructions sous contrôle des préconditions et du journal.
 
-Une conversion n'écrit jamais automatiquement `MEMORY` ou `LOAD` dans le programme. L'IDE explique les conflits d'adresse possibles et relie le résultat au profil. Le texte d'un PDF scanné ne surgit pas dans l'aperçu : le mode visuel doit être sélectionné et le fournisseur compatible.
+Une conversion seule ne modifie pas le programme. L'agent peut l'intégrer dans une étape distincte qui analyse les conflits d'adresse et consulte les références mémoire. Le texte d'un PDF scanné ne surgit pas dans l'aperçu : un outil visuel et un fournisseur compatibles doivent réellement être utilisés.
 
 ## Exporter
 

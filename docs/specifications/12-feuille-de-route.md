@@ -55,6 +55,7 @@ Intégrer Monaco, coloration et services de langage qualifiés. Développer lexe
 | J2-02 — Lexer/parser et diagnostic | J2-01 | ACC-04, analyse partielle non destructrice |
 | J2-03 — Commandes et profils de langage | J2-02 | Fiches sourcées et variantes prouvées |
 | J2-04 — Références et renumérotation | J2-02 | ACC-05, collisions et révision vérifiées |
+| J2-05 — Corpus initial, index et fiches de langage | J2-02 | ACC-30 : sources conservées, couverture et qualification explicites |
 
 Sortie : l'utilisateur peut écrire et comprendre un listing réel. Le parser n'est pas réputé complet parce que quelques programmes se colorent correctement.
 
@@ -87,15 +88,16 @@ Sortie : ressources embarquées et contexte multimodal prêts, sans IA réseau i
 
 ## J5 — Assistance IA et MVP produit
 
-Implémenter le port, le premier fournisseur, configuration de clé, composition de contexte et modes de demande. Ajouter streaming, validation des propositions, diff, application et retour arrière protégés. Inclure cas d'erreurs et budget. L'éditeur, la machine et le DSK restent fonctionnels quand l'IA échoue.
+Implémenter le runner de missions, les outils fichiers/références/documents/ressources/build/émulateur, le premier fournisseur à tool calling, configuration de clé et scope de transmission. Le mode Agent crée, modifie, construit, teste et corrige automatiquement dans ses budgets. Ajouter journal, checkpoints, idempotence, steering et modes Revue/Explication. L'éditeur, la machine et le DSK restent fonctionnels quand l'IA échoue.
 
 | Tâche | Dépendance | Critère de sortie |
 | --- | --- | --- |
-| J5-01 — Contrat fournisseur et faux adaptateur | J4 | Tous modes testables sans facturation |
-| J5-02 — Contexte et transmission choisie | J5-01 | Aperçu exact, limites et capacités |
+| J5-01 — Runner, registre outils et faux fournisseur | J4 | Boucle multifichier et droits testables sans facturation |
+| J5-02 — Scope, contexte progressif et références BASIC | J5-01, J2-05 | Lectures pertinentes, transmission traçable et capacités |
 | J5-03 — Adaptateur réel et secret système | J5-02 | ACC-15/22, clé de session disponible |
-| J5-04 — Diff, transaction et retour arrière | J5-01, J1-03 | ACC-18, propositions périmées et chemins refusés |
-| J5-05 — Parcours MVP | Tous J5 | Créer avec texte/image/PDF, examiner, lancer, exporter |
+| J5-04 — Journal, checkpoints, transactions et mode Revue | J5-01, J1-03 | ACC-18/29, concurrence, idempotence et retour arrière |
+| J5-05 — Contrôle de mission et essais CPC | J5-01, J3 | ACC-27/28 : correction, steering, stagnation et limites |
+| J5-06 — Parcours MVP agentique | Tous J5 précédents | ACC-26/30 : créer avec texte/image/PDF, tester, corriger et préparer DSK |
 
 Sortie : MVP correspondant à l'intention initiale. Une clé de fournisseur nécessaire à un essai réel est une dépendance à fournir ; son absence ne transforme pas un faux adaptateur en test réel réussi.
 

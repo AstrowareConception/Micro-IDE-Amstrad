@@ -48,7 +48,12 @@
 | Palette | Correspondance entre encres et couleurs CPC |
 | ContextBundle | Contenus, provenance, cible et budget figés pour une demande IA |
 | AiRequest | Requête volontaire au fournisseur configuré |
-| ChangeProposal | Ensemble structuré de changements, avant application |
+| AgentTask | Mission de programmation avec scope, outils, budgets, journal et état |
+| ToolCall | Appel d’un outil local validé, identifié et journalisé |
+| TaskCheckpoint | État cohérent conservé pour reprendre ou restaurer une mission |
+| Steering | Consigne utilisateur intégrée pendant une mission à une frontière sûre |
+| CorpusVersion | Identité d’une version de sources et fiches de référence |
+| ChangeProposal | Ensemble structuré de changements du mode Revue, avant application |
 | Diff | Comparaison entre source de base et source proposée |
 | AppliedChange | Transaction acceptée, enregistrée et réversible sous préconditions |
 | Précondition | Révision, empreinte ou absence requise pour appliquer une opération |

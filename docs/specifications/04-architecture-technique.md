@@ -13,7 +13,7 @@
 | Émulateur | C `floooh/chips` → WebAssembly par Emscripten | Intégration compacte, Z80 et CPC ; wrapper et limites qualifiés à J0 |
 | Conversion d'image | Pipeline déterministe TypeScript, décodeur local | Résultat versionné ; quantification indépendante du fournisseur IA |
 | PDF | PDF.js, worker dédié | Extraction et rendu locaux ; pas de JavaScript embarqué du PDF |
-| IA initiale | Adaptateur OpenAI Responses API | Multimodal configurable ; pas de modèle ni de tarifs figés dans le métier |
+| IA initiale | Orchestrateur local + adaptateur OpenAI Responses API à outils | Tool calling et multimodal configurable ; pas de modèle ni de tarifs figés dans le métier |
 | Données | JSON + fichiers UTF-8 + objets par empreinte | Projets déplaçables ; SQLite inutile au démarrage |
 | Validation | JSON Schema 2020-12, Ajv futur côté app | Contrats d'entrée ; règles métier supplémentaires en TypeScript |
 | Tests futurs | Vitest, Playwright/Electron, harness WASM | Adapter le niveau de test au comportement, avec oracle indépendant |
@@ -36,7 +36,7 @@ Le renderer n'a ni Node.js ni accès arbitraire aux fichiers. `contextIsolation:
 
 L'émulation s'exécute dans un Web Worker du renderer, avec module WASM local et messages validés. Analyse BASIC, conversion et PDF ont leurs workers séparés ou un pool contrôlé. Un worker n'accède pas à Node ; un crash ne doit pas corrompre le projet. Un processus utilitaire dédié est une option d'isolation supplémentaire si J0/J6 montrent que les workers ne suffisent pas ; son API serait également limitée, et il ne serait pas réputé sandboxé par sa seule existence.
 
-Les requêtes fournisseur partent d'un service applicatif côté main, qui possède la clé et transmet uniquement le contexte accepté. Le renderer voit l'identifiant du fournisseur et le statut de configuration, pas le secret. Le main ne parse ni PDF ni contenu HTML non fiable. Il ne lance aucun code proposé par l'IA sur l'hôte.
+Les requêtes fournisseur partent d'un service applicatif côté main, qui possède la clé et transmet uniquement le contexte autorisé par la mission. Un orchestrateur local traite les appels d'outils, vérifie droits et préconditions, coordonne les domaines et renvoie leurs résultats au modèle. Le renderer voit l'identifiant du fournisseur et le statut de configuration, pas le secret. Le main ne parse ni PDF ni contenu HTML non fiable. Il ne lance aucun code proposé par l'IA sur l'hôte.
 
 ## Frontières des modules
 
@@ -44,7 +44,9 @@ Arborescence prévue, non encore créée : `apps/desktop`, `packages/workspace`,
 
 Les domaines importent uniquement des types ou valeurs de leur contexte et un noyau partagé minimal : identifiants, empreintes, résultats et diagnostic de base. Le noyau ne contient pas des services universels. L'application compose les ports. L'UI dépend des DTO et cas d'usage, jamais du layout mémoire C. Le module AI ne dépend pas du SDK dans sa partie domaine. Les codecs de disque peuvent être testés sans Electron.
 
-Les analyses portent `documentVersion` et `projectRevision`; les réponses dépassées sont abandonnées. Un seul build actif par projet ; une nouvelle demande peut annuler le précédent avant publication. Les transactions de projet sont sérialisées. L'IA peut générer pendant une exécution, mais aucune application de proposition ne remplace la révision en cours d'émulation implicitement.
+Les analyses portent `documentVersion` et `projectRevision`; les réponses dépassées sont abandonnées. Un seul build et une seule mission mutative actifs par projet ; une nouvelle demande peut annuler le précédent avant publication. Les transactions de projet sont sérialisées. L'agent peut lire pendant une exécution ; un nouveau lancement est un outil explicite lié à un build, avec conservation préalable du disque de session si nécessaire. Les requêtes de lecture indépendantes peuvent être parallélisées, les mutations et contrôles de la machine restent ordonnés.
+
+Le runner agentique possède journal durable, checkpoints, registre d'outils, compteurs et file de consignes utilisateur. Le SDK fournisseur reste un adaptateur de transport ; aucune logique de permission ou de rollback n'est confiée au modèle. Le contenu du corpus BASIC est interrogé via ReferenceKnowledge, non exécuté comme HTML ou injecté aveuglément en entier dans chaque prompt.
 
 ## Échanges et rendu
 

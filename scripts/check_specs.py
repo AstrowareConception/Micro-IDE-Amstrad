@@ -150,6 +150,38 @@ def check_proposal(path: Path, proposal: dict) -> None:
             problem(path, f"create requires absent path: {operation['path']}")
 
 
+def check_corpus(path: Path, catalog: dict) -> None:
+    ids: list[str] = []
+    for item in catalog.get("sources", []):
+        ids.append(item["id"])
+        target = (path.parent / item["path"]).resolve()
+        if not target.is_relative_to(path.parent.resolve()) or not target.is_file():
+            problem(path, f"missing or uncontained corpus source: {item['path']}")
+            continue
+        raw = target.read_bytes()
+        if len(raw) != item["bytes"] or hashlib.sha256(raw).hexdigest() != item["sha256"]:
+            problem(path, f"corpus bytes/hash mismatch: {item['path']}")
+    if len(ids) != len(set(ids)) or len(ids) != 3:
+        problem(path, "initial corpus must identify the three distinct supplied sources")
+
+
+def check_agent_task(path: Path, task: dict, data: dict[Path, object]) -> None:
+    project = data.get(ROOT / "examples/hello-cpc/microide.project.json", {})
+    catalog = data.get(ROOT / "knowledge/locomotive-basic/catalog.json", {})
+    if task.get("projectId") != project.get("projectId"):
+        problem(path, "agent task projectId does not match example project")
+    if task.get("corpusVersion") != catalog.get("corpusVersion"):
+        problem(path, "agent task corpusVersion does not match corpus")
+    scope = task.get("scope", {})
+    if not set(scope.get("transmitPrefixes", [])).issubset(set(scope.get("readPrefixes", []))):
+        problem(path, "transmission scope exceeds read scope")
+    document_ids = {item["id"] for item in project.get("documents", [])}
+    if not set(scope.get("documentIds", [])).issubset(document_ids):
+        problem(path, "task references absent context documents")
+    if task.get("kind") == "illustrative" and task.get("status") != "prepared":
+        problem(path, "illustrative task must not claim execution")
+
+
 def check_schemas(data: dict[Path, object]) -> int:
     try:
         from jsonschema import Draft202012Validator, FormatChecker
@@ -160,6 +192,7 @@ def check_schemas(data: dict[Path, object]) -> int:
         "project": ROOT / "contracts/project.schema.json",
         "proposal": ROOT / "contracts/ai-proposal.schema.json",
         "build": ROOT / "contracts/build-report.schema.json",
+        "task": ROOT / "contracts/agent-task.schema.json",
     }
     validators = {}
     for key, path in contracts.items():
@@ -170,7 +203,7 @@ def check_schemas(data: dict[Path, object]) -> int:
         except Exception as exc:
             problem(path, f"invalid schema: {exc}")
     examples = [(p, "project") for p in ROOT.glob("examples/**/microide.project.json")]
-    examples.extend([(ROOT / "examples/ai-proposal.json", "proposal"), (ROOT / "examples/build-report.json", "build")])
+    examples.extend([(ROOT / "examples/ai-proposal.json", "proposal"), (ROOT / "examples/build-report.json", "build"), (ROOT / "examples/agent-task.json", "task")])
     count = 0
     for path, key in examples:
         if key not in validators or data.get(path) is None:
@@ -195,6 +228,12 @@ def main() -> int:
     proposal_path = ROOT / "examples/ai-proposal.json"
     if isinstance(data.get(proposal_path), dict):
         check_proposal(proposal_path, data[proposal_path])
+    corpus_path = ROOT / "knowledge/locomotive-basic/catalog.json"
+    if isinstance(data.get(corpus_path), dict):
+        check_corpus(corpus_path, data[corpus_path])
+    task_path = ROOT / "examples/agent-task.json"
+    if isinstance(data.get(task_path), dict):
+        check_agent_task(task_path, data[task_path], data)
     validated_count = check_schemas(data) if args.schemas else 0
     if ERRORS:
         for error in ERRORS:
@@ -202,7 +241,7 @@ def main() -> int:
         return 1
     print(f"OK: {markdown_count} Markdown files, {len(data)} JSON files, {requirement_count} requirements, {scenario_count} acceptance scenarios.")
     if args.schemas:
-        print(f"OK: 3 Draft 2020-12 schemas and {validated_count} examples validated.")
+        print(f"OK: 4 Draft 2020-12 schemas and {validated_count} examples validated.")
     print("CPC execution, disk compatibility and application performance have not been tested by this check.")
     return 0
 

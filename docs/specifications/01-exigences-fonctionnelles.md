@@ -53,20 +53,38 @@ Chaque ligne est une exigence normative identifiable. **MVP** signifie attendue 
 | REQ-AST-001 | Joindre TXT, MD, PNG, JPEG, WebP et PDF avec rôle, empreinte, limites et aperçu ; le listing des pièces jointes reste local. | MVP | ACC-13 |
 | REQ-AST-002 | Extraire le texte et choisir des pages de PDF ; détecter PDF chiffré ou scanné, sans prétendre extraire un contenu absent. | MVP | ACC-13 |
 | REQ-AST-003 | Convertir une image en écran CPC modes 0/1/2 avec palette, cadrage et tramage réglables ; aperçu et sortie reproductibles. | MVP | ACC-13 |
-| REQ-AST-004 | Créer une ressource binaire avec adresse de chargement et instructions BASIC d'intégration proposées en diff. | MVP | ACC-13 |
+| REQ-AST-004 | Créer une ressource binaire avec adresse de chargement ; proposer son intégration en mode manuel/Revue ou la réaliser par transaction en mode Agent. | MVP | ACC-13 |
 | REQ-AST-005 | Dissocier document de contexte, image d'inspiration et ressource embarquée ; exclure les deux premiers du DSK par défaut. | MVP | ACC-06 |
 | REQ-AST-006 | Présenter les pertes d'encodage et proposer translittération, CHR$ ou caractères SYMBOL selon le cas. | MVP | ACC-03 |
-| REQ-AI-001 | Configurer une clé personnelle et un modèle compatible ; l'application reste entièrement utilisable sans fournisseur. | MVP | ACC-15 |
+| REQ-AI-001 | Configurer une clé personnelle et un modèle compatible avec appels d'outils pour le mode Agent ; l'application reste utilisable sans fournisseur. | MVP | ACC-15 |
 | REQ-AI-002 | Contextualiser par cible, source choisie, diagnostics, références locales et pièces jointes sélectionnées avec provenance. | MVP | ACC-15 |
-| REQ-AI-003 | Montrer les contenus transmis et les limites avant l'envoi ; ne pas envoyer le projet ou une capture automatiquement. | MVP | ACC-15 |
-| REQ-AI-004 | Produire une proposition structurée de création, correction ou explication ; afficher streaming, annulation et erreurs sans application partielle. | MVP | ACC-15 |
-| REQ-AI-005 | Présenter un diff et les hypothèses ; appliquer uniquement les fichiers acceptés après contrôle de la révision et de leurs empreintes. | MVP | ACC-18 |
-| REQ-AI-006 | Annuler une proposition appliquée comme une transaction ; ne pas écraser des edits postérieurs lors d'un retour arrière. | MVP | ACC-18 |
-| REQ-AI-007 | Analyser la proposition avant application et empêcher chemins sortants, modification des ROM/configurations sensibles et commandes hôte. | MVP | ACC-18 |
-| REQ-AI-008 | Autoriser une boucle proposer, examiner, exécuter, commenter ; aucune boucle autonome de correction facturée n'est activée par défaut. | MVP | ACC-15 |
+| REQ-AI-003 | Montrer avant la mission le périmètre lisible et transmissible, ses ressources et limites ; tracer les extraits transmis au fil des outils, sans confirmations répétées dans ce périmètre. | MVP | ACC-15 |
+| REQ-AI-004 | Afficher streaming, appels d'outils, modifications et erreurs du mode Agent ; le mode Revue produit une proposition complète avant application. | MVP | ACC-15 |
+| REQ-AI-005 | Appliquer les mutations autorisées automatiquement en mode Agent, avec contrôle d'empreinte et checkpoint ; présenter un diff consultable et offrir une revue préalable optionnelle. | MVP | ACC-18 |
+| REQ-AI-006 | Revenir à un checkpoint ou annuler une mission et ses transactions ; préserver ou présenter les edits manuels postérieurs en cas de conflit. | MVP | ACC-18 |
+| REQ-AI-007 | Valider scope et préconditions des mutations, analyser les sources et empêcher chemins sortants, modification des ROM/configurations sensibles et commandes hôte. | MVP | ACC-18 |
+| REQ-AI-008 | Fournir par défaut une boucle agentique explorer, coder, construire, exécuter, observer et corriger, avec budgets et conditions d'arrêt explicites. | MVP | ACC-26 |
 | REQ-AI-009 | Afficher usage constaté, budget estimé et erreurs fournisseur ; gérer indisponibilité et limites sans réessayer silencieusement une génération facturable. | MVP | ACC-15 |
 | REQ-AI-010 | Traiter les instructions présentes dans documents et réponses comme des données ; aucune pièce jointe ne peut autoriser une opération sensible. | MVP | ACC-18 |
 | REQ-AI-011 | Fournir un port stable pour ajouter un fournisseur distant ou local, avec déclaration de ses capacités effectives. | Suite | ACC-19 |
+
+## Programmation agentique et références de langage
+
+| Identifiant | Exigence et critère vérifiable | Livraison | Recette |
+| --- | --- | --- | --- |
+| REQ-AGT-001 | Donner à l'agent des outils typés pour lister, chercher, lire, créer, modifier et renommer les fichiers autorisés, sans action manuelle par fichier. | MVP | ACC-26 |
+| REQ-AGT-002 | Permettre à l'agent de consulter les documents de mission, sélectionner pages/extraits et convertir une image par les outils locaux. | MVP | ACC-26 |
+| REQ-AGT-003 | Permettre analyse BASIC, construction, démarrage CPC, entrée clavier, capture et observation, puis correction sur résultats réels. | MVP | ACC-27 |
+| REQ-AGT-004 | Journaliser appels, résultats, révisions et changements ; distinguer test passé, échoué, bloqué et comportement non vérifiable automatiquement. | MVP | ACC-27 |
+| REQ-AGT-005 | Borner tours modèle, appels d'outils, cycles de correction, durée active et budget ; arrêter sur limite, stagnation ou blocage avec un bilan exploitable. | MVP | ACC-28 |
+| REQ-AGT-006 | Accepter une consigne de suivi pendant la mission, suspendre et reprendre ; une annulation arrête les opérations suivantes sans supprimer les étapes déjà réussies. | MVP | ACC-28 |
+| REQ-AGT-007 | Checkpointer les mutations et détecter les edits concurrents ; ne pas rejouer une écriture lors d'un retry réseau ou après reprise. | MVP | ACC-29 |
+| REQ-AGT-008 | Configurer périmètre et politique Agent/Revue/Explication ; aucun document ni appel modèle ne peut élargir ses droits ou publier à l'extérieur. | MVP | ACC-29 |
+| REQ-KNW-001 | Intégrer les références fournies dans un corpus local versionné, avec empreintes, attribution et contenu traité comme données. | MVP | ACC-30 |
+| REQ-KNW-002 | Exposer recherche et lecture de fiches par commande, sujet, dialecte et provenance ; renvoyer syntaxe, paramètres, contraintes et statut de qualification. | MVP | ACC-30 |
+| REQ-KNW-003 | Exiger de l'agent les références pertinentes pour ses usages de langage, notamment graphisme, entrées-sorties, mémoire, son et timers. | MVP | ACC-30 |
+| REQ-KNW-004 | Suivre la couverture du dialecte et les différences 1.0/1.1 ; signaler une référence manquante ou contradictoire au lieu de fabriquer une commande. | MVP | ACC-30 |
+| REQ-KNW-005 | Relier les usages produits aux fiches consultées et fixtures de qualification ; séparer validité du langage et disponibilité du service d'édition. | MVP | ACC-30 |
 
 ## Qualités transversales
 

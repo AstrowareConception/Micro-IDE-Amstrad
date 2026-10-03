@@ -1,6 +1,6 @@
 # Sources, provenance et vérifications
 
-Consultation initiale : **2026-10-03**. Les références techniques externes ont été confrontées aux fichiers fournis. Ce dossier contient une synthèse originale et des liens ; il ne republie pas les articles HTML, scans de manuels ni ROM tiers. Leurs conditions ne deviennent pas celles du projet.
+Consultation initiale : **2026-10-03**. Les références techniques externes ont été confrontées aux fichiers fournis. Ce dossier contient une synthèse originale et des liens. Les trois fichiers fournis sont aussi conservés dans le corpus documentaire local ; ils gardent leurs attributions et conditions. Aucun scan de manuel supplémentaire ni ROM tiers n’est inclus.
 
 ## Fichiers fournis au lancement
 
@@ -10,7 +10,7 @@ Consultation initiale : **2026-10-03**. Les références techniques externes ont
 | Références.txt | Liste abrégée d'instructions ; base d'inventaire avec corrections à qualifier | 10 291 octets | `4515b3cda39f3e4a1280bcaa750ecb73729e0e6859532d0623622dfd275ab5ec` |
 | Locomotive BASIC - CPCWiki.html | Page sauvegardée présentant le langage et ses liens techniques | 365 046 octets | `61169d8794397dcdeb5840e3a49cc15a304c780e9f603528b9f9a5165c96e203` |
 
-Les empreintes identifient exactement les pièces étudiées. Les fichiers restent dans les pièces originales ; les chemins temporaires de l'environnement de travail ne sont pas inscrits dans les contrats du produit. Les fautes et simplifications du corpus ne sont pas importées telles quelles dans la grammaire ou les fiches d'aide.
+Les empreintes identifient exactement les pièces étudiées. Les fichiers sont identifiés dans le [catalogue local](../../knowledge/locomotive-basic/catalog.json) ; les chemins temporaires de l'environnement de travail ne sont pas inscrits dans les contrats du produit. Les fautes et simplifications du corpus ne sont pas importées telles quelles dans la grammaire ou les fiches d'aide.
 
 ## Références primaires et usages
 
@@ -34,6 +34,7 @@ Les empreintes identifient exactement les pièces étudiées. Les fichiers reste
 | [Emscripten et l'interface JS/C](https://emscripten.org/docs/porting/connecting_cpp_and_javascript/Interacting-with-code.html) | Documentation officielle | Wrapper WASM, buffers et gestion mémoire |
 | [PDF.js](https://mozilla.github.io/pdf.js/getting_started/) | Documentation Mozilla | Extraction et rendu locaux isolés |
 | [OpenAI file inputs](https://developers.openai.com/api/docs/guides/file-inputs) | Documentation officielle | Capacités de pièces jointes à revérifier lors de l'intégration |
+| [OpenAI function calling](https://developers.openai.com/api/docs/guides/function-calling) | Documentation officielle | Appels d’outils et échange de résultats pilotés par le runner local |
 | [OpenAI images and vision](https://developers.openai.com/api/docs/guides/images-vision) | Documentation officielle | Entrées visuelles et capacités de modèle |
 | [Electron Forge lifecycle](https://www.electronforge.io/core-concepts/build-lifecycle) | Documentation officielle | Paquets, builds et plateformes |
 | [python-jsonschema v4.26.0](https://github.com/python-jsonschema/jsonschema/releases/tag/v4.26.0) | Projet officiel | Validation documentaire JSON Schema, version figée |
