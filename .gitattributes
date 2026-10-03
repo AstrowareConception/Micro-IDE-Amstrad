@@ -1,0 +1,9 @@
+* text=auto
+*.md text eol=lf
+*.json text eol=lf
+*.py text eol=lf
+*.yml text eol=lf
+*.bas text eol=lf
+*.dsk binary
+*.rom binary
+*.sna binary

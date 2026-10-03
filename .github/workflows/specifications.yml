@@ -1,0 +1,23 @@
+name: Specifications
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4, inspected 2026-10-03
+        with:
+          persist-credentials: false
+      - name: Validate documentation and contracts
+        run: |
+          python3 -m venv /tmp/microide-specs-venv
+          /tmp/microide-specs-venv/bin/python -m pip install -r scripts/requirements-docs.txt
+          /tmp/microide-specs-venv/bin/python scripts/check_specs.py --schemas

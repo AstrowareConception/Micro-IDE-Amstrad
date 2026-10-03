@@ -1,0 +1,39 @@
+# Dossier de conception — version 0.1
+
+Date de référence : **2026-10-03**. Responsable produit : **Térence FERUT / AstroWare Conception**. Statut : base de conception proposée pour la réalisation progressive. Les décisions retenues servent de référence ; les points conditionnels sont explicitement identifiés et ne constituent pas des fonctionnalités déjà disponibles.
+
+## Documents de référence
+
+| Document | Question traitée |
+| --- | --- |
+| [00 — Cadrage produit](specifications/00-cadrage-produit.md) | Pour qui, pour quoi, avec quel périmètre ? |
+| [01 — Exigences fonctionnelles](specifications/01-exigences-fonctionnelles.md) | Quels comportements l'outil doit-il fournir ? |
+| [02 — Interface et parcours](specifications/02-interface-parcours.md) | Comment l'utilisateur accomplit-il son travail ? |
+| [03 — Domaines et DDD](specifications/03-domaines-ddd.md) | Quels concepts, règles et responsabilités structurent le produit ? |
+| [04 — Architecture technique](specifications/04-architecture-technique.md) | Quels composants, processus et dépendances ? |
+| [05 — Locomotive BASIC](specifications/05-locomotive-basic.md) | Quelle syntaxe, quelles analyses et quelles transformations ? |
+| [06 — Émulateur et machines](specifications/06-emulateur-machines.md) | Comment exécuter et qualifier une véritable machine CPC ? |
+| [07 — Construction et DSK](specifications/07-construction-dsk.md) | Comment produire et vérifier un support exploitable ? |
+| [08 — Ressources et documents](specifications/08-ressources-documents.md) | Comment exploiter images, textes, Markdown et PDF ? |
+| [09 — IA](specifications/09-assistance-ia.md) | Comment contextualiser, générer, corriger et contrôler les changements ? |
+| [10 — Données et contrats](specifications/10-donnees-contrats.md) | Quels fichiers, protocoles, révisions et migrations ? |
+| [11 — Qualité et recette](specifications/11-qualite-recette.md) | Comment démontrer que les exigences sont satisfaites ? |
+| [12 — Feuille de route](specifications/12-feuille-de-route.md) | Dans quel ordre réaliser le produit ? |
+| [13 — Risques et arbitrages](specifications/13-risques-arbitrages.md) | Qu'est-ce qui peut changer et à quelle condition ? |
+| [Glossaire](reference/glossaire.md) | Quel vocabulaire partager ? |
+| [Sources](reference/sources.md) | Sur quelles références reposent les décisions ? |
+| [ADR](adr/README.md) | Pourquoi les options principales ont-elles été retenues ? |
+
+## Contrats et exemples
+
+Les contrats JSON Schema Draft 2020-12 définissent les formes de données persistées, sans implémenter les règles métier interdocuments : [projet](../contracts/project.schema.json), [proposition IA](../contracts/ai-proposal.schema.json), [rapport de construction](../contracts/build-report.schema.json). Les invariants complémentaires sont dans le document 10.
+
+Le projet [hello-cpc](../examples/hello-cpc/README.md) fournit un manifeste et une source BASIC cohérents avec le schéma. Les fichiers [proposition IA](../examples/ai-proposal.json) et [rapport de construction illustratif](../examples/build-report.json) montrent les échanges attendus. Le rapport est un **exemple contractuel**, pas un résultat d'exécution.
+
+## Règles de lecture et d'évolution
+
+Les mots **DOIT**, **NE DOIT PAS**, **DEVRAIT** décrivent respectivement une obligation, une interdiction et une recommandation avec dérogation documentée. Les exigences `REQ-*` sont définies une seule fois dans le document 01. Les scénarios `ACC-*` et les jalons `J*` les relient à une preuve et à une livraison.
+
+Le périmètre du **MVP produit** inclut l'éditeur, l'émulation, le DSK, les pièces jointes et l'IA. J1 ou J2 sont des incréments techniques, pas un MVP qui oublierait l'assistance IA. Les fonctions ultérieures sont explicitement identifiées.
+
+En cas de contradiction : contrat métier et exigence spécifique priment sur illustration ; une ADR remplace un choix précédent seulement lorsqu'elle le dit. Tout changement incompatible exige une mise à jour coordonnée des schémas, exemples, scénarios et ADR concernés. Aucun texte ne doit présenter un objectif de performance ou un essai prévu comme une mesure effectuée.

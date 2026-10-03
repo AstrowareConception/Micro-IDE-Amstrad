@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/AstrowareConception/Micro-IDE-Amstrad/contracts/build-report.schema.json",
+  "title": "Micro IDE Amstrad build report — version 1",
+  "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "buildId", "kind", "status", "projectRevision", "inputFingerprint", "machineProfileId", "tools", "catalog", "metrics", "diagnostics", "artifacts"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "buildId": {"type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$"},
+    "kind": {"enum": ["actual", "illustrative"]},
+    "status": {"enum": ["succeeded", "failed", "cancelled", "not-run"]},
+    "projectRevision": {"type": "integer", "minimum": 0},
+    "inputFingerprint": {"oneOf": [{"$ref": "#/$defs/hash"}, {"type": "null"}]},
+    "machineProfileId": {"const": "cpc6128-classic-v1"},
+    "tools": {"type": "object", "additionalProperties": false, "required": ["builder", "diskWriter", "encodingProfile"], "properties": {"builder": {"type": ["string", "null"]}, "diskWriter": {"type": ["string", "null"]}, "encodingProfile": {"type": "string", "minLength": 1}}},
+    "catalog": {
+      "type": "array", "maxItems": 64,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["name", "type", "logicalBytes", "allocatedBytes", "sha256"],
+        "properties": {
+          "name": {"type": "string", "pattern": "^[A-Z0-9_]{1,8}(?:\\.[A-Z0-9_]{1,3})?$"},
+          "type": {"enum": ["basic-ascii", "binary", "text"]},
+          "logicalBytes": {"type": "integer", "minimum": 0},
+          "allocatedBytes": {"type": "integer", "minimum": 0, "multipleOf": 1024},
+          "sha256": {"$ref": "#/$defs/hash"}
+        }
+      }
+    },
+    "metrics": {
+      "type": "object", "additionalProperties": false,
+      "required": ["usableBytes", "allocatedBytes", "diskContainerBytes", "basicMemoryEstimate"],
+      "properties": {
+        "usableBytes": {"const": 182272},
+        "allocatedBytes": {"type": ["integer", "null"], "minimum": 0, "multipleOf": 1024},
+        "diskContainerBytes": {"const": 194816},
+        "basicMemoryEstimate": {"type": ["integer", "null"], "minimum": 0},
+        "memoryAssumptions": {"type": "array", "items": {"type": "string", "maxLength": 2000}}
+      }
+    },
+    "diagnostics": {"type": "array", "items": {"$ref": "#/$defs/diagnostic"}},
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["kind", "path", "bytes", "sha256"],
+        "properties": {
+          "kind": {"enum": ["dsk", "basic-ascii", "binary"]},
+          "path": {"type": "string", "minLength": 1, "maxLength": 240, "pattern": "^dist/"},
+          "bytes": {"type": "integer", "minimum": 0},
+          "sha256": {"$ref": "#/$defs/hash"}
+        }
+      }
+    }
+  },
+  "allOf": [
+    {"if": {"properties": {"status": {"const": "not-run"}}}, "then": {"properties": {"kind": {"const": "illustrative"}, "artifacts": {"maxItems": 0}}}},
+    {"if": {"properties": {"status": {"enum": ["failed", "cancelled"]}}}, "then": {"properties": {"artifacts": {"maxItems": 0}}}},
+    {"if": {"properties": {"kind": {"const": "actual"}}}, "then": {"properties": {"inputFingerprint": {"$ref": "#/$defs/hash"}, "tools": {"properties": {"builder": {"type": "string", "minLength": 1}, "diskWriter": {"type": "string", "minLength": 1}}}}}},
+    {"if": {"properties": {"status": {"const": "succeeded"}}}, "then": {"properties": {"artifacts": {"contains": {"properties": {"kind": {"const": "dsk"}}, "required": ["kind"]}}, "diagnostics": {"items": {"properties": {"severity": {"enum": ["warning", "info"]}}}}, "metrics": {"properties": {"allocatedBytes": {"type": "integer", "maximum": 182272}}}}}}
+  ],
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "diagnostic": {
+      "type": "object", "additionalProperties": false,
+      "required": ["code", "severity", "message", "origin", "confidence"],
+      "properties": {
+        "code": {"type": "string", "minLength": 1, "maxLength": 100},
+        "severity": {"enum": ["error", "warning", "info"]},
+        "message": {"type": "string", "minLength": 1, "maxLength": 4000},
+        "origin": {"enum": ["language", "encoding", "disk", "asset", "system"]},
+        "confidence": {"enum": ["certain", "probable", "unknown"]},
+        "documentId": {"type": "string"},
+        "physicalLine": {"type": "integer", "minimum": 1},
+        "basicLine": {"type": "integer", "minimum": 1, "maximum": 65535}
+      }
+    }
+  }
+}

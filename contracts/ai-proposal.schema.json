@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/AstrowareConception/Micro-IDE-Amstrad/contracts/ai-proposal.schema.json",
+  "title": "Micro IDE Amstrad AI proposal — version 1",
+  "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "proposalId", "requestId", "baseProjectRevision", "summary", "assumptions", "operations", "explanation"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "proposalId": {"$ref": "#/$defs/id"},
+    "requestId": {"$ref": "#/$defs/id"},
+    "baseProjectRevision": {"type": "integer", "minimum": 0},
+    "summary": {"type": "string", "minLength": 1, "maxLength": 4000},
+    "assumptions": {"type": "array", "maxItems": 30, "items": {"type": "string", "maxLength": 2000}},
+    "operations": {"type": "array", "minItems": 1, "maxItems": 10, "items": {"oneOf": [{"$ref": "#/$defs/create"}, {"$ref": "#/$defs/replace"}]}},
+    "explanation": {"type": "string", "minLength": 1, "maxLength": 20000}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$"},
+    "path": {"type": "string", "maxLength": 240, "pattern": "^src/(?:[A-Za-z0-9_][A-Za-z0-9_. -]*/)*[A-Za-z0-9_][A-Za-z0-9_. -]*\\.[Bb][Aa][Ss]$"},
+    "content": {"type": "string", "minLength": 1, "maxLength": 262144},
+    "create": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "path", "content"],
+      "properties": {"kind": {"const": "create"}, "path": {"$ref": "#/$defs/path"}, "content": {"$ref": "#/$defs/content"}}
+    },
+    "replace": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "path", "baseSha256", "content"],
+      "properties": {
+        "kind": {"const": "replace"}, "path": {"$ref": "#/$defs/path"},
+        "baseSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "content": {"$ref": "#/$defs/content"}
+      }
+    }
+  }
+}

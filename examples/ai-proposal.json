@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "proposalId": "illustrative-proposal-001",
+  "requestId": "illustrative-request-001",
+  "baseProjectRevision": 1,
+  "summary": "Exemple de remplacement du titre, sans application au projet.",
+  "assumptions": [
+    "Le listing de base correspond à examples/hello-cpc.",
+    "Cette proposition est illustrative et ne provient pas d’un appel fournisseur."
+  ],
+  "operations": [
+    {
+      "kind": "replace",
+      "path": "src/main.bas",
+      "baseSha256": "9f588a6c26403d0a40628638e68e5938a48139c4332b11b65697b98751507619",
+      "content": "10 REM MICRO IDE AMSTRAD - HELLO CPC\n20 MODE 1\n30 BORDER 0\n40 INK 0,0:INK 1,26:INK 2,6:INK 3,18\n50 PAPER 0:PEN 1:CLS\n60 LOCATE 9,3:PRINT \"MON ATELIER CPC !\"\n70 PEN 2:LOCATE 6,6:PRINT \"UN LISTING, UNE MACHINE, UN DSK.\"\n80 MOVE 40,220:DRAW 600,220,3\n90 DRAW 600,40,3:DRAW 40,40,3:DRAW 40,220,3\n100 PEN 1:LOCATE 7,21:PRINT \"APPUYEZ SUR UNE TOUCHE...\"\n110 SOUND 1,478,20,8\n120 a$=INKEY$:IF a$=\"\" THEN 120\n130 CLS:PRINT \"A BIENTOT !\"\n140 END\n"
+    }
+  ],
+  "explanation": "Le titre change à la ligne 60. Le reste du listing reste identique. L’application future calculera le diff et vérifiera l’empreinte avant toute application."
+}

@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/AstrowareConception/Micro-IDE-Amstrad/contracts/project.schema.json",
+  "title": "Micro IDE Amstrad project — version 1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "projectId", "name", "target", "entryPoint", "sources", "assets", "documents", "build"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "projectId": {"type": "string", "format": "uuid"},
+    "name": {"type": "string", "minLength": 1, "maxLength": 100},
+    "target": {
+      "type": "object", "additionalProperties": false,
+      "required": ["machineProfileId", "dialect"],
+      "properties": {
+        "machineProfileId": {"const": "cpc6128-classic-v1"},
+        "dialect": {"const": "locomotive-1.1"},
+        "expectedFirmwareSetId": {"$ref": "#/$defs/id"}
+      }
+    },
+    "entryPoint": {"$ref": "#/$defs/id"},
+    "sources": {
+      "type": "array", "minItems": 1, "maxItems": 64,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "path", "cpcName"],
+        "properties": {
+          "id": {"$ref": "#/$defs/id"},
+          "path": {"allOf": [{"$ref": "#/$defs/path"}, {"pattern": "^src/"}]},
+          "cpcName": {"type": "string", "pattern": "^[A-Z0-9_]{1,8}\\.BAS$"}
+        }
+      }
+    },
+    "assets": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/asset"}},
+    "documents": {
+      "type": "array", "maxItems": 100,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "path", "sha256", "mediaType", "role", "originalName"],
+        "properties": {
+          "id": {"$ref": "#/$defs/id"},
+          "path": {"allOf": [{"$ref": "#/$defs/path"}, {"pattern": "^documents/"}]},
+          "sha256": {"$ref": "#/$defs/hash"},
+          "mediaType": {"enum": ["text/plain", "text/markdown", "image/png", "image/jpeg", "image/webp", "application/pdf"]},
+          "role": {"enum": ["context", "inspiration", "asset-source"]},
+          "originalName": {"type": "string", "minLength": 1, "maxLength": 255}
+        }
+      }
+    },
+    "build": {
+      "type": "object", "additionalProperties": false,
+      "required": ["listingFormat", "diskFormat", "filesystem", "textEncoding", "lineEnding", "asciiEof", "fileOrder"],
+      "properties": {
+        "listingFormat": {"const": "ascii"},
+        "diskFormat": {"const": "standard-dsk"},
+        "filesystem": {"const": "amsdos-data"},
+        "textEncoding": {"enum": ["ascii-strict", "cpc-qualified"]},
+        "lineEnding": {"const": "crlf"},
+        "asciiEof": {"const": "ctrl-z"},
+        "fileOrder": {"const": "cpc-name"}
+      }
+    }
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$"},
+    "hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "path": {"type": "string", "maxLength": 240, "pattern": "^(?:[A-Za-z0-9_][A-Za-z0-9_. -]*/)*[A-Za-z0-9_][A-Za-z0-9_. -]*$"},
+    "cpcName": {"type": "string", "pattern": "^[A-Z0-9_]{1,8}(?:\\.[A-Z0-9_]{1,3})?$"},
+    "palette": {"type": "array", "minItems": 2, "maxItems": 16, "items": {"type": "integer", "minimum": 0, "maximum": 26}},
+    "asset": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "kind", "path", "cpcName", "loadAddress", "length", "sha256", "includeInBuild"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "kind": {"enum": ["binary", "screen"]},
+        "path": {"allOf": [{"$ref": "#/$defs/path"}, {"pattern": "^assets/"}]},
+        "cpcName": {"$ref": "#/$defs/cpcName"},
+        "loadAddress": {"type": "integer", "minimum": 0, "maximum": 65535},
+        "length": {"type": "integer", "minimum": 1, "maximum": 65536},
+        "sha256": {"$ref": "#/$defs/hash"},
+        "includeInBuild": {"type": "boolean"},
+        "recipe": {
+          "type": "object", "additionalProperties": false,
+          "required": ["sourceDocumentId", "sourceSha256", "converterVersion", "mode", "palette", "resize", "dither", "alphaInk"],
+          "properties": {
+            "sourceDocumentId": {"$ref": "#/$defs/id"},
+            "sourceSha256": {"$ref": "#/$defs/hash"},
+            "converterVersion": {"type": "string", "minLength": 1, "maxLength": 64},
+            "mode": {"enum": [0, 1, 2]},
+            "palette": {"$ref": "#/$defs/palette"},
+            "resize": {"enum": ["contain", "cover", "stretch"]},
+            "dither": {"enum": ["none", "floyd-steinberg"]},
+            "alphaInk": {"type": "integer", "minimum": 0, "maximum": 15},
+            "crop": {
+              "type": "object", "additionalProperties": false,
+              "required": ["x", "y", "width", "height"],
+              "properties": {
+                "x": {"type": "integer", "minimum": 0},
+                "y": {"type": "integer", "minimum": 0},
+                "width": {"type": "integer", "minimum": 1},
+                "height": {"type": "integer", "minimum": 1}
+              }
+            }
+          },
+          "allOf": [
+            {"if": {"properties": {"mode": {"const": 0}}}, "then": {"properties": {"palette": {"minItems": 16, "maxItems": 16}}}},
+            {"if": {"properties": {"mode": {"const": 1}}}, "then": {"properties": {"palette": {"minItems": 4, "maxItems": 4}, "alphaInk": {"maximum": 3}}}},
+            {"if": {"properties": {"mode": {"const": 2}}}, "then": {"properties": {"palette": {"minItems": 2, "maxItems": 2}, "alphaInk": {"maximum": 1}}}}
+          ]
+        }
+      },
+      "allOf": [
+        {"if": {"properties": {"kind": {"const": "screen"}}}, "then": {"required": ["recipe"], "properties": {"length": {"const": 16384}, "loadAddress": {"const": 49152}}}}
+      ]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "buildId": "illustrative-not-run",
+  "kind": "illustrative",
+  "status": "not-run",
+  "projectRevision": 1,
+  "inputFingerprint": null,
+  "machineProfileId": "cpc6128-classic-v1",
+  "tools": {"builder": null, "diskWriter": null, "encodingProfile": "ascii-strict"},
+  "catalog": [],
+  "metrics": {"usableBytes": 182272, "allocatedBytes": null, "diskContainerBytes": 194816, "basicMemoryEstimate": null},
+  "diagnostics": [{"code": "SPEC-NOT-RUN", "severity": "info", "message": "Exemple contractuel : aucune construction ni exécution n'a été réalisée. Les capacités indiquées décrivent le format DATA prévu.", "origin": "system", "confidence": "certain"}],
+  "artifacts": []
+}

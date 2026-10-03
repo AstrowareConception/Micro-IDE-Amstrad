@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "projectId": "e4e85234-e7ec-4c78-b12b-454785450f41",
+  "name": "Hello CPC",
+  "target": {"machineProfileId": "cpc6128-classic-v1", "dialect": "locomotive-1.1"},
+  "entryPoint": "main",
+  "sources": [{"id": "main", "path": "src/main.bas", "cpcName": "MAIN.BAS"}],
+  "assets": [],
+  "documents": [],
+  "build": {
+    "listingFormat": "ascii",
+    "diskFormat": "standard-dsk",
+    "filesystem": "amsdos-data",
+    "textEncoding": "ascii-strict",
+    "lineEnding": "crlf",
+    "asciiEof": "ctrl-z",
+    "fileOrder": "cpc-name"
+  }
+}
