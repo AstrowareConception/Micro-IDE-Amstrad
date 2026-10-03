@@ -36,6 +36,8 @@ Ouvrir `http://127.0.0.1:6128`. Le script de compilation refuse une autre versio
 
 Le serveur écoute uniquement la boucle locale et sert cinq ressources prédéfinies. Il ne fournit aucun endpoint de lecture/écriture de fichiers, de shell ou d'IA. Les imports de firmware restent en mémoire du navigateur ; leurs empreintes apparaissent dans les observations téléchargeables.
 
+Pour le contrôle automatique navigateur, installer Chromium avec `npx playwright install chromium`, puis exécuter `node tests/browser-smoke.mjs`. Sur Linux, `--with-deps` installe aussi ses bibliothèques système ; c'est l'option de la CI. Ce test importe la ROM synthétique, vérifie progression, pause, export et accès HTTP, puis produit `out/j0-harness.png`. Cette capture ne représente pas un boot Amstrad.
+
 ## Parcours avec firmware personnel
 
 1. Fournir séparément les ROM **OS, BASIC 1.1 et AMSDOS, chacune de 16 384 octets**, et `out/probe.dsk`. Disposer des droits d'utilisation de ces fichiers. Le prototype contrôle taille et hash ; il ne reconnaît pas encore une liste de firmwares qualifiés. Les ROM inconnues restent expérimentales.

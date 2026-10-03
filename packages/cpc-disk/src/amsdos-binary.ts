@@ -10,7 +10,9 @@ export function encodeAmsdosBinary(name: string, payload: Uint8Array, loadAddres
   bytes.set(new TextEncoder().encode(stem.padEnd(8, ' ') + ext.padEnd(3, ' ')), 1);
   bytes[18] = 2;
   const view = new DataView(bytes.buffer);
+  view.setUint16(19, payload.length, true);
   view.setUint16(21, loadAddress, true);
+  bytes[23] = 0xff;
   view.setUint16(24, payload.length, true);
   view.setUint16(26, entryAddress, true);
   bytes[64] = payload.length & 255; bytes[65] = payload.length >>> 8; bytes[66] = 0;

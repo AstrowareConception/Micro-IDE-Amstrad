@@ -9,6 +9,7 @@ test('16K screen payload retains exact length and memory addresses', () => {
   const disk = createDataDisk([{ name: 'SCREEN.SCR', bytes: encoded }]);
   assert.deepEqual(decodeAmsdosBinary(readDataDisk(disk)[0]!.records), { bytes, loadAddress: 0xc000, entryAddress: 0 });
   assert.equal(encoded[18], 2); assert.equal(encoded[21], 0); assert.equal(encoded[22], 0xc0);
+  assert.equal(encoded[19], 0); assert.equal(encoded[20], 0x40); assert.equal(encoded[23], 0xff);
   assert.equal(encoded[24], 0); assert.equal(encoded[25], 0x40); assert.equal(encoded[65], 0x40);
 });
 test('binary rejects invalid range, checksum, type and truncated data', () => {

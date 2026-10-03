@@ -37,12 +37,17 @@ J0 utilise un package de développement minimal, avant les workspaces Electron d
 | Limites record/bloc/extent/capacité | Tailles 0 à 182 272 octets, dépassements refusés | Writer DATA uniquement |
 | Binaire AMSDOS | En-tête/checksum/adresses et aller-retour 16 Kio | LOAD par ROM restant à tester |
 | C natif | GCC 13.3.0, ASan et UBSan, essais réussis | ROM synthétique originale `JP 0` |
+| WASM sous Node | Emscripten 4.0.15, transport réussi en CI, 1 600 000 ticks puis pause et reset | ROM synthétique ; aucun RUN BASIC |
+| Navigateur WASM | Chromium 141 / Playwright 1.56.1 en CI, progression, pause, export et contrôle HTTP réussis | ROM synthétique ; écran sans firmware Amstrad |
+| Serveur local | Ressources autorisées servies, chemins projet privés et Host étranger refusés | Pas encore une frontière Electron |
 | Entrées du wrapper | Toutes les longueurs erronées jusqu'à taille disque + 1 ; mutations des champs critiques | Pas une campagne de fuzz exhaustive |
 | Écriture/export lecteur | `fdd_write` upstream modifie un secteur ; export et conservation au reset contrôlés | Pas OPENOUT via firmware/UPD765 |
 | Pause/clavier/audio | Ticks gelés, touches relâchées, buffer audio borné | Pas INKEY$, TIME ou SOUND qualifiés |
 | Documentation/contrats | Vérification complète avec jsonschema 4.26.0 réussie | Ne teste pas le CPC |
 
-LeakSanitizer ne peut examiner les processus de cet environnement local (`/proc`/ptrace) : l'essai local conserve ASan/UBSan et désactive uniquement la recherche de fuites. La CI Linux l'active par défaut. La compilation et les essais WASM sont également exécutés par le workflow [J0 prototype](../../.github/workflows/j0.yml) ; leurs résultats doivent être lus dans la CI de la PR, sans assimiler une configuration de workflow à un succès.
+LeakSanitizer ne peut examiner les processus de cet environnement local (`/proc`/ptrace) : l'essai local conserve ASan/UBSan et désactive uniquement la recherche de fuites. La CI Linux l'active par défaut et le job natif a réussi. La [recette CI de la PR](https://github.com/AstrowareConception/Micro-IDE-Amstrad/actions/runs/37121848358) a effectivement réussi pour les codecs, le natif, le build WASM, son transport Node et le navigateur. Les artefacts `j0-disks` et `j0-wasm` contiennent les DSK, le module, les notices et la capture de test, avec une rétention de sept jours. Le workflow [J0 prototype](../../.github/workflows/j0.yml) reste la source des preuves automatisées ; une configuration seule ne vaut pas résultat.
+
+Le SDK et Chromium téléchargés localement étaient incomplets dans cet environnement. Les résultats WASM sont donc attribués aux runners CI Ubuntu, pas à une compilation locale supposée. Aucun problème observé ici ne justifie d'abandonner le moteur avant les essais firmware.
 
 ## Essais restant bloqués
 
