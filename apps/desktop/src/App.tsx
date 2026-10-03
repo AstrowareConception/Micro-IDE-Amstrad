@@ -5,6 +5,8 @@ import { files, type Failure, type FileResult } from './port.ts';
 import { Editor } from './Editor.tsx';
 import { monaco, provenance } from './monaco-language.ts';
 import type { ProjectManifest, ProjectSnapshot } from '../../../packages/workspace/src/project.ts';
+import type { AgentWorkspaceState } from '../../../packages/agent/src/types.ts';
+import { AgentPanel } from './AgentPanel.tsx';
 
 const SAMPLE = '10 REM MICRO IDE AMSTRAD\n20 MODE 1\n30 INK 0,0:INK 1,24\n40 PEN 1\n50 PRINT "BONJOUR CPC 6128 !"\n60 FOR I=1 TO 5\n70 PRINT "LOCOMOTIVE BASIC";I\n80 NEXT I\n90 END\n';
 interface Document { id: string; sourceId: string; name: string; source: string; saved: string }
@@ -16,9 +18,11 @@ export function App() {
   const [projectName, setProjectName] = useState('Mon projet CPC');
   const [sourceName, setSourceName] = useState('');
   const active = documents.find(document => document.id === activeId)!;
-  const { source, name } = active;
+  const { source } = active;
   const [status, setStatus] = useState('Prêt. Écrivez du BASIC, sans ROM ni connexion.');
-  const [busy, setBusy] = useState(false);
+  const [fileBusy, setBusy] = useState(false);
+  const [agentBusy, setAgentBusy] = useState(false);
+  const busy = fileBusy || agentBusy;
   const [card, setCard] = useState<CommandCard | undefined>();
   const [query, setQuery] = useState('');
   const [position, setPosition] = useState({ line: 1, column: 1 });
@@ -65,6 +69,12 @@ export function App() {
     setDocuments(items => append ? [...items, ...added] : added);
     setActiveId(added[0]!.id); setProject({ sessionId: snapshot.sessionId, manifest: snapshot.manifest });
   }
+  function acceptAgent(state: AgentWorkspaceState) {
+    if (state.sessionId !== project?.sessionId) return;
+    const next = state.files.map(file => ({ id: `${state.sessionId}:${file.id}`, sourceId: file.id, name: file.path, source: file.source, saved: file.saved }));
+    setDocuments(next); setProject({ sessionId: state.sessionId, manifest: state.manifest });
+    if (!next.some(file => file.id === activeId)) setActiveId(next[0]!.id);
+  }
   async function projectOperation(action: () => Promise<ProjectSnapshot | ProjectManifest | Failure | null>, append = false) {
     if (busy) return; setBusy(true);
     try {
@@ -86,7 +96,7 @@ export function App() {
   const exportDisk = () => perform(() => project && files.project ? files.project.exportDisk(project.sessionId, documents.map(item => ({ id: item.sourceId, source: item.source }))) : files.exportDisk(source), 'DSK DATA construit — validation structurelle uniquement');
   return <main className="workbench">
     <header className="topbar">
-      <div className="brand"><span className="brand-mark">μ</span><div><h1>Micro IDE <span>Amstrad</span></h1><p>Atelier Locomotive BASIC · alpha 0.5</p></div></div>
+      <div className="brand"><span className="brand-mark">μ</span><div><h1>Micro IDE <span>Amstrad</span></h1><p>Atelier Locomotive BASIC · alpha 0.6</p></div></div>
       <span className="profile">CPC 6128 · BASIC 1.1</span>
     </header>
     <nav className="toolbar" aria-label="Actions du listing">
@@ -111,6 +121,7 @@ export function App() {
         </div>
       </section>
       <aside aria-label="Références et état du produit">
+        <AgentPanel sessionId={project?.sessionId} buffers={documents.map(document => ({ id: document.sourceId, source: document.source }))} busy={busy} onRunning={setAgentBusy} onState={acceptAgent} />
         <section className="panel"><h2>{project?.manifest.name ?? 'Projets BASIC'}</h2>
           {project ? <>
             <p>Entrée : {project.manifest.sources.find(item => item.id === project.manifest.entryPoint)?.cpcName}</p>
@@ -132,7 +143,7 @@ export function App() {
           <p className="muted">{provenance}. Signatures indicatives, options non exhaustives.</p>
         </section>
         <section className="panel"><h2>Votre atelier</h2><p><kbd>F12</kbd> Aller à une ligne ciblée</p><p><kbd>Ctrl Z</kbd> Annuler une modification</p><p>La complétion reconnaît commandes, identifiants observés et numéros de lignes. Elle est désactivée dans les commentaires, chaînes ouvertes et DATA.</p></section>
-        <section className="panel pending"><h2>Prochaines connexions</h2><p>Émulateur : qualification ROM en attente.</p><p>Agent IA : non connecté dans cette alpha.</p><p>Export : disquette DATA avec sources BASIC ASCII, pas une compilation Z80 ni un lancement automatique.</p></section>
+        <section className="panel pending"><h2>Prochaines connexions</h2><p>Émulateur chips/WASM : qualification ROM et worker desktop en attente.</p><p>Agent : sources BASIC, références et construction DSK ; pièces jointes et exécution CPC à venir.</p><p>Export : disquette DATA avec sources BASIC ASCII, pas une compilation Z80 ni un lancement automatique.</p></section>
       </aside>
     </div>
     <footer role="status">{busy ? 'Opération en cours…' : status}<span>L{position.line} · C{position.column} · {window.desktop ? 'Bureau local' : 'Aperçu navigateur · enregistrement par téléchargement'}</span></footer>

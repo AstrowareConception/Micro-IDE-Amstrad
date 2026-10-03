@@ -6,6 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { buildListingDisk } from '../../packages/basic-language/src/build.ts';
 import { buildProjectDisk } from '../../packages/workspace/src/project.ts';
 import { ProjectStore } from './project-store.ts';
+import { AgentController } from './agent-controller.ts';
 
 const base = dirname(fileURLToPath(import.meta.url));
 const page = pathToFileURL(join(base, '../../renderer/index.html')).href;
@@ -15,6 +16,7 @@ let current: { path: string; hash: string } | undefined;
 let dirty = false;
 let project: ProjectStore | undefined;
 let inFlight = false;
+let agent: AgentController;
 const hash = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
 
 function trusted(event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent): void {
@@ -42,6 +44,7 @@ async function atomicWrite(path: string, bytes: Uint8Array): Promise<void> {
 function route(channel: string, handler: (payload: unknown) => Promise<unknown>) {
   ipcMain.handle(channel, async (event, payload: unknown) => {
     trusted(event);
+    if (agent?.running && !channel.startsWith('agent:')) return { error: 'Une mission agent est active ; arrêtez-la avant les opérations disque.' };
     if (inFlight) return { error: 'Une opération disque est déjà en cours.' };
     inFlight = true;
     try { return await handler(payload); }
@@ -52,6 +55,7 @@ function route(channel: string, handler: (payload: unknown) => Promise<unknown>)
 
 // Do not hold the ESM entry point open while waiting for Electron's ready lifecycle.
 void app.whenReady().then(async () => {
+agent = new AgentController(join(app.getPath('userData'), 'agent-checkpoints'), join(base, '../../knowledge/locomotive-basic'));
 window = new BrowserWindow({ width: 1440, height: 960, minWidth: 900, minHeight: 650,
   backgroundColor: '#10151d', title: 'Micro IDE Amstrad',
   webPreferences: { preload: join(base, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true },
@@ -61,6 +65,7 @@ window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
 window.webContents.on('will-navigate', (event, url) => { if (url !== page) event.preventDefault(); });
 window.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
 window.on('close', event => {
+  if (agent.running) { event.preventDefault(); dialog.showMessageBoxSync(window, { message: 'Arrêtez la mission agent avant de fermer la fenêtre.' }); return; }
   if (dirty && dialog.showMessageBoxSync(window, { type: 'warning', buttons: ['Annuler', 'Quitter sans enregistrer'],
     defaultId: 0, cancelId: 0, message: 'Le listing contient des modifications non enregistrées.' }) === 0) event.preventDefault();
 });
@@ -155,6 +160,35 @@ route('project:export', async payload => {
   await store.assertCurrent(); await store.assertExportDestination(selection.filePath);
   await atomicWrite(selection.filePath, bytes);
   return { name: selection.filePath.split(/[\\/]/).at(-1) };
+});
+function bufferRequest(value: unknown): { id: string; source: string }[] {
+  if (!Array.isArray(value) || value.length > 64) throw new Error('Snapshot invalide.');
+  let total = 0;
+  return value.map(item => {
+    const source = sourceFrom(item).source, id = (item as Record<string, unknown>).id;
+    total += Buffer.byteLength(source);
+    if (typeof id !== 'string' || total > 256 * 1024) throw new Error('Snapshot invalide ou supérieur à 256 Kio.');
+    return { id, source };
+  });
+}
+route('agent:configure', async payload => {
+  if (!payload || typeof payload !== 'object') throw new Error('Configuration invalide.');
+  const value = payload as Record<string, unknown>; return agent.configure(value.key, value.model);
+});
+route('agent:start', async payload => {
+  const { store, value } = projectRequest(payload);
+  return agent.start(store, value.objective, bufferRequest(value.buffers));
+});
+route('agent:status', async payload => agent.status(payload));
+route('agent:cancel', async payload => agent.cancel(payload));
+route('agent:steer', async payload => {
+  if (!payload || typeof payload !== 'object') throw new Error('Consigne invalide.');
+  const value = payload as Record<string, unknown>; return agent.steer(value.taskId, value.instruction);
+});
+route('agent:restore', async payload => {
+  const { store, value } = projectRequest(payload);
+  const view = agent.status(value.taskId); store.assertSession(view.workspace.sessionId);
+  return agent.restore(value.taskId, bufferRequest(value.buffers));
 });
 await window.loadURL(page);
 }).catch(error => { console.error('Desktop startup failed:', error); app.quit(); });
