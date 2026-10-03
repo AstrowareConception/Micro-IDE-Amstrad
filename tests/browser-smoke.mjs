@@ -36,7 +36,7 @@ try {
   const download = await downloadPromise;
   assert.deepEqual(await readFile(await download.path()), await readFile('out/hello.dsk'));
   await page.locator('#reset').click(); assert.equal(await page.locator('#type').isDisabled(), true);
-  const forbidden = await page.request.get('/package.json'); assert.equal(forbidden.status(), 404);
+  const forbidden = await page.request.get('http://127.0.0.1:6130/package.json'); assert.equal(forbidden.status(), 404);
   await page.screenshot({ path: 'out/j0-harness.png', fullPage: true });
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ status: 'passed', runtime: 'chromium-wasm', firmware: 'synthetic JP 0',
