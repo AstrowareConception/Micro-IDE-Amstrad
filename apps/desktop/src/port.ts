@@ -1,4 +1,5 @@
 import { buildListingDisk } from '../../../packages/basic-language/src/build.ts';
+import type { ProjectManifest, ProjectSnapshot } from '../../../packages/workspace/src/project.ts';
 export interface FileResult { name: string; source?: string }
 export interface Failure { error: string }
 export interface DesktopPort {
@@ -6,6 +7,14 @@ export interface DesktopPort {
   save(source: string, saveAs?: boolean): Promise<FileResult | Failure | null>;
   exportDisk(source: string): Promise<FileResult | Failure | null>;
   setDirty(dirty: boolean): void;
+  project?: {
+    open(): Promise<ProjectSnapshot | Failure | null>;
+    create(name: string): Promise<ProjectSnapshot | Failure | null>;
+    save(sessionId: string, id: string, source: string): Promise<FileResult | Failure | null>;
+    add(sessionId: string, name: string): Promise<ProjectSnapshot | Failure | null>;
+    setEntry(sessionId: string, id: string): Promise<ProjectManifest | Failure | null>;
+    exportDisk(sessionId: string, sources: { id: string; source: string }[]): Promise<FileResult | Failure | null>;
+  };
 }
 declare global { interface Window { desktop?: DesktopPort } }
 

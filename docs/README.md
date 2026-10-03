@@ -1,8 +1,10 @@
-# Dossier de conception et première réalisation — version 0.3
+# Dossier de conception et réalisation — version 0.5
 
 Date de référence : **2026-10-03**. Responsable produit : **Térence FERUT / AstroWare Conception**. Les spécifications servent de référence au produit. Le [guide de l'alpha d'édition](implementation/editor-alpha.md), le [rapport J0](implementation/j0-report.md) et le [banc local](../tools/j0-harness/README.md) distinguent code disponible, preuves et qualification encore bloquée. L'[ADR 0009](adr/0009-edition-independante.md) découple l'édition du go moteur.
 
 ## Documents de référence
+
+La tranche [projets BASIC 0.5](implementation/projects-alpha.md) ajoute dossiers, manifeste, plusieurs buffers et export multifichier. Elle ne clôture pas la durabilité J1-03 ; voir l'[ADR 0010](adr/0010-projets-basic-incrementaux.md).
 
 | Document | Question traitée |
 | --- | --- |
