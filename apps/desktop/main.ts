@@ -4,6 +4,8 @@ import { createHash, randomUUID } from 'node:crypto';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { buildListingDisk } from '../../packages/basic-language/src/build.ts';
+import { buildProjectDisk } from '../../packages/workspace/src/project.ts';
+import { ProjectStore } from './project-store.ts';
 
 const base = dirname(fileURLToPath(import.meta.url));
 const page = pathToFileURL(join(base, '../../renderer/index.html')).href;
@@ -11,6 +13,8 @@ const MAX_SOURCE_BYTES = 1024 * 1024;
 let window: BrowserWindow;
 let current: { path: string; hash: string } | undefined;
 let dirty = false;
+let project: ProjectStore | undefined;
+let inFlight = false;
 const hash = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
 
 function trusted(event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent): void {
@@ -38,8 +42,11 @@ async function atomicWrite(path: string, bytes: Uint8Array): Promise<void> {
 function route(channel: string, handler: (payload: unknown) => Promise<unknown>) {
   ipcMain.handle(channel, async (event, payload: unknown) => {
     trusted(event);
+    if (inFlight) return { error: 'Une opération disque est déjà en cours.' };
+    inFlight = true;
     try { return await handler(payload); }
     catch (error) { return { error: error instanceof Error ? error.message : 'Échec de l’opération.' }; }
+    finally { inFlight = false; }
   });
 }
 
@@ -69,9 +76,11 @@ route('listing:open', async () => {
   const source = new TextDecoder('utf-8', { fatal: true }).decode(bytes).replace(/\r\n?/g, '\n');
   if (source.includes('\0')) throw new Error('Un listing texte UTF-8 est requis, pas un fichier tokenisé.');
   current = { path, hash: hash(bytes) };
+  project = undefined;
   return { name: path.split(/[\\/]/).at(-1), source };
 });
 route('listing:save', async payload => {
+  if (project) throw new Error('Utilisez la sauvegarde de source du projet.');
   const { source, saveAs } = sourceFrom(payload);
   let path = current?.path;
   if (!path || saveAs) {
@@ -87,11 +96,63 @@ route('listing:save', async payload => {
   return { name: path.split(/[\\/]/).at(-1) };
 });
 route('listing:export', async payload => {
+  if (project) throw new Error('Utilisez la construction du projet.');
   const bytes = buildListingDisk(sourceFrom(payload).source);
   const selection = await dialog.showSaveDialog(window, { defaultPath: 'program.dsk', filters: [{ name: 'Disquette CPC DATA', extensions: ['dsk'] }] });
   if (selection.canceled || !selection.filePath) return null;
   // Export cannot silently overwrite the open source.
   if (selection.filePath === current?.path) throw new Error('La destination DSK doit être distincte du listing.');
+  await atomicWrite(selection.filePath, bytes);
+  return { name: selection.filePath.split(/[\\/]/).at(-1) };
+});
+route('project:open', async () => {
+  const selection = await dialog.showOpenDialog(window, { properties: ['openDirectory'] });
+  if (selection.canceled || !selection.filePaths[0]) return null;
+  const opened = await ProjectStore.open(selection.filePaths[0]);
+  project = opened.store; current = undefined; return opened.snapshot;
+});
+route('project:create', async payload => {
+  if (typeof payload !== 'string') throw new Error('Nom de projet requis.');
+  const selection = await dialog.showOpenDialog(window, { properties: ['openDirectory', 'createDirectory'] });
+  if (selection.canceled || !selection.filePaths[0]) return null;
+  const created = await ProjectStore.create(selection.filePaths[0], payload);
+  project = created.store; current = undefined; return created.snapshot;
+});
+function projectRequest(payload: unknown): { store: ProjectStore; value: Record<string, unknown> } {
+  if (!project || !payload || typeof payload !== 'object') throw new Error('Aucun projet ouvert.');
+  const value = payload as Record<string, unknown>; project.assertSession(value.sessionId);
+  return { store: project, value };
+}
+route('project:save', async payload => {
+  const { store, value } = projectRequest(payload);
+  if (typeof value.id !== 'string') throw new Error('Identifiant de source requis.');
+  await store.save(value.id, sourceFrom(value).source); return { name: value.id };
+});
+route('project:add', async payload => {
+  const { store, value } = projectRequest(payload);
+  if (typeof value.name !== 'string') throw new Error('Nom de source requis.');
+  return store.add(value.name);
+});
+route('project:entry', async payload => {
+  const { store, value } = projectRequest(payload);
+  if (typeof value.id !== 'string') throw new Error('Identifiant de source requis.');
+  return store.setEntry(value.id);
+});
+route('project:export', async payload => {
+  const { store, value } = projectRequest(payload); await store.assertCurrent();
+  if (!Array.isArray(value.sources) || value.sources.length > 64) throw new Error('Snapshot invalide.');
+  let total = 0;
+  const sources = value.sources.map(item => {
+    const source = sourceFrom(item).source;
+    const id = (item as Record<string, unknown>).id;
+    total += Buffer.byteLength(source);
+    if (typeof id !== 'string' || total > 8 * MAX_SOURCE_BYTES) throw new Error('Snapshot invalide ou supérieur à 8 Mio.');
+    return { id, source };
+  });
+  const bytes = buildProjectDisk(store.manifest, sources);
+  const selection = await dialog.showSaveDialog(window, { defaultPath: 'project.dsk', filters: [{ name: 'Disquette CPC DATA', extensions: ['dsk'] }] });
+  if (selection.canceled || !selection.filePath) return null;
+  await store.assertCurrent(); await store.assertExportDestination(selection.filePath);
   await atomicWrite(selection.filePath, bytes);
   return { name: selection.filePath.split(/[\\/]/).at(-1) };
 });

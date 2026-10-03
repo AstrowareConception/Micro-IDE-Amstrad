@@ -13,5 +13,6 @@ Une ADR explique une décision durable et ses conséquences. **Acceptée** signi
 | [0007](0007-compatibilite-progressive.md) | Qualification progressive des machines et ROM séparées | Acceptée |
 | [0008](0008-j0-data-harness.md) | DATA séquentiel, parser borné et preuves synthétiques distinctes des essais ROM | Acceptée pour J0 |
 | [0009](0009-edition-independante.md) | Édition desktop indépendante de la qualification CPC | Acceptée pour l'alpha 0.4 |
+| [0010](0010-projets-basic-incrementaux.md) | Dossiers et buffers BASIC indépendants, durabilité incrémentale explicite | Acceptée pour l'alpha 0.5 |
 
 Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou preuve technique, pas parce qu'une technologie différente est disponible.
