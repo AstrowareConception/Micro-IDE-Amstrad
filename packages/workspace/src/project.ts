@@ -3,14 +3,18 @@ import { createDataDisk, readDataDisk } from '../../cpc-disk/src/data-disk.ts';
 
 export interface ProjectSource { id: string; path: string; cpcName: string }
 export interface ProjectDocument {
-  id: string; path: string; sha256: string; mediaType: 'text/plain' | 'text/markdown' | 'image/png' | 'image/jpeg';
+  id: string; path: string; sha256: string; mediaType: 'text/plain' | 'text/markdown' | 'image/png' | 'image/jpeg' | 'application/pdf';
   role: 'context' | 'inspiration' | 'asset-source'; originalName: string;
 }
 export interface DocumentText extends ProjectDocument { text: string; bytes: number }
 export interface ImagePreview { dataUrl: string; width: number; height: number; previewWidth: number; previewHeight: number }
 export interface DocumentImage extends ProjectDocument, ImagePreview { bytes: number }
-export type DocumentSnapshot = DocumentText | DocumentImage;
+export interface PdfPageText { page: number; text: string }
+export interface PdfTextPreview { pages: PdfPageText[]; pageCount: number; extraction: 'pdfjs-text-v1' }
+export interface DocumentPdf extends ProjectDocument, PdfTextPreview { bytes: number }
+export type DocumentSnapshot = DocumentText | DocumentImage | DocumentPdf;
 export type ImageDecoder = (bytes: Uint8Array, mediaType: ProjectDocument['mediaType']) => Promise<ImagePreview>;
+export type PdfExtractor = (bytes: Uint8Array) => Promise<PdfTextPreview>;
 export const DOCUMENT_LIMIT = 1024 * 1024;
 export const DOCUMENT_TOTAL_LIMIT = 4 * DOCUMENT_LIMIT;
 export const DOCUMENT_COUNT_LIMIT = 10;
@@ -42,7 +46,7 @@ export function validateSourcePath(path: string): void {
     if (/[. ]$/.test(segment) || /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i.test(segment)) throw new Error('Nom non portable sur Windows.');
   }
 }
-/** Supported v1 subset. Binary assets, PDF/WebP and other encodings are refused. */
+/** Supported v1 subset. Binary assets, WebP and other encodings are refused. */
 export function parseProject(value: unknown): ProjectManifest {
   const root = object(value, ['schemaVersion', 'projectId', 'name', 'target', 'entryPoint', 'sources', 'assets', 'documents', 'build']);
   if (root.schemaVersion !== 1) throw new Error('Version de projet non prise en charge ; aucun fichier modifié.');
@@ -56,8 +60,8 @@ export function parseProject(value: unknown): ProjectManifest {
     const item = object(value, ['id', 'path', 'sha256', 'mediaType', 'role', 'originalName']);
     const id = string(item.id, ID), path = string(item.path, PATH);
     if (path.length > 240 || !path.startsWith('documents/') || path.split('/').some(segment => /[. ]$/.test(segment) || /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i.test(segment))) throw new Error('Chemin documentaire relatif portable sous documents/ requis.');
-    const extensions: Record<string, RegExp> = { 'text/plain': /\.txt$/i, 'text/markdown': /\.md$/i, 'image/png': /\.png$/i, 'image/jpeg': /\.jpe?g$/i };
-    if (typeof item.mediaType !== 'string' || !Object.hasOwn(extensions, item.mediaType)) throw new Error('Seuls TXT, Markdown, PNG et JPEG sont pris en charge dans cette alpha.');
+    const extensions: Record<string, RegExp> = { 'text/plain': /\.txt$/i, 'text/markdown': /\.md$/i, 'image/png': /\.png$/i, 'image/jpeg': /\.jpe?g$/i, 'application/pdf': /\.pdf$/i };
+    if (typeof item.mediaType !== 'string' || !Object.hasOwn(extensions, item.mediaType)) throw new Error('Seuls TXT, Markdown, PNG, JPEG et PDF sont pris en charge dans cette alpha.');
     if (!extensions[item.mediaType]!.test(path)) throw new Error('Extension documentaire incohérente.');
     if (!['context', 'inspiration', 'asset-source'].includes(item.role as string)) throw new Error('Rôle documentaire invalide.');
     if (typeof item.originalName !== 'string' || !item.originalName.trim() || item.originalName.length > 255 || /[\x00-\x1f\x7f/\\]/.test(item.originalName)) throw new Error('Nom original documentaire invalide.');

@@ -7,6 +7,7 @@ import { buildListingDisk } from '../../packages/basic-language/src/build.ts';
 import { buildProjectDisk } from '../../packages/workspace/src/project.ts';
 import { ProjectStore } from './project-store.ts';
 import { decodeImage } from './image-document.ts';
+import { extractPdf } from './pdf-document.ts';
 import { AgentController } from './agent-controller.ts';
 import { FirmwareStore } from './firmware-store.ts';
 import { romRole } from '../../packages/emulator/src/firmware.ts';
@@ -117,14 +118,14 @@ route('listing:export', async payload => {
 route('project:open', async () => {
   const selection = await dialog.showOpenDialog(window, { properties: ['openDirectory'] });
   if (selection.canceled || !selection.filePaths[0]) return null;
-  const opened = await ProjectStore.open(selection.filePaths[0], decodeImage);
+  const opened = await ProjectStore.open(selection.filePaths[0], decodeImage, extractPdf);
   project = opened.store; current = undefined; return opened.snapshot;
 });
 route('project:create', async payload => {
   if (typeof payload !== 'string') throw new Error('Nom de projet requis.');
   const selection = await dialog.showOpenDialog(window, { properties: ['openDirectory', 'createDirectory'] });
   if (selection.canceled || !selection.filePaths[0]) return null;
-  const created = await ProjectStore.create(selection.filePaths[0], payload, decodeImage);
+  const created = await ProjectStore.create(selection.filePaths[0], payload, decodeImage, extractPdf);
   project = created.store; current = undefined; return created.snapshot;
 });
 function projectRequest(payload: unknown): { store: ProjectStore; value: Record<string, unknown> } {
@@ -149,10 +150,10 @@ route('project:entry', async payload => {
 });
 route('documents:import', async payload => {
   const { store, value } = projectRequest(payload);
-  if (value.kind !== 'text' && value.kind !== 'image') throw new Error('Catégorie documentaire invalide.');
-  const selection = await dialog.showOpenDialog(window, { properties: ['openFile'], filters: [{ name: value.kind === 'image' ? 'Image PNG / JPEG' : 'Document UTF-8 TXT / Markdown', extensions: value.kind === 'image' ? ['png', 'jpg', 'jpeg'] : ['txt', 'md'] }] });
+  if (value.kind !== 'text' && value.kind !== 'image' && value.kind !== 'pdf') throw new Error('Catégorie documentaire invalide.');
+  const selection = await dialog.showOpenDialog(window, { properties: ['openFile'], filters: [{ name: value.kind === 'pdf' ? 'Document PDF' : value.kind === 'image' ? 'Image PNG / JPEG' : 'Document UTF-8 TXT / Markdown', extensions: value.kind === 'pdf' ? ['pdf'] : value.kind === 'image' ? ['png', 'jpg', 'jpeg'] : ['txt', 'md'] }] });
   if (selection.canceled || !selection.filePaths[0]) return null;
-  if (!(value.kind === 'image' ? /\.(png|jpe?g)$/i : /\.(txt|md)$/i).test(selection.filePaths[0])) throw new Error('Extension hors de la catégorie choisie.');
+  if (!(value.kind === 'pdf' ? /\.pdf$/i : value.kind === 'image' ? /\.(png|jpe?g)$/i : /\.(txt|md)$/i).test(selection.filePaths[0])) throw new Error('Extension hors de la catégorie choisie.');
   return store.importDocument(selection.filePaths[0]);
 });
 route('documents:read', async payload => {

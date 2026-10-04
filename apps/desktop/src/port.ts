@@ -18,7 +18,7 @@ export interface DesktopPort {
     add(sessionId: string, name: string): Promise<ProjectSnapshot | Failure | null>;
     setEntry(sessionId: string, id: string): Promise<ProjectManifest | Failure | null>;
     exportDisk(sessionId: string, sources: { id: string; source: string }[]): Promise<FileResult | Failure | null>;
-    importDocument(sessionId: string, kind?: 'text' | 'image'): Promise<ProjectManifest | Failure | null>;
+    importDocument(sessionId: string, kind?: 'text' | 'image' | 'pdf'): Promise<ProjectManifest | Failure | null>;
     readDocument(sessionId: string, id: string): Promise<DocumentSnapshot | Failure>;
   };
 }

@@ -20,6 +20,10 @@ Ces documents servent de sources de travail. Les fiches dérivées devront conse
 
 Le SDK comprend aussi LLVM/Binaryen et un Node embarqué, outils de construction avec leurs licences conservées dans l'installation emsdk. Ils ne sont pas distribués par le projet. Les artefacts WASM sont accompagnés des notices du moteur et d'Emscripten. Aucune ROM téléchargée, incorporée ou dérivée des firmwares Amstrad : le test original contient seulement l'instruction Z80 `JP 0`.
 
+## Extraction PDF — alpha 0.11
+
+`pdfjs-dist` 6.4.299, Apache-2.0, [projet Mozilla PDF.js](https://github.com/mozilla/pdf.js) ; package et intégrité figés dans `package-lock.json`, licence originale conservée dans le paquet installé. Build legacy utilisé pour le texte dans le thread, sans viewer ou rendu de page. Dépendance optionnelle Node `@napi-rs/canvas` 1.0.10 et variantes natives verrouillées, MIT ; licences/notices natives restent celles des paquets, à inventorier dans la distribution finale. Ce composant est chargé par les polyfills Node de PDF.js ; aucune qualification de rendu n'est déduite de sa présence. Aucun PDF tiers fourni comme fixture : exemples de recette originaux générés par le projet.
+
 ## Composants étudiés pour les incréments suivants
 
 CPCBasicTS : MIT ; Caprice32 : GPLv2. Ils sont étudiés et référencés ; Caprice32 est un oracle externe prévu, pas un composant embarqué. L'intégration future préservera les notices exactes de chaque version effectivement utilisée.

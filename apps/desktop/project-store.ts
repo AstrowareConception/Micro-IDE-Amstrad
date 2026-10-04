@@ -1,7 +1,8 @@
 import { lstat, realpath, readFile, writeFile, rename, unlink, mkdir, readdir } from 'node:fs/promises';
 import { join, dirname, relative, isAbsolute, basename, extname } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
-import { parseProject, newProject, addProjectSource, DOCUMENT_TOTAL_LIMIT, DOCUMENT_COUNT_LIMIT, type ProjectManifest, type ProjectSnapshot, type DocumentSnapshot, type ImageDecoder } from '../../packages/workspace/src/project.ts';
+import { parseProject, newProject, addProjectSource, DOCUMENT_TOTAL_LIMIT, DOCUMENT_COUNT_LIMIT, type ProjectManifest, type ProjectSnapshot, type DocumentSnapshot, type ImageDecoder, type PdfExtractor, type PdfTextPreview } from '../../packages/workspace/src/project.ts';
+import { validatePdfText } from '../../packages/workspace/src/pdf.ts';
 import { readDocumentBytes, decodeDocument } from './text-document.ts';
 import type { AgentWorkspaceState } from '../../packages/agent/src/types.ts';
 
@@ -35,13 +36,15 @@ export class ProjectStore {
   private hashes = new Map<string, string>();
   private faulted = false;
   private readonly imageDecoder: ImageDecoder | undefined;
-  private constructor(root: string, manifest: ProjectManifest, digest: string, imageDecoder?: ImageDecoder) { this.root = root; this.manifest = manifest; this.manifestHash = digest; this.imageDecoder = imageDecoder; }
-  static async open(folder: string, imageDecoder?: ImageDecoder): Promise<{ store: ProjectStore; snapshot: ProjectSnapshot }> {
+  private readonly pdfExtractor: PdfExtractor | undefined;
+  private readonly pdfCache = new Map<string, PdfTextPreview>();
+  private constructor(root: string, manifest: ProjectManifest, digest: string, imageDecoder?: ImageDecoder, pdfExtractor?: PdfExtractor) { this.root = root; this.manifest = manifest; this.manifestHash = digest; this.imageDecoder = imageDecoder; this.pdfExtractor = pdfExtractor; }
+  static async open(folder: string, imageDecoder?: ImageDecoder, pdfExtractor?: PdfExtractor): Promise<{ store: ProjectStore; snapshot: ProjectSnapshot }> {
     const root = await realpath(folder);
     if (!(await lstat(root)).isDirectory()) throw new Error('Dossier de projet requis.');
     const content = await bytes(join(root, MANIFEST));
     const manifest = parseProject(JSON.parse(text(content)));
-    const store = new ProjectStore(root, manifest, hash(content), imageDecoder);
+    const store = new ProjectStore(root, manifest, hash(content), imageDecoder, pdfExtractor);
     const files = [];
     let total = 0;
     for (const source of manifest.sources) {
@@ -52,7 +55,7 @@ export class ProjectStore {
     await store.agentDocuments();
     return { store, snapshot: { sessionId: store.sessionId, manifest, files } };
   }
-  static async create(folder: string, name: string, imageDecoder?: ImageDecoder): Promise<{ store: ProjectStore; snapshot: ProjectSnapshot }> {
+  static async create(folder: string, name: string, imageDecoder?: ImageDecoder, pdfExtractor?: PdfExtractor): Promise<{ store: ProjectStore; snapshot: ProjectSnapshot }> {
     const manifest = newProject(name, randomUUID());
     const root = await realpath(folder);
     if ((await readdir(root)).length) throw new Error('Choisissez un dossier vide ; aucun fichier existant n’a été écrasé.');
@@ -60,7 +63,7 @@ export class ProjectStore {
     await writeFile(join(root, 'src/main.bas'), '10 REM MICRO IDE AMSTRAD\n20 END\n', { flag: 'wx' });
     // The manifest is published last. A failed creation is never reported as a valid project.
     await writeFile(join(root, MANIFEST), JSON.stringify(manifest, null, 2) + '\n', { flag: 'wx' });
-    return ProjectStore.open(root, imageDecoder);
+    return ProjectStore.open(root, imageDecoder, pdfExtractor);
   }
   private async path(sourcePath: string): Promise<string> {
     let path = this.root;
@@ -81,6 +84,15 @@ export class ProjectStore {
   assertSession(id: unknown): void { if (id !== this.sessionId) throw new Error('Session de projet périmée.'); }
   async assertCurrent(): Promise<void> { await this.checkManifest(); }
   private async documentView(content: Uint8Array, mediaType: ProjectManifest['documents'][number]['mediaType']) {
+    if (mediaType === 'application/pdf') {
+      if (!this.pdfExtractor) throw new Error('unsupported-capability : extracteur PDF desktop requis.');
+      const digest = hash(content), cached = this.pdfCache.get(digest);
+      if (cached) return structuredClone(cached);
+      const result = validatePdfText(await this.pdfExtractor(content));
+      // Session-local, bounded cache; originals are still read and hashed on every access.
+      if (this.pdfCache.size >= DOCUMENT_COUNT_LIMIT) this.pdfCache.delete(this.pdfCache.keys().next().value!);
+      this.pdfCache.set(digest, structuredClone(result)); return result;
+    }
     if (mediaType.startsWith('image/')) {
       if (!this.imageDecoder) throw new Error('unsupported-capability : décodeur image desktop requis.');
       return this.imageDecoder(content, mediaType);
@@ -108,9 +120,9 @@ export class ProjectStore {
     await this.checkManifest();
     if (this.manifest.documents.length >= DOCUMENT_COUNT_LIMIT) throw new Error('10 documents maximum dans cette alpha.');
     const extension = extname(selected).toLowerCase();
-    const mediaTypes: Record<string, ProjectManifest['documents'][number]['mediaType']> = { '.txt': 'text/plain', '.md': 'text/markdown', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg' };
+    const mediaTypes: Record<string, ProjectManifest['documents'][number]['mediaType']> = { '.txt': 'text/plain', '.md': 'text/markdown', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.pdf': 'application/pdf' };
     const mediaType = mediaTypes[extension];
-    if (!mediaType) throw new Error('Choisissez un fichier TXT, MD, PNG ou JPEG.');
+    if (!mediaType) throw new Error('Choisissez un fichier TXT, MD, PNG, JPEG ou PDF.');
     const content = await readDocumentBytes(selected); await this.documentView(content, mediaType);
     const existing = await this.agentDocuments();
     if (existing.reduce((total, item) => total + item.bytes, content.length) > DOCUMENT_TOTAL_LIMIT) throw new Error('Documents limités à 4 Mio par projet dans cette alpha.');

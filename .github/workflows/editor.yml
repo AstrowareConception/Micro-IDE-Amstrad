@@ -42,6 +42,7 @@ jobs:
             out/renumber-alpha.png
             out/documents-alpha.png
             out/images-alpha.png
+            out/pdf-alpha.png
             out/desktop-failure.png
             out/editor-failure.png
           retention-days: 7

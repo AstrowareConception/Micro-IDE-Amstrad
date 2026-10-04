@@ -93,6 +93,8 @@ La [tranche 0.10](../implementation/images-alpha.md) ajoute import et aperçus P
 | J4-03 — Conversion écran et recettes | J4-01 | Mires exactes, hashes et palette déterministes |
 | J4-04 — Build des ressources et proposition d'intégration | J4-03 | ACC-13 et affichage dans émulateur indépendant |
 
+La [tranche PDF texte 0.11](../implementation/pdf-alpha.md) contribue à J4-01/02 et au contexte agent : extraction réelle, pages bornées, cache vérifié, lecture/recherche progressive. Rendu, OCR, annulation UI et corpus complexe non qualifiés ; pas de clôture J4-02 ni d'ACC-13/24. La prochaine tranche indépendante est JG-A (Git local), puis conversion CPC/rendu PDF selon les risques ; J0 conserve sa dépendance firmware.
+
 Sortie : ressources embarquées et contexte multimodal prêts, sans IA réseau implicite.
 
 ## J5 — Assistance IA et MVP produit

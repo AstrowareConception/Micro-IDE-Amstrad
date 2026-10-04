@@ -19,5 +19,6 @@ Une ADR explique une décision durable et ses conséquences. **Acceptée** signi
 | [0013](0013-documents-texte-incrementaux.md) | Originaux TXT/MD locaux et contexte agent documentaire explicitement autorisé | Acceptée pour l'alpha 0.9 |
 | [0014](0014-images-natives-et-contexte-visuel.md) | PNG/JPEG locaux, aperçu nettoyé et contenu visuel agent à la demande | Acceptée pour l'alpha 0.10 |
 | [0015](0015-git-natif-et-publication-explicite.md) | Git natif, remotes interchangeables, confiance et publication humaine explicite | Acceptée pour la conception ; à réaliser |
+| [0016](0016-pdf-texte-borne.md) | Extraction PDF texte bornée en thread dédié, pages et scope documentaire | Acceptée pour l'alpha 0.11 |
 
 Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou preuve technique, pas parce qu'une technologie différente est disponible.
