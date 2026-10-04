@@ -140,6 +140,7 @@ try {
   // Exercise the real main/preload/UI and actual Responses adapter with a controlled transport.
   // No OpenAI request, real key, paid generation or fixture-enabled production route.
   const checkpointBaseline = await readFile(join(moved, 'src/main.bas'), 'utf8');
+  await page.getByRole('tab', { name: 'src/main.bas', exact: true }).click();
   await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('\n40 REM USER DRAFT');
   const originalDraft = checkpointBaseline + '\n40 REM USER DRAFT';
   await desktop.evaluate(async () => {
