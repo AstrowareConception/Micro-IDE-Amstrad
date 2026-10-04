@@ -4,6 +4,10 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
   save: (source, saveAs = false) => ipcRenderer.invoke('listing:save', { source, saveAs }),
   exportDisk: source => ipcRenderer.invoke('listing:export', { source }),
   setDirty: dirty => ipcRenderer.send('listing:dirty', dirty),
+  git: Object.freeze({
+    status: sessionId => ipcRenderer.invoke('git:status', { sessionId }),
+    diff: (sessionId, changeId, side) => ipcRenderer.invoke('git:diff', { sessionId, changeId, side }),
+  }),
   firmware: Object.freeze({
     status: () => ipcRenderer.invoke('firmware:status'),
     importRom: role => ipcRenderer.invoke('firmware:import', role),
