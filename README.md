@@ -1,4 +1,10 @@
-# Micro IDE Amstrad
+# CPCéleste
+
+**Vos idées prennent vie en BASIC.** Un logiciel AstroWare Conception.
+
+<img src="apps/desktop/public/brand/cpceleste-icon.png" alt="Logo CPCéleste : orbite cyan pixelisée, invite de code blanche et étoile ambre" width="128" height="128" />
+
+Nom de produit du projet historiquement appelé « Micro IDE Amstrad ». [Identité visuelle et kit de marque](docs/brand/README.md). Le dépôt et les formats de projets conservent leurs identifiants techniques.
 
 Un atelier de programmation pour écrire du **Locomotive BASIC**, le tester dans un **Amstrad CPC émulé**, travailler avec une **IA et ses propres documents**, puis partager une **disquette DSK utilisable hors de l'IDE**.
 

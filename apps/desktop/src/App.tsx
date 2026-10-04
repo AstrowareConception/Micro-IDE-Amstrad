@@ -113,7 +113,7 @@ export function App() {
   }
   return <main className="workbench">
     <header className="topbar">
-      <div className="brand"><span className="brand-mark">μ</span><div><h1>Micro IDE <span>Amstrad</span></h1><p>Atelier Locomotive BASIC · alpha 0.13</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.13 · AstroWare Conception</p></div></div>
       <span className="profile">CPC 6128 · BASIC 1.1</span>
     </header>
     <nav className="toolbar" aria-label="Actions du listing">

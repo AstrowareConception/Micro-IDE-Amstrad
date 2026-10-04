@@ -64,7 +64,7 @@ void app.whenReady().then(async () => {
 agent = new AgentController(join(app.getPath('userData'), 'agent-checkpoints'), join(base, '../../knowledge/locomotive-basic'));
 const firmware = new FirmwareStore(join(app.getPath('userData'), 'firmware'));
 window = new BrowserWindow({ width: 1440, height: 960, minWidth: 900, minHeight: 650,
-  backgroundColor: '#10151d', title: 'Micro IDE Amstrad',
+  backgroundColor: '#10151d', title: 'CPCéleste — Atelier Amstrad CPC', icon: join(base, '../../renderer/brand/cpceleste-icon.png'),
   webPreferences: { preload: join(base, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true },
 });
 window.removeMenu();
