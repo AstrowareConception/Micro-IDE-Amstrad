@@ -25,10 +25,10 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 
 | ID | Fonction et qualification | État | Priorité | Dépendance | Critère de validation |
 | --- | --- | --- | --- | --- | --- |
-| IDE-007 | Sauvegarder fichier actif, Enregistrer tout et conflits externes | P | P0 | J1-03 | 0.17 : journal/reprise pour tout, préconditions, dirty/undo ; sauvegarde active et autres mutations à journaliser |
+| IDE-007 | Sauvegarder fichier actif, Enregistrer tout et conflits externes | P | P0 | J1-03 | 0.18 : actif/global partagent journal/historique et préconditions ; autres mutations et plateformes à qualifier |
 | IDE-008 | Journal et reprise après crash de sauvegarde multifichier | P | P0 | IDE-007 | 0.17 : journal versionné, deux choix, SIGKILL Linux, conflits/revisions ; autres mutations, Windows et panne électrique encore non qualifiés |
-| IDE-009 | Historique local durable indépendant de Git | N | P0 | IDE-008 | Révisions horodatées/labels, quotas/rétention, persistance et projet déplacé |
-| IDE-010 | Diff et restauration de fichier/fragment/version locale | N | P0 | IDE-009 | Aperçu, revision guard, sauvegarde de la version remplacée, annulation |
+| IDE-009 | Historique local durable indépendant de Git | P | P0 | IDE-008 | 0.18 : snapshots avant/après, 20/64 Mio, persistance/déplacement ; labels et autres mutations à venir |
+| IDE-010 | Diff et restauration de fichier/fragment/version locale | P | P0 | IDE-009 | 0.18 : diff Monaco, buffer/revision/disque guards, undo et sauvegarde explicite ; fragments/projet entier à venir |
 | IDE-011 | Autosauvegarde optionnelle et récupération des brouillons | N | P1 | DUR | Politique claire ; arrêt/crash testé ; aucun faux « enregistré » |
 | IDE-012 | Watcher externe et rechargement/comparaison contrôlés | N | P1 | DUR | Notifications bornées ; dirty conservé ; rename/delete et clients Git testés |
 
@@ -150,7 +150,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | Lot | Portée | Sortie attendue et justification |
 | --- | --- | --- |
 | R1 — Navigation et édition de projet | IDE-022/023, IDE-020 partiel | Recherche/remplacement sources avec aperçu et undo ; gain immédiat, sans ROM ni écriture disque |
-| R2 — Sécuriser le travail | IDE-007/008/009/010/012 | 0.16 Enregistrer tout ; 0.17 journal/reprise globale Linux ; suite historique/restauration et autres mutations, avant checkout |
+| R2 — Sécuriser le travail | IDE-007/008/009/010/011/012 | 0.18 actif/global journalisés, historique/diff/restauration buffer ; suite récupération des brouillons/watcher et autres mutations, avant checkout |
 | R3 — Git local complet | IDE-033/034 puis IDE-035 | Commits exacts et versions inspectables ; durabilité avant mutations de branches |
 | R4 — Connexion Git et GitHub | IDE-036/037, puis IDE-039 | HTTPS/SSH et conflits ; confirmations de publication ; pas de faux support via terminal |
 | R5 — Langage et confort | IDE-013/014/015/017/018, IDE-002/004/027/028 | Références/parser renforcés, outils et layout utiles ; incréments parallèles conceptuellement, pas obligation d’agents multiples |
@@ -176,3 +176,7 @@ IDE-007 avance avec **Enregistrer tout** : snapshot complet, préconditions de t
 ## Avancement R2 — alpha 0.17
 
 IDE-008 passe de N à P : journal d’Enregistrer tout publié avant les sources, phases persistantes, contrôles de versions/empreintes/révisions, ouverture avec Annuler/Terminer/Rétablir et refus des conflits. [Guide et preuves](../implementation/recovery-alpha.md), [ADR 0022](../adr/0022-journal-sauvegarde-et-reprise.md). Tests d’arrêt SIGKILL Linux et recette Electron ; pas de qualification panne électrique, Windows/macOS ou verrou interprocessus. IDE-007/008 restent P, IDE-009/010 restent N. Suite prioritaire : historique local durable/comparaison/restauration et journalisation des autres mutations. Les brouillons non soumis à une sauvegarde restent volatils.
+
+## Avancement R2 — alpha 0.18
+
+IDE-009/010 passent de N à P : versions avant/après des sauvegardes locales de projet, rétention 20 snapshots/64 Mio, persistance/déplacement, diff Monaco et restauration de la source dans le buffer avec Ctrl Z et guards de contenu/révision/disque. Enregistrer actif partage désormais journal et contrôle global avec Enregistrer tout, sans enregistrer les autres brouillons. [Guide et preuves](../implementation/local-history-alpha.md), [ADR 0023](../adr/0023-historique-local-et-restauration-buffer.md). 118 tests Node et recette Electron ; historique fragment/projet, labels et mutations agent restent ouverts. Suite prioritaire : IDE-011 récupération des brouillons et IDE-012 watcher externe, puis extension aux autres mutations, avant checkout Git. R2 reste ouvert.

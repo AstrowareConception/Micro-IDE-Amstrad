@@ -80,6 +80,12 @@ L’ADR 0022 complète le contrat save-all 0.16 : journal `.microide/save/pendin
 
 La récupération n’ajoute pas de route renderer à chemins libres : le main intervient dans `project:open` après sélection native, inspecte puis confirme un choix, vérifie UUID/révision du journal, manifeste et toutes les sources, puis ouvre normalement. Annulation → null ; conflit/corruption/version inconnue → erreur, données conservées. [ADR 0022](../adr/0022-journal-sauvegarde-et-reprise.md). Ce mécanisme ne journalise pas encore les autres mutations.
 
+### Historique local livré — alpha 0.18
+
+`.microide/history/<UUID>.json` v1 conserve UUID snapshot/projet, date ISO, raison before-save/after-save et sources `{id,path,sha256,content}` en base64 canonique. Budgets/rétention : 1 Mio/source, 8 Mio/snapshot, 12 Mio JSON/fichier, 20 snapshots/64 Mio cumulés. [ADR 0023](../adr/0023-historique-local-et-restauration-buffer.md).
+
+Routes `history:list({sessionId})` → `HistorySnapshot[]` (UUID, révision SHA du fichier exact, date, raison, métadonnées sources sans contenus) et `history:version({sessionId,snapshotId,id,revision})` → `HistoryVersion` (mêmes références, path/sha256 et source LF). Erreur → `{error}`. Sessions et IDs sont contrôlés côté main ; jamais de chemin hôte fourni. La restauration est une opération de buffer guardée, pas une route d’écriture disque. Enregistrer actif utilise désormais le contrat journalisé save-all sur un snapshot de fichiers disque avec remplacement du seul actif.
+
 ### Formats futurs de partage
 
 Une migration est une fonction version N → N+1, testée sur fixtures, avec sauvegarde avant modification et rapport. Aucun downgrade implicite. Une version future inconnue peut être inspectée sans écriture si son contenu est accessible ; l'utilisateur ne reçoit pas une réécriture destructrice dans le schéma 1. Les versions de recette et de moteur évoluent séparément de la version de manifeste.

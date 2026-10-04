@@ -38,7 +38,7 @@ function parse(value: unknown): JournalRecord {
   if (new Set(entries.map(entry => entry.id)).size !== entries.length || new Set(entries.map(entry => entry.path.toLowerCase())).size !== entries.length) throw new Error('Journal dupliqué.');
   return item as unknown as JournalRecord;
 }
-async function syncDirectory(path: string): Promise<void> {
+export async function syncDirectory(path: string): Promise<void> {
   if (process.platform === 'win32') return; // Windows persistence remains unqualified.
   const handle = await open(path, 'r'); try { await handle.sync(); } finally { await handle.close(); }
 }

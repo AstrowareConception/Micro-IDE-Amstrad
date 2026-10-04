@@ -216,6 +216,12 @@ route('project:save-all', async payload => {
   });
   return store.saveAll(sources);
 });
+route('history:list', async payload => { const { store } = projectRequest(payload); return store.historyList(); });
+route('history:version', async payload => {
+  const { store, value } = projectRequest(payload);
+  if (typeof value.snapshotId !== 'string' || typeof value.id !== 'string' || typeof value.revision !== 'string') throw new Error('Référence historique requise.');
+  return store.historyVersion(value.snapshotId, value.id, value.revision);
+});
 route('project:add', async payload => {
   const { store, value } = projectRequest(payload);
   if (typeof value.name !== 'string') throw new Error('Nom de source requis.');

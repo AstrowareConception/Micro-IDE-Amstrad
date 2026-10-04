@@ -17,6 +17,7 @@ import type { RenumberRequest } from './RenumberPanel.tsx';
 import { applyRenumber } from '../../../packages/basic-language/src/renumber.ts';
 import { CommandPalette, type WorkbenchCommand } from './CommandPalette.tsx';
 import { TerminalPanel } from './TerminalPanel.tsx';
+import { HistoryPanel } from './HistoryPanel.tsx';
 
 const SAMPLE = '10 REM MICRO IDE AMSTRAD\n20 MODE 1\n30 INK 0,0:INK 1,24\n40 PEN 1\n50 PRINT "BONJOUR CPC 6128 !"\n60 FOR I=1 TO 5\n70 PRINT "LOCOMOTIVE BASIC";I\n80 NEXT I\n90 END\n';
 interface Document { id: string; sourceId: string; name: string; source: string; saved: string }
@@ -37,6 +38,7 @@ export function App() {
   const [contextSource, setContextSource] = useState<string>();
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [navigation, setNavigation] = useState<SearchMatch>();
   const editorWorkspace = useRef<EditorWorkspace | undefined>(undefined);
   const [minimap, setMinimap] = useState(false);
@@ -156,6 +158,7 @@ export function App() {
     { id: 'project', label: 'Ouvrir un projet', disabled: busy || !files.project, run: () => openProject(false) },
     { id: 'save', label: 'Enregistrer le listing actif', detail: 'Ctrl S', disabled: busy, run: () => void save() },
     { id: 'save-all', label: 'Enregistrer tout le projet', disabled: busy || !project || !files.project, run: () => void saveAll() },
+    { id: 'local-history', label: 'Historique local de la source', disabled: busy || !project || !files.history, run: () => setHistoryOpen(true) },
     { id: 'export', label: 'Exporter le projet en DSK', disabled: busy, run: () => void exportDisk() },
     { id: 'undo', label: 'Annuler la modification', disabled: busy, run: () => { editor.current?.focus(); editor.current?.trigger('workbench', 'undo', null); } },
     { id: 'redo', label: 'Rétablir la modification', disabled: busy, run: () => { editor.current?.focus(); editor.current?.trigger('workbench', 'redo', null); } },
@@ -174,6 +177,7 @@ export function App() {
   const selectedSource = documents.find(document => document.id === contextSource);
   const sourceCommands: WorkbenchCommand[] = selectedSource ? [
     { id: 'select', label: 'Ouvrir cette source', disabled: busy, run: () => setActiveId(selectedSource.id) },
+    { id: 'source-history', label: 'Historique local de cette source', disabled: busy || !project || !files.history, run: () => { setActiveId(selectedSource.id); setHistoryOpen(true); } },
     { id: 'source-save', label: 'Enregistrer cette source', disabled: busy || !project || !files.project, run: () => {
       if (!project || !files.project || busy) return;
       setBusy(true); const selected = selectedSource;
@@ -188,21 +192,27 @@ export function App() {
   const menu = (label: string, ids: string[]) => <details className="workbench-menu"><summary>{label}</summary><div>{commands.filter(command => ids.includes(command.id)).map(command => <button key={command.id} disabled={command.disabled} onClick={event => { event.currentTarget.closest('details')?.removeAttribute('open'); command.run(); }}>{command.label}</button>)}</div></details>;
   return <main className="workbench">
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.17 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.18 · AstroWare Conception</p></div></div>
       <span className="profile">CPC 6128 · BASIC 1.1</span>
     </header>
     <nav className="menubar" aria-label="Menus de l’atelier">
-      {menu('Fichier', ['open', 'project', 'save', 'save-all', 'export'])}{menu('Édition', ['undo', 'redo', 'find', 'replace', 'search-sources', 'line'])}
+      {menu('Fichier', ['open', 'project', 'save', 'save-all', 'local-history', 'export'])}{menu('Édition', ['undo', 'redo', 'find', 'replace', 'search-sources', 'line'])}
       {menu('BASIC', ['renumber', 'complete'])}{menu('Affichage', ['minimap', 'zoom-in', 'zoom-out', 'terminal'])}
       <button onClick={() => setPalette('all')}>Commandes <kbd>Ctrl Maj P</kbd></button><button onClick={() => setPalette('sources')}>Sources <kbd>Ctrl P</kbd></button>
     </nav>
     {palette && <CommandPalette key={palette} title={palette === 'all' ? 'Commandes CPCéleste' : 'Ouvrir rapidement une source'} commands={palette === 'all' ? commands : commands.filter(command => command.id.startsWith('source:'))} onClose={() => setPalette(undefined)} />}
     {selectedSource && <CommandPalette title={`Actions de ${selectedSource.name}`} searchable={false} commands={sourceCommands} onClose={() => setContextSource(undefined)} />}
+    {historyOpen && project && <HistoryPanel key={`history:${project.sessionId}:${active.id}`} sessionId={project.sessionId} sourceId={active.sourceId} path={active.name} source={source} busy={busy} onClose={() => setHistoryOpen(false)} onApply={(before, after) => {
+      if (!editorWorkspace.current) throw new Error('Éditeur indisponible.');
+      editorWorkspace.current.apply([{ id: active.id, name: active.name, before, after, count: 1 }]);
+      setStatus('Version locale restaurée dans le buffer ; non enregistrée. Ctrl Z pour annuler.');
+    }} />}
     <nav className="toolbar" aria-label="Actions du listing">
       <button disabled={busy} onClick={() => void open()}>Ouvrir</button>
       <button disabled={busy || !files.project} title="Disponible dans l’application desktop" onClick={() => openProject(false)}>Ouvrir projet</button>
       <button disabled={busy} onClick={() => void save()}>Enregistrer <kbd>Ctrl S</kbd></button>
       <button disabled={busy || !project || !files.project} onClick={() => void saveAll()}>Enregistrer tout</button>
+      <button disabled={busy || !project || !files.history} onClick={() => setHistoryOpen(true)}>Historique local</button>
       <button disabled={busy || !!project} onClick={() => void perform(() => files.save(source, true), 'Listing enregistré', true)}>Enregistrer sous</button>
       <button className="primary" disabled={busy} onClick={() => void exportDisk()}>Exporter DSK</button>
       <button onClick={() => { editor.current?.focus(); void editor.current?.getAction('editor.action.triggerSuggest')?.run(); }}>Compléter <kbd>Ctrl Espace</kbd></button>
