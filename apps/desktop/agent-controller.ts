@@ -8,7 +8,7 @@ import { OpenAIProvider, DEFAULT_MODEL } from './openai-provider.ts';
 import type { ProjectStore } from './project-store.ts';
 
 const digest = (value: string | Uint8Array) => createHash('sha256').update(value).digest('hex');
-interface Job { id: string; store: ProjectStore; initial: AgentWorkspaceState; tools: WorkspaceTools; result: AgentResult; running: boolean; events: AgentEvent[]; steering: string[]; abort: AbortController; directory: string }
+interface Job { id: string; store: ProjectStore; initial: AgentWorkspaceState; tools: WorkspaceTools; result: AgentResult; running: boolean; events: AgentEvent[]; steering: string[]; abort: AbortController; directory: string; documentIds: string[] }
 export class AgentController {
   private provider: OpenAIProvider | undefined;
   private job: Job | undefined;
@@ -37,16 +37,17 @@ export class AgentController {
   }
   private async record(job: Job, state: AgentWorkspaceState, phase: string) {
     const temp = join(job.directory, `.${randomUUID()}.tmp`);
-    await writeFile(temp, JSON.stringify({ schemaVersion: 1, taskId: job.id, phase, projectRoot: job.store.root, initial: job.initial, current: state, result: job.result, events: job.events }, null, 2), { flag: 'wx', mode: 0o600 });
+    await writeFile(temp, JSON.stringify({ schemaVersion: 1, taskId: job.id, phase, projectRoot: job.store.root, authorizedDocumentIds: job.documentIds, initial: job.initial, current: state, result: job.result, events: job.events }, null, 2), { flag: 'wx', mode: 0o600 });
     await rename(temp, join(job.directory, 'checkpoint.json'));
   }
-  async start(store: ProjectStore, objective: unknown, buffers: { id: string; source: string }[]): Promise<{ taskId: string }> {
+  async start(store: ProjectStore, objective: unknown, buffers: { id: string; source: string }[], includeDocuments = false): Promise<{ taskId: string }> {
     if (this.running) throw new Error('Une mission est déjà active.');
     if (!this.provider) throw new Error('Configurez une clé API OpenAI.');
     if (typeof objective !== 'string' || !objective.trim() || objective.length > 20000) throw new Error('Mission requise, 20 000 caractères maximum.');
     const initial = await store.agentState(buffers); const corpus = await this.corpus();
+    const documents = includeDocuments ? await store.agentDocuments() : [];
     const id = randomUUID(), directory = join(this.storage, id); await mkdir(directory, { recursive: true, mode: 0o700 });
-    const job: Job = { id, store, initial, directory, abort: new AbortController(), steering: [], events: [], running: true,
+    const job: Job = { id, store, initial, directory, documentIds: documents.map(item => item.id), abort: new AbortController(), steering: [], events: [], running: true,
       tools: undefined as unknown as WorkspaceTools, result: { status: 'blocked', turns: 0, calls: 0, tokens: 0, summary: 'Mission en cours.' } };
     job.tools = new WorkspaceTools(initial, async state => {
       if (job.abort.signal.aborted) throw new Error('cancelled');
@@ -56,11 +57,11 @@ export class AgentController {
       job.tools.state = structuredClone(state);
       job.tools.buildVerified = false;
       try { await this.record(job, state, 'committed'); } catch { job.abort.abort(); throw new Error('Écriture journal interrompue après commit ; modifications conservées.'); }
-    }, digest, corpus);
+    }, digest, corpus, documents);
     await this.record(job, initial, 'initial'); this.job = job;
     const provider = this.provider;
     void runAgent({ model: provider, tools: job.tools, objective, signal: AbortSignal.any([job.abort.signal, AbortSignal.timeout(15 * 60 * 1000)]),
-      context: { target: initial.manifest.target, entryPoint: initial.manifest.entryPoint, files: initial.manifest.sources, corpusVersion: 'initial-import-1' },
+      context: { target: initial.manifest.target, entryPoint: initial.manifest.entryPoint, files: initial.manifest.sources, documents: documents.map(({ text, ...metadata }) => metadata), corpusVersion: 'initial-import-1' },
       emit: event => { if (job.events.length < 150) job.events.push(event); }, takeSteering: () => job.steering.splice(0),
     }).then(async result => {
       job.result = result;

@@ -80,6 +80,8 @@ Sortie : alpha locale sans IA. Une régression du format disque bloque la sortie
 
 ## J4 — Images, documents et ressources
 
+La [tranche indépendante 0.9](../implementation/documents-alpha.md) livre TXT/MD, import portable avec empreinte, aperçu texte inerte et lecture/recherche agent autorisées par mission, selon l'[ADR 0013](../adr/0013-documents-texte-incrementaux.md). Contribution partielle à J4-01 et J5 documentaire avant qualification J3 ; images/PDF/conversion et critères globaux restent ouverts. La recette ROM/OpenAI réelle est reportée à la demande produit ; les travaux indépendants se poursuivent.
+
 Ajouter bibliothèque d'import avec rôles, empreintes, aperçus et limites. Intégrer PDF.js en worker. Fournir sélection de pages/texte et conversion écran CPC modes 0/1/2. Insérer les instructions d'intégration par proposition locale.
 
 | Tâche | Dépendance | Critère de sortie |

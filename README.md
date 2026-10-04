@@ -2,7 +2,7 @@
 
 Un atelier de programmation pour écrire du **Locomotive BASIC**, le tester dans un **Amstrad CPC émulé**, travailler avec une **IA et ses propres documents**, puis partager une **disquette DSK utilisable hors de l'IDE**.
 
-**État au 4 octobre 2026 : alpha desktop, version 0.8.** Electron/Monaco propose édition BASIC, renumérotation conservatrice, projets multifichiers et export DSK, ainsi qu'un agent OpenAI à outils : exploration, références du corpus fourni, création/remplacement de sources, renumérotation, analyse et construction, journal, avant/après et restauration de la mission courante. Clé API en mémoire côté main. L'import local des ROM OS/BASIC/AMSDOS et leur vérification sont disponibles. Ce n'est pas encore le MVP : crash recovery complet, pièces jointes et émulation intégrée qualifiée restent à construire. J0 attend un jeu firmware réel et les essais dans un émulateur indépendant ; aucun boot BASIC ou résultat matériel n'est revendiqué.
+**État au 4 octobre 2026 : alpha desktop, version 0.9.** Electron/Monaco propose édition BASIC, renumérotation conservatrice, projets multifichiers et export DSK, ainsi qu'un agent OpenAI à outils : exploration, références du corpus fourni, documents TXT/MD autorisés, création/remplacement de sources, renumérotation, analyse et construction, journal, avant/après et restauration de la mission courante. Clé API en mémoire côté main. L'import local des ROM OS/BASIC/AMSDOS et leur vérification sont disponibles. Ce n'est pas encore le MVP : crash recovery complet, images/PDF et émulation intégrée qualifiée restent à construire. J0 attend un jeu firmware réel et les essais dans un émulateur indépendant ; aucun boot BASIC ou résultat matériel n'est revendiqué.
 
 ## Lancer l'éditeur
 
@@ -22,6 +22,8 @@ L'application s'ouvre sur un exemple BASIC. `Ctrl Espace` complète, `Ctrl S` en
 Pour travailler en plusieurs fichiers : **Créer projet dans un dossier vide**, ou **Ouvrir projet** sur `examples/hello-cpc`. [Guide des projets 0.5 et limites de sauvegarde](docs/implementation/projects-alpha.md). L'export utilise tous les buffers ; Enregistrer sauvegarde uniquement l'onglet actif.
 
 Pour l'IA : ouvrir un projet, configurer sa **clé API OpenAI** dans le panneau Agent, puis lancer une mission. Les modifications de sources sont enregistrées automatiquement, avec checkpoint et contrôles de hash. [Guide agent 0.6, confidentialité, budgets et limites](docs/implementation/agent-alpha.md). Les tests automatisés utilisent un transport contrôlé, sans appel OpenAI réel facturé.
+
+Dans **Documents du projet**, importer un TXT ou Markdown UTF-8. L'original est copié, vérifié et consultable comme texte en lecture seule. Cocher **Autoriser les documents du projet pour cette mission** permet à l'agent d'en lire/rechercher des extraits ; les pièces jointes restent exclues du DSK. [Guide documents 0.9](docs/implementation/documents-alpha.md).
 
 Le moteur retenu est **floooh/chips en C/WASM**. [Intégration prévue : worker, ROM, session et outils agent](docs/implementation/emulator-integration.md). Le wrapper/banc existe ; le panneau machine Electron attend le go firmware J0.
 

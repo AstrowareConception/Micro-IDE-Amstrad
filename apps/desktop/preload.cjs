@@ -11,7 +11,7 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
   }),
   agent: Object.freeze({
     configure: (key, model) => ipcRenderer.invoke('agent:configure', { key, model }),
-    start: (sessionId, objective, buffers) => ipcRenderer.invoke('agent:start', { sessionId, objective, buffers }),
+    start: (sessionId, objective, buffers, includeDocuments = false) => ipcRenderer.invoke('agent:start', { sessionId, objective, buffers, includeDocuments }),
     status: taskId => ipcRenderer.invoke('agent:status', taskId),
     cancel: taskId => ipcRenderer.invoke('agent:cancel', taskId),
     steer: (taskId, instruction) => ipcRenderer.invoke('agent:steer', { taskId, instruction }),
@@ -24,5 +24,7 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
     add: (sessionId, name) => ipcRenderer.invoke('project:add', { sessionId, name }),
     setEntry: (sessionId, id) => ipcRenderer.invoke('project:entry', { sessionId, id }),
     exportDisk: (sessionId, sources) => ipcRenderer.invoke('project:export', { sessionId, sources }),
+    importDocument: sessionId => ipcRenderer.invoke('documents:import', { sessionId }),
+    readDocument: (sessionId, id) => ipcRenderer.invoke('documents:read', { sessionId, id }),
   }),
 }));

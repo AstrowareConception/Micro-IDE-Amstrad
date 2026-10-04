@@ -1,4 +1,4 @@
-# Dossier de conception et réalisation — version 0.8
+# Dossier de conception et réalisation — version 0.9
 
 Date de référence : **2026-10-03**. Responsable produit : **Térence FERUT / AstroWare Conception**. Les spécifications servent de référence au produit. Le [guide de l'alpha d'édition](implementation/editor-alpha.md), le [rapport J0](implementation/j0-report.md) et le [banc local](../tools/j0-harness/README.md) distinguent code disponible, preuves et qualification encore bloquée. L'[ADR 0009](adr/0009-edition-independante.md) découple l'édition du go moteur.
 
@@ -11,6 +11,8 @@ La tranche [agent OpenAI 0.6](implementation/agent-alpha.md) réalise missions �
 La tranche [ROM locales 0.7](implementation/firmware-alpha.md), datée du 4 octobre, ajoute import séparé, stockage par empreinte, vérification et configuration persistante ; aucun boot CPC n'est qualifié. [ADR 0012](adr/0012-configuration-rom-locale.md).
 
 La tranche [renumérotation 0.8](implementation/renumber-alpha.md) ajoute plans de substitutions, contrôle de révision et annulation Monaco, ainsi que le même outil métier pour l'agent. Couverture conservatrice partielle, sans qualification d'exécution ni clôture ACC-05.
+
+La tranche [documents texte 0.9](implementation/documents-alpha.md) ajoute import immuable TXT/MD, aperçu texte sûr, empreintes et outils de lecture/recherche autorisés par mission. [ADR 0013](adr/0013-documents-texte-incrementaux.md). Contribution partielle à J4/J5, sans images/PDF ni conversion CPC.
 
 | Document | Question traitée |
 | --- | --- |
