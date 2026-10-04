@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { GitDiff, RepositoryStatus, DiffSide, GitInitPlan, IndexAction } from '../../../packages/version-control/src/inspection.ts';
+import type { GitDiff, RepositoryStatus, DiffSide, GitInitPlan, IndexAction, GitHistory } from '../../../packages/version-control/src/inspection.ts';
 import { files } from './port.ts';
 
 interface Props { sessionId: string; busy: boolean; dirty: boolean; documentCount: number; onBusy(value: boolean): void }
@@ -8,7 +8,18 @@ export function GitPanel(props: Props) {
   const [diff, setDiff] = useState<GitDiff>();
   const [notice, setNotice] = useState('Actualisez pour consulter le dépôt local.');
   const [plan, setPlan] = useState<GitInitPlan>();
+  const [history, setHistory] = useState<GitHistory>();
   const port = files.git;
+  async function readHistory(next = false) {
+    if (!port || props.busy) return;
+    props.onBusy(true);
+    try {
+      const result = await port.history(props.sessionId, next ? history?.nextCursor : undefined);
+      if ('error' in result) { setNotice(result.error); setHistory(undefined); }
+      else { setHistory(previous => next && previous?.head === result.head ? { ...result, commits: [...previous.commits, ...result.commits] } : result); setNotice('Historique du HEAD capturé, en lecture seule.'); }
+    } catch { setNotice('Historique indisponible ; recommencez la lecture.'); setHistory(undefined); }
+    finally { props.onBusy(false); }
+  }
   async function refresh() {
     if (!port || props.busy) return;
     props.onBusy(true); setDiff(undefined); setSnapshot(undefined); setPlan(undefined);
@@ -67,6 +78,7 @@ export function GitPanel(props: Props) {
     <p className="muted">Statut, diff, création main et staging par fichier avec confirmation native. Aucun commit ni accès réseau ; aucun outil Git pour l’IA.</p>
     {props.dirty && <p className="git-dirty">Brouillons non enregistrés : ils ne figurent pas dans le diff Git. Création et indexation bloquées ; aucune sauvegarde automatique.</p>}
     <button disabled={props.busy || !port} onClick={() => void refresh()}>Actualiser Git</button>
+    <button disabled={props.busy || !port} onClick={() => void readHistory()}>Historique Git</button>
     {snapshot?.state === 'not-repository' && <button disabled={props.busy || props.dirty || !port} onClick={() => void prepare()}>Préparer la création Git</button>}
     <p aria-live="polite" className="git-notice">{notice}</p>
     {plan && <div className="git-init-preview"><h3>Créer dans {plan.rootName} · branche main</h3><p>{plan.version} · .gitignore créé sans écrasement</p>
@@ -93,5 +105,9 @@ export function GitPanel(props: Props) {
     </>}
     {diff && <><h3>{diff.path} · {diff.side === 'index' ? 'index' : 'disque'}</h3>
       <textarea aria-label="Diff Git" readOnly rows={12} value={diff.text || 'Aucune différence sur ce côté au moment de la lecture.'} /></>}
+    {history && <div aria-label="Historique des commits"><h3>Historique Git</h3><p>{history.head === '(initial)' ? 'Aucun premier commit.' : `HEAD capturé : ${history.head.slice(0, 12)}`}</p>
+      <ol className="git-history">{history.commits.map(commit => <li key={commit.oid}><code>{commit.oid.slice(0, 12)}</code><p>{commit.subject}</p><time dateTime={commit.date}>{commit.date}</time></li>)}</ol>
+      {history.nextCursor && <button disabled={props.busy} onClick={() => void readHistory(true)}>20 commits suivants</button>}
+    </div>}
   </section>;
 }

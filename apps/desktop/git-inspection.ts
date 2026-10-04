@@ -4,7 +4,7 @@ import { constants } from 'node:fs';
 import { join, dirname, delimiter, isAbsolute, relative, basename } from 'node:path';
 import { devNull } from 'node:os';
 import { randomUUID, createHash } from 'node:crypto';
-import { gitPath, parseStatus, PROJECT_GIT_IGNORE, type GitChange, type GitDiff, type DiffSide, type RepositoryStatus, type GitInitPlan, type IndexAction } from '../../packages/version-control/src/inspection.ts';
+import { gitPath, parseStatus, PROJECT_GIT_IGNORE, type GitChange, type GitDiff, type DiffSide, type RepositoryStatus, type GitInitPlan, type IndexAction, type GitHistory } from '../../packages/version-control/src/inspection.ts';
 
 const LIMIT = 1024 * 1024;
 const digest = (value: Uint8Array | string) => createHash('sha256').update(value).digest('hex');
@@ -16,6 +16,7 @@ export class GitInspection {
   private snapshot: { id: string; signature: string } | undefined;
   private initPlan: { view: GitInitPlan; signature: string } | undefined;
   private mutating = false;
+  private historyCursor: { id: string; head: string; offset: number } | undefined;
   private readonly root: string;
   private readonly sourcePaths: () => readonly string[];
   private readonly searchPath: string;
@@ -105,6 +106,32 @@ export class GitInspection {
   async status(): Promise<RepositoryStatus> {
     try { return await this.inspect(); }
     catch (error) { return this.failure(error); }
+  }
+  async history(cursor?: unknown): Promise<GitHistory> {
+    try {
+      if (await this.metadata() !== 'repository') throw new Error('Historique : aucun dépôt à la racine.');
+      let head: string, offset = 0;
+      if (cursor === undefined) {
+        this.historyCursor = undefined;
+        head = parseStatus(await this.rawStatus()).head;
+        if (head === '(initial)') return { head, commits: [] };
+      } else {
+        if (typeof cursor !== 'string' || cursor !== this.historyCursor?.id) throw new Error('Page d’historique périmée ; recommencez la lecture.');
+        ({ head, offset } = this.historyCursor);
+      }
+      if (!/^[0-9a-f]{40}$/.test(head) || offset >= 2000) throw new Error('Historique non qualifié ou limite de 2 000 commits atteinte.');
+      const output = await this.run(['log', '--no-show-signature', '--no-notes', '--no-color', '--no-decorate', '-z', '--format=%H%x00%aI%x00%s', '--max-count=21', `--skip=${offset}`, head, '--']);
+      const fields = output.split('\0');
+      if (fields.pop() !== '' || fields.length % 3) throw new Error('Historique Git incomplet.');
+      const commits = [];
+      for (let i = 0; i < fields.length; i += 3) {
+        const oid = fields[i]!, date = fields[i + 1]!, subject = fields[i + 2]!;
+        if (!/^[0-9a-f]{40}$/.test(oid) || !/^\d{4}-\d{2}-\d{2}T/.test(date) || subject.length > 8192) throw new Error('Entrée d’historique non qualifiée.');
+        commits.push({ oid, date, subject });
+      }
+      this.historyCursor = commits.length > 20 && offset + 20 < 2000 ? { id: randomUUID(), head, offset: offset + 20 } : undefined;
+      return { head, commits: commits.slice(0, 20), ...(this.historyCursor ? { nextCursor: this.historyCursor.id } : {}) };
+    } catch (error) { return this.failure(error); }
   }
   private failure(error: unknown): never {
     if (error && typeof error === 'object' && 'code' in error) throw new Error('Métadonnées Git inaccessibles.');

@@ -11,6 +11,7 @@ import { extractPdf } from './pdf-document.ts';
 import { AgentController } from './agent-controller.ts';
 import { FirmwareStore } from './firmware-store.ts';
 import { GitInspection } from './git-inspection.ts';
+import { ProjectTerminal } from './terminal.ts';
 import { romRole } from '../../packages/emulator/src/firmware.ts';
 
 const base = dirname(fileURLToPath(import.meta.url));
@@ -23,6 +24,7 @@ let project: ProjectStore | undefined;
 let inFlight = false;
 let agent: AgentController;
 let gitSession: { id: string; inspector: GitInspection } | undefined;
+const terminal = new ProjectTerminal();
 const hash = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
 
 function trusted(event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent): void {
@@ -50,6 +52,7 @@ async function atomicWrite(path: string, bytes: Uint8Array): Promise<void> {
 function route(channel: string, handler: (payload: unknown) => Promise<unknown>) {
   ipcMain.handle(channel, async (event, payload: unknown) => {
     trusted(event);
+    if (terminal.running && !channel.startsWith('terminal:')) return { error: 'Une commande terminal est active ; arrêtez-la avant les opérations disque ou IA.' };
     if (agent?.running && !channel.startsWith('agent:')) return { error: 'Une mission agent est active ; arrêtez-la avant les opérations disque.' };
     if (inFlight) return { error: 'Une opération disque est déjà en cours.' };
     inFlight = true;
@@ -72,6 +75,7 @@ window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
 window.webContents.on('will-navigate', (event, url) => { if (url !== page) event.preventDefault(); });
 window.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
 window.on('close', event => {
+  if (terminal.running) { event.preventDefault(); dialog.showMessageBoxSync(window, { message: 'Arrêtez la commande terminal avant de fermer la fenêtre.' }); return; }
   if (inFlight) { event.preventDefault(); dialog.showMessageBoxSync(window, { message: 'Attendez la fin de l’opération disque avant de fermer la fenêtre.' }); return; }
   if (agent.running) { event.preventDefault(); dialog.showMessageBoxSync(window, { message: 'Arrêtez la mission agent avant de fermer la fenêtre.' }); return; }
   if (dirty && dialog.showMessageBoxSync(window, { type: 'warning', buttons: ['Annuler', 'Quitter sans enregistrer'],
@@ -149,6 +153,23 @@ route('git:diff', async payload => {
   const { store, value } = projectRequest(payload); await store.assertCurrent();
   return gitInspector(store).diff(value.changeId, value.side);
 });
+route('git:history', async payload => {
+  const { store, value } = projectRequest(payload); await store.assertCurrent();
+  return gitInspector(store).history(value.cursor);
+});
+route('terminal:run', async payload => {
+  const { store, value } = projectRequest(payload);
+  if (terminal.running) throw new Error('Une commande terminal est déjà active.');
+  if (dirty) throw new Error('Enregistrez ou arbitrez les brouillons avant le terminal.');
+  await store.assertCurrent(); const command = ProjectTerminal.command(value.command);
+  const choice = await dialog.showMessageBox(window, { type: 'warning', buttons: ['Annuler', 'Exécuter'], defaultId: 0, cancelId: 0,
+    message: `Exécuter dans ${store.root} ?`, detail: `${command}\n\nCommande du système hôte, sans sandbox : elle peut modifier des fichiers hors du projet. Pas d’entrée interactive ; limite 30 s / 64 Kio. L’agent IA n’a pas accès au terminal.` });
+  if (choice.response !== 1) return null;
+  if (dirty) throw new Error('Brouillons modifiés pendant la confirmation.');
+  await store.assertCurrent(); return terminal.run(store.sessionId, store.root, command);
+});
+route('terminal:status', async payload => { const { store, value } = projectRequest(payload); return terminal.status(store.sessionId, value.id); });
+route('terminal:stop', async payload => { const { store, value } = projectRequest(payload); return terminal.stop(store.sessionId, value.id); });
 function gitMutation(): void {
   if (dirty) throw new Error('Enregistrez ou arbitrez tous les brouillons avant de modifier Git ; aucune sauvegarde automatique.');
 }

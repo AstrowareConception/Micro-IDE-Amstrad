@@ -2,6 +2,8 @@
 
 ## Mode de progression
 
+Demande produit du 4 octobre : outils d’IDE adaptés au CPC. La [tranche atelier 0.14](../implementation/workbench-alpha.md) livre palette/menus/contextes, ouverture rapide, réglages de code, historique Git paginé et terminal humain sans PTY ([ADR 0019](../adr/0019-outils-atelier-et-terminal-humain.md)). Elle contribue à J2/JG-A sans les fermer. La suite ajoute commit/identité puis historique local durable, recherche projet, sauvegarde coordonnée et PTY qualifié ; les outils machine attendent toujours J0.
+
 J0 reste en HOLD pour la qualification moteur. Une tranche indépendante J1/J2 livre l'[alpha d'édition 0.4](../implementation/editor-alpha.md), conformément à l'[ADR 0009](../adr/0009-edition-independante.md) : elle n'annonce pas J1/J2 complets. Le [rapport J0](../implementation/j0-report.md) conserve les preuves et limites. Chaque jalon dispose d'une branche, d'une PR ciblée, de documents actualisés et d'une démonstration reproductible. Aucun planning calendaire ou volume horaire n'est fixé sans estimation de l'équipe et disponibilité des dépendances.
 
 ```mermaid

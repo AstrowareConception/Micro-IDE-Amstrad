@@ -18,6 +18,8 @@ export interface RepositoryStatus {
 }
 export type DiffSide = 'worktree' | 'index';
 export interface GitDiff { path: string; side: DiffSide; text: string }
+export interface GitCommit { oid: string; date: string; subject: string }
+export interface GitHistory { head: string; commits: GitCommit[]; nextCursor?: string }
 export type IndexAction = 'stage' | 'unstage';
 export interface GitInitPlan { id: string; rootName: string; branch: 'main'; ignoreText: string; version: string }
 export const PROJECT_GIT_IGNORE = '# Micro IDE Amstrad — contenu local privé et artefacts\n' +
@@ -26,6 +28,7 @@ export const PROJECT_GIT_IGNORE = '# Micro IDE Amstrad — contenu local privé 
 export interface VersionControlPort {
   status(sessionId: string): Promise<RepositoryStatus | { error: string }>;
   diff(sessionId: string, changeId: string, side: DiffSide): Promise<GitDiff | { error: string }>;
+  history(sessionId: string, cursor?: string): Promise<GitHistory | { error: string }>;
   prepareInit(sessionId: string): Promise<GitInitPlan | { error: string }>;
   init(sessionId: string, planId: string): Promise<RepositoryStatus | { error: string } | null>;
   changeIndex(sessionId: string, snapshotId: string, changeId: string, action: IndexAction): Promise<RepositoryStatus | { error: string } | null>;
