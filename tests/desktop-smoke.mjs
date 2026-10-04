@@ -4,6 +4,7 @@ import { mkdtemp, readFile, writeFile, mkdir, rename, readdir } from 'node:fs/pr
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
 import { png, chunk } from './image-fixtures.ts';
 import { pdfFixture } from './pdf-fixtures.ts';
 import { readDataDisk, decodeAsciiRecords } from '../packages/cpc-disk/src/data-disk.ts';
@@ -352,8 +353,38 @@ try {
   await romPanel.getByRole('button', { name: 'Retirer la sélection ROM', exact: true }).click();
   await expect(romPanel).toContainText('Sélection retirée.');
   await expect(romPanel).toContainText('Jeu incomplet ou invalide');
+  // Real native Git through the sandboxed renderer's narrow, read-only IPC.
+  const git = (...args) => execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', ...args],
+    { cwd: moved, encoding: 'utf8', env: { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' } });
+  git('init', '--initial-branch=main'); git('add', '--', 'src', 'microide.project.json'); git('commit', '-m', 'Original native fixture');
+  await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, moved);
+  await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click();
+  await page.getByRole('tab', { name: 'src/main.bas', exact: true }).waitFor();
+  const baseline = await readFile(join(moved, 'src/main.bas'), 'utf8');
+  await writeFile(join(moved, 'src/main.bas'), baseline + '290 REM GIT INDEX\n'); git('add', '--', 'src/main.bas');
+  await writeFile(join(moved, 'src/main.bas'), baseline + '290 REM GIT INDEX\n300 REM GIT DISK\n');
+  await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('310 REM BUFFER ONLY\n');
+  const gitBefore = await Promise.all(['.git/HEAD', '.git/index', 'src/main.bas', 'microide.project.json'].map(path => readFile(join(moved, path))));
+  const gitPanel = page.getByRole('region', { name: 'Contrôle de version Git' });
+  await expect(gitPanel).toContainText('Brouillons non enregistrés');
+  await gitPanel.getByRole('button', { name: 'Actualiser Git', exact: true }).click();
+  await expect(gitPanel).toContainText('branche main');
+  await gitPanel.getByRole('button', { name: 'Diff index src/main.bas', exact: true }).click();
+  await expect(gitPanel.getByLabel('Diff Git', { exact: true })).toHaveValue(/\+290 REM GIT INDEX/);
+  assert.ok(!(await gitPanel.getByLabel('Diff Git', { exact: true }).inputValue()).includes('GIT DISK'));
+  await gitPanel.getByRole('button', { name: 'Diff disque src/main.bas', exact: true }).click();
+  await expect(gitPanel.getByLabel('Diff Git', { exact: true })).toHaveValue(/\+300 REM GIT DISK/);
+  assert.ok(!(await gitPanel.getByLabel('Diff Git', { exact: true }).inputValue()).includes('BUFFER ONLY'));
+  assert.ok((await page.locator('.monaco-editor').textContent()).includes('BUFFER ONLY'));
+  assert.deepEqual(await Promise.all(['.git/HEAD', '.git/index', 'src/main.bas', 'microide.project.json'].map(path => readFile(join(moved, path)))), gitBefore);
+  const invalidGitSession = await page.evaluate(() => window.desktop.git.status('expired'));
+  assert.match(invalidGitSession.error, /Session de projet périmée/);
+  const invalidGitPath = await page.evaluate(() => window.desktop.git.diff('expired', '/etc/passwd', 'worktree'));
+  assert.match(invalidGitPath.error, /Session de projet périmée/);
+  await gitPanel.scrollIntoViewIfNeeded(); await page.screenshot({ path: 'out/git-alpha.png' });
+  console.log(`Native Git inspection: ${git('--version').trim()}, separate index/disk diffs, dirty buffer preserved, unchanged HEAD/index/source/manifest.`);
   assert.deepEqual(errors, []);
-  console.log('Electron smoke: TXT/MD, real PNG/JPEG decode and PDF.js worker import/pagination/reopen/corrupt-file rejection, scoped PDF page excerpts and progressive multimodal agent outputs, projects and firmware checks passed. No live API, real vision or CPC execution claimed.');
+  console.log('Electron smoke: read-only native Git status/diffs, TXT/MD, real PNG/JPEG decode and PDF.js worker import/pagination/reopen/corrupt-file rejection, scoped PDF page excerpts and progressive multimodal agent outputs, projects and firmware checks passed. No live API, real vision or CPC execution claimed.');
 } catch (error) {
   await mkdir('out', { recursive: true });
   await page?.screenshot({ path: 'out/desktop-failure.png', timeout: 5000 }).catch(() => undefined);

@@ -118,6 +118,8 @@ Sortie : MVP correspondant à l'intention initiale. Une clé de fournisseur néc
 
 Ajout produit du **2026-10-04** : [spécification 16](16-integration-git.md), [ADR 0015](../adr/0015-git-natif-et-publication-explicite.md). Conception acceptée ; aucun code Git n'est livré par l'alpha 0.10. Ce travail indépendant ne dépend pas des ROM et n'interrompt pas PDF/conversion ; il s'appuie sur les protections Workspace. JG-A/B rejoint la sortie du MVP J5 et JG-C celle de J6. L'API GitHub reste une extension distincte, pas une condition d'utilisation des remotes GitHub HTTPS/SSH.
 
+La [tranche 0.12](../implementation/git-alpha.md) commence JG-A1 et la lecture de JG-A2 : Git natif/version, détection de racine, configuration restrictive, statut et diff index/disque, sans toucher aux buffers. [ADR 0017](../adr/0017-git-inspection-conservatrice.md). Prochain incrément : init/exclusions, sélection stage/unstage, identité, commit/historique avec préconditions. Pas de clôture JG-A/ACC-31, de Git réseau ou de nouvelles capacités IA.
+
 | Tâche | Dépendance | Critère de sortie |
 | --- | --- | --- |
 | JG-A1 — Port VersionControl, découverte et politique de confiance | J1-01/02 | Exécutable/version/racine identifiés, aucune CLI libre, configurations dangereuses refusées |

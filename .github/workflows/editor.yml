@@ -43,6 +43,7 @@ jobs:
             out/documents-alpha.png
             out/images-alpha.png
             out/pdf-alpha.png
+            out/git-alpha.png
             out/desktop-failure.png
             out/editor-failure.png
           retention-days: 7

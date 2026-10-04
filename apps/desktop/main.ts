@@ -10,6 +10,7 @@ import { decodeImage } from './image-document.ts';
 import { extractPdf } from './pdf-document.ts';
 import { AgentController } from './agent-controller.ts';
 import { FirmwareStore } from './firmware-store.ts';
+import { GitInspection } from './git-inspection.ts';
 import { romRole } from '../../packages/emulator/src/firmware.ts';
 
 const base = dirname(fileURLToPath(import.meta.url));
@@ -21,6 +22,7 @@ let dirty = false;
 let project: ProjectStore | undefined;
 let inFlight = false;
 let agent: AgentController;
+let gitSession: { id: string; inspector: GitInspection } | undefined;
 const hash = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
 
 function trusted(event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent): void {
@@ -133,6 +135,19 @@ function projectRequest(payload: unknown): { store: ProjectStore; value: Record<
   const value = payload as Record<string, unknown>; project.assertSession(value.sessionId);
   return { store: project, value };
 }
+function gitInspector(store: ProjectStore): GitInspection {
+  if (gitSession?.id !== store.sessionId) gitSession = { id: store.sessionId,
+    inspector: new GitInspection(store.root, () => store.manifest.sources.map(source => source.path)) };
+  return gitSession.inspector;
+}
+route('git:status', async payload => {
+  const { store } = projectRequest(payload); await store.assertCurrent();
+  return gitInspector(store).status();
+});
+route('git:diff', async payload => {
+  const { store, value } = projectRequest(payload); await store.assertCurrent();
+  return gitInspector(store).diff(value.changeId, value.side);
+});
 route('project:save', async payload => {
   const { store, value } = projectRequest(payload);
   if (typeof value.id !== 'string') throw new Error('Identifiant de source requis.');

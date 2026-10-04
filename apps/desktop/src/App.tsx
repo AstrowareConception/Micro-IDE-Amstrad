@@ -9,6 +9,7 @@ import type { AgentWorkspaceState } from '../../../packages/agent/src/types.ts';
 import { AgentPanel } from './AgentPanel.tsx';
 import { FirmwarePanel } from './FirmwarePanel.tsx';
 import { DocumentsPanel } from './DocumentsPanel.tsx';
+import { GitPanel } from './GitPanel.tsx';
 import { RenumberPanel } from './RenumberPanel.tsx';
 import type { RenumberRequest } from './RenumberPanel.tsx';
 import { applyRenumber } from '../../../packages/basic-language/src/renumber.ts';
@@ -112,7 +113,7 @@ export function App() {
   }
   return <main className="workbench">
     <header className="topbar">
-      <div className="brand"><span className="brand-mark">μ</span><div><h1>Micro IDE <span>Amstrad</span></h1><p>Atelier Locomotive BASIC · alpha 0.11</p></div></div>
+      <div className="brand"><span className="brand-mark">μ</span><div><h1>Micro IDE <span>Amstrad</span></h1><p>Atelier Locomotive BASIC · alpha 0.12</p></div></div>
       <span className="profile">CPC 6128 · BASIC 1.1</span>
     </header>
     <nav className="toolbar" aria-label="Actions du listing">
@@ -138,6 +139,7 @@ export function App() {
         </div>
       </section>
       <aside aria-label="Références et état du produit">
+        {project && <GitPanel key={project.sessionId} sessionId={project.sessionId} busy={busy} dirty={dirty} onBusy={setBusy} />}
         {renumberOpen && <RenumberPanel source={source} documentId={activeId} busy={busy} revision={() => editor.current?.getModel()?.getVersionId() ?? -1} onApply={renumber} onClose={() => setRenumberOpen(false)} />}
         <AgentPanel sessionId={project?.sessionId} documentCount={project?.manifest.documents.length ?? 0} buffers={documents.map(document => ({ id: document.sourceId, source: document.source }))} busy={busy} onRunning={setAgentBusy} onState={acceptAgent} />
         {project && <DocumentsPanel key={project.sessionId} sessionId={project.sessionId} manifest={project.manifest} busy={busy} onBusy={setBusy} onManifest={manifest => setProject(previous => previous ? { ...previous, manifest } : previous)} />}
@@ -163,7 +165,7 @@ export function App() {
         </section>
         <section className="panel"><h2>Votre atelier</h2><p><kbd>F12</kbd> Aller à une ligne ciblée</p><p><kbd>Ctrl Z</kbd> Annuler une modification</p><p>La complétion reconnaît commandes, identifiants observés et numéros de lignes. Elle est désactivée dans les commentaires, chaînes ouvertes et DATA.</p></section>
         <FirmwarePanel busy={busy} />
-        <section className="panel pending"><h2>Prochaines connexions</h2><p>ROM locales configurables ; émulateur chips/WASM : qualification et worker desktop en attente.</p><p>Agent : sources BASIC, références, TXT/MD, aperçus PNG/JPEG et construction DSK ; PDF, conversion écran CPC et exécution CPC à venir.</p><p>Export : disquette DATA avec sources BASIC ASCII, pas une compilation Z80 ni un lancement automatique.</p></section>
+        <section className="panel pending"><h2>Prochaines connexions</h2><p>ROM locales configurables ; émulateur chips/WASM : qualification et worker desktop en attente.</p><p>Agent : sources BASIC, références, TXT/MD/PDF texte, aperçus PNG/JPEG et construction DSK ; conversion écran CPC et exécution CPC à venir.</p><p>Git : statut et diff locaux ; stage, commits et synchronisation à venir.</p><p>Export : disquette DATA avec sources BASIC ASCII, pas une compilation Z80 ni un lancement automatique.</p></section>
       </aside>
     </div>
     <footer role="status">{busy ? 'Opération en cours…' : status}<span>L{position.line} · C{position.column} · {window.desktop ? 'Bureau local' : 'Aperçu navigateur · enregistrement par téléchargement'}</span></footer>

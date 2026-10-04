@@ -1,6 +1,6 @@
-# Dossier de conception et réalisation — version 0.11
+# Dossier de conception et réalisation — version 0.12
 
-Date de référence : **2026-10-03**. Responsable produit : **Térence FERUT / AstroWare Conception**. Les spécifications servent de référence au produit. Le [guide de l'alpha d'édition](implementation/editor-alpha.md), le [rapport J0](implementation/j0-report.md) et le [banc local](../tools/j0-harness/README.md) distinguent code disponible, preuves et qualification encore bloquée. L'[ADR 0009](adr/0009-edition-independante.md) découple l'édition du go moteur.
+Date de référence : **2026-10-04**. Responsable produit : **Térence FERUT / AstroWare Conception**. Les spécifications servent de référence au produit. Le [guide de l'alpha d'édition](implementation/editor-alpha.md), le [rapport J0](implementation/j0-report.md) et le [banc local](../tools/j0-harness/README.md) distinguent code disponible, preuves et qualification encore bloquée. L'[ADR 0009](adr/0009-edition-independante.md) découple l'édition du go moteur.
 
 ## Documents de référence
 
@@ -17,6 +17,8 @@ La tranche [documents texte 0.9](implementation/documents-alpha.md) ajoute impor
 La tranche [images 0.10](implementation/images-alpha.md) ajoute PNG/JPEG, garde des dimensions, aperçu PNG nettoyé et outil d'inspection visuelle à la demande dans le scope documentaire. [ADR 0014](adr/0014-images-natives-et-contexte-visuel.md). WebP/PDF, conversion écran et vision OpenAI réelle restent ouverts.
 
 La tranche [PDF texte 0.11](implementation/pdf-alpha.md) ajoute import vérifié, extraction bornée dans un thread dédié, navigation par page et outils agent ciblés. [ADR 0016](adr/0016-pdf-texte-borne.md). Pas de rendu PDF/OCR ni qualification Windows/macOS ; J4-02 reste partiel. [Git intégré](specifications/16-integration-git.md) est conçu et devient la prochaine tranche indépendante JG-A.
+
+La tranche [Git lecture seule 0.12](implementation/git-alpha.md) ajoute découverte, statut et diff index/disque par Git natif, avec configuration restrictive et buffers préservés. [ADR 0017](adr/0017-git-inspection-conservatrice.md). JG-A1/A2 restent partiels : init, stage, commits/historique puis synchronisation encore ouverts ; aucun outil Git n'est accordé à l'IA.
 
 | Document | Question traitée |
 | --- | --- |

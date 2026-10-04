@@ -1,0 +1,71 @@
+/** Read-only application contract. No executable, host path or free-form command. */
+export interface GitChange {
+  id: string;
+  path: string;
+  originalPath?: string;
+  kind: 'tracked' | 'rename' | 'untracked' | 'conflict';
+  index: string;
+  worktree: string;
+}
+export interface RepositoryStatus {
+  state: 'repository' | 'not-repository' | 'parent-repository';
+  version: string;
+  branch: string;
+  head: string;
+  changes: GitChange[];
+}
+export type DiffSide = 'worktree' | 'index';
+export interface GitDiff { path: string; side: DiffSide; text: string }
+export interface VersionControlPort {
+  status(sessionId: string): Promise<RepositoryStatus | { error: string }>;
+  diff(sessionId: string, changeId: string, side: DiffSide): Promise<GitDiff | { error: string }>;
+}
+export function gitPath(value: string): string {
+  if (!value || value.includes('\\') || value.includes('\0') || value.startsWith('/') || /^[A-Za-z]:/.test(value) ||
+      value.split('/').some(part => !part || part === '.' || part === '..' || part.toLowerCase() === '.git'))
+    throw new Error('Chemin Git hors périmètre.');
+  return value;
+}
+function fields(record: string, count: number): { fields: string[]; path: string } {
+  const result: string[] = []; let offset = 0;
+  for (let i = 0; i < count; i++) {
+    const end = record.indexOf(' ', offset);
+    if (end < 0) throw new Error('Statut Git incomplet.');
+    result.push(record.slice(offset, end)); offset = end + 1;
+  }
+  return { fields: result, path: gitPath(record.slice(offset)) };
+}
+/** Porcelain v2 NUL records; never split file names on whitespace/newlines. */
+export function parseStatus(text: string): Omit<RepositoryStatus, 'state' | 'version'> {
+  if (text && !text.endsWith('\0')) throw new Error('Statut Git tronqué.');
+  const records = text.split('\0'); records.pop();
+  const changes: GitChange[] = []; let branch = '', head = '';
+  for (let i = 0; i < records.length; i++) {
+    if (changes.length >= 2000) throw new Error('Statut supérieur à 2 000 changements.');
+    const record = records[i]!;
+    if (record.startsWith('# ')) {
+      if (record.startsWith('# branch.head ')) branch = record.slice(14);
+      if (record.startsWith('# branch.oid ')) head = record.slice(13);
+      continue;
+    }
+    if (record.startsWith('? ')) {
+      changes.push({ id: '', path: gitPath(record.slice(2)), kind: 'untracked', index: '?', worktree: '?' }); continue;
+    }
+    const type = record[0];
+    if (type !== '1' && type !== '2' && type !== 'u') throw new Error('Statut Git non reconnu.');
+    const parsed = fields(record, type === '1' ? 8 : type === '2' ? 9 : 10);
+    const xy = parsed.fields[1]!;
+    if (!/^[.MADRCUT?!]{2}$/.test(xy) || parsed.fields[2] !== 'N...' || parsed.fields.slice(3, type === 'u' ? 7 : 6).includes('160000'))
+      throw new Error('Sous-module ou statut Git non pris en charge.');
+    const change: GitChange = { id: '', path: parsed.path, kind: type === 'u' ? 'conflict' : type === '2' ? 'rename' : 'tracked', index: xy[0]!, worktree: xy[1]! };
+    if (type === '2') {
+      const original = records[++i];
+      if (original === undefined) throw new Error('Renommage Git incomplet.');
+      change.originalPath = gitPath(original);
+    }
+    changes.push(change);
+    if (changes.length > 2000) throw new Error('Statut supérieur à 2 000 changements.');
+  }
+  if (!branch || !head) throw new Error('En-tête Git incomplet.');
+  return { branch, head, changes };
+}

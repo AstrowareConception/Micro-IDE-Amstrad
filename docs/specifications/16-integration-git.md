@@ -1,6 +1,6 @@
 # 16 — Git intégré et hébergements distants
 
-Date : 2026-10-04. Demande produit : travailler avec Git depuis l'IDE comme dans un IDE contemporain. **Statut : conception acceptée, fonctions non implémentées dans l'alpha 0.10.** [ADR 0015](../adr/0015-git-natif-et-publication-explicite.md). Cette extension ne remplace ni la tranche PDF en cours de préparation ni la qualification moteur J0.
+Date : 2026-10-04. Demande produit : travailler avec Git depuis l'IDE comme dans un IDE contemporain. **Statut : conception acceptée ; première lecture locale dans l'alpha 0.12, JG-A/B/C non terminés.** [ADR 0015](../adr/0015-git-natif-et-publication-explicite.md), [guide 0.12](../implementation/git-alpha.md), [politique conservatrice ADR 0017](../adr/0017-git-inspection-conservatrice.md). Cette extension ne remplace ni les ressources/conversions restantes ni la qualification moteur J0.
 
 ## Objectif et périmètre
 
@@ -73,7 +73,7 @@ Push, création de dépôt distant, retrait/modification de remote, suppression 
 
 Les exigences REQ-GIT-001 à REQ-GIT-010 et scénarios ACC-31 à ACC-35 sont définis dans les registres 01/11. CI : dépôts temporaires originaux et remote bare local, deux clones pour avance/divergence, sans credentials personnels ni accès GitHub requis. Tester noms avec espaces/Unicode/newlines, noms commençant par tiret, renames, conflits, HEAD détaché, index partiel, absence Git, limites, symlinks, configuration malveillante et mission concurrente. Les fonctions de production réseau utilisent des tests de transport séparés pour HTTPS/SSH et rejets d'authentification ; le remote bare local ne les qualifie pas.
 
-Chaque tranche fournit un parcours Electron sandboxé, preuve des octets avant/après, absence de secrets dans IPC/logs, rapport de plateformes et guide de récupération. Conception validée n'est pas fonction Git livrée ; la version applicative reste 0.10 pour cet ajout documentaire.
+Chaque tranche fournit un parcours Electron sandboxé, preuve des octets avant/après, absence de secrets dans IPC/logs, rapport de plateformes et guide de récupération. Conception validée n'est pas fonction Git livrée. L'alpha 0.12 réalise seulement version/détection, statut et diff de sources/manifeste, sans init/stage/commit/historique ni réseau. Configs non qualifiées refusées, limites 1 Mio/10 s par commande et 2 000 changements ; ces bornes alpha précisent les seuils indicatifs ci-dessus. Les préconditions mutatives, permissions, plateformes et transports complets restent à qualifier.
 
 ## Références techniques
 
