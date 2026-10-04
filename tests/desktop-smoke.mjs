@@ -483,7 +483,8 @@ try {
   assert.match(dirtyTerminal.error, /brouillons/);
   assert.equal(localGit('ls-files', '-z'), '');
   console.log(`Native Git local index: ${localGit('--version').trim()}, UI init/cancel/main/exclusions, one-file stage/unstage, unchanged source/HEAD/manifest, hook disabled, external-confirmation and dirty IPC guards passed.`);
-  await input.focus(); await page.keyboard.press('Control+z');
+  // Restore this fixture explicitly: multiline insertText may create several undo stops.
+  await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText(localSource);
   await page.getByRole('tab', { name: 'src/main.bas', exact: true }).waitFor();
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   // Global search operates on both loaded sources and leaves disk/manifest untouched.
