@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.14
+# CPCéleste — Dossier de conception et réalisation — version 0.15
+
+La [recherche 0.15](implementation/search-alpha.md) commence le lot R1 : recherche des sources chargées/brouillons, navigation, aperçu et remplacement des fichiers choisis, annulation par source et contrôle de contenu. [ADR 0020](adr/0020-recherche-sources-et-remplacement-buffers.md). La suite prioritaire est R2 : sauvegarde coordonnée, historique local durable et récupération.
 
 L’[atelier 0.14](implementation/workbench-alpha.md) ajoute menus/palette/contextes, ouverture rapide, réglages de code, historique Git paginé et terminal humain non interactif. [ADR 0019](adr/0019-outils-atelier-et-terminal-humain.md). Le shell n’est pas accessible à l’agent ; historique local durable, commit intégré, PTY et réseau Git intégré restent à construire.
 
@@ -7,6 +9,8 @@ Nom de marque adopté le 4 octobre 2026 : **CPCéleste**, signature « Vos idée
 Date de référence : **2026-10-04**. Responsable produit : **Térence FERUT / AstroWare Conception**. Les spécifications servent de référence au produit. Le [guide de l'alpha d'édition](implementation/editor-alpha.md), le [rapport J0](implementation/j0-report.md) et le [banc local](../tools/j0-harness/README.md) distinguent code disponible, preuves et qualification encore bloquée. L'[ADR 0009](adr/0009-edition-independante.md) découple l'édition du go moteur.
 
 ## Documents de référence
+
+La [roadmap qualifiée d’un IDE complet](specifications/17-roadmap-ide-complet.md) inventorie 75 fonctionnalités, leurs états/priorités/dépendances et critères de validation, puis définit les lots R1–R9. Elle complète les jalons techniques J0–J6/JG et devient le backlog produit détaillé à suivre.
 
 La tranche [projets BASIC 0.5](implementation/projects-alpha.md) ajoute dossiers, manifeste, plusieurs buffers et export multifichier. Elle ne clôture pas la durabilité J1-03 ; voir l'[ADR 0010](adr/0010-projets-basic-incrementaux.md).
 
@@ -45,6 +49,7 @@ La tranche [dépôt/index Git 0.13](implementation/git-local-index-alpha.md) ajo
 | [14 — Programmation agentique](specifications/14-programmation-agentique.md) | Comment l'agent agit-il sur les fichiers, les ressources et les essais ? |
 | [15 — Corpus Locomotive BASIC](specifications/15-corpus-locomotive-basic.md) | Comment les références du langage guident-elles et vérifient-elles le travail ? |
 | [16 — Git intégré](specifications/16-integration-git.md) | Comment versionner, gérer les branches et synchroniser sans perdre ni publier implicitement le travail ? |
+| [17 — Roadmap IDE complet](specifications/17-roadmap-ide-complet.md) | Quelles 75 fonctionnalités réaliser, dans quel ordre et avec quelles preuves ? |
 | [Glossaire](reference/glossaire.md) | Quel vocabulaire partager ? |
 | [Sources](reference/sources.md) | Sur quelles références reposent les décisions ? |
 | [ADR](adr/README.md) | Pourquoi les options principales ont-elles été retenues ? |

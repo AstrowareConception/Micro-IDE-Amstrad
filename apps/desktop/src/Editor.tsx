@@ -2,6 +2,9 @@ import { useEffect, useRef } from 'react';
 import { monaco, language } from './monaco-language.ts';
 import { analyze, commandAt, type Diagnostic } from '../../../packages/basic-language/src/language.ts';
 import type { CommandCard } from '../../../packages/basic-language/src/catalog.ts';
+import type { SearchChange, SearchMatch } from '../../../packages/workspace/src/search.ts';
+
+export interface EditorWorkspace { apply(changes: SearchChange[]): void }
 
 interface Props {
   documents: { id: string; source: string }[]; activeId: string; diagnostics: Diagnostic[]; busy: boolean;
@@ -9,6 +12,8 @@ interface Props {
   onPosition(line: number, column: number): void;
   onSave(): void; onReady(editor: monaco.editor.IStandaloneCodeEditor): void;
   onRenumber(): void; onPalette(): void; onExport(): void;
+  onWorkspaceReady(workspace: EditorWorkspace | undefined): void;
+  navigation: SearchMatch | undefined;
 }
 export function Editor(props: Props) {
   const host = useRef<HTMLDivElement>(null);
@@ -48,7 +53,22 @@ export function Editor(props: Props) {
       if (target) { editor.setPosition({ lineNumber: target.line, column: target.start + 1 }); editor.revealLineInCenter(target.line); }
     } });
     latest.current.onReady(editor);
+    latest.current.onWorkspaceReady({ apply(changes) {
+      if (latest.current.busy) throw new Error('Atelier occupé.');
+      if (!changes.length || new Set(changes.map(change => change.id)).size !== changes.length) throw new Error('Sélection de sources invalide.');
+      const edits = changes.map(change => {
+        const model = models.current.get(change.id)?.model;
+        if (!model || model.getValue() !== change.before) throw new Error('Source modifiée depuis l’aperçu : relancez la recherche.');
+        return { model, text: change.after };
+      });
+      for (const { model, text } of edits) {
+        model.pushStackElement();
+        model.pushEditOperations(null, [{ range: model.getFullModelRange(), text }], () => null);
+        model.pushStackElement();
+      }
+    } });
     return () => {
+      latest.current.onWorkspaceReady(undefined);
       for (const action of actions) action.dispose(); navigate.dispose(); save.dispose(); cursor.dispose(); editor.dispose();
       for (const item of models.current.values()) { item.change.dispose(); item.model.dispose(); }
       models.current.clear(); active.current = undefined; instance.current = null;
@@ -76,6 +96,14 @@ export function Editor(props: Props) {
       if (!props.documents.some(document => document.id === id)) { item.change.dispose(); item.model.dispose(); models.current.delete(id); }
     }
   }, [props.documents, props.activeId]);
+  useEffect(() => {
+    const match = props.navigation, editor = instance.current;
+    if (!match || !editor || match.documentId !== props.activeId) return;
+    const model = editor.getModel(); if (!model) return;
+    const start = model.getPositionAt(match.start), end = model.getPositionAt(match.end);
+    const range = new monaco.Range(start.lineNumber, start.column, end.lineNumber, end.column);
+    editor.setSelection(range); editor.revealRangeInCenter(range); editor.focus();
+  }, [props.navigation, props.activeId]);
   useEffect(() => { instance.current?.updateOptions({ readOnly: props.busy }); }, [props.busy]);
   useEffect(() => {
     const model = instance.current?.getModel();
