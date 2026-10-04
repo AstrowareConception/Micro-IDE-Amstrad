@@ -1,4 +1,4 @@
-# Dossier de conception et réalisation — version 0.12
+# Dossier de conception et réalisation — version 0.13
 
 Date de référence : **2026-10-04**. Responsable produit : **Térence FERUT / AstroWare Conception**. Les spécifications servent de référence au produit. Le [guide de l'alpha d'édition](implementation/editor-alpha.md), le [rapport J0](implementation/j0-report.md) et le [banc local](../tools/j0-harness/README.md) distinguent code disponible, preuves et qualification encore bloquée. L'[ADR 0009](adr/0009-edition-independante.md) découple l'édition du go moteur.
 
@@ -19,6 +19,8 @@ La tranche [images 0.10](implementation/images-alpha.md) ajoute PNG/JPEG, garde 
 La tranche [PDF texte 0.11](implementation/pdf-alpha.md) ajoute import vérifié, extraction bornée dans un thread dédié, navigation par page et outils agent ciblés. [ADR 0016](adr/0016-pdf-texte-borne.md). Pas de rendu PDF/OCR ni qualification Windows/macOS ; J4-02 reste partiel. [Git intégré](specifications/16-integration-git.md) est conçu et devient la prochaine tranche indépendante JG-A.
 
 La tranche [Git lecture seule 0.12](implementation/git-alpha.md) ajoute découverte, statut et diff index/disque par Git natif, avec configuration restrictive et buffers préservés. [ADR 0017](adr/0017-git-inspection-conservatrice.md). JG-A1/A2 restent partiels : init, stage, commits/historique puis synchronisation encore ouverts ; aucun outil Git n'est accordé à l'IA.
+
+La tranche [dépôt/index Git 0.13](implementation/git-local-index-alpha.md) ajoute aperçu/confirmation de création `main`, exclusions privées, stage/unstage par fichier et snapshots de précondition avec index isolé. [ADR 0018](adr/0018-git-init-et-index-isole.md). Aucune source remplacée, aucun commit automatique ni capacité Git de l'IA. Identité/commits/historique puis réseau restent ouverts ; JG-A n'est pas clos.
 
 | Document | Question traitée |
 | --- | --- |

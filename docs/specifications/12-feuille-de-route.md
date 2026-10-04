@@ -120,6 +120,8 @@ Ajout produit du **2026-10-04** : [spécification 16](16-integration-git.md), [A
 
 La [tranche 0.12](../implementation/git-alpha.md) commence JG-A1 et la lecture de JG-A2 : Git natif/version, détection de racine, configuration restrictive, statut et diff index/disque, sans toucher aux buffers. [ADR 0017](../adr/0017-git-inspection-conservatrice.md). Prochain incrément : init/exclusions, sélection stage/unstage, identité, commit/historique avec préconditions. Pas de clôture JG-A/ACC-31, de Git réseau ou de nouvelles capacités IA.
 
+La [tranche 0.13](../implementation/git-local-index-alpha.md) ajoute init `main` avec aperçu/exclusions, stage/unstage d'un fichier, confirmations humaines et vérification HEAD/index/config/fichiers avant publication d'un index isolé. [ADR 0018](../adr/0018-git-init-et-index-isole.md). Prochain incrément : identité locale, commit du contenu exact de l'index et historique paginé, avec garde des fichiers privés déjà indexés. Aucun réseau/outil Git agent ni clôture JG-A ; `.gitignore` existant, renommages/conflits et Windows/macOS restent non pris en charge pour ces mutations.
+
 | Tâche | Dépendance | Critère de sortie |
 | --- | --- | --- |
 | JG-A1 — Port VersionControl, découverte et politique de confiance | J1-01/02 | Exécutable/version/racine identifiés, aucune CLI libre, configurations dangereuses refusées |

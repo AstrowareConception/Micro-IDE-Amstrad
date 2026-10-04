@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict';
 import { _electron as electron, expect } from '@playwright/test';
-import { mkdtemp, readFile, writeFile, mkdir, rename, readdir } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, mkdir, rename, readdir, lstat, chmod } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { png, chunk } from './image-fixtures.ts';
 import { pdfFixture } from './pdf-fixtures.ts';
 import { readDataDisk, decodeAsciiRecords } from '../packages/cpc-disk/src/data-disk.ts';
+import { newProject } from '../packages/workspace/src/project.ts';
+import { PROJECT_GIT_IGNORE } from '../packages/version-control/src/inspection.ts';
 
 const temporary = await mkdtemp(join(tmpdir(), 'microide-desktop-'));
 const listing = join(temporary, 'source.bas');
@@ -370,6 +372,7 @@ try {
   await expect(gitPanel).toContainText('Brouillons non enregistrés');
   await gitPanel.getByRole('button', { name: 'Actualiser Git', exact: true }).click();
   await expect(gitPanel).toContainText('branche main');
+  await expect(gitPanel.getByRole('button', { name: 'Indexer src/main.bas', exact: true })).toBeDisabled();
   await gitPanel.getByRole('button', { name: 'Diff index src/main.bas', exact: true }).click();
   await expect(gitPanel.getByLabel('Diff Git', { exact: true })).toHaveValue(/\+290 REM GIT INDEX/);
   assert.ok(!(await gitPanel.getByLabel('Diff Git', { exact: true }).inputValue()).includes('GIT DISK'));
@@ -385,8 +388,71 @@ try {
   assert.match(invalidGitPath.error, /Session de projet périmée/);
   await gitPanel.scrollIntoViewIfNeeded(); await page.screenshot({ path: 'out/git-alpha.png' });
   console.log(`Native Git inspection: ${git('--version').trim()}, separate index/disk diffs, dirty buffer preserved, unchanged HEAD/index/source/manifest.`);
+  // Init/staging uses another original valid project, through actual UI + IPC. No fixture git init here.
+  const localRoot = join(temporary, 'git-local'); await mkdir(join(localRoot, 'src'), { recursive: true });
+  const localSource = '10 REM LOCAL GIT\n20 END\n';
+  await writeFile(join(localRoot, 'src/main.bas'), localSource);
+  await writeFile(join(localRoot, 'microide.project.json'), JSON.stringify(newProject('Git local contrôlé', randomUUID()), null, 2) + '\n');
+  await mkdir(join(localRoot, 'documents')); await writeFile(join(localRoot, 'documents/private.md'), 'PRIVATE ORIGINAL FIXTURE');
+  await writeFile(join(localRoot, '.env'), 'ORIGINAL LOCAL FIXTURE');
+  await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, localRoot);
+  const discardGitDraft = page.waitForEvent('dialog').then(dialog => dialog.accept());
+  await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click(); await discardGitDraft;
+  await page.getByRole('heading', { name: 'Git local contrôlé', exact: true }).waitFor();
+  await gitPanel.getByRole('button', { name: 'Actualiser Git', exact: true }).click();
+  await expect(gitPanel).toContainText('Aucun dépôt à la racine');
+  await gitPanel.getByRole('button', { name: 'Préparer la création Git', exact: true }).click();
+  await expect(gitPanel.getByLabel('Exclusions Git proposées', { exact: true })).toHaveValue(PROJECT_GIT_IGNORE);
+  await assert.rejects(lstat(join(localRoot, '.git')), { code: 'ENOENT' });
+  await desktop.evaluate(({ dialog }) => { dialog.showMessageBox = async () => ({ response: 0, checkboxChecked: false }); });
+  await gitPanel.getByRole('button', { name: 'Créer le dépôt Git local', exact: true }).click();
+  await expect(gitPanel).toContainText('Création annulée'); await assert.rejects(lstat(join(localRoot, '.git')), { code: 'ENOENT' });
+  await desktop.evaluate(({ dialog }) => {
+    globalThis.gitConfirmations = [];
+    dialog.showMessageBox = async (_window, options) => { globalThis.gitConfirmations.push(options.message); return { response: 1, checkboxChecked: false }; };
+  });
+  await gitPanel.getByRole('button', { name: 'Créer le dépôt Git local', exact: true }).click();
+  await expect(gitPanel).toContainText('Dépôt main créé avec exclusions');
+  assert.equal(await readFile(join(localRoot, '.gitignore'), 'utf8'), PROJECT_GIT_IGNORE);
+  assert.equal(await readFile(join(localRoot, '.git/HEAD'), 'utf8'), 'ref: refs/heads/main\n');
+  await assert.rejects(lstat(join(localRoot, '.git/index')), { code: 'ENOENT' });
+  assert.ok(!(await gitPanel.textContent()).includes('private.md'));
+  const localGit = (...args) => execFileSync('git', args, { cwd: localRoot, encoding: 'utf8' });
+  const localBefore = await Promise.all(['src/main.bas', 'microide.project.json', '.git/HEAD'].map(path => readFile(join(localRoot, path))));
+  await mkdir(join(localRoot, '.git/hooks'));
+  const localHook = join(localRoot, '.git/hooks/post-index-change'); await writeFile(localHook, '#!/bin/sh\nprintf EXECUTED > SENTINEL\n'); await chmod(localHook, 0o700);
+  await gitPanel.getByRole('button', { name: 'Indexer src/main.bas', exact: true }).click();
+  await expect(gitPanel).toContainText('Fichier sélectionné indexé');
+  assert.equal(localGit('ls-files', '-z'), 'src/main.bas\0');
+  await gitPanel.getByRole('button', { name: 'Diff index src/main.bas', exact: true }).click();
+  await expect(gitPanel.getByLabel('Diff Git', { exact: true })).toHaveValue(/\+10 REM LOCAL GIT/);
+  await gitPanel.scrollIntoViewIfNeeded(); await page.screenshot({ path: 'out/git-local-index-alpha.png' });
+  await gitPanel.getByRole('button', { name: 'Retirer index src/main.bas', exact: true }).click();
+  await expect(gitPanel).toContainText('Fichier sélectionné retiré de l’index');
+  assert.equal(localGit('ls-files', '-z'), '');
+  assert.deepEqual(await Promise.all(['src/main.bas', 'microide.project.json', '.git/HEAD'].map(path => readFile(join(localRoot, path)))), localBefore);
+  await assert.rejects(lstat(join(localRoot, 'SENTINEL')), { code: 'ENOENT' });
+  assert.ok((await desktop.evaluate(() => globalThis.gitConfirmations)).some(message => message.includes(localRoot)));
+  // An external edit while the human confirmation is open invalidates the status precondition.
+  await desktop.evaluate(({ dialog }, path) => { dialog.showMessageBox = async () => {
+    const { writeFile } = await import('node:fs/promises'); await writeFile(path, '10 REM EXTERNAL CONFIRM\n');
+    return { response: 1, checkboxChecked: false };
+  }; }, join(localRoot, 'src/main.bas'));
+  await gitPanel.getByRole('button', { name: 'Indexer src/main.bas', exact: true }).click();
+  await expect(gitPanel).toContainText('modifiés depuis le statut');
+  assert.equal(localGit('ls-files', '-z'), ''); assert.equal(await readFile(join(localRoot, 'src/main.bas'), 'utf8'), '10 REM EXTERNAL CONFIRM\n');
+  await writeFile(join(localRoot, 'src/main.bas'), localSource);
+  // Refresh the host session directly only for this final IPC guard check, with no more UI Git mutations.
+  const localSession = await page.evaluate(async () => (await window.desktop.project.open()).sessionId);
+  await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('30 REM DIRTY GUARD\n');
+  await expect(gitPanel).toContainText('Brouillons non enregistrés');
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const dirtyIndex = await page.evaluate(session => window.desktop.git.changeIndex(session, 'forged', 'forged', 'stage'), localSession);
+  assert.match(dirtyIndex.error, /brouillons/);
+  assert.equal(localGit('ls-files', '-z'), '');
+  console.log(`Native Git local index: ${localGit('--version').trim()}, UI init/cancel/main/exclusions, one-file stage/unstage, unchanged source/HEAD/manifest, hook disabled, external-confirmation and dirty IPC guards passed.`);
   assert.deepEqual(errors, []);
-  console.log('Electron smoke: read-only native Git status/diffs, TXT/MD, real PNG/JPEG decode and PDF.js worker import/pagination/reopen/corrupt-file rejection, scoped PDF page excerpts and progressive multimodal agent outputs, projects and firmware checks passed. No live API, real vision or CPC execution claimed.');
+  console.log('Electron smoke: native Git init/status/diffs/stage/unstage, TXT/MD, real PNG/JPEG decode and PDF.js worker import/pagination/reopen/corrupt-file rejection, scoped PDF page excerpts and progressive multimodal agent outputs, projects and firmware checks passed. No live API, real vision or CPC execution claimed.');
 } catch (error) {
   await mkdir('out', { recursive: true });
   await page?.screenshot({ path: 'out/desktop-failure.png', timeout: 5000 }).catch(() => undefined);
