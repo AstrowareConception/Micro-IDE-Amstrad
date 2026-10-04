@@ -14,6 +14,7 @@ export function searchSources(documents: readonly SearchDocument[], options: Sea
   const matches: SearchMatch[] = [];
   const needle = options.matchCase ? options.query : fold(options.query);
   for (const document of documents) {
+    if (document.source.length > 1024 * 1024) throw new Error('Recherche limitée à 1 Mio par source et 4 Mio au total.');
     const size = new TextEncoder().encode(document.source).length; bytes += size;
     if (size > 1024 * 1024 || bytes > 4 * 1024 * 1024) throw new Error('Recherche limitée à 1 Mio par source et 4 Mio au total.');
     const haystack = options.matchCase ? document.source : fold(document.source);
@@ -21,7 +22,9 @@ export function searchSources(documents: readonly SearchDocument[], options: Sea
     while (from <= haystack.length) {
       const start = haystack.indexOf(needle, from); if (start < 0) break;
       const end = start + needle.length; from = end;
-      if (options.wholeWord && (word(document.source[start - 1]) || word(document.source[end]))) continue;
+      const previous = [...document.source.slice(Math.max(0, start - 2), start)].at(-1);
+      const following = end < document.source.length ? String.fromCodePoint(document.source.codePointAt(end)!) : undefined;
+      if (options.wholeWord && (word(previous) || word(following))) continue;
       for (; scanned < start; scanned++) if (document.source[scanned] === '\n') { line++; lineStart = scanned + 1; }
       const lineEnd = document.source.indexOf('\n', start);
       matches.push({ documentId: document.id, name: document.name, start, end, line, column: start - lineStart + 1,

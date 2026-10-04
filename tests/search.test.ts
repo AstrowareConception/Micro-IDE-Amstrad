@@ -12,7 +12,7 @@ test('search covers unsaved snapshots and gives UTF-16 offsets and physical posi
   assert.equal(searchSources(documents, { ...options, matchCase: true }).matches.length, 2);
 });
 test('whole words account for BASIC suffixes and Unicode neighbours', () => {
-  const found = searchSources([{ id: 'x', name: 'x', source: 'A A$ A% A! AB ÉA Aé A.A :A:' }], { ...options, query: 'a', wholeWord: true });
+  const found = searchSources([{ id: 'x', name: 'x', source: 'A A$ A% A! AB ÉA Aé A.A :A: 𐐀A A𐐀' }], { ...options, query: 'a', wholeWord: true });
   assert.equal(found.matches.length, 2);
 });
 test('replacement is literal, nonoverlapping, excludes no-ops and preserves snapshots', () => {

@@ -483,6 +483,9 @@ try {
   assert.match(dirtyTerminal.error, /brouillons/);
   assert.equal(localGit('ls-files', '-z'), '');
   console.log(`Native Git local index: ${localGit('--version').trim()}, UI init/cancel/main/exclusions, one-file stage/unstage, unchanged source/HEAD/manifest, hook disabled, external-confirmation and dirty IPC guards passed.`);
+  await input.focus(); await page.keyboard.press('Control+z');
+  await page.getByRole('tab', { name: 'src/main.bas', exact: true }).waitFor();
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   // Global search operates on both loaded sources and leaves disk/manifest untouched.
   const searchRoot = join(temporary, 'global-search'); await mkdir(join(searchRoot, 'src'), { recursive: true });
   const searchManifest = newProject('Recherche contrôlée', randomUUID());
@@ -493,8 +496,7 @@ try {
   const manifestOriginal = JSON.stringify(searchManifest, null, 2) + '\n';
   await writeFile(join(searchRoot, 'microide.project.json'), manifestOriginal);
   await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, searchRoot);
-  const discardSearchDraft = page.waitForEvent('dialog').then(dialog => dialog.accept());
-  await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click(); await discardSearchDraft;
+  await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click();
   await page.getByRole('heading', { name: 'Recherche contrôlée', exact: true }).waitFor();
   await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('30 REM ORBIT DRAFT\n');
   await page.keyboard.press('Control+Shift+f');
