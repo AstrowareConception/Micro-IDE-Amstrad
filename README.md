@@ -2,7 +2,7 @@
 
 Un atelier de programmation pour écrire du **Locomotive BASIC**, le tester dans un **Amstrad CPC émulé**, travailler avec une **IA et ses propres documents**, puis partager une **disquette DSK utilisable hors de l'IDE**.
 
-**État au 4 octobre 2026 : alpha desktop, version 0.7.** Electron/Monaco propose édition BASIC, projets multifichiers et export DSK, ainsi qu'un agent OpenAI à outils : exploration, références du corpus fourni, création/remplacement de sources, analyse et construction, journal, avant/après et restauration de la mission courante. Clé API en mémoire côté main. L'import local des ROM OS/BASIC/AMSDOS et leur vérification sont disponibles. Ce n'est pas encore le MVP : crash recovery complet, pièces jointes et émulation intégrée qualifiée restent à construire. J0 attend un jeu firmware réel et les essais dans un émulateur indépendant ; aucun boot BASIC ou résultat matériel n'est revendiqué.
+**État au 4 octobre 2026 : alpha desktop, version 0.8.** Electron/Monaco propose édition BASIC, renumérotation conservatrice, projets multifichiers et export DSK, ainsi qu'un agent OpenAI à outils : exploration, références du corpus fourni, création/remplacement de sources, renumérotation, analyse et construction, journal, avant/après et restauration de la mission courante. Clé API en mémoire côté main. L'import local des ROM OS/BASIC/AMSDOS et leur vérification sont disponibles. Ce n'est pas encore le MVP : crash recovery complet, pièces jointes et émulation intégrée qualifiée restent à construire. J0 attend un jeu firmware réel et les essais dans un émulateur indépendant ; aucun boot BASIC ou résultat matériel n'est revendiqué.
 
 ## Lancer l'éditeur
 
@@ -16,6 +16,8 @@ npm start
 ```
 
 L'application s'ouvre sur un exemple BASIC. `Ctrl Espace` complète, `Ctrl S` enregistre et `F12` rejoint une cible littérale. Aucune ROM ou clé IA n'est nécessaire pour éditer et construire un DSK. [Guide, sécurité et limites de cette alpha](docs/implementation/editor-alpha.md).
+
+**Renuméroter** propose plage, aperçu et application au buffer en une action annulable. Les cibles locales couvertes sont réécrites ; formes opaques/calculées et conflits sont refusés. L'agent dispose du même outil. [Guide de renumérotation 0.8](docs/implementation/renumber-alpha.md).
 
 Pour travailler en plusieurs fichiers : **Créer projet dans un dossier vide**, ou **Ouvrir projet** sur `examples/hello-cpc`. [Guide des projets 0.5 et limites de sauvegarde](docs/implementation/projects-alpha.md). L'export utilise tous les buffers ; Enregistrer sauvegarde uniquement l'onglet actif.
 

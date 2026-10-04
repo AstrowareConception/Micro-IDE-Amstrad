@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { chromium } from '@playwright/test';
+import { chromium, expect } from '@playwright/test';
 import { spawn } from 'node:child_process';
 import { mkdir, readFile } from 'node:fs/promises';
 import { readDataDisk, decodeAsciiRecords } from '../packages/cpc-disk/src/data-disk.ts';
@@ -56,10 +56,31 @@ try {
   await page.getByRole('button', { name: 'Ouvrir', exact: true }).click();
   await cancelled;
   assert.ok(await page.locator('.tab').textContent().then(text => text.includes('modifié')));
+  await page.getByRole('button', { name: 'Renuméroter', exact: true }).click();
+  const renumber = page.getByRole('region', { name: 'Renumérotation BASIC' });
+  await renumber.getByLabel('Premier nouveau numéro', { exact: true }).fill('1000');
+  await renumber.getByRole('button', { name: 'Prévisualiser la renumérotation', exact: true }).click();
+  await expectText(renumber, '3 substitutions.');
+  await renumber.getByRole('button', { name: 'Appliquer la renumérotation', exact: true }).click();
+  await expect(page.locator('.monaco-editor .view-lines')).toContainText('1000 GOTO 1010');
+  const renumberDiskEvent = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Exporter DSK', exact: true }).click();
+  const renumberDisk = new Uint8Array(await readFile(await (await renumberDiskEvent).path()));
+  assert.equal(new TextDecoder().decode(decodeAsciiRecords(readDataDisk(renumberDisk)[0].records)), '1000 GOTO 1010\r\n1010 END:REM TARGET X\r\n\x1a');
+  await mkdir('out', { recursive: true }); await page.screenshot({ path: 'out/renumber-alpha.png', fullPage: true });
+  await input.focus(); await page.keyboard.press('Control+z');
+  await expect(page.locator('.monaco-editor .view-lines')).toContainText('10 GOTO 100');
+  await page.keyboard.press('Control+Shift+z');
+  await expect(page.locator('.monaco-editor .view-lines')).toContainText('1000 GOTO 1010');
+  await page.keyboard.press('Control+z');
+  await renumber.getByRole('button', { name: 'Prévisualiser la renumérotation', exact: true }).click();
+  await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText(' Y'); await page.keyboard.press('Control+z');
+  await renumber.getByRole('button', { name: 'Appliquer la renumérotation', exact: true }).click();
+  await expectText(renumber, 'révision modifié depuis l’aperçu');
   await mkdir('out', { recursive: true });
   await page.screenshot({ path: 'out/editor-alpha.png', fullPage: true });
   assert.deepEqual(errors, [], 'No browser errors');
-  console.log('Editor browser smoke: completion, coloration, help, diagnostics, F12, source and DSK downloads, dirty protection passed.');
+  console.log('Editor browser smoke: completion, coloration, help, diagnostics, F12, downloads, dirty protection plus renumber preview/apply/DSK/undo/redo/stale revision passed.');
 } catch (error) {
   await mkdir('out', { recursive: true });
   await page?.screenshot({ path: 'out/editor-failure.png', fullPage: true, timeout: 5000 }).catch(() => undefined);
@@ -67,3 +88,7 @@ try {
   console.error(await page?.locator('.view-lines').textContent());
   throw error;
 } finally { await browser?.close(); server.kill(); }
+
+async function expectText(locator, text) {
+  await locator.getByText(text, { exact: false }).waitFor();
+}

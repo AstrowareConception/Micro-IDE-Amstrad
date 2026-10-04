@@ -1,5 +1,6 @@
 import { analyze, tokenize } from '../../basic-language/src/language.ts';
 import { COMMANDS, REFERENCE } from '../../basic-language/src/catalog.ts';
+import { planRenumber } from '../../basic-language/src/renumber.ts';
 import { addProjectSource, buildProjectDisk } from '../../workspace/src/project.ts';
 import type { AgentWorkspaceState, ToolDefinition, ToolPort } from './types.ts';
 
@@ -16,6 +17,7 @@ export const DEFINITIONS = [
   tool('project_replace_source', 'Remplace et enregistre une source déclarée ; hash de lecture requis. Consulte les références des commandes couvertes avant mutation.', { id: s, expectedHash: s, source: s }),
   tool('project_create_source', 'Crée et enregistre un fichier BASIC indépendant et son entrée manifeste ; nom sans extension de 1–8 caractères ASCII.', { name: s, source: s }),
   tool('language_analyze', 'Diagnostics réels du sous-ensemble pour toutes les sources. Aucun test ROM.'),
+  tool('language_renumber', 'Renumérote et enregistre une source avec références locales littérales ; hash requis. Refuse formes opaques/collisions. Références de commandes à consulter ; même checkpoint que les autres mutations.', { id: s, expectedHash: s, start: n, step: n, from: n, to: n }),
   tool('build_project', 'Construit réellement le DSK de tous les buffers et le relit ; renvoie taille/hash/noms. Ne lance pas de CPC.'),
 ];
 function args(value: unknown, fields: string[]): Record<string, unknown> {
@@ -96,6 +98,14 @@ export class WorkspaceTools implements ToolPort {
         return { id: item.id, path: item.path, hash: this.hash(source), saved: true };
       }
       case 'language_analyze': return { files: this.state.files.map(file => ({ id: file.id, diagnostics: analyze(file.source).diagnostics })), coverage: 'partial-static-only' };
+      case 'language_renumber': {
+        const item = file(); if (this.hash(item.source) !== str(value.expectedHash, 64)) throw new Error('stale-read : relire la source.');
+        const plan = planRenumber(item.source, { start: value.start as number, step: value.step as number, from: value.from as number, to: value.to as number });
+        const metadata = { substitutions: plan.edits.length, mapping: plan.mapping.slice(0, 100), mappingTruncated: plan.mapping.length > 100, warnings: plan.warnings, coverage: 'partial-static-only' };
+        if (!plan.edits.length) return { ...metadata, id: item.id, hash: this.hash(item.source), saved: item.source === item.saved, noOp: true };
+        const result = await this.execute('project_replace_source', { id: item.id, expectedHash: value.expectedHash, source: plan.after }) as Record<string, unknown>;
+        return { ...result, ...metadata };
+      }
       case 'build_project': {
         const disk = buildProjectDisk(this.state.manifest, this.state.files); this.buildVerified = true;
         return { bytes: disk.length, sha256: this.hash(disk), files: this.state.manifest.sources.map(source => source.cpcName), verification: 'structural-dsk-only', runtime: 'not-run', referencesConsulted: [...this.consulted] };

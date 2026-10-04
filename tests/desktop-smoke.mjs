@@ -40,6 +40,23 @@ try {
   assert.equal(readDataDisk(new Uint8Array(await readFile(exported)))[0].name, 'MAIN.BAS');
   const invalid = await page.evaluate(() => window.desktop.save(123));
   assert.match(invalid.error, /invalide/);
+  // The native editor refactors its buffer only, with one undo element and revision guard.
+  await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText('10 GOTO 100\n100 END');
+  await page.getByRole('button', { name: 'Renuméroter', exact: true }).click();
+  const renumber = page.getByRole('region', { name: 'Renumérotation BASIC' });
+  await renumber.getByLabel('Premier nouveau numéro', { exact: true }).fill('1000');
+  await renumber.getByRole('button', { name: 'Prévisualiser la renumérotation', exact: true }).click();
+  await renumber.getByRole('button', { name: 'Appliquer la renumérotation', exact: true }).click();
+  await expect(page.locator('.monaco-editor .view-lines')).toContainText('1000 GOTO 1010');
+  assert.equal(await readFile(listing, 'utf8'), '10 REM EXTERNAL\n20 END\n');
+  await input.focus(); await page.keyboard.press('Control+z');
+  await expect(page.locator('.monaco-editor .view-lines')).toContainText('10 GOTO 100');
+  await renumber.getByRole('button', { name: 'Prévisualiser la renumérotation', exact: true }).click();
+  await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText(':REM CHANGED');
+  await renumber.getByRole('button', { name: 'Appliquer la renumérotation', exact: true }).click();
+  await expect(renumber).toContainText('révision modifié depuis l’aperçu');
+  await renumber.getByRole('button', { name: 'Fermer la renumérotation', exact: true }).click();
+  await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText('10 PRINT "MODIFIED"\n20 END\n');
   // Native close cancellation preserves a dirty editor.
   await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('30 REM DIRTY');
   await page.locator('.tab').filter({ hasText: /modifié/ }).waitFor();
@@ -111,9 +128,19 @@ try {
   await page.getByText('Entrée : UTIL.BAS', { exact: true }).waitFor();
   await page.screenshot({ path: 'out/project-alpha.png' });
 
+  await page.getByRole('tab', { name: 'src/main.bas', exact: true }).click();
+  await page.getByRole('button', { name: 'Renuméroter', exact: true }).click();
+  await renumber.getByLabel('Premier nouveau numéro', { exact: true }).fill('1000');
+  await renumber.getByRole('button', { name: 'Prévisualiser la renumérotation', exact: true }).click();
+  await page.getByRole('tab', { name: 'src/util.bas', exact: true }).click();
+  await renumber.getByRole('button', { name: 'Appliquer la renumérotation', exact: true }).click();
+  await expect(renumber).toContainText('Document ou révision modifié');
+  await renumber.getByRole('button', { name: 'Fermer la renumérotation', exact: true }).click();
+
   // Exercise the real main/preload/UI and actual Responses adapter with a controlled transport.
   // No OpenAI request, real key, paid generation or fixture-enabled production route.
   const checkpointBaseline = await readFile(join(moved, 'src/main.bas'), 'utf8');
+  await page.getByRole('tab', { name: 'src/main.bas', exact: true }).click();
   await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('\n40 REM USER DRAFT');
   const originalDraft = checkpointBaseline + '\n40 REM USER DRAFT';
   await desktop.evaluate(async () => {
