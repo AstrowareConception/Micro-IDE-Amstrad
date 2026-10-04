@@ -376,7 +376,8 @@ try {
   await gitPanel.getByRole('button', { name: 'Diff disque src/main.bas', exact: true }).click();
   await expect(gitPanel.getByLabel('Diff Git', { exact: true })).toHaveValue(/\+300 REM GIT DISK/);
   assert.ok(!(await gitPanel.getByLabel('Diff Git', { exact: true }).inputValue()).includes('BUFFER ONLY'));
-  assert.ok((await page.locator('.monaco-editor').textContent()).includes('BUFFER ONLY'));
+  // Monaco renders spaces as NBSP; use the text assertion's whitespace normalization.
+  await expect(page.locator('.monaco-editor .view-lines')).toContainText('310 REM BUFFER ONLY');
   assert.deepEqual(await Promise.all(['.git/HEAD', '.git/index', 'src/main.bas', 'microide.project.json'].map(path => readFile(join(moved, path)))), gitBefore);
   const invalidGitSession = await page.evaluate(() => window.desktop.git.status('expired'));
   assert.match(invalidGitSession.error, /Session de projet périmée/);
