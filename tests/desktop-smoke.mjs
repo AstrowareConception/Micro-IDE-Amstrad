@@ -361,9 +361,10 @@ try {
   await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click();
   await page.getByRole('tab', { name: 'src/main.bas', exact: true }).waitFor();
   const gitBaseline = await readFile(join(moved, 'src/main.bas'), 'utf8');
-  await writeFile(join(moved, 'src/main.bas'), gitBaseline + '290 REM GIT INDEX\n'); git('add', '--', 'src/main.bas');
-  await writeFile(join(moved, 'src/main.bas'), gitBaseline + '290 REM GIT INDEX\n300 REM GIT DISK\n');
-  await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('310 REM BUFFER ONLY\n');
+  const gitIndexed = gitBaseline + (gitBaseline.endsWith('\n') ? '' : '\n') + '290 REM GIT INDEX\n';
+  await writeFile(join(moved, 'src/main.bas'), gitIndexed); git('add', '--', 'src/main.bas');
+  await writeFile(join(moved, 'src/main.bas'), gitIndexed + '300 REM GIT DISK\n');
+  await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('\n310 REM BUFFER ONLY\n');
   const gitBefore = await Promise.all(['.git/HEAD', '.git/index', 'src/main.bas', 'microide.project.json'].map(path => readFile(join(moved, path))));
   const gitPanel = page.getByRole('region', { name: 'Contrôle de version Git' });
   await expect(gitPanel).toContainText('Brouillons non enregistrés');
