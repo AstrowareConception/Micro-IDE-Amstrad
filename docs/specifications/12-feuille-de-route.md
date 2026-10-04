@@ -34,6 +34,8 @@ Condition d'arrêt pour l'intégration de l'exécution : pas de ROM utilisable, 
 
 ## J1 — Socle desktop et projets
 
+L'[alpha ROM 0.7](../implementation/firmware-alpha.md) réalise une partie de J1-04 : import séparé local, empreintes et configuration persistante, indépendamment de J0 selon l'[ADR 0012](../adr/0012-configuration-rom-locale.md). Aucun moteur n'est qualifié par cette préparation.
+
 Fixer versions de runtime, installer monorepo, shell Electron sécurisé et composition des modules. Créer/ouvrir/enregistrer le projet hello ; intégrer contrats, résolution de chemins, journal transactionnel et détection de modifications externes. Mettre en place CI code et règles d'import.
 
 | Tâche | Dépendance | Critère de sortie |

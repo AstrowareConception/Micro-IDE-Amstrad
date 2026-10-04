@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { _electron as electron, expect } from '@playwright/test';
-import { mkdtemp, readFile, writeFile, mkdir, rename } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, mkdir, rename, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
 import { readDataDisk, decodeAsciiRecords } from '../packages/cpc-disk/src/data-disk.ts';
 
 const temporary = await mkdtemp(join(tmpdir(), 'microide-desktop-'));
@@ -191,8 +192,46 @@ try {
   await page.locator('.agent-result').getByText(/^cancelled ·/).waitFor();
   await page.getByRole('button', { name: 'Oublier la clé', exact: true }).click();
   await page.locator('.agent-notice').filter({ hasText: 'Clé oubliée.' }).waitFor();
+  // ROM configuration exercises native selectors and real storage, using original synthetic bytes.
+  const romPanel = page.getByRole('region', { name: 'Configuration ROM CPC' });
+  await romPanel.getByRole('button', { name: 'Retirer la sélection ROM', exact: true }).click();
+  await expect(romPanel).toContainText('Sélection retirée.');
+  const firmwareRoot = join(await desktop.evaluate(({ app }) => app.getPath('userData')), 'firmware');
+  let osHash;
+  for (const [index, label] of ['OS CPC', 'BASIC 1.1', 'AMSDOS'].entries()) {
+    const path = join(temporary, `synthetic-${index}.rom`), bytes = Buffer.alloc(16384, index + 1);
+    await writeFile(path, bytes);
+    if (index === 0) osHash = createHash('sha256').update(bytes).digest('hex');
+    await desktop.evaluate(({ dialog }, selected) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [selected] }); }, path);
+    await romPanel.getByRole('button', { name: `Importer ${label}`, exact: true }).click();
+    await expect(romPanel.getByRole('button', { name: `Importer ${label}`, exact: true })).toBeEnabled();
+    await expect(romPanel).toContainText(createHash('sha256').update(bytes).digest('hex'));
+  }
+  await expect(romPanel).toContainText('Jeu complet · expérimental');
+  const configuration = await readFile(join(firmwareRoot, 'configuration.json'), 'utf8');
+  assert.ok(!configuration.includes(temporary));
+  // Renderer receives metadata only; unknown role cannot open a host path.
+  const badRole = await page.evaluate(() => window.desktop.firmware.importRom('../../private'));
+  assert.match(badRole.error, /Rôle ROM invalide/);
+  await page.reload();
+  await expect(romPanel).toContainText('Jeu complet · expérimental');
+  await romPanel.scrollIntoViewIfNeeded(); await page.screenshot({ path: 'out/firmware-alpha.png' });
+  await writeFile(join(firmwareRoot, 'roms', osHash + '.rom'), Buffer.alloc(16384, 9));
+  await romPanel.getByRole('button', { name: 'Vérifier les ROM', exact: true }).click();
+  await expect(romPanel).toContainText('Fichier absent ou corrompu');
+  const short = join(temporary, 'short.rom'); await writeFile(short, Buffer.alloc(16383));
+  await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, short);
+  await romPanel.getByRole('button', { name: 'Importer OS CPC', exact: true }).click();
+  await expect(romPanel).toContainText('exactement 16 384 octets');
+  assert.equal(await readFile(join(firmwareRoot, 'configuration.json'), 'utf8'), configuration);
+  await desktop.evaluate(({ dialog }) => { dialog.showOpenDialog = async () => ({ canceled: true, filePaths: [] }); });
+  await romPanel.getByRole('button', { name: 'Importer OS CPC', exact: true }).click();
+  await expect(romPanel).toContainText('Import annulé');
+  await romPanel.getByRole('button', { name: 'Retirer la sélection ROM', exact: true }).click();
+  await expect(romPanel).toContainText('Sélection retirée.');
+  await expect(romPanel).toContainText('Jeu incomplet ou invalide');
   assert.deepEqual(errors, []);
-  console.log('Electron smoke: projects plus OpenAI controlled transport, secret clearing, tools, dirty context, persisted edits/create, journal, structural build, before/after, conflict-safe checkpoint restoration and cancellation passed. No live API or CPC execution claimed.');
+  console.log('Electron smoke: projects, controlled OpenAI agent and local firmware import/reload/hash corruption/invalid size/cancel/clear passed. No live API or CPC execution claimed.');
 } catch (error) {
   await mkdir('out', { recursive: true });
   await page?.screenshot({ path: 'out/desktop-failure.png', timeout: 5000 }).catch(() => undefined);

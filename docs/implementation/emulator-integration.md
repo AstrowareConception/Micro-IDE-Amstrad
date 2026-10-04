@@ -43,7 +43,7 @@ Le lancement attendu : initialiser avec firmware identifié, booter, observer le
 | Writer/reader DSK DATA standard et export des secteurs modifiés | Testés structurellement ; OPENOUT firmware non qualifié |
 | Build C natif, WASM, transport Node et banc navigateur | CI disponible, preuves dans J0 |
 | Worker de production, service de session et panneau machine Electron | À réaliser après qualification J0 ; le banc n'est pas ce panneau |
-| Import desktop de ROM, jeux identifiés et reconnaissance du prompt | À réaliser/qualifier |
+| Import desktop de ROM, jeux identifiés et reconnaissance du prompt | Import séparé et hashes disponibles en [alpha 0.7](firmware-alpha.md) ; types et prompt à qualifier |
 | Boot BASIC 1.1, CAT/RUN/LOAD, TIME/SOUND/INKEY, OPENOUT exporté puis relu | Bloqués en l'absence de firmware autorisé fourni pour la recette |
 | Outils agent run/input/observe/control | Non exposés dans l'alpha 0.6 ; aucun succès simulé |
 

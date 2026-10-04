@@ -7,6 +7,8 @@ import { buildListingDisk } from '../../packages/basic-language/src/build.ts';
 import { buildProjectDisk } from '../../packages/workspace/src/project.ts';
 import { ProjectStore } from './project-store.ts';
 import { AgentController } from './agent-controller.ts';
+import { FirmwareStore } from './firmware-store.ts';
+import { romRole } from '../../packages/emulator/src/firmware.ts';
 
 const base = dirname(fileURLToPath(import.meta.url));
 const page = pathToFileURL(join(base, '../../renderer/index.html')).href;
@@ -56,6 +58,7 @@ function route(channel: string, handler: (payload: unknown) => Promise<unknown>)
 // Do not hold the ESM entry point open while waiting for Electron's ready lifecycle.
 void app.whenReady().then(async () => {
 agent = new AgentController(join(app.getPath('userData'), 'agent-checkpoints'), join(base, '../../knowledge/locomotive-basic'));
+const firmware = new FirmwareStore(join(app.getPath('userData'), 'firmware'));
 window = new BrowserWindow({ width: 1440, height: 960, minWidth: 900, minHeight: 650,
   backgroundColor: '#10151d', title: 'Micro IDE Amstrad',
   webPreferences: { preload: join(base, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true },
@@ -190,6 +193,14 @@ route('agent:restore', async payload => {
   const view = agent.status(value.taskId); store.assertSession(view.workspace.sessionId);
   return agent.restore(value.taskId, bufferRequest(value.buffers));
 });
+route('firmware:status', async () => firmware.status());
+route('firmware:import', async payload => {
+  const role = romRole(payload);
+  const selection = await dialog.showOpenDialog(window, { properties: ['openFile'], filters: [{ name: 'ROM séparée CPC (16 Kio)', extensions: ['rom', 'bin'] }] });
+  if (selection.canceled || !selection.filePaths[0]) return null;
+  return firmware.importRom(role, selection.filePaths[0]);
+});
+route('firmware:clear', async () => firmware.clear());
 await window.loadURL(page);
 }).catch(error => { console.error('Desktop startup failed:', error); app.quit(); });
 app.on('window-all-closed', () => app.quit());

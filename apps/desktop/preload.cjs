@@ -4,6 +4,11 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
   save: (source, saveAs = false) => ipcRenderer.invoke('listing:save', { source, saveAs }),
   exportDisk: source => ipcRenderer.invoke('listing:export', { source }),
   setDirty: dirty => ipcRenderer.send('listing:dirty', dirty),
+  firmware: Object.freeze({
+    status: () => ipcRenderer.invoke('firmware:status'),
+    importRom: role => ipcRenderer.invoke('firmware:import', role),
+    clear: () => ipcRenderer.invoke('firmware:clear'),
+  }),
   agent: Object.freeze({
     configure: (key, model) => ipcRenderer.invoke('agent:configure', { key, model }),
     start: (sessionId, objective, buffers) => ipcRenderer.invoke('agent:start', { sessionId, objective, buffers }),
