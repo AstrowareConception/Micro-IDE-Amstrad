@@ -4,9 +4,15 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
   save: (source, saveAs = false) => ipcRenderer.invoke('listing:save', { source, saveAs }),
   exportDisk: source => ipcRenderer.invoke('listing:export', { source }),
   setDirty: dirty => ipcRenderer.send('listing:dirty', dirty),
+  terminal: Object.freeze({
+    run: (sessionId, command) => ipcRenderer.invoke('terminal:run', { sessionId, command }),
+    status: (sessionId, id) => ipcRenderer.invoke('terminal:status', { sessionId, id }),
+    stop: (sessionId, id) => ipcRenderer.invoke('terminal:stop', { sessionId, id }),
+  }),
   git: Object.freeze({
     status: sessionId => ipcRenderer.invoke('git:status', { sessionId }),
     diff: (sessionId, changeId, side) => ipcRenderer.invoke('git:diff', { sessionId, changeId, side }),
+    history: (sessionId, cursor) => ipcRenderer.invoke('git:history', { sessionId, cursor }),
     prepareInit: sessionId => ipcRenderer.invoke('git:prepare-init', { sessionId }),
     init: (sessionId, planId) => ipcRenderer.invoke('git:init', { sessionId, planId }),
     changeIndex: (sessionId, snapshotId, changeId, action) => ipcRenderer.invoke('git:index', { sessionId, snapshotId, changeId, action }),

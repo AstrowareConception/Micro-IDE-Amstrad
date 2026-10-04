@@ -8,6 +8,7 @@ interface Props {
   onChange(id: string, source: string): void; onCommand(card: CommandCard | undefined): void;
   onPosition(line: number, column: number): void;
   onSave(): void; onReady(editor: monaco.editor.IStandaloneCodeEditor): void;
+  onRenumber(): void; onPalette(): void; onExport(): void;
 }
 export function Editor(props: Props) {
   const host = useRef<HTMLDivElement>(null);
@@ -31,8 +32,13 @@ export function Editor(props: Props) {
       latest.current.onCommand(commandAt(model.getLineContent(position.lineNumber), position.column - 1));
       latest.current.onPosition(position.lineNumber, position.column);
     });
-    const save = editor.addAction({ id: 'save-listing', label: 'Enregistrer le listing', keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS], run: () => latest.current.onSave() });
-    const navigate = editor.addAction({ id: 'basic-goto-line', label: 'Aller à la cible BASIC', keybindings: [monaco.KeyCode.F12], run: () => {
+    const save = editor.addAction({ id: 'save-listing', label: 'Enregistrer le listing', contextMenuGroupId: '2_cpc', contextMenuOrder: 1, keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS], run: () => latest.current.onSave() });
+    const actions = [
+      editor.addAction({ id: 'cpc-renumber', label: 'Renuméroter le BASIC…', contextMenuGroupId: '2_cpc', contextMenuOrder: 2, run: () => { if (!latest.current.busy) latest.current.onRenumber(); } }),
+      editor.addAction({ id: 'cpc-export', label: 'Exporter le projet en DSK…', contextMenuGroupId: '2_cpc', contextMenuOrder: 3, run: () => { if (!latest.current.busy) latest.current.onExport(); } }),
+      editor.addAction({ id: 'cpc-commands', label: 'Commandes CPCéleste…', contextMenuGroupId: '2_cpc', contextMenuOrder: 4, run: () => latest.current.onPalette() }),
+    ];
+    const navigate = editor.addAction({ id: 'basic-goto-line', label: 'Aller à la cible BASIC', contextMenuGroupId: 'navigation', contextMenuOrder: 1, keybindings: [monaco.KeyCode.F12], run: () => {
       const position = editor.getPosition();
       const model = editor.getModel();
       if (!position || !model) return;
@@ -43,7 +49,7 @@ export function Editor(props: Props) {
     } });
     latest.current.onReady(editor);
     return () => {
-      navigate.dispose(); save.dispose(); cursor.dispose(); editor.dispose();
+      for (const action of actions) action.dispose(); navigate.dispose(); save.dispose(); cursor.dispose(); editor.dispose();
       for (const item of models.current.values()) { item.change.dispose(); item.model.dispose(); }
       models.current.clear(); active.current = undefined; instance.current = null;
     };

@@ -2,6 +2,8 @@
 
 ## Organisation de l'atelier
 
+Réalisation partielle 0.14 : [guide atelier](../implementation/workbench-alpha.md), [ADR 0019](../adr/0019-outils-atelier-et-terminal-humain.md). Menus, palette globale, ouverture rapide, contextes éditeur/sources, zoom/minimap, historique Git et terminal humain non interactif sont disponibles. Les espaces redimensionnables, persistance des préférences et machine décrits ci-dessous restent cibles produit, pas capacités déduites de cet incrément.
+
 La fenêtre principale dispose de quatre espaces redimensionnables : explorateur de projet à gauche, éditeur central, machine CPC à droite et panneau inférieur pour problèmes, construction et disque. L'assistant utilise un volet latéral ouvrable ; lorsqu'il est ouvert sur une petite fenêtre, l'utilisateur peut alterner machine et assistant sans réduire le listing à quelques caractères. La disposition est mémorisée par utilisateur, pas imposée au projet partagé.
 
 La barre supérieure affiche le projet, la cible exacte, l'état d'enregistrement et les actions **Vérifier**, **Exécuter**, **Pause/Reprendre**, **Interrompre**, **Réinitialiser** et **Exporter DSK**. Les actions indisponibles expliquent pourquoi : ROM absente, diagnostic bloquant, construction en cours, aucune session. Le bouton Exécuter construit la révision choisie puis lance sa disquette ; il ne masque pas un échec de construction par l'exécution d'une version précédente.
@@ -63,4 +65,4 @@ Tout état possède un libellé et pas seulement une couleur. Les commandes disp
 
 Exemples : « La ligne 120 vise la ligne 900, absente du programme. Aller à 120. » ; « Le nom IMAGE-DEBUT.BIN dépasse 8 caractères. Choisir un nom CPC. » ; « Ce PDF ne contient pas de texte extractible. Choisir des pages pour analyse visuelle. » ; « Cette réponse utilise une version antérieure de MAIN.BAS. Comparer avant d'appliquer. »
 
-Les confirmations de l'application sont limitées aux pertes potentielles, transmissions choisies et changements IA. La politique produit doit permettre des préférences explicites afin de ne pas transformer chaque action courante en obstacle.
+Les confirmations de l'application concernent les pertes potentielles, transmissions choisies, changements IA et commandes hôte du terminal. Dans l’alpha 0.14, chaque commande système est confirmée avec racine et texte exact ; aucune confirmation n’est ajoutée aux menus d’édition ordinaires. La politique produit doit permettre des préférences explicites afin de ne pas transformer chaque action courante en obstacle.

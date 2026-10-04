@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.13
+# CPCéleste — Dossier de conception et réalisation — version 0.14
+
+L’[atelier 0.14](implementation/workbench-alpha.md) ajoute menus/palette/contextes, ouverture rapide, réglages de code, historique Git paginé et terminal humain non interactif. [ADR 0019](adr/0019-outils-atelier-et-terminal-humain.md). Le shell n’est pas accessible à l’agent ; historique local durable, commit intégré, PTY et réseau Git intégré restent à construire.
 
 Nom de marque adopté le 4 octobre 2026 : **CPCéleste**, signature « Vos idées prennent vie en BASIC. ». [Charte et kit de marque](brand/README.md). Les rapports historiques gardent leur intitulé d’origine ; aucun format persistant n’est renommé.
 

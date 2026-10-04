@@ -374,6 +374,8 @@ try {
   await expect(gitPanel).toContainText('Brouillons non enregistrés');
   await gitPanel.getByRole('button', { name: 'Actualiser Git', exact: true }).click();
   await expect(gitPanel).toContainText('branche main');
+  await gitPanel.getByRole('button', { name: 'Historique Git', exact: true }).click();
+  await expect(gitPanel.getByLabel('Historique des commits', { exact: true })).toContainText('Original native fixture');
   await expect(gitPanel.getByRole('button', { name: 'Indexer src/main.bas', exact: true })).toBeDisabled();
   await gitPanel.getByRole('button', { name: 'Diff index src/main.bas', exact: true }).click();
   await expect(gitPanel.getByLabel('Diff Git', { exact: true })).toHaveValue(/\+290 REM GIT INDEX/);
@@ -449,6 +451,27 @@ try {
   await expect(gitPanel).toContainText('modifiés depuis le statut');
   assert.equal(localGit('ls-files', '-z'), ''); assert.equal(await readFile(join(localRoot, 'src/main.bas'), 'utf8'), '10 REM EXTERNAL CONFIRM\n');
   await writeFile(join(localRoot, 'src/main.bas'), localSource);
+  // Human-operated terminal on the clean current project, after the Git checks.
+  await desktop.evaluate(({ dialog }) => { dialog.showMessageBox = async () => ({ response: 1, checkboxChecked: false }); });
+  await page.getByText('Affichage', { exact: true }).click();
+  await page.getByRole('button', { name: 'Afficher le terminal', exact: true }).click();
+  const terminalPanel = page.getByRole('region', { name: 'Terminal du projet', exact: true });
+  await terminalPanel.getByLabel('Commande système', { exact: true }).fill('printf CPC_TERMINAL_OK');
+  await terminalPanel.getByRole('button', { name: 'Exécuter la commande', exact: true }).click();
+  await expect(terminalPanel.getByLabel('Sortie du terminal', { exact: true })).toContainText('CPC_TERMINAL_OK');
+  await expect(terminalPanel).toContainText('Commande terminée · code 0');
+  await terminalPanel.getByLabel('Commande système', { exact: true }).fill('sleep 20 & wait');
+  await terminalPanel.getByRole('button', { name: 'Exécuter la commande', exact: true }).click();
+  await expect(terminalPanel.getByRole('button', { name: 'Arrêter la commande', exact: true })).toBeEnabled();
+  const blockedTerminal = await page.evaluate(() => window.desktop.open());
+  assert.match(blockedTerminal.error, /terminal est active/);
+  const blockedAgent = await page.evaluate(() => window.desktop.agent.configure('ORIGINAL-UNUSED-FIXTURE', 'fixture-model'));
+  assert.match(blockedAgent.error, /terminal est active/);
+  await terminalPanel.getByRole('button', { name: 'Arrêter la commande', exact: true }).click();
+  await expect(terminalPanel).toContainText('Arrêt demandé.');
+  await expect(terminalPanel.getByLabel('Commande système', { exact: true })).toBeEnabled();
+  await page.screenshot({ path: 'out/workbench-alpha.png' });
+  console.log('Native workbench: Git history, real project shell output, explicit stop and disk/agent isolation passed.');
   // Refresh the host session directly only for this final IPC guard check, with no more UI Git mutations.
   const localSession = await page.evaluate(async () => (await window.desktop.project.open()).sessionId);
   await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('30 REM DIRTY GUARD\n');
@@ -456,6 +479,8 @@ try {
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   const dirtyIndex = await page.evaluate(session => window.desktop.git.changeIndex(session, 'forged', 'forged', 'stage'), localSession);
   assert.match(dirtyIndex.error, /brouillons/);
+  const dirtyTerminal = await page.evaluate(session => window.desktop.terminal.run(session, 'printf FORBIDDEN'), localSession);
+  assert.match(dirtyTerminal.error, /brouillons/);
   assert.equal(localGit('ls-files', '-z'), '');
   console.log(`Native Git local index: ${localGit('--version').trim()}, UI init/cancel/main/exclusions, one-file stage/unstage, unchanged source/HEAD/manifest, hook disabled, external-confirmation and dirty IPC guards passed.`);
   assert.deepEqual(errors, []);

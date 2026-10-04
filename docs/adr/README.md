@@ -22,5 +22,6 @@ Une ADR explique une décision durable et ses conséquences. **Acceptée** signi
 | [0016](0016-pdf-texte-borne.md) | Extraction PDF texte bornée en thread dédié, pages et scope documentaire | Acceptée pour l'alpha 0.11 |
 | [0017](0017-git-inspection-conservatrice.md) | Git natif en lecture seule, configuration conservatrice et diff distinct des buffers | Acceptée pour l'alpha 0.12 |
 | [0018](0018-git-init-et-index-isole.md) | Dépôt main/exclusions, staging sélectif et index isolé avec préconditions | Acceptée pour l'alpha 0.13 |
+| [0019](0019-outils-atelier-et-terminal-humain.md) | Commandes/contextes d’atelier, historique Git paginé et terminal humain séparé de l’IA | Acceptée pour l’alpha 0.14 |
 
 Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou preuve technique, pas parce qu'une technologie différente est disponible.
