@@ -74,7 +74,13 @@ La route IPC alpha, distincte de l’enveloppe cible ci-dessus, reçoit `{sessio
 
 Succès : `{name,savedIds,changedCount}` ; `savedIds` contient toutes les sources vérifiées du snapshot (y compris inchangées), `changedCount` compte uniquement celles remplacées. Échec : `{error}` ; le renderer ne marque aucun buffer enregistré. Les erreurs après écriture déclenchent une compensation en mémoire, conditionnée aux octets encore présents ; une restauration incomplète bloque la session du ProjectStore. Les écritures conservent le manifeste. Cette route n’est ni un journal durable ni une transaction atomique de projet ; [ADR 0021](../adr/0021-enregistrer-tout-compensation.md).
 
-### Formats futurs
+### Journal local livré — alpha 0.17
+
+L’ADR 0022 complète le contrat save-all 0.16 : journal `.microide/save/pending.json` version 1, transaction et projet UUID, SHA-256 du manifeste exact, date, phase `pending/committed/rolled-back`, toutes les sources `{id,path,before,after,beforeHash,afterHash}`. Avant/après sont des octets UTF-8 en base64 canonique ; le lecteur vérifie cardinalité, budgets, hash et chemins déclarés. Ce format local privé ne modifie pas le manifeste ni le DSK et n’est pas un format de partage.
+
+La récupération n’ajoute pas de route renderer à chemins libres : le main intervient dans `project:open` après sélection native, inspecte puis confirme un choix, vérifie UUID/révision du journal, manifeste et toutes les sources, puis ouvre normalement. Annulation → null ; conflit/corruption/version inconnue → erreur, données conservées. [ADR 0022](../adr/0022-journal-sauvegarde-et-reprise.md). Ce mécanisme ne journalise pas encore les autres mutations.
+
+### Formats futurs de partage
 
 Une migration est une fonction version N → N+1, testée sur fixtures, avec sauvegarde avant modification et rapport. Aucun downgrade implicite. Une version future inconnue peut être inspectée sans écriture si son contenu est accessible ; l'utilisateur ne reçoit pas une réécriture destructrice dans le schéma 1. Les versions de recette et de moteur évoluent séparément de la version de manifeste.
 

@@ -25,5 +25,6 @@ Une ADR explique une décision durable et ses conséquences. **Acceptée** signi
 | [0019](0019-outils-atelier-et-terminal-humain.md) | Commandes/contextes d’atelier, historique Git paginé et terminal humain séparé de l’IA | Acceptée pour l’alpha 0.14 |
 | [0020](0020-recherche-sources-et-remplacement-buffers.md) | Recherche littérale des sources chargées, aperçu et remplacement avec undo par modèle | Acceptée pour l’alpha 0.15 |
 | [0021](0021-enregistrer-tout-compensation.md) | Sauvegarde globale, préconditions de lot et compensation en mémoire | Acceptée pour l’alpha 0.16 |
+| [0022](0022-journal-sauvegarde-et-reprise.md) | Journal global versionné, synchronisation et reprise native explicite | Acceptée pour l’alpha 0.17 |
 
 Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou preuve technique, pas parce qu'une technologie différente est disponible.

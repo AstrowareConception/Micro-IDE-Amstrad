@@ -125,6 +125,14 @@ route('listing:export', async payload => {
 route('project:open', async () => {
   const selection = await dialog.showOpenDialog(window, { properties: ['openDirectory'] });
   if (selection.canceled || !selection.filePaths[0]) return null;
+  const recovery = await ProjectStore.recoveryStatus(selection.filePaths[0]);
+  if (recovery) {
+    const choice = await dialog.showMessageBox(window, { type: 'warning', buttons: ['Annuler', 'Terminer la sauvegarde', 'Rétablir les anciennes versions'], defaultId: 0, cancelId: 0,
+      message: 'Une sauvegarde globale a été interrompue.',
+      detail: `${recovery.createdAt}\n${recovery.files.join('\n')}\n\nTerminer applique les versions du snapshot enregistré. Rétablir remet les octets précédant cette sauvegarde. Toute modification externe inconnue bloque la récupération. Les brouillons hors sauvegarde ne sont pas récupérés.` });
+    if (choice.response !== 1 && choice.response !== 2) return null;
+    await ProjectStore.recoverSave(selection.filePaths[0], recovery.id, choice.response === 1 ? 'finish' : 'restore', recovery.revision);
+  }
   const opened = await ProjectStore.open(selection.filePaths[0], decodeImage, extractPdf);
   project = opened.store; current = undefined; return opened.snapshot;
 });

@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.16
+# CPCéleste — Dossier de conception et réalisation — version 0.17
+
+La [reprise 0.17](implementation/recovery-alpha.md) ajoute un journal global versionné et le choix natif de terminer/rétablir à l’ouverture, avec refus de conflit et tests SIGKILL Linux. [ADR 0022](adr/0022-journal-sauvegarde-et-reprise.md). IDE-007/008 restent partiels ; historique local et journalisation des autres mutations suivent.
 
 [Enregistrer tout 0.16](implementation/save-all-alpha.md) commence R2 avec préconditions de lot, conservation des sources propres, compensation en mémoire et piles Monaco préservées. [ADR 0021](adr/0021-enregistrer-tout-compensation.md). Journal/reprise après crash et historique local durable restent les prochaines tranches ; IDE-007 reste partiel.
 
