@@ -29,6 +29,8 @@ Dans **Documents du projet**, importer un TXT ou Markdown UTF-8. L'original est 
 
 Le moteur retenu est **floooh/chips en C/WASM**. [Intégration prévue : worker, ROM, session et outils agent](docs/implementation/emulator-integration.md). Le wrapper/banc existe ; le panneau machine Electron attend le go firmware J0.
 
+**Git intégré est ajouté au périmètre produit** : init/clone, statut/diff, stage/commit, remotes, branches, fetch/pull/push puis résolution de conflits et opérations avancées. Git natif, compatible GitHub et autres serveurs ; credentials système et publication explicitement confirmée. [Spécification et plan JG](docs/specifications/16-integration-git.md). C'est une conception acceptée, pas une fonction disponible dans l'alpha 0.10 ; le travail PDF reste prévu.
+
 Préparer les ROM dans **ROM du CPC 6128** : importer trois fichiers séparés de 16 Kio, vérifier les hashes et retrouver la sélection au redémarrage. Les fichiers restent dans le stockage applicatif local, hors projet et IA. [Guide ROM 0.7 et limites](docs/implementation/firmware-alpha.md). Un jeu complet reste expérimental ; ce panneau ne démarre pas encore la machine.
 
 `npm run dev:editor` démarre uniquement un aperçu navigateur sur localhost : sauvegarder télécharge un fichier, ce n'est pas l'application de bureau.

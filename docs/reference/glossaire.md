@@ -22,6 +22,13 @@
 | Compilation Z80 | Production de code machine Z80 ; hors chaîne BASIC initiale |
 | Build / Construction | Analyse, encodage, assemblage média et validation de livraison |
 | ProjectRevision | Capture immuable des entrées d'un travail ; pas un commit Git |
+| RepositorySession | Session d'un dépôt Git dont la racine et les capacités ont été validées |
+| RepositorySnapshot | HEAD, index et état de travail utilisés comme préconditions Git |
+| GitRemote | Destination Git nommée avec URLs fetch/push validées ; pas forcément GitHub |
+| Index Git / Staging | Sélection des octets du prochain commit, distincte des buffers non sauvegardés |
+| Commit Git | Objet d'historique versionné ; distinct d'une révision projet et d'un checkpoint IA |
+| Upstream | Branche distante suivie par une branche locale |
+| PublicationRequest | Proposition liée à des refs/commits et une destination, exigeant confirmation humaine |
 | Empreinte / ContentHash | SHA-256 d'octets précisément définis |
 | InputFingerprint | Identité canonique des entrées pertinentes et outils de construction |
 | Artefact / BuildArtifact | Sortie validée d'une construction, avec type et empreinte |
