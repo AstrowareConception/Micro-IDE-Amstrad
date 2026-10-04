@@ -10,7 +10,7 @@
   },
   "scripts": {
     "test": "node --test tests/*.test.ts",
-    "typecheck": "tsc --noEmit && tsc -p apps/desktop/tsconfig.json && tsc -p apps/desktop/tsconfig.main.json --noEmit",
+    "typecheck": "node --check tests/editor-smoke.mjs && node --check tests/desktop-smoke.mjs && tsc --noEmit && tsc -p apps/desktop/tsconfig.json && tsc -p apps/desktop/tsconfig.main.json --noEmit",
     "dev:editor": "vite --config apps/desktop/vite.config.ts",
     "build:renderer": "vite build --config apps/desktop/vite.config.ts",
     "build:main": "tsc -p apps/desktop/tsconfig.main.json",
