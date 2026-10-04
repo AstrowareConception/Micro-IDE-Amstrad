@@ -399,6 +399,9 @@ try {
   const discardGitDraft = page.waitForEvent('dialog').then(dialog => dialog.accept());
   await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click(); await discardGitDraft;
   await page.getByRole('heading', { name: 'Git local contrôlé', exact: true }).waitFor();
+  // Regression: Git and document siblings must have distinct key namespaces.
+  // Require the previous panel to be gone rather than selecting an arbitrary duplicate.
+  await expect(gitPanel).toHaveCount(1);
   await gitPanel.getByRole('button', { name: 'Actualiser Git', exact: true }).click();
   await expect(gitPanel).toContainText('Aucun dépôt à la racine');
   await gitPanel.getByRole('button', { name: 'Préparer la création Git', exact: true }).click();
