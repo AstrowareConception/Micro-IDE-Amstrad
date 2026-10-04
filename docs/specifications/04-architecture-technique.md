@@ -37,6 +37,8 @@ Le renderer n'a ni Node.js ni accès arbitraire aux fichiers. `contextIsolation:
 
 L'émulation s'exécute dans un Web Worker du renderer, avec module WASM local et messages validés. Analyse BASIC, conversion et PDF ont leurs workers séparés ou un pool contrôlé. Un worker n'accède pas à Node ; un crash ne doit pas corrompre le projet. Un processus utilitaire dédié est une option d'isolation supplémentaire si J0/J6 montrent que les workers ne suffisent pas ; son API serait également limitée, et il ne serait pas réputé sandboxé par sa seule existence.
 
+Exception incrémentale PDF texte 0.11 : l'[ADR 0016](../adr/0016-pdf-texte-borne.md) utilise un thread Node hôte borné, recevant uniquement les octets vérifiés et sans accès externe par les API PDF. Ni sandbox OS ni isolation d'un crash natif ne sont revendiqués ; le rendu PDF sans Node reste à réaliser. Cette exception ne change pas les privilèges du renderer ou du worker CPC.
+
 Les requêtes fournisseur partent d'un service applicatif côté main, qui possède la clé et transmet uniquement le contexte autorisé par la mission. Un orchestrateur local traite les appels d'outils, vérifie droits et préconditions, coordonne les domaines et renvoie leurs résultats au modèle. Le renderer voit l'identifiant du fournisseur et le statut de configuration, pas le secret. Le main ne parse ni PDF ni contenu HTML non fiable. Il ne lance aucun code proposé par l'IA sur l'hôte.
 
 ## Frontières des modules

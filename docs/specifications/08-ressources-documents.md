@@ -4,6 +4,8 @@ L'[alpha 0.9](../implementation/documents-alpha.md) a réalisé le sous-ensemble
 
 ## Trois rôles explicites
 
+L'[alpha PDF texte 0.11](../implementation/pdf-alpha.md) ajoute import PDF, extraction locale en thread dédié et lecture/recherche par page, aux limites alpha existantes : 20 pages, 64 Kio de texte/page, 256 Kio/PDF et 15 s/extraction. PDF chiffré refusé ; texte uniquement, pas de rendu/OCR. L'[ADR 0016](../adr/0016-pdf-texte-borne.md) documente l'écart Node worker et ses limites d'isolation. Les critères PDF MVP ci-dessous restent partiels.
+
 La tranche [images 0.10](../implementation/images-alpha.md) étend ce sous-ensemble aux PNG 8 bits non animés et JPEG 8 bits gris/RGB, à 4 mégapixels maximum. Aperçu nettoyé et accès visuel agent à la demande ; orientation EXIF ignorée, WebP/PDF et conversion CPC encore ouverts. [ADR 0014](../adr/0014-images-natives-et-contexte-visuel.md).
 
 Une pièce jointe de contexte aide à concevoir : cahier des charges, extrait de manuel, image d'inspiration. Une source est éditable et participe à un programme. Une ressource CPC est un fichier encodé et inclus au plan disque. Le même original peut alimenter le contexte et une recette de conversion, sans que ces usages se confondent.
