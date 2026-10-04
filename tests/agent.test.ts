@@ -18,6 +18,24 @@ const call = (id: string, name: string, args: unknown) => ({ type: 'function_cal
 const message = { type: 'message', role: 'assistant', content: [{ type: 'output_text', text: 'Bilan' }] };
 const run = (model: ModelPort, tools: WorkspaceTools, extra = {}) => runAgent({ model, tools, objective: 'Crée un programme', context: {}, signal: new AbortController().signal, emit: () => undefined, takeSteering: () => [], ...extra });
 
+test('agent renumber uses the shared planner and persisted mutation guard, refuses stale/unknown IDs, and keeps no-op drafts', async () => {
+  const initial = state(); initial.files[0]!.source = '10 GOTO 100\n100 END';
+  let writes = 0;
+  const tools = new WorkspaceTools(initial, async candidate => { writes++; assert.equal(candidate.files[0]!.source, '1000 GOTO 1010\n1010 END'); }, hash, []);
+  const parameters = { id: 'main', expectedHash: hash(initial.files[0]!.source), start: 1000, step: 10, from: 1, to: 65535 };
+  await assert.rejects(tools.execute('language_renumber', parameters), /reference-required/);
+  for (const id of ['GOTO', 'END']) await tools.execute('reference_read', { id, startLine: 1, endLine: 1 });
+  await assert.rejects(tools.execute('language_renumber', { ...parameters, id: 'foreign' }), /scope-denied/);
+  await assert.rejects(tools.execute('language_renumber', { ...parameters, expectedHash: 'old' }), /stale-read/);
+  await tools.execute('build_project', {}); assert.equal(tools.buildVerified, true);
+  const result = await tools.execute('language_renumber', parameters) as { saved: boolean; substitutions: number };
+  assert.equal(result.saved, true); assert.equal(result.substitutions, 3); assert.equal(writes, 1); assert.equal(tools.buildVerified, false);
+  const draft = state(); draft.files[0]!.source = '10 END';
+  const noOp = new WorkspaceTools(draft, async () => assert.fail('No-op must not save dirty source'), hash, []);
+  const unchanged = await noOp.execute('language_renumber', { ...parameters, expectedHash: hash('10 END'), start: 10 }) as { saved: boolean; noOp: boolean };
+  assert.equal(unchanged.saved, false); assert.equal(unchanged.noOp, true);
+});
+
 test('tools require source hashes, declared IDs and consulted command cards; unknown tools cannot widen scope', async () => {
   let writes = 0; const tools = new WorkspaceTools(state(), async () => { writes++; }, hash, []);
   await assert.rejects(tools.execute('project_replace_source', { id: 'main', expectedHash: hash('10 END\n'), source: '10 PRINT "OK"\n20 END\n' }), /reference-required/);

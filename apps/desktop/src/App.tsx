@@ -8,6 +8,9 @@ import type { ProjectManifest, ProjectSnapshot } from '../../../packages/workspa
 import type { AgentWorkspaceState } from '../../../packages/agent/src/types.ts';
 import { AgentPanel } from './AgentPanel.tsx';
 import { FirmwarePanel } from './FirmwarePanel.tsx';
+import { RenumberPanel } from './RenumberPanel.tsx';
+import type { RenumberRequest } from './RenumberPanel.tsx';
+import { applyRenumber } from '../../../packages/basic-language/src/renumber.ts';
 
 const SAMPLE = '10 REM MICRO IDE AMSTRAD\n20 MODE 1\n30 INK 0,0:INK 1,24\n40 PEN 1\n50 PRINT "BONJOUR CPC 6128 !"\n60 FOR I=1 TO 5\n70 PRINT "LOCOMOTIVE BASIC";I\n80 NEXT I\n90 END\n';
 interface Document { id: string; sourceId: string; name: string; source: string; saved: string }
@@ -23,6 +26,7 @@ export function App() {
   const [status, setStatus] = useState('Prêt. Écrivez du BASIC, sans ROM ni connexion.');
   const [fileBusy, setBusy] = useState(false);
   const [agentBusy, setAgentBusy] = useState(false);
+  const [renumberOpen, setRenumberOpen] = useState(false);
   const busy = fileBusy || agentBusy;
   const [card, setCard] = useState<CommandCard | undefined>();
   const [query, setQuery] = useState('');
@@ -95,9 +99,19 @@ export function App() {
   }
   const save = () => perform(() => project && files.project ? files.project.save(project.sessionId, active.sourceId, source) : files.save(source), 'Listing enregistré', true);
   const exportDisk = () => perform(() => project && files.project ? files.project.exportDisk(project.sessionId, documents.map(item => ({ id: item.sourceId, source: item.source }))) : files.exportDisk(source), 'DSK DATA construit — validation structurelle uniquement');
+  function renumber(request: RenumberRequest) {
+    const instance = editor.current, model = instance?.getModel();
+    if (busy || !instance || !model || activeId !== request.documentId || model.getVersionId() !== request.version)
+      throw new Error('Document ou révision modifié depuis l’aperçu. Recalculez la renumérotation.');
+    const text = applyRenumber(request.plan, model.getValue());
+    instance.pushUndoStop();
+    instance.executeEdits('basic-renumber', [{ range: model.getFullModelRange(), text }]);
+    instance.pushUndoStop();
+    setStatus('Renumérotation du buffer appliquée ; non enregistrée. Ctrl Z pour annuler.');
+  }
   return <main className="workbench">
     <header className="topbar">
-      <div className="brand"><span className="brand-mark">μ</span><div><h1>Micro IDE <span>Amstrad</span></h1><p>Atelier Locomotive BASIC · alpha 0.7</p></div></div>
+      <div className="brand"><span className="brand-mark">μ</span><div><h1>Micro IDE <span>Amstrad</span></h1><p>Atelier Locomotive BASIC · alpha 0.8</p></div></div>
       <span className="profile">CPC 6128 · BASIC 1.1</span>
     </header>
     <nav className="toolbar" aria-label="Actions du listing">
@@ -107,6 +121,7 @@ export function App() {
       <button disabled={busy || !!project} onClick={() => void perform(() => files.save(source, true), 'Listing enregistré', true)}>Enregistrer sous</button>
       <button className="primary" disabled={busy} onClick={() => void exportDisk()}>Exporter DSK</button>
       <button onClick={() => { editor.current?.focus(); void editor.current?.getAction('editor.action.triggerSuggest')?.run(); }}>Compléter <kbd>Ctrl Espace</kbd></button>
+      <button disabled={busy} onClick={() => setRenumberOpen(true)}>Renuméroter</button>
     </nav>
     <div className="workspace">
       <section className="listing" aria-label="Éditeur">
@@ -122,6 +137,7 @@ export function App() {
         </div>
       </section>
       <aside aria-label="Références et état du produit">
+        {renumberOpen && <RenumberPanel source={source} documentId={activeId} busy={busy} revision={() => editor.current?.getModel()?.getVersionId() ?? -1} onApply={renumber} onClose={() => setRenumberOpen(false)} />}
         <AgentPanel sessionId={project?.sessionId} buffers={documents.map(document => ({ id: document.sourceId, source: document.source }))} busy={busy} onRunning={setAgentBusy} onState={acceptAgent} />
         <section className="panel"><h2>{project?.manifest.name ?? 'Projets BASIC'}</h2>
           {project ? <>

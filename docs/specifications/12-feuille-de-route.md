@@ -50,6 +50,8 @@ Sortie : application ouvrable et projets durables, sans annoncer un éditeur BAS
 
 ## J2 — Éditeur BASIC utile
 
+L'[alpha 0.8](../implementation/renumber-alpha.md) contribue à J2-04 : renumérotation d'un sous-ensemble documenté, aperçu, révision et annulation ; même outil pour l'agent. ACC-05 reste partiel (formes opaques, parser complet et recette ROM ouverts).
+
 Intégrer Monaco, coloration et services de langage qualifiés. Développer lexer/parser avec fixtures prioritaires et zones opaques explicites. Relier diagnostics à la source. Fournir renumérotation sûre et aide contextualisée.
 
 | Tâche | Dépendance | Critère de sortie |

@@ -14,6 +14,8 @@ Une consigne de suivi rejoint le prochain tour modèle. La comparaison **Avant/A
 
 ## Outils disponibles
 
+Depuis l'alpha 0.8, [language_renumber](renumber-alpha.md) réalise une transformation conservatrice des numéros et références, avec le même contrôle de mutation/checkpoint. Les capacités ci-dessous décrivent la tranche initiale 0.6.
+
 Les aliases API utilisent underscores ; leur fonction correspond au catalogue métier du document 14.
 
 | Outil | Preuve/capacité réelle |

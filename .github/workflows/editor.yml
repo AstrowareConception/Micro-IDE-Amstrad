@@ -39,6 +39,7 @@ jobs:
             out/project-alpha.png
             out/agent-alpha.png
             out/firmware-alpha.png
+            out/renumber-alpha.png
             out/desktop-failure.png
             out/editor-failure.png
           retention-days: 7
