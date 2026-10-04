@@ -396,27 +396,6 @@ try {
   const localRoot = join(temporary, 'git-local'); await mkdir(join(localRoot, 'src'), { recursive: true });
   const localSource = '10 REM LOCAL GIT\n20 END\n';
   await writeFile(join(localRoot, 'src/main.bas'), localSource);
-  // Human-operated terminal: real shell, bounded original commands, no IA tool invocation.
-  await desktop.evaluate(({ dialog }) => { dialog.showMessageBox = async () => ({ response: 1, checkboxChecked: false }); });
-  await page.getByText('Affichage', { exact: true }).click();
-  await page.getByRole('button', { name: 'Afficher le terminal', exact: true }).click();
-  const terminalPanel = page.getByRole('region', { name: 'Terminal du projet', exact: true });
-  await terminalPanel.getByLabel('Commande système', { exact: true }).fill('printf CPC_TERMINAL_OK');
-  await terminalPanel.getByRole('button', { name: 'Exécuter la commande', exact: true }).click();
-  await expect(terminalPanel.getByLabel('Sortie du terminal', { exact: true })).toContainText('CPC_TERMINAL_OK');
-  await expect(terminalPanel).toContainText('Commande terminée · code 0');
-  await terminalPanel.getByLabel('Commande système', { exact: true }).fill('sleep 20 & wait');
-  await terminalPanel.getByRole('button', { name: 'Exécuter la commande', exact: true }).click();
-  await expect(terminalPanel.getByRole('button', { name: 'Arrêter la commande', exact: true })).toBeEnabled();
-  const blockedTerminal = await page.evaluate(() => window.desktop.open());
-  assert.match(blockedTerminal.error, /terminal est active/);
-  const blockedAgent = await page.evaluate(() => window.desktop.agent.configure('ORIGINAL-UNUSED-FIXTURE', 'fixture-model'));
-  assert.match(blockedAgent.error, /terminal est active/);
-  await terminalPanel.getByRole('button', { name: 'Arrêter la commande', exact: true }).click();
-  await expect(terminalPanel).toContainText('Arrêt demandé.');
-  await expect(terminalPanel.getByLabel('Commande système', { exact: true })).toBeEnabled();
-  await page.screenshot({ path: 'out/workbench-alpha.png' });
-  console.log('Native workbench: Git history, real project shell output, explicit stop and disk/agent isolation passed.');
   await writeFile(join(localRoot, 'microide.project.json'), JSON.stringify(newProject('Git local contrôlé', randomUUID()), null, 2) + '\n');
   await mkdir(join(localRoot, 'documents')); await writeFile(join(localRoot, 'documents/private.md'), 'PRIVATE ORIGINAL FIXTURE');
   await writeFile(join(localRoot, '.env'), 'ORIGINAL LOCAL FIXTURE');
@@ -472,6 +451,27 @@ try {
   await expect(gitPanel).toContainText('modifiés depuis le statut');
   assert.equal(localGit('ls-files', '-z'), ''); assert.equal(await readFile(join(localRoot, 'src/main.bas'), 'utf8'), '10 REM EXTERNAL CONFIRM\n');
   await writeFile(join(localRoot, 'src/main.bas'), localSource);
+  // Human-operated terminal on the clean current project, after the Git checks.
+  await desktop.evaluate(({ dialog }) => { dialog.showMessageBox = async () => ({ response: 1, checkboxChecked: false }); });
+  await page.getByText('Affichage', { exact: true }).click();
+  await page.getByRole('button', { name: 'Afficher le terminal', exact: true }).click();
+  const terminalPanel = page.getByRole('region', { name: 'Terminal du projet', exact: true });
+  await terminalPanel.getByLabel('Commande système', { exact: true }).fill('printf CPC_TERMINAL_OK');
+  await terminalPanel.getByRole('button', { name: 'Exécuter la commande', exact: true }).click();
+  await expect(terminalPanel.getByLabel('Sortie du terminal', { exact: true })).toContainText('CPC_TERMINAL_OK');
+  await expect(terminalPanel).toContainText('Commande terminée · code 0');
+  await terminalPanel.getByLabel('Commande système', { exact: true }).fill('sleep 20 & wait');
+  await terminalPanel.getByRole('button', { name: 'Exécuter la commande', exact: true }).click();
+  await expect(terminalPanel.getByRole('button', { name: 'Arrêter la commande', exact: true })).toBeEnabled();
+  const blockedTerminal = await page.evaluate(() => window.desktop.open());
+  assert.match(blockedTerminal.error, /terminal est active/);
+  const blockedAgent = await page.evaluate(() => window.desktop.agent.configure('ORIGINAL-UNUSED-FIXTURE', 'fixture-model'));
+  assert.match(blockedAgent.error, /terminal est active/);
+  await terminalPanel.getByRole('button', { name: 'Arrêter la commande', exact: true }).click();
+  await expect(terminalPanel).toContainText('Arrêt demandé.');
+  await expect(terminalPanel.getByLabel('Commande système', { exact: true })).toBeEnabled();
+  await page.screenshot({ path: 'out/workbench-alpha.png' });
+  console.log('Native workbench: Git history, real project shell output, explicit stop and disk/agent isolation passed.');
   // Refresh the host session directly only for this final IPC guard check, with no more UI Git mutations.
   const localSession = await page.evaluate(async () => (await window.desktop.project.open()).sessionId);
   await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('30 REM DIRTY GUARD\n');
