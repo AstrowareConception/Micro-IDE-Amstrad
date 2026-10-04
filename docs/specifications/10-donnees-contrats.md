@@ -68,6 +68,14 @@ Enveloppe : `protocolVersion`, `requestId`, nom de commande, payload validé. R�
 
 ## Migrations et partage
 
+### Contrat livré `project:save-all` — alpha 0.16
+
+La route IPC alpha, distincte de l’enveloppe cible ci-dessus, reçoit `{sessionId, sources:[{id,source}]}` : session de projet courante, exactement les 1–64 identifiants déclarés, aucun doublon, 1 Mio UTF-8/source et 8 Mio au total, sans BOM/NUL. Aucune destination n’est fournie. Tous les chemins, octets originaux et empreintes sont résolus dans le main.
+
+Succès : `{name,savedIds,changedCount}` ; `savedIds` contient toutes les sources vérifiées du snapshot (y compris inchangées), `changedCount` compte uniquement celles remplacées. Échec : `{error}` ; le renderer ne marque aucun buffer enregistré. Les erreurs après écriture déclenchent une compensation en mémoire, conditionnée aux octets encore présents ; une restauration incomplète bloque la session du ProjectStore. Les écritures conservent le manifeste. Cette route n’est ni un journal durable ni une transaction atomique de projet ; [ADR 0021](../adr/0021-enregistrer-tout-compensation.md).
+
+### Formats futurs
+
 Une migration est une fonction version N → N+1, testée sur fixtures, avec sauvegarde avant modification et rapport. Aucun downgrade implicite. Une version future inconnue peut être inspectée sans écriture si son contenu est accessible ; l'utilisateur ne reçoit pas une réécriture destructrice dans le schéma 1. Les versions de recette et de moteur évoluent séparément de la version de manifeste.
 
 Partager un projet inclut manifeste, sources et ressources nécessaires ; documents de contexte sont sélectionnés, conversation et historique local exclus par défaut. Une archive future exige règles anti-traversal et quotas avant extraction. Le DSK exporté reste indépendant de ce partage et ne contient que son catalogue. Les formats publics pourront être documentés sans dépendre du code interne de l'UI.

@@ -124,6 +124,21 @@ export function App() {
     void projectOperation(() => create ? port.create(projectName) : port.open());
   }
   const save = () => perform(() => project && files.project ? files.project.save(project.sessionId, active.sourceId, source) : files.save(source), 'Listing enregistré', true);
+  async function saveAll() {
+    if (busy || !project || !files.project) return;
+    const snapshot = documents.map(item => ({ id: item.id, sourceId: item.sourceId, source: item.source }));
+    setBusy(true);
+    try {
+      const result = await files.project.saveAll(project.sessionId, snapshot.map(item => ({ id: item.sourceId, source: item.source })));
+      if ('error' in result) { setStatus(result.error); return; }
+      setDocuments(items => items.map(item => {
+        const saved = snapshot.find(previous => previous.id === item.id && result.savedIds.includes(previous.sourceId));
+        return saved ? { ...item, saved: saved.source } : item;
+      }));
+      setStatus(`Projet enregistré : ${result.changedCount} source(s) écrite(s).`);
+    } catch (error) { setStatus(error instanceof Error ? error.message : 'Enregistrement global impossible.'); }
+    finally { setBusy(false); }
+  }
   const exportDisk = () => perform(() => project && files.project ? files.project.exportDisk(project.sessionId, documents.map(item => ({ id: item.sourceId, source: item.source }))) : files.exportDisk(source), 'DSK DATA construit — validation structurelle uniquement');
   function renumber(request: RenumberRequest) {
     const instance = editor.current, model = instance?.getModel();
@@ -140,6 +155,7 @@ export function App() {
     { id: 'open', label: 'Ouvrir un listing', disabled: busy, run: () => void open() },
     { id: 'project', label: 'Ouvrir un projet', disabled: busy || !files.project, run: () => openProject(false) },
     { id: 'save', label: 'Enregistrer le listing actif', detail: 'Ctrl S', disabled: busy, run: () => void save() },
+    { id: 'save-all', label: 'Enregistrer tout le projet', disabled: busy || !project || !files.project, run: () => void saveAll() },
     { id: 'export', label: 'Exporter le projet en DSK', disabled: busy, run: () => void exportDisk() },
     { id: 'undo', label: 'Annuler la modification', disabled: busy, run: () => { editor.current?.focus(); editor.current?.trigger('workbench', 'undo', null); } },
     { id: 'redo', label: 'Rétablir la modification', disabled: busy, run: () => { editor.current?.focus(); editor.current?.trigger('workbench', 'redo', null); } },
@@ -172,11 +188,11 @@ export function App() {
   const menu = (label: string, ids: string[]) => <details className="workbench-menu"><summary>{label}</summary><div>{commands.filter(command => ids.includes(command.id)).map(command => <button key={command.id} disabled={command.disabled} onClick={event => { event.currentTarget.closest('details')?.removeAttribute('open'); command.run(); }}>{command.label}</button>)}</div></details>;
   return <main className="workbench">
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.15 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.16 · AstroWare Conception</p></div></div>
       <span className="profile">CPC 6128 · BASIC 1.1</span>
     </header>
     <nav className="menubar" aria-label="Menus de l’atelier">
-      {menu('Fichier', ['open', 'project', 'save', 'export'])}{menu('Édition', ['undo', 'redo', 'find', 'replace', 'search-sources', 'line'])}
+      {menu('Fichier', ['open', 'project', 'save', 'save-all', 'export'])}{menu('Édition', ['undo', 'redo', 'find', 'replace', 'search-sources', 'line'])}
       {menu('BASIC', ['renumber', 'complete'])}{menu('Affichage', ['minimap', 'zoom-in', 'zoom-out', 'terminal'])}
       <button onClick={() => setPalette('all')}>Commandes <kbd>Ctrl Maj P</kbd></button><button onClick={() => setPalette('sources')}>Sources <kbd>Ctrl P</kbd></button>
     </nav>
@@ -186,6 +202,7 @@ export function App() {
       <button disabled={busy} onClick={() => void open()}>Ouvrir</button>
       <button disabled={busy || !files.project} title="Disponible dans l’application desktop" onClick={() => openProject(false)}>Ouvrir projet</button>
       <button disabled={busy} onClick={() => void save()}>Enregistrer <kbd>Ctrl S</kbd></button>
+      <button disabled={busy || !project || !files.project} onClick={() => void saveAll()}>Enregistrer tout</button>
       <button disabled={busy || !!project} onClick={() => void perform(() => files.save(source, true), 'Listing enregistré', true)}>Enregistrer sous</button>
       <button className="primary" disabled={busy} onClick={() => void exportDisk()}>Exporter DSK</button>
       <button onClick={() => { editor.current?.focus(); void editor.current?.getAction('editor.action.triggerSuggest')?.run(); }}>Compléter <kbd>Ctrl Espace</kbd></button>

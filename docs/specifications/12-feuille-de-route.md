@@ -2,6 +2,8 @@
 
 ## Mode de progression
 
+R2 commence en alpha 0.16 : [Enregistrer tout](../implementation/save-all-alpha.md), snapshot de sources complet et compensation en mémoire ([ADR 0021](../adr/0021-enregistrer-tout-compensation.md)). IDE-007/J1-03 restent partiels ; journal/reprise IDE-008 puis historique local IDE-009/010 suivent. Ce succès ne qualifie pas une sauvegarde atomique de projet ni un crash recovery.
+
 Le [backlog produit qualifié 17](17-roadmap-ide-complet.md) recense les 75 capacités nécessaires ou avancées, leurs priorités/états/critères et l’ordre des lots R1–R9. À la demande produit, la suite commence par recherche/remplacement global, puis durabilité/historique local et Git local complet ; les dépendances J0–J6/JG ci-dessous restent applicables.
 
 Demande produit du 4 octobre : outils d’IDE adaptés au CPC. La [tranche atelier 0.14](../implementation/workbench-alpha.md) livre palette/menus/contextes, ouverture rapide, réglages de code, historique Git paginé et terminal humain sans PTY ([ADR 0019](../adr/0019-outils-atelier-et-terminal-humain.md)). Elle contribue à J2/JG-A sans les fermer. La [recherche 0.15](../implementation/search-alpha.md) commence R1 : buffers chargés/brouillons, navigation et remplacement avec aperçu/undo par source ([ADR 0020](../adr/0020-recherche-sources-et-remplacement-buffers.md)). La suite prioritaire est durabilité/historique local, puis commit/identité et réseau Git ; les outils machine attendent toujours J0.

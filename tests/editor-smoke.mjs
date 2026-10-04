@@ -20,6 +20,7 @@ try {
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
   await page.goto('http://127.0.0.1:5173');
   await page.getByRole('heading', { name: 'CPCéleste', exact: true }).waitFor();
+  await expect(page.getByRole('button', { name: 'Enregistrer tout', exact: true })).toBeDisabled();
   await expect(page).toHaveTitle('CPCéleste — Atelier Amstrad CPC');
   await expect.poll(() => page.locator('.brand-mark').evaluate(image => image.complete && image.naturalWidth > 0)).toBe(true);
   await page.locator('.monaco-editor .view-line').first().waitFor();
