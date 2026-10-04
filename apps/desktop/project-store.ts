@@ -6,6 +6,7 @@ import { validatePdfText } from '../../packages/workspace/src/pdf.ts';
 import { readDocumentBytes, decodeDocument } from './text-document.ts';
 import type { AgentWorkspaceState } from '../../packages/agent/src/types.ts';
 import { saveBatch, SaveBatchFailure } from '../../packages/workspace/src/save-batch.ts';
+import { SaveJournal, durableReplace, type RecoveryChoice, type RecoverySummary } from './save-journal.ts';
 
 const MANIFEST = 'microide.project.json';
 const LIMIT = 1024 * 1024;
@@ -46,6 +47,7 @@ export class ProjectStore {
     const content = await bytes(join(root, MANIFEST));
     const manifest = parseProject(JSON.parse(text(content)));
     const store = new ProjectStore(root, manifest, hash(content), imageDecoder, pdfExtractor);
+    await new SaveJournal(root, manifest, hash(content)).assertResolved();
     const files = [];
     let total = 0;
     for (const source of manifest.sources) {
@@ -56,6 +58,14 @@ export class ProjectStore {
     await store.agentDocuments();
     return { store, snapshot: { sessionId: store.sessionId, manifest, files } };
   }
+  private static async journal(folder: string): Promise<SaveJournal> {
+    const root = await realpath(folder);
+    if (!(await lstat(root)).isDirectory()) throw new Error('Dossier de projet requis.');
+    const content = await bytes(join(root, MANIFEST));
+    return new SaveJournal(root, parseProject(JSON.parse(text(content))), hash(content));
+  }
+  static async recoveryStatus(folder: string): Promise<RecoverySummary | undefined> { return (await ProjectStore.journal(folder)).status(); }
+  static async recoverSave(folder: string, id: string, choice: RecoveryChoice, revision?: string): Promise<void> { await (await ProjectStore.journal(folder)).recover(id, choice, revision); }
   static async create(folder: string, name: string, imageDecoder?: ImageDecoder, pdfExtractor?: PdfExtractor): Promise<{ store: ProjectStore; snapshot: ProjectSnapshot }> {
     const manifest = newProject(name, randomUUID());
     const root = await realpath(folder);
@@ -234,18 +244,31 @@ export class ProjectStore {
       const before = await bytes(await this.path(item.path));
       if (hash(before) !== this.hashes.get(item.id)) throw new Error(`${item.path} a changé sur disque. Aucune source enregistrée ; rouvrez le projet.`);
       // Preserve unchanged original bytes (including CRLF), and their timestamps.
-      entries.push({ id: item.id, before, after: text(before) === buffer.source.replace(/\r\n?/g, '\n') ? before : content });
+      entries.push({ id: item.id, path: item.path, before, after: text(before) === buffer.source.replace(/\r\n?/g, '\n') ? before : content });
     }
     const sourcePath = (id: string) => this.manifest.sources.find(item => item.id === id)!.path;
+    const journal = new SaveJournal(this.root, this.manifest, this.manifestHash);
+    if (entries.every(entry => hash(entry.before) === hash(entry.after))) { await journal.assertResolved(); return { name: this.manifest.name, savedIds: entries.map(entry => entry.id), changedCount: 0 }; }
+    let transaction: string;
+    try { transaction = await journal.prepare(entries); }
+    catch (error) { this.faulted = true; throw new Error(`Préparation du journal impossible ; sources non écrites. Rouvrez le projet. ${String(error)}`); }
     let changed: string[];
     try {
       changed = await saveBatch(entries, {
         assertCurrent: () => this.checkManifest(),
         read: async id => bytes(await this.path(sourcePath(id))),
-        write: async (id, content) => atomic(await this.path(sourcePath(id)), content),
+        write: async (id, content) => durableReplace(await this.path(sourcePath(id)), content, false),
       });
+      await journal.flushSources();
+      await journal.mark(transaction, 'committed');
     } catch (error) {
-      if (error instanceof SaveBatchFailure && error.incomplete) this.faulted = true;
+      if (error instanceof SaveBatchFailure && !error.incomplete) {
+        try { await journal.flushSources(); await journal.mark(transaction, 'rolled-back'); }
+        catch { this.faulted = true; throw new Error('Journal conservé après erreur ; rouvrir le projet pour récupérer la sauvegarde.'); }
+      } else {
+        this.faulted = true;
+        throw new Error(`Sauvegarde interrompue ; journal conservé. Rouvrez le projet pour récupérer. ${String(error)}`);
+      }
       throw error;
     }
     for (const entry of entries) this.hashes.set(entry.id, hash(entry.after));

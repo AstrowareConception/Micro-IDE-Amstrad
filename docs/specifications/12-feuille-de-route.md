@@ -2,6 +2,8 @@
 
 ## Mode de progression
 
+R2 avance en alpha 0.17 : [journal/reprise des sauvegardes globales](../implementation/recovery-alpha.md), choix natif explicite et arrêts SIGKILL Linux ([ADR 0022](../adr/0022-journal-sauvegarde-et-reprise.md)). IDE-008 devient partiel ; historique local IDE-009/010 et autres mutations suivent. Ni durabilité universelle ni atomicité de projet ne sont annoncées.
+
 R2 commence en alpha 0.16 : [Enregistrer tout](../implementation/save-all-alpha.md), snapshot de sources complet et compensation en mémoire ([ADR 0021](../adr/0021-enregistrer-tout-compensation.md)). IDE-007/J1-03 restent partiels ; journal/reprise IDE-008 puis historique local IDE-009/010 suivent. Ce succès ne qualifie pas une sauvegarde atomique de projet ni un crash recovery.
 
 Le [backlog produit qualifié 17](17-roadmap-ide-complet.md) recense les 75 capacités nécessaires ou avancées, leurs priorités/états/critères et l’ordre des lots R1–R9. À la demande produit, la suite commence par recherche/remplacement global, puis durabilité/historique local et Git local complet ; les dépendances J0–J6/JG ci-dessous restent applicables.

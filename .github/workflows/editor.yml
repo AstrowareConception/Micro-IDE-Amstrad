@@ -48,6 +48,7 @@ jobs:
             out/workbench-alpha.png
             out/search-alpha.png
             out/save-all-alpha.png
+            out/recovery-alpha.png
             out/desktop-failure.png
             out/editor-failure.png
           retention-days: 7
