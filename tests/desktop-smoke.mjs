@@ -437,11 +437,13 @@ try {
   await assert.rejects(lstat(join(localRoot, 'SENTINEL')), { code: 'ENOENT' });
   assert.ok((await desktop.evaluate(() => globalThis.gitConfirmations)).some(message => message.includes(localRoot)));
   // An external edit while the human confirmation is open invalidates the status precondition.
-  await desktop.evaluate(({ dialog }, path) => { dialog.showMessageBox = async () => {
-    const { writeFile } = await import('node:fs/promises'); await writeFile(path, '10 REM EXTERNAL CONFIRM\n');
-    return { response: 1, checkboxChecked: false };
-  }; }, join(localRoot, 'src/main.bas'));
+  await desktop.evaluate(({ dialog }) => { dialog.showMessageBox = () => new Promise(resolve => {
+    globalThis.releaseGitConfirmation = () => resolve({ response: 1, checkboxChecked: false });
+  }); });
   await gitPanel.getByRole('button', { name: 'Indexer src/main.bas', exact: true }).click();
+  await expect.poll(() => desktop.evaluate(() => typeof globalThis.releaseGitConfirmation)).toBe('function');
+  await writeFile(join(localRoot, 'src/main.bas'), '10 REM EXTERNAL CONFIRM\n');
+  await desktop.evaluate(() => { globalThis.releaseGitConfirmation(); delete globalThis.releaseGitConfirmation; });
   await expect(gitPanel).toContainText('modifiés depuis le statut');
   assert.equal(localGit('ls-files', '-z'), ''); assert.equal(await readFile(join(localRoot, 'src/main.bas'), 'utf8'), '10 REM EXTERNAL CONFIRM\n');
   await writeFile(join(localRoot, 'src/main.bas'), localSource);
