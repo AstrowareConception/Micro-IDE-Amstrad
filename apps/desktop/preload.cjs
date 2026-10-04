@@ -7,6 +7,9 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
   git: Object.freeze({
     status: sessionId => ipcRenderer.invoke('git:status', { sessionId }),
     diff: (sessionId, changeId, side) => ipcRenderer.invoke('git:diff', { sessionId, changeId, side }),
+    prepareInit: sessionId => ipcRenderer.invoke('git:prepare-init', { sessionId }),
+    init: (sessionId, planId) => ipcRenderer.invoke('git:init', { sessionId, planId }),
+    changeIndex: (sessionId, snapshotId, changeId, action) => ipcRenderer.invoke('git:index', { sessionId, snapshotId, changeId, action }),
   }),
   firmware: Object.freeze({
     status: () => ipcRenderer.invoke('firmware:status'),

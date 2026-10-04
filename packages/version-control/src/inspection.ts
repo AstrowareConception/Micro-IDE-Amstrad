@@ -1,4 +1,4 @@
-/** Read-only application contract. No executable, host path or free-form command. */
+/** Application contract. No executable, host path or free-form command. */
 export interface GitChange {
   id: string;
   path: string;
@@ -6,6 +6,7 @@ export interface GitChange {
   kind: 'tracked' | 'rename' | 'untracked' | 'conflict';
   index: string;
   worktree: string;
+  indexable?: boolean;
 }
 export interface RepositoryStatus {
   state: 'repository' | 'not-repository' | 'parent-repository';
@@ -13,12 +14,21 @@ export interface RepositoryStatus {
   branch: string;
   head: string;
   changes: GitChange[];
+  snapshotId?: string;
 }
 export type DiffSide = 'worktree' | 'index';
 export interface GitDiff { path: string; side: DiffSide; text: string }
+export type IndexAction = 'stage' | 'unstage';
+export interface GitInitPlan { id: string; rootName: string; branch: 'main'; ignoreText: string; version: string }
+export const PROJECT_GIT_IGNORE = '# Micro IDE Amstrad — contenu local privé et artefacts\n' +
+  '/documents/\n/roms/\n/firmware/\n/.microide/\n/.microide-*/\n/out/\n/dist/\n/node_modules/\n/cache/\n/checkpoints/\n/conversations/\n/logs/\n' +
+  '.env\n.env.*\n*.rom\n*.dsk\n*.sna\n*.log\n*.local.json\n';
 export interface VersionControlPort {
   status(sessionId: string): Promise<RepositoryStatus | { error: string }>;
   diff(sessionId: string, changeId: string, side: DiffSide): Promise<GitDiff | { error: string }>;
+  prepareInit(sessionId: string): Promise<GitInitPlan | { error: string }>;
+  init(sessionId: string, planId: string): Promise<RepositoryStatus | { error: string } | null>;
+  changeIndex(sessionId: string, snapshotId: string, changeId: string, action: IndexAction): Promise<RepositoryStatus | { error: string } | null>;
 }
 export function gitPath(value: string): string {
   if (!value || value.includes('\\') || value.includes('\0') || value.startsWith('/') || /^[A-Za-z]:/.test(value) ||

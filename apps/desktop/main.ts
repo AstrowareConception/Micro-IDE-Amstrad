@@ -72,6 +72,7 @@ window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
 window.webContents.on('will-navigate', (event, url) => { if (url !== page) event.preventDefault(); });
 window.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
 window.on('close', event => {
+  if (inFlight) { event.preventDefault(); dialog.showMessageBoxSync(window, { message: 'Attendez la fin de l’opération disque avant de fermer la fenêtre.' }); return; }
   if (agent.running) { event.preventDefault(); dialog.showMessageBoxSync(window, { message: 'Arrêtez la mission agent avant de fermer la fenêtre.' }); return; }
   if (dirty && dialog.showMessageBoxSync(window, { type: 'warning', buttons: ['Annuler', 'Quitter sans enregistrer'],
     defaultId: 0, cancelId: 0, message: 'Le listing contient des modifications non enregistrées.' }) === 0) event.preventDefault();
@@ -147,6 +148,30 @@ route('git:status', async payload => {
 route('git:diff', async payload => {
   const { store, value } = projectRequest(payload); await store.assertCurrent();
   return gitInspector(store).diff(value.changeId, value.side);
+});
+function gitMutation(): void {
+  if (dirty) throw new Error('Enregistrez ou arbitrez tous les brouillons avant de modifier Git ; aucune sauvegarde automatique.');
+}
+route('git:prepare-init', async payload => {
+  const { store } = projectRequest(payload); gitMutation(); await store.assertCurrent();
+  return gitInspector(store).prepareInit();
+});
+route('git:init', async payload => {
+  const { store, value } = projectRequest(payload); gitMutation(); await store.assertCurrent();
+  if (typeof value.planId !== 'string') throw new Error('Plan de création Git requis.');
+  const choice = await dialog.showMessageBox(window, { type: 'question', buttons: ['Annuler', 'Créer le dépôt'], defaultId: 0, cancelId: 0,
+    message: `Créer un dépôt Git local dans ${store.root} ?`, detail: 'Branche main, exclusions des documents/ROM/secrets/artefacts. Aucun fichier indexé, aucun commit, aucun accès réseau. Un .gitignore existant est conservé et bloque cette première version.' });
+  if (choice.response !== 1) return null;
+  gitMutation(); await store.assertCurrent(); return gitInspector(store).init(value.planId);
+});
+route('git:index', async payload => {
+  const { store, value } = projectRequest(payload); gitMutation(); await store.assertCurrent();
+  const inspector = gitInspector(store), change = inspector.indexSelection(value.snapshotId, value.changeId, value.action);
+  const choice = await dialog.showMessageBox(window, { type: 'question', buttons: ['Annuler', 'Confirmer'], defaultId: 0, cancelId: 0,
+    message: `${value.action === 'stage' ? 'Indexer' : 'Retirer de l’index'} uniquement ${change.path} ?`,
+    detail: 'Les sources sur disque et les autres fichiers indexés restent inchangés. Aucune exécution de hook, aucun commit et aucune publication.' });
+  if (choice.response !== 1) return null;
+  gitMutation(); await store.assertCurrent(); return inspector.changeIndex(value.snapshotId, value.changeId, value.action);
 });
 route('project:save', async payload => {
   const { store, value } = projectRequest(payload);
