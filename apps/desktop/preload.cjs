@@ -34,6 +34,7 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
     open: () => ipcRenderer.invoke('project:open'),
     create: name => ipcRenderer.invoke('project:create', name),
     save: (sessionId, id, source) => ipcRenderer.invoke('project:save', { sessionId, id, source }),
+    saveAll: (sessionId, sources) => ipcRenderer.invoke('project:save-all', { sessionId, sources }),
     add: (sessionId, name) => ipcRenderer.invoke('project:add', { sessionId, name }),
     setEntry: (sessionId, id) => ipcRenderer.invoke('project:entry', { sessionId, id }),
     exportDisk: (sessionId, sources) => ipcRenderer.invoke('project:export', { sessionId, sources }),

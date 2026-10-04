@@ -25,7 +25,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 
 | ID | Fonction et qualification | État | Priorité | Dépendance | Critère de validation |
 | --- | --- | --- | --- | --- | --- |
-| IDE-007 | Sauvegarder fichier actif, Enregistrer tout et conflits externes | P | P0 | J1-03 | Préconditions de tous les fichiers ; succès/échec explicites ; actif livré |
+| IDE-007 | Sauvegarder fichier actif, Enregistrer tout et conflits externes | P | P0 | J1-03 | 0.16 : actif + tout, préconditions globales, compensation en mémoire, dirty/undo ; journal/reprise durable encore requis |
 | IDE-008 | Journal et reprise après crash de sauvegarde multifichier | N | P0 | IDE-007 | Coupures à chaque étape, reprise déterministe sans effacer versions externes |
 | IDE-009 | Historique local durable indépendant de Git | N | P0 | IDE-008 | Révisions horodatées/labels, quotas/rétention, persistance et projet déplacé |
 | IDE-010 | Diff et restauration de fichier/fragment/version locale | N | P0 | IDE-009 | Aperçu, revision guard, sauvegarde de la version remplacée, annulation |
@@ -150,7 +150,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | Lot | Portée | Sortie attendue et justification |
 | --- | --- | --- |
 | R1 — Navigation et édition de projet | IDE-022/023, IDE-020 partiel | Recherche/remplacement sources avec aperçu et undo ; gain immédiat, sans ROM ni écriture disque |
-| R2 — Sécuriser le travail | IDE-007/008/009/010/012 | Sauvegarde coordonnée, historique local durable, récupération ; préalable aux restaurations/checkout |
+| R2 — Sécuriser le travail | IDE-007/008/009/010/012 | Commencé en 0.16 : Enregistrer tout et compensation ; suite journal/reprise, historique local et restauration, avant checkout |
 | R3 — Git local complet | IDE-033/034 puis IDE-035 | Commits exacts et versions inspectables ; durabilité avant mutations de branches |
 | R4 — Connexion Git et GitHub | IDE-036/037, puis IDE-039 | HTTPS/SSH et conflits ; confirmations de publication ; pas de faux support via terminal |
 | R5 — Langage et confort | IDE-013/014/015/017/018, IDE-002/004/027/028 | Références/parser renforcés, outils et layout utiles ; incréments parallèles conceptuellement, pas obligation d’agents multiples |
@@ -168,3 +168,7 @@ L’ordre R1–R3 ajuste la priorité précédente « Git puis recherche » : fi
 R1 a commencé en alpha 0.15 : recherche dans buffers chargés, navigation exacte, options explicites, refus de contenu périmé, aperçu borné des remplacements, fichiers choisis seulement, aucune sauvegarde implicite et Ctrl Z propre à chaque fichier. [Guide et recette](../implementation/search-alpha.md), [ADR 0020](../adr/0020-recherche-sources-et-remplacement-buffers.md). Les regex, refactorings sémantiques et documents privés sont exclus de ce premier sous-ensemble. IDE-022/023 restent P : filtres/scopes et revue complète restent à enrichir. La prochaine priorité structurante est R2, sauvegarde coordonnée, journal et historique local durable.
 
 Sources d’inspiration, consultées le 4 octobre 2026 : [recherche projet JetBrains](https://www.jetbrains.com/help/idea/finding-and-replacing-text-in-project.html), [historique local JetBrains](https://www.jetbrains.com/help/idea/local-history.html). L’historique local est distinct de Git ; l’objectif est un IDE adapté au CPC, pas une reproduction exhaustive de tous les produits JetBrains.
+
+## Avancement R2 — alpha 0.16
+
+IDE-007 avance avec **Enregistrer tout** : snapshot complet, préconditions de toutes les sources/manifeste, absence de réécriture des sources propres, compensation des écritures sur erreur en cours de processus et conservation des piles Monaco. [Guide et preuves](../implementation/save-all-alpha.md), [ADR 0021](../adr/0021-enregistrer-tout-compensation.md). IDE-007 reste P, IDE-008/009/010 restent N : aucun journal ni historique durable n’est livré. Prochain incrément : journal de sauvegarde versionné et récupération après interruption, puis historique local. Les limites de concurrence externe et de panne électrique sont explicites dans l’ADR.

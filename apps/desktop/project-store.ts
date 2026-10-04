@@ -5,6 +5,7 @@ import { parseProject, newProject, addProjectSource, DOCUMENT_TOTAL_LIMIT, DOCUM
 import { validatePdfText } from '../../packages/workspace/src/pdf.ts';
 import { readDocumentBytes, decodeDocument } from './text-document.ts';
 import type { AgentWorkspaceState } from '../../packages/agent/src/types.ts';
+import { saveBatch, SaveBatchFailure } from '../../packages/workspace/src/save-batch.ts';
 
 const MANIFEST = 'microide.project.json';
 const LIMIT = 1024 * 1024;
@@ -78,7 +79,7 @@ export class ProjectStore {
     return canonical;
   }
   private async checkManifest(): Promise<void> {
-    if (this.faulted) throw new Error('Projet bloqué après échec de restauration ; conserver le checkpoint et rouvrir après examen.');
+    if (this.faulted) throw new Error('Projet bloqué après échec de restauration ; conserver les versions locales et rouvrir après examen.');
     if (hash(await bytes(join(this.root, MANIFEST))) !== this.manifestHash) throw new Error('Le manifeste a changé sur disque. Rouvrez le projet ; aucune modification écrasée.');
   }
   assertSession(id: unknown): void { if (id !== this.sessionId) throw new Error('Session de projet périmée.'); }
@@ -218,6 +219,37 @@ export class ProjectStore {
     const content = Buffer.from(source.replace(/\r\n?/g, '\n'), 'utf8');
     if (content.length > LIMIT || content[0] === 0xef && content[1] === 0xbb && content[2] === 0xbf || source.includes('\0')) throw new Error('Source UTF-8 sans BOM de 1 Mio maximum requise.');
     await atomic(path, content); this.hashes.set(id, hash(content));
+  }
+  async saveAll(buffers: { id: string; source: string }[]): Promise<{ name: string; savedIds: string[]; changedCount: number }> {
+    await this.checkManifest();
+    if (!Array.isArray(buffers) || buffers.length !== this.manifest.sources.length || new Set(buffers.map(item => item?.id)).size !== buffers.length)
+      throw new Error('Snapshot de sauvegarde incomplet ou dupliqué.');
+    const entries = []; let total = 0;
+    for (const item of this.manifest.sources) {
+      const buffer = buffers.find(buffer => buffer?.id === item.id);
+      if (!buffer || typeof buffer.source !== 'string' || buffer.source.length > LIMIT || buffer.source.includes('\0') || buffer.source.charCodeAt(0) === 0xfeff)
+        throw new Error('Sources de sauvegarde UTF-8 sans BOM/NUL de 1 Mio maximum requises.');
+      const content = Buffer.from(buffer.source.replace(/\r\n?/g, '\n')); total += content.length;
+      if (content.length > LIMIT || total > 8 * LIMIT) throw new Error('Sauvegarde limitée à 1 Mio/source et 8 Mio/projet.');
+      const before = await bytes(await this.path(item.path));
+      if (hash(before) !== this.hashes.get(item.id)) throw new Error(`${item.path} a changé sur disque. Aucune source enregistrée ; rouvrez le projet.`);
+      // Preserve unchanged original bytes (including CRLF), and their timestamps.
+      entries.push({ id: item.id, before, after: text(before) === buffer.source.replace(/\r\n?/g, '\n') ? before : content });
+    }
+    const sourcePath = (id: string) => this.manifest.sources.find(item => item.id === id)!.path;
+    let changed: string[];
+    try {
+      changed = await saveBatch(entries, {
+        assertCurrent: () => this.checkManifest(),
+        read: async id => bytes(await this.path(sourcePath(id))),
+        write: async (id, content) => atomic(await this.path(sourcePath(id)), content),
+      });
+    } catch (error) {
+      if (error instanceof SaveBatchFailure && error.incomplete) this.faulted = true;
+      throw error;
+    }
+    for (const entry of entries) this.hashes.set(entry.id, hash(entry.after));
+    return { name: this.manifest.name, savedIds: entries.map(item => item.id), changedCount: changed.length };
   }
   async add(name: string): Promise<ProjectSnapshot> {
     await this.checkManifest();

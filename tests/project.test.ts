@@ -11,6 +11,38 @@ const UUID = '647f023d-1272-4b66-8c47-b064b8de9512';
 const project = () => newProject('Hello CPC', UUID);
 const folder = () => mkdtemp(join(tmpdir(), 'microide-project-'));
 
+test('save all persists a complete snapshot, preserves clean CRLF bytes and manifest, and refreshes hashes', async () => {
+  const root = await folder(); const { store } = await ProjectStore.create(root, 'Batch'); await store.add('UTIL');
+  await writeFile(join(root, 'src/util.bas'), '10 REM CLEAN\r\n20 RETURN\r\n');
+  const reopened = await ProjectStore.open(root); const manifest = await readFile(join(root, 'microide.project.json'));
+  const buffers = reopened.snapshot.files.map(item => ({ id: item.id, source: item.id === 'main' ? '10 PRINT "BATCH"\n20 END\n' : item.source }));
+  const result = await reopened.store.saveAll(buffers); assert.equal(result.changedCount, 1); assert.deepEqual(result.savedIds, ['main', 'util']);
+  assert.equal(await readFile(join(root, 'src/util.bas'), 'utf8'), '10 REM CLEAN\r\n20 RETURN\r\n');
+  assert.deepEqual(await readFile(join(root, 'microide.project.json')), manifest);
+  assert.equal((await reopened.store.saveAll(buffers)).changedCount, 0);
+  await reopened.store.save('main', '10 REM NEXT\n');
+  assert.equal(await readFile(join(root, 'src/main.bas'), 'utf8'), '10 REM NEXT\n');
+});
+test('save all refuses a late source or manifest conflict before touching an earlier dirty source', async () => {
+  const root = await folder(); const { store } = await ProjectStore.create(root, 'Batch'); await store.add('UTIL');
+  const original = await readFile(join(root, 'src/main.bas')); const manifest = await readFile(join(root, 'microide.project.json'));
+  const buffers = [{ id: 'main', source: '10 REM DIRTY MAIN\n' }, { id: 'util', source: '10 REM DIRTY UTIL\n' }];
+  await writeFile(join(root, 'src/util.bas'), '10 REM EXTERNAL\n');
+  await assert.rejects(store.saveAll(buffers), /Aucune source enregistrée/);
+  assert.deepEqual(await readFile(join(root, 'src/main.bas')), original);
+  assert.equal(await readFile(join(root, 'src/util.bas'), 'utf8'), '10 REM EXTERNAL\n');
+  await writeFile(join(root, 'microide.project.json'), Buffer.concat([manifest, Buffer.from(' ')]));
+  await assert.rejects(store.saveAll(buffers), /manifeste/);
+  assert.deepEqual(await readFile(join(root, 'src/main.bas')), original);
+});
+test('save all rejects incomplete, duplicate, unknown and oversized snapshots with no writes', async () => {
+  const root = await folder(); const { store } = await ProjectStore.create(root, 'Batch'); await store.add('UTIL');
+  const original = await readFile(join(root, 'src/main.bas'));
+  for (const invalid of [[{ id: 'main', source: '10 END' }], [{ id: 'main', source: 'X' }, { id: 'main', source: 'Y' }], [{ id: 'main', source: 'X' }, { id: 'unknown', source: 'Y' }], [{ id: 'main', source: 'X' }, { id: 'util', source: '\0' }], [{ id: 'main', source: 'X' }, { id: 'util', source: 'é'.repeat(1024 * 1024) }]]) {
+    await assert.rejects(store.saveAll(invalid)); assert.deepEqual(await readFile(join(root, 'src/main.bas')), original);
+  }
+});
+
 test('project contract preserves identity and refuses unsupported data rather than dropping it', () => {
   const value = project();
   assert.deepEqual(parseProject(JSON.parse(JSON.stringify(value))), value);

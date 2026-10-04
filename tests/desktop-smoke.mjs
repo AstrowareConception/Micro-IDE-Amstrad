@@ -465,6 +465,8 @@ try {
   await expect(terminalPanel.getByRole('button', { name: 'Arrêter la commande', exact: true })).toBeEnabled();
   const blockedTerminal = await page.evaluate(() => window.desktop.open());
   assert.match(blockedTerminal.error, /terminal est active/);
+  const blockedSaveAll = await page.evaluate(() => window.desktop.project.saveAll('forged', []));
+  assert.match(blockedSaveAll.error, /terminal est active/);
   const blockedAgent = await page.evaluate(() => window.desktop.agent.configure('ORIGINAL-UNUSED-FIXTURE', 'fixture-model'));
   assert.match(blockedAgent.error, /terminal est active/);
   await terminalPanel.getByRole('button', { name: 'Arrêter la commande', exact: true }).click();
@@ -544,6 +546,30 @@ try {
   assert.equal(await readFile(join(searchRoot, 'microide.project.json'), 'utf8'), manifestOriginal);
   await searchPanel.scrollIntoViewIfNeeded(); await page.screenshot({ path: 'out/search-alpha.png' });
   console.log('Native global search: dirty loaded sources, exact navigation, selected-file replacement, multi-model undo/redo, stale preview and unchanged disk/manifest passed.');
+  // Save-all first refuses a conflict in the later source without saving the earlier one.
+  await writeFile(join(searchRoot, 'src/util.bas'), '10 REM EXTERNAL SAVE ALL\n');
+  await page.getByRole('button', { name: 'Enregistrer tout', exact: true }).click();
+  await expect(page.locator('footer')).toContainText('Aucune source enregistrée');
+  assert.equal(await readFile(join(searchRoot, 'src/main.bas'), 'utf8'), searchOriginal[0]);
+  assert.equal(await readFile(join(searchRoot, 'src/util.bas'), 'utf8'), '10 REM EXTERNAL SAVE ALL\n');
+  await expect(page.getByRole('tab', { name: /src\/main.bas.*modifié/ })).toBeVisible();
+  await expect(page.getByRole('tab', { name: /src\/util.bas.*modifié/ })).toBeVisible();
+  await writeFile(join(searchRoot, 'src/util.bas'), searchOriginal[1]);
+  await page.getByRole('button', { name: 'Enregistrer tout', exact: true }).click();
+  await expect(page.locator('footer')).toContainText('Projet enregistré : 2 source(s) écrite(s).');
+  assert.equal(await readFile(join(searchRoot, 'src/main.bas'), 'utf8'), '10 PRINT "CELESTE"\n20 END\n30 REM CELESTE DRAFT\n');
+  assert.equal(await readFile(join(searchRoot, 'src/util.bas'), 'utf8'), '10 REM ORBIT\n20 RETURN\n30 REM STALE\n');
+  assert.equal(await readFile(join(searchRoot, 'microide.project.json'), 'utf8'), manifestOriginal);
+  await expect(page.getByRole('tab', { name: 'src/main.bas', exact: true })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'src/util.bas', exact: true })).toBeVisible();
+  await input.focus(); await page.keyboard.press('Control+z');
+  await expect(page.getByRole('tab', { name: /src\/util.bas.*modifié/ })).toBeVisible();
+  await page.keyboard.press('Control+Shift+z');
+  await expect(page.getByRole('tab', { name: 'src/util.bas', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Enregistrer tout', exact: true }).click();
+  await expect(page.locator('footer')).toContainText('Projet enregistré : 0 source(s) écrite(s).');
+  await page.screenshot({ path: 'out/save-all-alpha.png' });
+  console.log('Native save-all: late external conflict preserves both drafts and earlier disk bytes; full success, clean tabs, undo/redo, no-op and unchanged manifest passed.');
   assert.deepEqual(errors, []);
   console.log('Electron smoke: native Git init/status/diffs/stage/unstage, TXT/MD, real PNG/JPEG decode and PDF.js worker import/pagination/reopen/corrupt-file rejection, scoped PDF page excerpts and progressive multimodal agent outputs, projects and firmware checks passed. No live API, real vision or CPC execution claimed.');
 } catch (error) {

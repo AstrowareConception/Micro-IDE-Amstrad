@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.15
+# CPCéleste — Dossier de conception et réalisation — version 0.16
+
+[Enregistrer tout 0.16](implementation/save-all-alpha.md) commence R2 avec préconditions de lot, conservation des sources propres, compensation en mémoire et piles Monaco préservées. [ADR 0021](adr/0021-enregistrer-tout-compensation.md). Journal/reprise après crash et historique local durable restent les prochaines tranches ; IDE-007 reste partiel.
 
 La [recherche 0.15](implementation/search-alpha.md) commence le lot R1 : recherche des sources chargées/brouillons, navigation, aperçu et remplacement des fichiers choisis, annulation par source et contrôle de contenu. [ADR 0020](adr/0020-recherche-sources-et-remplacement-buffers.md). La suite prioritaire est R2 : sauvegarde coordonnée, historique local durable et récupération.
 

@@ -47,6 +47,7 @@ jobs:
             out/git-local-index-alpha.png
             out/workbench-alpha.png
             out/search-alpha.png
+            out/save-all-alpha.png
             out/desktop-failure.png
             out/editor-failure.png
           retention-days: 7

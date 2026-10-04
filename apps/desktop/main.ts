@@ -199,6 +199,15 @@ route('project:save', async payload => {
   if (typeof value.id !== 'string') throw new Error('Identifiant de source requis.');
   await store.save(value.id, sourceFrom(value).source); return { name: value.id };
 });
+route('project:save-all', async payload => {
+  const { store, value } = projectRequest(payload);
+  if (!Array.isArray(value.sources) || value.sources.length < 1 || value.sources.length > 64) throw new Error('1 à 64 sources requises.');
+  const sources = value.sources.map(item => {
+    if (!item || typeof item !== 'object' || typeof item.id !== 'string') throw new Error('Identifiant de source requis.');
+    return { id: item.id, source: sourceFrom(item).source };
+  });
+  return store.saveAll(sources);
+});
 route('project:add', async payload => {
   const { store, value } = projectRequest(payload);
   if (typeof value.name !== 'string') throw new Error('Nom de source requis.');
