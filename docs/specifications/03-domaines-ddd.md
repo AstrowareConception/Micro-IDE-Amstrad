@@ -13,6 +13,7 @@ Le cœur de valeur est la **création assistée de programmes CPC livrables**. L
 | Emulation | Faire vivre une machine et sa session | MachineProfile, EmulatorSession, SessionDisk | Support spécialisé |
 | AiAssistance | Conduire des missions de programmation et le mode revue | AgentTask, ToolCall, TaskCheckpoint, ContextBundle, ChangeProposal | Cœur |
 | ReferenceKnowledge | Fournir des références qualifiées | CommandDefinition, DialectProfile, Provenance | Support |
+| VersionControl | Versionner et synchroniser les fichiers sans confondre sauvegarde et publication | RepositorySession, RepositorySnapshot, GitBranch, GitRemote, GitOperation, PublicationRequest | Support, conception acceptée |
 | Platform | Accès fichiers, secrets, UI et packaging | Adaptateurs techniques | Infrastructure |
 
 ## Relations entre contextes
@@ -34,6 +35,8 @@ flowchart TD
 Les flèches signifient données publiées ou orchestration applicative, pas imports directs entre agrégats. Workspace transmet une révision immuable. BasicLanguage publie diagnostics et transformations, CpcAssets publie ressources encodées, BuildAndMedia publie artefacts, Emulation publie captures et observations dans le périmètre de mission. AiAssistance coordonne les outils et ne devient jamais le propriétaire des sources.
 
 La couche anticorruption de l'émulateur traduit les API C en commandes métier de session ; celle de l'IA traduit les réponses fournisseur en propositions validées. Le format DSK appartient au domaine média et à son codec, pas à l'état interne du moteur.
+
+VersionControl utilise les fichiers sauvegardés de Workspace mais n'en devient pas propriétaire. Ses commits ne remplacent ni `ProjectRevision` ni `TaskCheckpoint`. Les opérations modifiant le working tree sont coordonnées avec Workspace et suivies d'une revalidation du manifeste. Les droits de dépôt et de publication sont séparés du scope de mission ; voir [document 16](16-integration-git.md).
 
 ## Agrégats et invariants
 

@@ -86,6 +86,23 @@ Chaque ligne est une exigence normative identifiable. **MVP** signifie attendue 
 | REQ-KNW-004 | Suivre la couverture du dialecte et les différences 1.0/1.1 ; signaler une référence manquante ou contradictoire au lieu de fabriquer une commande. | MVP | ACC-30 |
 | REQ-KNW-005 | Relier les usages produits aux fiches consultées et fixtures de qualification ; séparer validité du langage et disponibilité du service d'édition. | MVP | ACC-30 |
 
+## Contrôle de version Git
+
+Ajout produit du 2026-10-04, [document 16](16-integration-git.md). Le jalon transversal JG-A/B complète le MVP ; JG-C complète la 1.0. Ces exigences sont conçues, pas réalisées dans l'alpha 0.10.
+
+| Identifiant | Exigence et critère vérifiable | Livraison | Recette |
+| --- | --- | --- | --- |
+| REQ-GIT-001 | Détecter Git et la racine du dépôt, créer un dépôt local ou cloner vers un dossier vide, sans écraser un projet ni imposer GitHub. | MVP | ACC-31 |
+| REQ-GIT-002 | Afficher statut, diff working tree/index et fichiers indexés/non indexés ; stage/unstage explicite, buffers dirty distincts et commit avec identité contrôlée. | MVP | ACC-31 |
+| REQ-GIT-003 | Lister historique et branches ; créer, basculer, renommer et supprimer une branche locale sous préconditions, en refusant perte de travail et suppression non fusionnée par défaut. | MVP | ACC-32 |
+| REQ-GIT-004 | Configurer plusieurs remotes/upstreams, fetch, pull fast-forward et push explicitement confirmé ; signaler divergence, HEAD détaché et résultat réseau incertain. | MVP | ACC-33 |
+| REQ-GIT-005 | Gérer credentials HTTPS/SSH via composants système approuvés, sans secret dans projet/renderer/logs, sans désactiver TLS ni accepter implicitement une clé SSH inconnue. | MVP | ACC-33 |
+| REQ-GIT-006 | Sérialiser les mutations Git avec Workspace/agent ; vérifier préconditions, préserver brouillons, revalider manifeste/empreintes après changement de working tree et signaler une réparation nécessaire. | MVP | ACC-32 |
+| REQ-GIT-007 | Définir confiance du dépôt et politique des hooks/filtres/helpers ; refuser commandes hôte arbitraires, protocoles/URL réécrites non validés et publication autorisée par un document ou le modèle. | MVP | ACC-35 |
+| REQ-GIT-008 | Prévisualiser fichiers et commits publiés, exclure données privées par défaut et contrôler l'historique sortant ; un fichier déjà suivi ne doit pas être réputé protégé par gitignore. | MVP | ACC-35 |
+| REQ-GIT-009 | Fournir merge et résolution à trois versions, rebase local continue/abort, stash explicite, tags, revert, cherry-pick et blame, sans réécriture publiée ni rollback prétendu atomique. | 1.0 | ACC-34 |
+| REQ-GIT-010 | Proposer création/publication d'un dépôt GitHub avec visibilité et autorisation distinctes ; Git local et autres hébergeurs restent fonctionnels sans cette API. | Suite | ACC-33 |
+
 ## Qualités transversales
 
 | Identifiant | Exigence et critère vérifiable | Livraison | Recette |

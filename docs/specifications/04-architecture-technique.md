@@ -14,6 +14,7 @@
 | Conversion d'image | Pipeline déterministe TypeScript, décodeur local | Résultat versionné ; quantification indépendante du fournisseur IA |
 | PDF | PDF.js, worker dédié | Extraction et rendu locaux ; pas de JavaScript embarqué du PDF |
 | IA initiale | Orchestrateur local + adaptateur OpenAI Responses API à outils | Tool calling et multimodal configurable ; pas de modèle ni de tarifs figés dans le métier |
+| Contrôle de version | Git natif via port typé, adaptateur hôte asynchrone sans shell | Git installé par l'utilisateur initialement ; trust/configuration/credentials qualifiés, pas de CLI libre pour l'agent |
 | Données | JSON + fichiers UTF-8 + objets par empreinte | Projets déplaçables ; SQLite inutile au démarrage |
 | Validation | JSON Schema 2020-12, Ajv futur côté app | Contrats d'entrée ; règles métier supplémentaires en TypeScript |
 | Tests futurs | Vitest, Playwright/Electron, harness WASM | Adapter le niveau de test au comportement, avec oracle indépendant |
@@ -62,7 +63,7 @@ Enregistrer passe par fichier temporaire local au même volume, flush lorsque po
 
 Le protocole applicatif local sert les scripts et workers du paquet. CSP : scripts locaux, pas d'eval, réseaux renderer refusés, exceptions minimales pour compilation WASM documentées. Les Markdown et messages IA sont rendus avec HTML désactivé ou assaini ; aucun HTML utilisateur n'est chargé comme page privilégiée. Une URL externe est analysée et ouverte seulement sur action utilisateur.
 
-Le réseau autorisé concerne le fournisseur configuré, les vérifications de mise à jour demandées et les liens ouverts. Aucun téléchargement ROM automatique, aucune télémétrie et aucun CDN de composants UI. Pour un fournisseur local futur, seule une adresse explicitement configurée peut être jointe ; elle n'est jamais extraite d'un document.
+Le réseau autorisé concerne le fournisseur configuré, les remotes Git explicitement validés, les API d'hébergement autorisées séparément, les vérifications de mise à jour demandées et les liens ouverts. Aucun téléchargement ROM automatique, aucune télémétrie et aucun CDN de composants UI. Pour un fournisseur local futur, seule une adresse explicitement configurée peut être jointe ; elle n'est jamais extraite d'un document. Le [document 16](16-integration-git.md) et l'[ADR 0015](../adr/0015-git-natif-et-publication-explicite.md) précisent les extensions Git capables de lancer du code hôte, la racine de dépôt autorisée et la confirmation de publication. Sans shell n'est pas synonyme de sandbox.
 
 ## Distribution et sécurité opérationnelle
 

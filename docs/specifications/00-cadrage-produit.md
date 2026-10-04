@@ -15,7 +15,7 @@ L'outil réunit trois activités qui restent distinctes : concevoir un programme
 | Développeur rétro | Conserver le contrôle du listing, de la mémoire et du disque | Reproduire une construction et utiliser le DSK dans un autre émulateur |
 | Auteur assisté par IA | Confier une mission de programmation et des ressources à un agent | Voir les fichiers évoluer, les essais et corrections, orienter la mission et revenir en arrière |
 
-Le produit est individuel et local. La collaboration Git est possible parce que les sources sont ouvertes et textuelles, mais l'hébergement de projets et l'édition simultanée ne font pas partie de la première version.
+Le produit est individuel et local. À la demande produit du 4 octobre 2026, la collaboration comprend une [intégration Git](16-integration-git.md) dans l'IDE : dépôts locaux, remotes GitHub ou autres, commits, branches et synchronisation. L'IDE n'héberge pas lui-même les projets ; serveur de collaboration et édition simultanée restent hors première version. Le parcours Git central rejoint le MVP via JG-A/B, les opérations avancées sont prévues avant 1.0.
 
 ## Plateformes et machines
 

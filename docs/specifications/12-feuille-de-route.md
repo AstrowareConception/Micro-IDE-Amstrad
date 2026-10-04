@@ -112,6 +112,21 @@ Implémenter le runner de missions, les outils fichiers/références/documents/r
 
 Sortie : MVP correspondant à l'intention initiale. Une clé de fournisseur nécessaire à un essai réel est une dépendance à fournir ; son absence ne transforme pas un faux adaptateur en test réel réussi.
 
+## JG — Git intégré, tranche transversale
+
+Ajout produit du **2026-10-04** : [spécification 16](16-integration-git.md), [ADR 0015](../adr/0015-git-natif-et-publication-explicite.md). Conception acceptée ; aucun code Git n'est livré par l'alpha 0.10. Ce travail indépendant ne dépend pas des ROM et n'interrompt pas PDF/conversion ; il s'appuie sur les protections Workspace. JG-A/B rejoint la sortie du MVP J5 et JG-C celle de J6. L'API GitHub reste une extension distincte, pas une condition d'utilisation des remotes GitHub HTTPS/SSH.
+
+| Tâche | Dépendance | Critère de sortie |
+| --- | --- | --- |
+| JG-A1 — Port VersionControl, découverte et politique de confiance | J1-01/02 | Exécutable/version/racine identifiés, aucune CLI libre, configurations dangereuses refusées |
+| JG-A2 — Statut, diff, index et commits | JG-A1 | ACC-31 : sélection explicite, buffers distincts, historique paginé et absence Git gérée |
+| JG-B1 — Clone, remotes, branches et upstream | JG-A2 | ACC-31/32 : racine autorisée, dossiers préservés, session Workspace revalidée |
+| JG-B2 — Fetch, pull et push, credentials | JG-B1 | ACC-33/35 : fast-forward, divergence/rejet, publication humaine et secrets protégés |
+| JG-C1 — Fusion, conflits, rebase et récupération | JG-B2, durabilité J1-03 | ACC-34 : trois versions, continue/abort, réparations de manifeste contrôlées |
+| JG-C2 — Stash, tags, revert, cherry-pick et blame | JG-C1 | ACC-34/35 : parcours guidés, aucune réécriture publiée implicite |
+
+Ordre des incréments : finaliser la tranche PDF, puis réaliser JG-A (local, sans credentials réseau) ; alterner les autres travaux indépendants sans déclarer clos les critères globaux. Les tests Git commencent avec deux clones et un remote bare temporaire, puis parcours Electron ; qualification HTTPS/SSH séparée avant de revendiquer la connexion distante. L'agent n'obtient aucun outil Git par cet ajout documentaire ; son futur scope Git sera distinct et la publication restera humaine.
+
 ## J6 — Version 1.0 qualifiée
 
 Renforcer crash recovery, accessibilité, performances et docs utilisateur. Construire les paquets sur plateformes ciblées, signer les diffusions officielles lorsque certificats disponibles, qualifier installation et export indépendant. Définir support et comportement de mise à jour. Rejouer les scénarios du MVP affectés par ces travaux.

@@ -34,6 +34,7 @@ La tranche [images 0.10](implementation/images-alpha.md) ajoute PNG/JPEG, garde 
 | [13 — Risques et arbitrages](specifications/13-risques-arbitrages.md) | Qu'est-ce qui peut changer et à quelle condition ? |
 | [14 — Programmation agentique](specifications/14-programmation-agentique.md) | Comment l'agent agit-il sur les fichiers, les ressources et les essais ? |
 | [15 — Corpus Locomotive BASIC](specifications/15-corpus-locomotive-basic.md) | Comment les références du langage guident-elles et vérifient-elles le travail ? |
+| [16 — Git intégré](specifications/16-integration-git.md) | Comment versionner, gérer les branches et synchroniser sans perdre ni publier implicitement le travail ? |
 | [Glossaire](reference/glossaire.md) | Quel vocabulaire partager ? |
 | [Sources](reference/sources.md) | Sur quelles références reposent les décisions ? |
 | [ADR](adr/README.md) | Pourquoi les options principales ont-elles été retenues ? |
