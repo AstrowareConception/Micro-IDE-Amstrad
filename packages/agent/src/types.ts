@@ -10,7 +10,7 @@ export interface AgentResult { status: 'completed' | 'blocked' | 'failed' | 'can
 export interface AgentView extends AgentResult { taskId: string; running: boolean; events: AgentEvent[]; workspace: AgentWorkspaceState; changed: string[]; before: { id: string; source: string }[]; buildVerified: boolean }
 export interface AgentPort {
   configure(key: string, model: string): Promise<{ configured: boolean; model: string } | { error: string }>;
-  start(sessionId: string, objective: string, buffers: { id: string; source: string }[]): Promise<{ taskId: string } | { error: string }>;
+  start(sessionId: string, objective: string, buffers: { id: string; source: string }[], includeDocuments?: boolean): Promise<{ taskId: string } | { error: string }>;
   status(taskId: string): Promise<AgentView | { error: string }>;
   cancel(taskId: string): Promise<{ ok: boolean } | { error: string }>;
   steer(taskId: string, instruction: string): Promise<{ ok: boolean } | { error: string }>;

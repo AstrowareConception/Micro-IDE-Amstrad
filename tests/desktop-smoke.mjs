@@ -143,6 +143,31 @@ try {
   await page.getByRole('tab', { name: 'src/main.bas', exact: true }).click();
   await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('\n40 REM USER DRAFT');
   const originalDraft = checkpointBaseline + '\n40 REM USER DRAFT';
+  // Import through the native selector, preserve the dirty buffer and show Markdown as inert text.
+  const briefPath = join(temporary, 'Cahier-jeu.md');
+  const brief = '# TITRE DU JEU\r\n<script>window.documentInjected=true</script>\r\nTitre en MODE 1\r\nPRIVATE UNREAD LAST LINE';
+  await writeFile(briefPath, brief);
+  const documentsPanel = page.getByRole('region', { name: 'Documents du projet' });
+  await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, briefPath);
+  await documentsPanel.getByRole('button', { name: 'Importer TXT / Markdown', exact: true }).click();
+  await expect(documentsPanel).toContainText('Original copié et vérifié');
+  await expect(page.getByRole('tab', { name: /src\/main.bas.*modifié/ })).toBeVisible();
+  await expect(page.locator('.monaco-editor .view-lines')).toContainText('USER DRAFT');
+  await documentsPanel.getByRole('button', { name: 'Cahier-jeu.md', exact: true }).click();
+  await expect(documentsPanel.getByLabel('Texte du document', { exact: true })).toHaveValue(brief.replace(/\r\n/g, '\n'));
+  assert.equal(await page.evaluate(() => window.documentInjected), undefined);
+  const importedManifest = JSON.parse(await readFile(join(moved, 'microide.project.json'), 'utf8'));
+  const imported = importedManifest.documents[0];
+  assert.equal(imported.sha256, createHash('sha256').update(brief).digest('hex'));
+  assert.equal(await readFile(join(moved, imported.path), 'utf8'), brief);
+  await writeFile(briefPath, 'EXTERNAL ORIGINAL CHANGED');
+  await documentsPanel.getByRole('button', { name: 'Cahier-jeu.md', exact: true }).click();
+  await expect(documentsPanel.getByLabel('Texte du document', { exact: true })).toHaveValue(brief.replace(/\r\n/g, '\n'));
+  const forbiddenDocument = await page.evaluate(() => window.desktop.project.readDocument('stale-session', '../../secret'));
+  assert.match(forbiddenDocument.error, /périmée/);
+  await documentsPanel.scrollIntoViewIfNeeded(); await page.screenshot({ path: 'out/documents-alpha.png' });
+  const consent = page.getByRole('checkbox', { name: /^Autoriser les documents du projet/ });
+  await expect(consent).not.toBeChecked(); await consent.check();
   await desktop.evaluate(async () => {
     let step = 0;
     globalThis.fetch = async (url, init) => {
@@ -152,11 +177,15 @@ try {
       const call = (id, name, args) => ({ type: 'function_call', call_id: id, name, arguments: JSON.stringify(args) });
       const output = [];
       if (step === 0) {
+        const context = JSON.parse(body.input[0].content).project;
+        if (context.documents?.[0]?.originalName !== 'Cahier-jeu.md' || JSON.stringify(body).includes('PRIVATE UNREAD LAST LINE') || JSON.stringify(body).includes('window.documentInjected')) throw new Error('Wrong document scope or eager content transmission');
         await new Promise((resolve, reject) => { globalThis.__agentTestRelease = resolve; init.signal.addEventListener('abort', () => reject(new Error('Aborted')), { once: true }); });
-        output.push(call('list', 'project_list_files', {}));
+        output.push(call('list', 'project_list_files', {}), call('docs', 'documents_list', {}), call('searchdocs', 'documents_search', { query: 'TITRE' }), call('readdocs', 'documents_read_text', { id: context.documents[0].id, startLine: 1, endLine: 3 }));
       } else if (step === 1) output.push(call('read', 'project_read_file', { id: 'main', startLine: 1, endLine: 200 }));
       else if (step === 2) { output.push(call('print', 'reference_read', { id: 'PRINT', startLine: 1, endLine: 1 }), call('end', 'reference_read', { id: 'END', startLine: 1, endLine: 1 })); }
       else if (step === 3) {
+        const documentRead = body.input.filter(item => item.type === 'function_call_output').map(item => JSON.parse(item.output)).find(item => item.originalName === 'Cahier-jeu.md' && item.text);
+        if (!documentRead?.text.includes('window.documentInjected') || !documentRead.truncated || documentRead.trust !== 'untrusted-document-data' || JSON.stringify(body).includes('PRIVATE UNREAD LAST LINE')) throw new Error('Document read was not bounded/inert');
         const read = body.input.filter(item => item.type === 'function_call_output').map(item => JSON.parse(item.output)).find(item => item.id === 'main' && item.text);
         if (!read?.text.includes('USER DRAFT')) throw new Error('Initial dirty buffer was lost');
         output.push(call('replace', 'project_replace_source', { id: 'main', expectedHash: read.hash, source: '10 PRINT "AGENT"\n20 END\n' }),
@@ -182,6 +211,10 @@ try {
   assert.equal(await readFile(join(moved, 'src/main.bas'), 'utf8'), '10 PRINT "AGENT"\n20 END\n');
   assert.equal(await readFile(join(moved, 'src/help.bas'), 'utf8'), '10 PRINT "HELPER"\n20 END\n');
   assert.equal(JSON.parse(await readFile(join(moved, 'microide.project.json'), 'utf8')).sources.length, 3);
+  assert.deepEqual(JSON.parse(await readFile(join(moved, 'microide.project.json'), 'utf8')).documents, importedManifest.documents);
+  await page.getByRole('button', { name: 'Exporter DSK', exact: true }).click();
+  await page.getByRole('status').filter({ hasText: /DSK DATA construit/ }).waitFor();
+  assert.deepEqual(readDataDisk(new Uint8Array(await readFile(exported))).map(file => file.name), ['HELP.BAS', 'MAIN.BAS', 'UTIL.BAS']);
   const checkpointDirectory = join(await desktop.evaluate(({ app }) => app.getPath('userData')), 'agent-checkpoints');
   const { readdir } = await import('node:fs/promises');
   const checkpoints = await Promise.all((await readdir(checkpointDirectory)).map(id => readFile(join(checkpointDirectory, id, 'checkpoint.json'), 'utf8')));
@@ -207,6 +240,11 @@ try {
   await page.getByRole('button', { name: /^Enregistrer Ctrl/ }).click();
   await page.getByRole('status').filter({ hasText: /Listing enregistré/ }).waitFor();
   assert.equal(await readFile(join(moved, 'src/main.bas'), 'utf8'), originalDraft);
+  await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, moved);
+  await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click();
+  await documentsPanel.getByRole('button', { name: 'Cahier-jeu.md', exact: true }).click();
+  await expect(documentsPanel.getByLabel('Texte du document', { exact: true })).toHaveValue(brief.replace(/\r\n/g, '\n'));
+  await expect(consent).not.toBeChecked();
 
   // Cancel a pending generation. The controlled fetch rejects on AbortSignal.
   await desktop.evaluate(() => { globalThis.fetch = async (_url, init) => new Promise((_resolve, reject) => init.signal.addEventListener('abort', () => reject(new Error('Aborted')), { once: true })); });
@@ -258,7 +296,7 @@ try {
   await expect(romPanel).toContainText('Sélection retirée.');
   await expect(romPanel).toContainText('Jeu incomplet ou invalide');
   assert.deepEqual(errors, []);
-  console.log('Electron smoke: projects, controlled OpenAI agent and local firmware import/reload/hash corruption/invalid size/cancel/clear passed. No live API or CPC execution claimed.');
+  console.log('Electron smoke: projects, inert TXT/MD import/preview/reopen and authorized progressive agent reads, controlled OpenAI agent and local firmware checks passed. No live API or CPC execution claimed.');
 } catch (error) {
   await mkdir('out', { recursive: true });
   await page?.screenshot({ path: 'out/desktop-failure.png', timeout: 5000 }).catch(() => undefined);

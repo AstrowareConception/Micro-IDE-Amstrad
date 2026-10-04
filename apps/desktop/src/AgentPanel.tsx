@@ -4,6 +4,7 @@ import { files } from './port.ts';
 
 interface Props {
   sessionId: string | undefined; buffers: { id: string; source: string }[]; busy: boolean;
+  documentCount: number;
   onRunning(running: boolean): void; onState(state: AgentWorkspaceState): void;
 }
 export function AgentPanel(props: Props) {
@@ -12,6 +13,8 @@ export function AgentPanel(props: Props) {
   const [view, setView] = useState<AgentView | undefined>(), [taskId, setTaskId] = useState<string | undefined>();
   const [message, setMessage] = useState(''), [requesting, setRequesting] = useState(false);
   const [instruction, setInstruction] = useState('');
+  const [documentConsentSession, setDocumentConsentSession] = useState<string | undefined>();
+  const includeDocuments = !!props.sessionId && documentConsentSession === props.sessionId && props.documentCount > 0;
   const latest = useRef(props); latest.current = props;
   const adopted = useRef('');
   const port = files.agent;
@@ -47,7 +50,7 @@ export function AgentPanel(props: Props) {
   async function start() {
     if (!port || !props.sessionId) return; setRequesting(true); props.onRunning(true);
     try {
-      const result = await port.start(props.sessionId, objective, props.buffers);
+      const result = await port.start(props.sessionId, objective, props.buffers, includeDocuments);
       if ('error' in result) { setMessage(result.error); props.onRunning(false); }
       else { adopted.current = ''; setTaskId(result.taskId); setView(undefined); setMessage('Mission démarrée.'); }
     } catch { setMessage('Démarrage impossible.'); props.onRunning(false); }
@@ -70,6 +73,8 @@ export function AgentPanel(props: Props) {
     <button disabled={!port || props.busy || requesting || !key} onClick={() => void configure()}>Configurer la clé</button>
     <button disabled={!configured || props.busy || requesting} onClick={() => void configure(true)}>Oublier la clé</button>
     <label htmlFor="agent-objective">Mission de programmation</label><textarea id="agent-objective" value={objective} onChange={event => setObjective(event.target.value)} maxLength={20000} rows={4} placeholder="Crée un écran de titre CPC en MODE 1…" disabled={props.busy || requesting} />
+    <label className="document-consent"><input type="checkbox" checked={includeDocuments} disabled={props.busy || requesting || !props.documentCount} onChange={event => setDocumentConsentSession(event.target.checked ? props.sessionId : undefined)} />Autoriser les documents du projet pour cette mission ({props.documentCount})</label>
+    <p className="muted">Si activé, les noms et empreintes des documents ainsi que les extraits lus/recherchés par l’agent sont transmis à OpenAI. Le texte complet n’est pas ajouté automatiquement. Images et PDF à venir.</p>
     <button className="primary" disabled={!port || !props.sessionId || !configured || !objective.trim() || props.busy || requesting} onClick={() => void start()}>Lancer l’agent</button>
     <button disabled={!taskId || !view?.running || requesting} onClick={() => { if (port && taskId) void port.cancel(taskId).then(result => setMessage('error' in result ? result.error : 'Arrêt demandé ; écritures terminées conservées.')).catch(() => setMessage('Arrêt impossible.')); }}>Arrêter l’agent</button>
     {view?.running && <><label htmlFor="agent-steering">Consigne de suivi</label><textarea id="agent-steering" value={instruction} onChange={event => setInstruction(event.target.value)} maxLength={20000} rows={2} />

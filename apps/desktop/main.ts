@@ -146,6 +146,17 @@ route('project:entry', async payload => {
   if (typeof value.id !== 'string') throw new Error('Identifiant de source requis.');
   return store.setEntry(value.id);
 });
+route('documents:import', async payload => {
+  const { store } = projectRequest(payload);
+  const selection = await dialog.showOpenDialog(window, { properties: ['openFile'], filters: [{ name: 'Document UTF-8 (TXT / Markdown)', extensions: ['txt', 'md'] }] });
+  if (selection.canceled || !selection.filePaths[0]) return null;
+  return store.importDocument(selection.filePaths[0]);
+});
+route('documents:read', async payload => {
+  const { store, value } = projectRequest(payload);
+  if (typeof value.id !== 'string') throw new Error('Identifiant de document requis.');
+  return store.readDocument(value.id);
+});
 route('project:export', async payload => {
   const { store, value } = projectRequest(payload); await store.assertCurrent();
   if (!Array.isArray(value.sources) || value.sources.length > 64) throw new Error('Snapshot invalide.');
@@ -180,7 +191,8 @@ route('agent:configure', async payload => {
 });
 route('agent:start', async payload => {
   const { store, value } = projectRequest(payload);
-  return agent.start(store, value.objective, bufferRequest(value.buffers));
+  if (value.includeDocuments !== undefined && typeof value.includeDocuments !== 'boolean') throw new Error('Scope documentaire invalide.');
+  return agent.start(store, value.objective, bufferRequest(value.buffers), value.includeDocuments === true);
 });
 route('agent:status', async payload => agent.status(payload));
 route('agent:cancel', async payload => agent.cancel(payload));

@@ -1,5 +1,7 @@
 # 08 — Ressources, images et documents
 
+L'[alpha 0.9](../implementation/documents-alpha.md) réalise le sous-ensemble TXT/MD UTF-8 : copies immuables vérifiées, aperçu source texte et accès progressif de l'agent explicitement autorisé. Les limites alpha sont 1 Mio par fichier, 4 Mio et 10 documents par projet, selon l'[ADR 0013](../adr/0013-documents-texte-incrementaux.md). Les limites et formats MVP ci-dessous restent des objectifs ; images, PDF et conversion ne sont pas encore réalisés.
+
 ## Trois rôles explicites
 
 Une pièce jointe de contexte aide à concevoir : cahier des charges, extrait de manuel, image d'inspiration. Une source est éditable et participe à un programme. Une ressource CPC est un fichier encodé et inclus au plan disque. Le même original peut alimenter le contexte et une recette de conversion, sans que ces usages se confondent.

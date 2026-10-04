@@ -2,10 +2,18 @@ import { encodeListing } from '../../basic-language/src/build.ts';
 import { createDataDisk, readDataDisk } from '../../cpc-disk/src/data-disk.ts';
 
 export interface ProjectSource { id: string; path: string; cpcName: string }
+export interface ProjectDocument {
+  id: string; path: string; sha256: string; mediaType: 'text/plain' | 'text/markdown';
+  role: 'context' | 'inspiration' | 'asset-source'; originalName: string;
+}
+export interface DocumentText extends ProjectDocument { text: string; bytes: number }
+export const DOCUMENT_LIMIT = 1024 * 1024;
+export const DOCUMENT_TOTAL_LIMIT = 4 * DOCUMENT_LIMIT;
+export const DOCUMENT_COUNT_LIMIT = 10;
 export interface ProjectManifest {
   schemaVersion: 1; projectId: string; name: string;
   target: { machineProfileId: 'cpc6128-classic-v1'; dialect: 'locomotive-1.1'; expectedFirmwareSetId?: string };
-  entryPoint: string; sources: ProjectSource[]; assets: []; documents: [];
+  entryPoint: string; sources: ProjectSource[]; assets: []; documents: ProjectDocument[];
   build: { listingFormat: 'ascii'; diskFormat: 'standard-dsk'; filesystem: 'amsdos-data'; textEncoding: 'ascii-strict'; lineEnding: 'crlf'; asciiEof: 'ctrl-z'; fileOrder: 'cpc-name' };
 }
 export interface SourceSnapshot extends ProjectSource { source: string }
@@ -30,7 +38,7 @@ export function validateSourcePath(path: string): void {
     if (/[. ]$/.test(segment) || /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i.test(segment)) throw new Error('Nom non portable sur Windows.');
   }
 }
-/** Supported v1 subset. Assets/documents and other encodings are explicitly refused, never dropped. */
+/** Supported v1 subset. Binary assets, non-text documents and other encodings are refused. */
 export function parseProject(value: unknown): ProjectManifest {
   const root = object(value, ['schemaVersion', 'projectId', 'name', 'target', 'entryPoint', 'sources', 'assets', 'documents', 'build']);
   if (root.schemaVersion !== 1) throw new Error('Version de projet non prise en charge ; aucun fichier modifié.');
@@ -38,8 +46,18 @@ export function parseProject(value: unknown): ProjectManifest {
   if (typeof root.name !== 'string' || root.name.length < 1 || root.name.length > 100 || !root.name.trim()) throw new Error('Nom de projet requis (1–100 caractères).');
   const target = object(root.target, ['machineProfileId', 'dialect'], ['expectedFirmwareSetId']);
   if (target.machineProfileId !== 'cpc6128-classic-v1' || target.dialect !== 'locomotive-1.1') throw new Error('Profil CPC 6128 / BASIC 1.1 requis.');
-  if (!Array.isArray(root.assets) || root.assets.length || !Array.isArray(root.documents) || root.documents.length)
-    throw new Error('Cette alpha ouvre les projets BASIC sans ressources ni documents. Leur prise en charge reste à réaliser.');
+  if (!Array.isArray(root.assets) || root.assets.length) throw new Error('Ressources binaires non prises en charge dans cette alpha.');
+  if (!Array.isArray(root.documents) || root.documents.length > DOCUMENT_COUNT_LIMIT) throw new Error('10 documents texte maximum dans cette alpha.');
+  const documents: ProjectDocument[] = root.documents.map(value => {
+    const item = object(value, ['id', 'path', 'sha256', 'mediaType', 'role', 'originalName']);
+    const id = string(item.id, ID), path = string(item.path, PATH);
+    if (path.length > 240 || !path.startsWith('documents/') || !/\.(txt|md)$/i.test(path) || path.split('/').some(segment => /[. ]$/.test(segment) || /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i.test(segment))) throw new Error('Chemin documentaire TXT/MD relatif portable sous documents/ requis.');
+    if (item.mediaType !== 'text/plain' && item.mediaType !== 'text/markdown') throw new Error('Seuls TXT et Markdown sont pris en charge dans cette alpha.');
+    if ((item.mediaType === 'text/markdown') !== /\.md$/i.test(path)) throw new Error('Extension documentaire incohérente.');
+    if (!['context', 'inspiration', 'asset-source'].includes(item.role as string)) throw new Error('Rôle documentaire invalide.');
+    if (typeof item.originalName !== 'string' || !item.originalName.trim() || item.originalName.length > 255 || /[\x00-\x1f\x7f/\\]/.test(item.originalName)) throw new Error('Nom original documentaire invalide.');
+    return { id, path, sha256: string(item.sha256, /^[a-f0-9]{64}$/), mediaType: item.mediaType, role: item.role as ProjectDocument['role'], originalName: item.originalName };
+  });
   const build = object(root.build, ['listingFormat', 'diskFormat', 'filesystem', 'textEncoding', 'lineEnding', 'asciiEof', 'fileOrder']);
   const supported: ProjectManifest['build'] = { listingFormat: 'ascii', diskFormat: 'standard-dsk', filesystem: 'amsdos-data', textEncoding: 'ascii-strict', lineEnding: 'crlf', asciiEof: 'ctrl-z', fileOrder: 'cpc-name' };
   if (Object.entries(supported).some(([key, item]) => build[key] !== item)) throw new Error('Recette de construction non prise en charge.');
@@ -52,9 +70,13 @@ export function parseProject(value: unknown): ProjectManifest {
   for (const field of ['id', 'path', 'cpcName'] as const) {
     if (new Set(sources.map(source => source[field].toLowerCase())).size !== sources.length) throw new Error(`Collision de ${field} dans les sources.`);
   }
+  for (const field of ['id', 'path'] as const) {
+    const values = [...sources, ...documents].map(item => item[field].toLowerCase());
+    if (new Set(values).size !== values.length) throw new Error(`Collision de ${field} dans le projet.`);
+  }
   const entryPoint = string(root.entryPoint, ID);
   if (!sources.some(source => source.id === entryPoint)) throw new Error('Le point d’entrée doit référencer une source déclarée.');
-  const result: ProjectManifest = { schemaVersion: 1, projectId, name: root.name, target: { machineProfileId: 'cpc6128-classic-v1', dialect: 'locomotive-1.1' }, entryPoint, sources, assets: [], documents: [], build: supported };
+  const result: ProjectManifest = { schemaVersion: 1, projectId, name: root.name, target: { machineProfileId: 'cpc6128-classic-v1', dialect: 'locomotive-1.1' }, entryPoint, sources, assets: [], documents, build: supported };
   if (target.expectedFirmwareSetId !== undefined) result.target.expectedFirmwareSetId = string(target.expectedFirmwareSetId, ID);
   return result;
 }

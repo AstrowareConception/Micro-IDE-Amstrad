@@ -1,7 +1,8 @@
 import { lstat, realpath, readFile, writeFile, rename, unlink, mkdir, readdir } from 'node:fs/promises';
-import { join, dirname, relative, isAbsolute } from 'node:path';
+import { join, dirname, relative, isAbsolute, basename, extname } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
-import { parseProject, newProject, addProjectSource, type ProjectManifest, type ProjectSnapshot } from '../../packages/workspace/src/project.ts';
+import { parseProject, newProject, addProjectSource, DOCUMENT_TOTAL_LIMIT, DOCUMENT_COUNT_LIMIT, type ProjectManifest, type ProjectSnapshot, type DocumentText } from '../../packages/workspace/src/project.ts';
+import { readDocumentBytes, decodeDocument } from './text-document.ts';
 import type { AgentWorkspaceState } from '../../packages/agent/src/types.ts';
 
 const MANIFEST = 'microide.project.json';
@@ -47,6 +48,7 @@ export class ProjectStore {
       if (total > 8 * LIMIT) throw new Error('Le projet dépasse le budget de 8 Mio de sources.');
       store.hashes.set(source.id, hash(content)); files.push({ ...source, source: text(content) });
     }
+    await store.agentDocuments();
     return { store, snapshot: { sessionId: store.sessionId, manifest, files } };
   }
   static async create(folder: string, name: string): Promise<{ store: ProjectStore; snapshot: ProjectSnapshot }> {
@@ -77,6 +79,47 @@ export class ProjectStore {
   }
   assertSession(id: unknown): void { if (id !== this.sessionId) throw new Error('Session de projet périmée.'); }
   async assertCurrent(): Promise<void> { await this.checkManifest(); }
+  async readDocument(id: unknown): Promise<DocumentText> {
+    await this.checkManifest();
+    const item = this.manifest.documents.find(item => item.id === id);
+    if (!item) throw new Error('scope-denied : document non déclaré.');
+    const content = await readDocumentBytes(await this.path(item.path));
+    if (hash(content) !== item.sha256) throw new Error(`stale-read : ${item.originalName} a changé sur disque ; original documentaire refusé.`);
+    return { ...item, text: decodeDocument(content), bytes: content.length };
+  }
+  async agentDocuments(): Promise<DocumentText[]> {
+    const result: DocumentText[] = []; let total = 0;
+    for (const item of this.manifest.documents) {
+      const document = await this.readDocument(item.id); total += document.bytes;
+      if (total > DOCUMENT_TOTAL_LIMIT) throw new Error('Documents limités à 4 Mio par projet dans cette alpha.');
+      result.push(document);
+    }
+    return result;
+  }
+  async importDocument(selected: string): Promise<ProjectManifest> {
+    await this.checkManifest();
+    if (this.manifest.documents.length >= DOCUMENT_COUNT_LIMIT) throw new Error('10 documents maximum dans cette alpha.');
+    const extension = extname(selected).toLowerCase();
+    if (extension !== '.txt' && extension !== '.md') throw new Error('Choisissez un fichier TXT ou MD.');
+    const content = await readDocumentBytes(selected); decodeDocument(content);
+    const existing = await this.agentDocuments();
+    if (existing.reduce((total, item) => total + item.bytes, content.length) > DOCUMENT_TOTAL_LIMIT) throw new Error('Documents limités à 4 Mio par projet dans cette alpha.');
+    const id = `doc-${randomUUID()}`, path = `documents/${id}${extension}`;
+    const manifest = parseProject({ ...this.manifest, documents: [...this.manifest.documents, {
+      id, path, sha256: hash(content), mediaType: extension === '.md' ? 'text/markdown' : 'text/plain', role: 'context', originalName: basename(selected),
+    }] });
+    await mkdir(join(this.root, 'documents')).catch((error: NodeJS.ErrnoException) => { if (error.code !== 'EEXIST') throw error; });
+    await this.path('documents');
+    const destination = join(this.root, path);
+    await writeFile(destination, content, { flag: 'wx', mode: 0o600 });
+    try { await this.checkManifest(); await this.writeManifest(manifest); }
+    catch (error) {
+      // Remove only our verified unpublished copy. Never erase a concurrent external edit.
+      if (hash(await readDocumentBytes(destination)) === hash(content)) await unlink(destination);
+      throw error;
+    }
+    return manifest;
+  }
   async agentState(buffers: { id: string; source: string }[]): Promise<AgentWorkspaceState> {
     await this.checkManifest();
     if (buffers.length !== this.manifest.sources.length || new Set(buffers.map(file => file.id)).size !== buffers.length) throw new Error('Snapshot incomplet ou dupliqué.');
@@ -97,6 +140,8 @@ export class ProjectStore {
   async applyAgentState(state: AgentWorkspaceState): Promise<void> {
     this.assertSession(state.sessionId); await this.checkManifest();
     const manifest = parseProject(state.manifest);
+    if (JSON.stringify(manifest.documents) !== JSON.stringify(this.manifest.documents)) throw new Error('stale-read : documents du projet modifiés depuis la mission ; restauration refusée.');
+    await this.agentDocuments();
     if (manifest.projectId !== this.manifest.projectId || state.files.length !== manifest.sources.length || new Set(state.files.map(file => file.id)).size !== state.files.length) throw new Error('Snapshot agent invalide.');
     const before = new Map<string, { path: string; content: Buffer }>();
     for (const item of this.manifest.sources) {

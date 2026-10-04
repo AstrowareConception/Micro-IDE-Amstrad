@@ -16,6 +16,8 @@ Une consigne de suivi rejoint le prochain tour modèle. La comparaison **Avant/A
 
 Depuis l'alpha 0.8, [language_renumber](renumber-alpha.md) réalise une transformation conservatrice des numéros et références, avec le même contrôle de mutation/checkpoint. Les capacités ci-dessous décrivent la tranche initiale 0.6.
 
+Depuis l'alpha 0.9, [documents_list, documents_read_text et documents_search](documents-alpha.md) consultent les copies TXT/MD explicitement autorisées au lancement. Aucun contenu documentaire complet n'est envoyé automatiquement ; la liste documentaire est préservée par les mutations/restaurations, avec refus si elle a changé depuis la mission.
+
 Les aliases API utilisent underscores ; leur fonction correspond au catalogue métier du document 14.
 
 | Outil | Preuve/capacité réelle |
