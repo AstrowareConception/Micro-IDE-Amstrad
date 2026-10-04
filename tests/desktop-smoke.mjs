@@ -22,7 +22,9 @@ try {
   page = await desktop.firstWindow();
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
-  await page.getByRole('heading', { name: 'Micro IDE Amstrad' }).waitFor();
+  await page.getByRole('heading', { name: 'CPCéleste', exact: true }).waitFor();
+  await expect(page).toHaveTitle('CPCéleste — Atelier Amstrad CPC');
+  await expect.poll(() => page.locator('.brand-mark').evaluate(image => image.complete && image.naturalWidth > 0)).toBe(true);
   await page.locator('.monaco-editor .view-line').first().waitFor();
   const preferences = await desktop.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences());
   assert.equal(preferences.contextIsolation, true); assert.equal(preferences.sandbox, true); assert.equal(preferences.nodeIntegration, false);

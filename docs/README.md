@@ -1,4 +1,6 @@
-# Dossier de conception et réalisation — version 0.13
+# CPCéleste — Dossier de conception et réalisation — version 0.13
+
+Nom de marque adopté le 4 octobre 2026 : **CPCéleste**, signature « Vos idées prennent vie en BASIC. ». [Charte et kit de marque](brand/README.md). Les rapports historiques gardent leur intitulé d’origine ; aucun format persistant n’est renommé.
 
 Date de référence : **2026-10-04**. Responsable produit : **Térence FERUT / AstroWare Conception**. Les spécifications servent de référence au produit. Le [guide de l'alpha d'édition](implementation/editor-alpha.md), le [rapport J0](implementation/j0-report.md) et le [banc local](../tools/j0-harness/README.md) distinguent code disponible, preuves et qualification encore bloquée. L'[ADR 0009](adr/0009-edition-independante.md) découple l'édition du go moteur.
 
