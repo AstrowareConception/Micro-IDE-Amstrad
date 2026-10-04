@@ -1,8 +1,10 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.17
+# CPCéleste — Dossier de conception et réalisation — version 0.18
+
+L’[historique local 0.18](implementation/local-history-alpha.md) livre snapshots avant/après des sauvegardes de projet, rétention 20/64 Mio, diff et restauration de buffer avec undo. Enregistrer actif partage le journal de reprise. [ADR 0023](adr/0023-historique-local-et-restauration-buffer.md). IDE-009/010 deviennent partiels ; brouillons, watcher et mutations agent suivent.
 
 La [reprise 0.17](implementation/recovery-alpha.md) ajoute un journal global versionné et le choix natif de terminer/rétablir à l’ouverture, avec refus de conflit et tests SIGKILL Linux. [ADR 0022](adr/0022-journal-sauvegarde-et-reprise.md). IDE-007/008 restent partiels ; historique local et journalisation des autres mutations suivent.
 
-[Enregistrer tout 0.16](implementation/save-all-alpha.md) commence R2 avec préconditions de lot, conservation des sources propres, compensation en mémoire et piles Monaco préservées. [ADR 0021](adr/0021-enregistrer-tout-compensation.md). Journal/reprise après crash et historique local durable restent les prochaines tranches ; IDE-007 reste partiel.
+[Enregistrer tout 0.16](implementation/save-all-alpha.md) commence R2 avec préconditions de lot, conservation des sources propres, compensation en mémoire et piles Monaco préservées. [ADR 0021](adr/0021-enregistrer-tout-compensation.md). Les tranches 0.17/0.18 ci-dessus complètent ce socle ; IDE-007 reste partiel.
 
 La [recherche 0.15](implementation/search-alpha.md) commence le lot R1 : recherche des sources chargées/brouillons, navigation, aperçu et remplacement des fichiers choisis, annulation par source et contrôle de contenu. [ADR 0020](adr/0020-recherche-sources-et-remplacement-buffers.md). La suite prioritaire est R2 : sauvegarde coordonnée, historique local durable et récupération.
 

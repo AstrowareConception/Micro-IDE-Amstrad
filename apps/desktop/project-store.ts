@@ -7,6 +7,8 @@ import { readDocumentBytes, decodeDocument } from './text-document.ts';
 import type { AgentWorkspaceState } from '../../packages/agent/src/types.ts';
 import { saveBatch, SaveBatchFailure } from '../../packages/workspace/src/save-batch.ts';
 import { SaveJournal, durableReplace, type RecoveryChoice, type RecoverySummary } from './save-journal.ts';
+import { LocalHistory } from './local-history.ts';
+import type { HistorySnapshot, HistoryVersion } from '../../packages/workspace/src/history.ts';
 
 const MANIFEST = 'microide.project.json';
 const LIMIT = 1024 * 1024;
@@ -222,13 +224,24 @@ export class ProjectStore {
   }
   async save(id: string, source: string): Promise<void> {
     await this.checkManifest();
-    const item = this.manifest.sources.find(item => item.id === id);
-    if (!item) throw new Error('Source non déclarée.');
-    const path = await this.path(item.path);
-    if (hash(await bytes(path)) !== this.hashes.get(id)) throw new Error(`${item.path} a changé sur disque. Rouvrez le projet ; aucune modification écrasée.`);
-    const content = Buffer.from(source.replace(/\r\n?/g, '\n'), 'utf8');
-    if (content.length > LIMIT || content[0] === 0xef && content[1] === 0xbb && content[2] === 0xbf || source.includes('\0')) throw new Error('Source UTF-8 sans BOM de 1 Mio maximum requise.');
-    await atomic(path, content); this.hashes.set(id, hash(content));
+    if (!this.manifest.sources.some(item => item.id === id)) throw new Error('Source non déclarée.');
+    const buffers = [];
+    for (const item of this.manifest.sources) buffers.push({ id: item.id, source: item.id === id ? source : text(await bytes(await this.path(item.path))) });
+    await this.saveAll(buffers);
+  }
+  async historyList(): Promise<HistorySnapshot[]> {
+    await this.checkManifest(); await new SaveJournal(this.root, this.manifest, this.manifestHash).assertResolved();
+    return new LocalHistory(this.root, this.manifest.projectId).list();
+  }
+  async historyVersion(snapshotId: string, id: string, revision: string): Promise<HistoryVersion> {
+    await this.checkManifest(); await new SaveJournal(this.root, this.manifest, this.manifestHash).assertResolved();
+    const item = this.manifest.sources.find(source => source.id === id); if (!item) throw new Error('Source historique non déclarée dans le projet courant.');
+    if (hash(await bytes(await this.path(item.path))) !== this.hashes.get(id)) throw new Error('Conflit externe : rouvrez le projet avant de restaurer un buffer.');
+    const version = await new LocalHistory(this.root, this.manifest.projectId).version(snapshotId, id, revision);
+    if (version.path !== item.path) throw new Error('Chemin historique différent ; restauration refusée.');
+    await this.checkManifest();
+    if (hash(await bytes(await this.path(item.path))) !== this.hashes.get(id)) throw new Error('Conflit externe pendant la lecture historique ; version non restaurée.');
+    return version;
   }
   async saveAll(buffers: { id: string; source: string }[]): Promise<{ name: string; savedIds: string[]; changedCount: number }> {
     await this.checkManifest();
@@ -249,6 +262,9 @@ export class ProjectStore {
     const sourcePath = (id: string) => this.manifest.sources.find(item => item.id === id)!.path;
     const journal = new SaveJournal(this.root, this.manifest, this.manifestHash);
     if (entries.every(entry => hash(entry.before) === hash(entry.after))) { await journal.assertResolved(); return { name: this.manifest.name, savedIds: entries.map(entry => entry.id), changedCount: 0 }; }
+    await journal.assertResolved();
+    const history = new LocalHistory(this.root, this.manifest.projectId);
+    await history.capture(entries.map(entry => ({ id: entry.id, path: entry.path, content: entry.before })), 'before-save');
     let transaction: string;
     try { transaction = await journal.prepare(entries); }
     catch (error) { this.faulted = true; throw new Error(`Préparation du journal impossible ; sources non écrites. Rouvrez le projet. ${String(error)}`); }
@@ -260,6 +276,7 @@ export class ProjectStore {
         write: async (id, content) => durableReplace(await this.path(sourcePath(id)), content, false),
       });
       await journal.flushSources();
+      await history.capture(entries.map(entry => ({ id: entry.id, path: entry.path, content: entry.after })), 'after-save');
       await journal.mark(transaction, 'committed');
     } catch (error) {
       if (error instanceof SaveBatchFailure && !error.incomplete) {

@@ -2,6 +2,8 @@
 
 ## Mode de progression
 
+R2 avance en alpha 0.18 : [historique local](../implementation/local-history-alpha.md), snapshots/rétention, comparaison et restauration réversible d’une source dans le buffer ; actif/global partagent le journal ([ADR 0023](../adr/0023-historique-local-et-restauration-buffer.md)). IDE-009/010 deviennent partiels. Suite : récupération des brouillons, watcher externe et extension aux mutations agent avant les changements de branche Git.
+
 R2 avance en alpha 0.17 : [journal/reprise des sauvegardes globales](../implementation/recovery-alpha.md), choix natif explicite et arrêts SIGKILL Linux ([ADR 0022](../adr/0022-journal-sauvegarde-et-reprise.md)). IDE-008 devient partiel ; historique local IDE-009/010 et autres mutations suivent. Ni durabilité universelle ni atomicité de projet ne sont annoncées.
 
 R2 commence en alpha 0.16 : [Enregistrer tout](../implementation/save-all-alpha.md), snapshot de sources complet et compensation en mémoire ([ADR 0021](../adr/0021-enregistrer-tout-compensation.md)). IDE-007/J1-03 restent partiels ; journal/reprise IDE-008 puis historique local IDE-009/010 suivent. Ce succès ne qualifie pas une sauvegarde atomique de projet ni un crash recovery.

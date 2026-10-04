@@ -4,6 +4,7 @@ import type { AgentPort } from '../../../packages/agent/src/types.ts';
 import type { FirmwarePort } from '../../../packages/emulator/src/firmware.ts';
 import type { VersionControlPort } from '../../../packages/version-control/src/inspection.ts';
 import type { TerminalPort } from '../../../packages/workspace/src/terminal.ts';
+import type { HistoryPort } from '../../../packages/workspace/src/history.ts';
 export interface FileResult { name: string; source?: string }
 export interface Failure { error: string }
 export interface DesktopPort {
@@ -15,6 +16,7 @@ export interface DesktopPort {
   firmware?: FirmwarePort;
   git?: VersionControlPort;
   terminal?: TerminalPort;
+  history?: HistoryPort;
   project?: {
     open(): Promise<ProjectSnapshot | Failure | null>;
     create(name: string): Promise<ProjectSnapshot | Failure | null>;

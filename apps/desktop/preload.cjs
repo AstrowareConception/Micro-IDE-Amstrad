@@ -4,6 +4,10 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
   save: (source, saveAs = false) => ipcRenderer.invoke('listing:save', { source, saveAs }),
   exportDisk: source => ipcRenderer.invoke('listing:export', { source }),
   setDirty: dirty => ipcRenderer.send('listing:dirty', dirty),
+  history: Object.freeze({
+    list: sessionId => ipcRenderer.invoke('history:list', { sessionId }),
+    version: (sessionId, snapshotId, id, revision) => ipcRenderer.invoke('history:version', { sessionId, snapshotId, id, revision }),
+  }),
   terminal: Object.freeze({
     run: (sessionId, command) => ipcRenderer.invoke('terminal:run', { sessionId, command }),
     status: (sessionId, id) => ipcRenderer.invoke('terminal:status', { sessionId, id }),
