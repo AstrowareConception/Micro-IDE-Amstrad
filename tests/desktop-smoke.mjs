@@ -207,7 +207,7 @@ try {
   await expect(documentsPanel).toContainText('Page 2 sur 2');
   await expect(documentsPanel.getByLabel('Texte du document', { exact: true })).toHaveValue('PRIVATE UNREAD PDF PAGE');
   await documentsPanel.getByRole('button', { name: 'Page précédente', exact: true }).click();
-  await documentsPanel.scrollIntoViewIfNeeded(); await page.screenshot({ path: 'out/pdf-alpha.png' });
+  await documentsPanel.locator('.document-preview').scrollIntoViewIfNeeded(); await page.screenshot({ path: 'out/pdf-alpha.png' });
   importedManifest = JSON.parse(await readFile(join(moved, 'microide.project.json'), 'utf8'));
   assert.equal(importedManifest.documents.length, 4);
   assert.deepEqual(await readFile(join(moved, importedManifest.documents[3].path)), pdfBytes);
@@ -353,7 +353,7 @@ try {
   await expect(romPanel).toContainText('Sélection retirée.');
   await expect(romPanel).toContainText('Jeu incomplet ou invalide');
   assert.deepEqual(errors, []);
-  console.log('Electron smoke: TXT/MD and real PNG/JPEG decode/import/preview, metadata stripping, corrupt pixels, progressive multimodal agent outputs, projects and firmware checks passed. No live API, real vision or CPC execution claimed.');
+  console.log('Electron smoke: TXT/MD, real PNG/JPEG decode and PDF.js worker import/pagination/reopen/corrupt-file rejection, scoped PDF page excerpts and progressive multimodal agent outputs, projects and firmware checks passed. No live API, real vision or CPC execution claimed.');
 } catch (error) {
   await mkdir('out', { recursive: true });
   await page?.screenshot({ path: 'out/desktop-failure.png', timeout: 5000 }).catch(() => undefined);
