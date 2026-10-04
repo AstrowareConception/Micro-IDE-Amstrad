@@ -8,9 +8,11 @@ Nom de produit du projet historiquement appelé « Micro IDE Amstrad ». [Identi
 
 Un atelier de programmation pour écrire du **Locomotive BASIC**, le tester dans un **Amstrad CPC émulé**, travailler avec une **IA et ses propres documents**, puis partager une **disquette DSK utilisable hors de l'IDE**.
 
-**État au 4 octobre 2026 : alpha desktop, version 0.14.** Electron/Monaco propose édition BASIC, menus/palette/contextes, ouverture rapide, renumérotation conservatrice, projets multifichiers et export DSK, ainsi qu'un agent OpenAI à outils : exploration, références du corpus fourni, documents TXT/MD/PDF texte et aperçus PNG/JPEG autorisés, création/remplacement de sources, renumérotation, analyse et construction, journal, avant/après et restauration de la mission courante. Clé API en mémoire côté main. L'import local des ROM OS/BASIC/AMSDOS et leur vérification sont disponibles ; Git natif ajoute statut/diff, création de dépôt, indexation sélective locale et historique paginé. Le terminal humain exécute des commandes hôte sans PTY, avec confirmation et limites ; aucun accès shell accordé à l’IA. Ce n'est pas encore le MVP : crash recovery complet, WebP/rendu PDF, commits/synchronisation Git intégrés, conversion écran et émulation intégrée qualifiée restent à construire. J0 attend un jeu firmware réel et les essais dans un émulateur indépendant ; aucun boot BASIC ou résultat matériel n'est revendiqué.
+**État au 4 octobre 2026 : alpha desktop, version 0.15.** Electron/Monaco propose édition BASIC, menus/palette/contextes, ouverture rapide, renumérotation conservatrice, projets multifichiers et export DSK, ainsi qu'un agent OpenAI à outils : exploration, références du corpus fourni, documents TXT/MD/PDF texte et aperçus PNG/JPEG autorisés, création/remplacement de sources, renumérotation, analyse et construction, journal, avant/après et restauration de la mission courante. Clé API en mémoire côté main. L'import local des ROM OS/BASIC/AMSDOS et leur vérification sont disponibles ; Git natif ajoute statut/diff, création de dépôt, indexation sélective locale et historique paginé. Le terminal humain exécute des commandes hôte sans PTY, avec confirmation et limites ; aucun accès shell accordé à l’IA. Ce n'est pas encore le MVP : crash recovery complet, WebP/rendu PDF, commits/synchronisation Git intégrés, conversion écran et émulation intégrée qualifiée restent à construire. J0 attend un jeu firmware réel et les essais dans un émulateur indépendant ; aucun boot BASIC ou résultat matériel n'est revendiqué.
 
 ## Lancer l'éditeur
+
+**Recherche 0.15** : `Ctrl/Cmd Maj F` recherche les sources chargées, brouillons compris. Navigation intersource, aperçu et remplacement des fichiers choisis, undo par fichier ; aucune sauvegarde implicite. [Guide et limites](docs/implementation/search-alpha.md).
 
 **Outils d’atelier 0.14** : `Ctrl/Cmd Maj P` ouvre la palette, `Ctrl/Cmd P` les sources. Menus Fichier/Édition/BASIC/Affichage, clic droit éditeur/onglet et bouton ⋯ d’une source. Historique Git en lecture seule et terminal local à commandes avec arrêt ; [guide complet et limites](docs/implementation/workbench-alpha.md).
 
@@ -62,6 +64,8 @@ Préparer les ROM dans **ROM du CPC 6128** : importer trois fichiers séparés d
 La préparation d'un programme BASIC n'est pas une compilation Z80. L'IDE analyse, encode, construit le support et pilote l'émulateur. Une véritable chaîne assembleur pourra être ajoutée ultérieurement.
 
 ## Lire et reprendre le projet
+
+Le [backlog complet et qualifié de CPCéleste](docs/specifications/17-roadmap-ide-complet.md) liste les 75 fonctionnalités, priorités, états, dépendances, critères de recette et lots à réaliser. Il distingue socle 1.0 et outils avancés.
 
 Commencer par le [sommaire du dossier](docs/README.md), puis le [cadrage produit](docs/specifications/00-cadrage-produit.md), le [modèle métier](docs/specifications/03-domaines-ddd.md) et l'[architecture](docs/specifications/04-architecture-technique.md).
 

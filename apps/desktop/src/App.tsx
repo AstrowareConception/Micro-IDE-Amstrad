@@ -2,7 +2,9 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { analyze } from '../../../packages/basic-language/src/language.ts';
 import { COMMANDS, type CommandCard } from '../../../packages/basic-language/src/catalog.ts';
 import { files, type Failure, type FileResult } from './port.ts';
-import { Editor } from './Editor.tsx';
+import { Editor, type EditorWorkspace } from './Editor.tsx';
+import { SearchPanel } from './SearchPanel.tsx';
+import type { SearchMatch } from '../../../packages/workspace/src/search.ts';
 import { monaco, provenance } from './monaco-language.ts';
 import type { ProjectManifest, ProjectSnapshot } from '../../../packages/workspace/src/project.ts';
 import type { AgentWorkspaceState } from '../../../packages/agent/src/types.ts';
@@ -34,6 +36,9 @@ export function App() {
   const [palette, setPalette] = useState<'all' | 'sources' | undefined>();
   const [contextSource, setContextSource] = useState<string>();
   const [terminalOpen, setTerminalOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [navigation, setNavigation] = useState<SearchMatch>();
+  const editorWorkspace = useRef<EditorWorkspace | undefined>(undefined);
   const [minimap, setMinimap] = useState(false);
   const busy = fileBusy || agentBusy;
   const [card, setCard] = useState<CommandCard | undefined>();
@@ -46,6 +51,9 @@ export function App() {
   useEffect(() => { files.setDirty(dirty); }, [dirty]);
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'f') {
+        event.preventDefault(); event.stopPropagation(); setSearchOpen(true);
+      }
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'p') {
         event.preventDefault(); event.stopPropagation(); setPalette(event.shiftKey ? 'all' : 'sources');
       }
@@ -136,6 +144,7 @@ export function App() {
     { id: 'undo', label: 'Annuler la modification', disabled: busy, run: () => { editor.current?.focus(); editor.current?.trigger('workbench', 'undo', null); } },
     { id: 'redo', label: 'Rétablir la modification', disabled: busy, run: () => { editor.current?.focus(); editor.current?.trigger('workbench', 'redo', null); } },
     { id: 'find', label: 'Rechercher dans le listing', detail: 'Ctrl F', run: () => editorAction('actions.find') },
+    { id: 'search-sources', label: 'Rechercher dans toutes les sources', detail: 'Ctrl Maj F', run: () => setSearchOpen(true) },
     { id: 'replace', label: 'Remplacer dans le listing', detail: 'Ctrl H', disabled: busy, run: () => editorAction('editor.action.startFindReplaceAction') },
     { id: 'line', label: 'Aller à une ligne physique', detail: 'Ctrl G · distinct du numéro BASIC', run: () => editorAction('editor.action.gotoLine') },
     { id: 'renumber', label: 'Renuméroter le BASIC', disabled: busy, run: () => setRenumberOpen(true) },
@@ -163,11 +172,11 @@ export function App() {
   const menu = (label: string, ids: string[]) => <details className="workbench-menu"><summary>{label}</summary><div>{commands.filter(command => ids.includes(command.id)).map(command => <button key={command.id} disabled={command.disabled} onClick={event => { event.currentTarget.closest('details')?.removeAttribute('open'); command.run(); }}>{command.label}</button>)}</div></details>;
   return <main className="workbench">
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.14 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.15 · AstroWare Conception</p></div></div>
       <span className="profile">CPC 6128 · BASIC 1.1</span>
     </header>
     <nav className="menubar" aria-label="Menus de l’atelier">
-      {menu('Fichier', ['open', 'project', 'save', 'export'])}{menu('Édition', ['undo', 'redo', 'find', 'replace', 'line'])}
+      {menu('Fichier', ['open', 'project', 'save', 'export'])}{menu('Édition', ['undo', 'redo', 'find', 'replace', 'search-sources', 'line'])}
       {menu('BASIC', ['renumber', 'complete'])}{menu('Affichage', ['minimap', 'zoom-in', 'zoom-out', 'terminal'])}
       <button onClick={() => setPalette('all')}>Commandes <kbd>Ctrl Maj P</kbd></button><button onClick={() => setPalette('sources')}>Sources <kbd>Ctrl P</kbd></button>
     </nav>
@@ -186,6 +195,7 @@ export function App() {
       <section className="listing" aria-label="Éditeur">
         <div className="tabs" role="tablist" aria-label="Sources ouvertes">{documents.map(document => <button role="tab" aria-selected={document.id === activeId} className="tab" key={document.id} disabled={busy} onClick={() => setActiveId(document.id)} onContextMenu={event => { event.preventDefault(); setContextSource(document.id); }} onKeyDown={event => { if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) { event.preventDefault(); setContextSource(document.id); } }}>{document.name}{document.source !== document.saved ? ' • modifié' : ''}</button>)}</div>
         <Editor documents={documents} activeId={activeId} diagnostics={analysis.diagnostics} busy={busy} onChange={(id, value) => setDocuments(items => items.map(item => item.id === id ? { ...item, source: value } : item))} onCommand={setCard}
+          navigation={navigation} onWorkspaceReady={value => { editorWorkspace.current = value; }}
           onPosition={(line, column) => setPosition({ line, column })}
           onSave={() => void save()} onReady={value => { editor.current = value; }} onPalette={() => setPalette('all')} onRenumber={() => setRenumberOpen(true)} onExport={() => void exportDisk()} />
         <div className="problems"><h2>Diagnostics <span>{analysis.diagnostics.length}</span></h2>
@@ -196,6 +206,7 @@ export function App() {
         </div>
       </section>
       <aside aria-label="Références et état du produit">
+        {searchOpen && <SearchPanel key={`search:${project?.sessionId ?? documents[0]?.id}`} documents={documents} busy={busy} onClose={() => setSearchOpen(false)} onNavigate={match => { setActiveId(match.documentId); setNavigation({ ...match }); }} onApply={changes => { if (!editorWorkspace.current || busy) throw new Error('Éditeur indisponible.'); editorWorkspace.current.apply(changes); }} />}
         {project && <TerminalPanel key={`terminal:${project.sessionId}`} sessionId={project.sessionId} busy={busy} dirty={dirty} visible={terminalOpen} onBusy={setBusy} />}
         {project && <GitPanel key={`git:${project.sessionId}`} sessionId={project.sessionId} busy={busy} dirty={dirty} documentCount={project.manifest.documents.length} onBusy={setBusy} />}
         {renumberOpen && <RenumberPanel source={source} documentId={activeId} busy={busy} revision={() => editor.current?.getModel()?.getVersionId() ?? -1} onApply={renumber} onClose={() => setRenumberOpen(false)} />}

@@ -2,7 +2,9 @@
 
 ## Mode de progression
 
-Demande produit du 4 octobre : outils d’IDE adaptés au CPC. La [tranche atelier 0.14](../implementation/workbench-alpha.md) livre palette/menus/contextes, ouverture rapide, réglages de code, historique Git paginé et terminal humain sans PTY ([ADR 0019](../adr/0019-outils-atelier-et-terminal-humain.md)). Elle contribue à J2/JG-A sans les fermer. La suite ajoute commit/identité puis historique local durable, recherche projet, sauvegarde coordonnée et PTY qualifié ; les outils machine attendent toujours J0.
+Le [backlog produit qualifié 17](17-roadmap-ide-complet.md) recense les 75 capacités nécessaires ou avancées, leurs priorités/états/critères et l’ordre des lots R1–R9. À la demande produit, la suite commence par recherche/remplacement global, puis durabilité/historique local et Git local complet ; les dépendances J0–J6/JG ci-dessous restent applicables.
+
+Demande produit du 4 octobre : outils d’IDE adaptés au CPC. La [tranche atelier 0.14](../implementation/workbench-alpha.md) livre palette/menus/contextes, ouverture rapide, réglages de code, historique Git paginé et terminal humain sans PTY ([ADR 0019](../adr/0019-outils-atelier-et-terminal-humain.md)). Elle contribue à J2/JG-A sans les fermer. La [recherche 0.15](../implementation/search-alpha.md) commence R1 : buffers chargés/brouillons, navigation et remplacement avec aperçu/undo par source ([ADR 0020](../adr/0020-recherche-sources-et-remplacement-buffers.md)). La suite prioritaire est durabilité/historique local, puis commit/identité et réseau Git ; les outils machine attendent toujours J0.
 
 J0 reste en HOLD pour la qualification moteur. Une tranche indépendante J1/J2 livre l'[alpha d'édition 0.4](../implementation/editor-alpha.md), conformément à l'[ADR 0009](../adr/0009-edition-independante.md) : elle n'annonce pas J1/J2 complets. Le [rapport J0](../implementation/j0-report.md) conserve les preuves et limites. Chaque jalon dispose d'une branche, d'une PR ciblée, de documents actualisés et d'une démonstration reproductible. Aucun planning calendaire ou volume horaire n'est fixé sans estimation de l'équipe et disponibilité des dépendances.
 
