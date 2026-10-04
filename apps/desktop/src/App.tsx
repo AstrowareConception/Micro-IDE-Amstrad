@@ -7,6 +7,7 @@ import { monaco, provenance } from './monaco-language.ts';
 import type { ProjectManifest, ProjectSnapshot } from '../../../packages/workspace/src/project.ts';
 import type { AgentWorkspaceState } from '../../../packages/agent/src/types.ts';
 import { AgentPanel } from './AgentPanel.tsx';
+import { FirmwarePanel } from './FirmwarePanel.tsx';
 
 const SAMPLE = '10 REM MICRO IDE AMSTRAD\n20 MODE 1\n30 INK 0,0:INK 1,24\n40 PEN 1\n50 PRINT "BONJOUR CPC 6128 !"\n60 FOR I=1 TO 5\n70 PRINT "LOCOMOTIVE BASIC";I\n80 NEXT I\n90 END\n';
 interface Document { id: string; sourceId: string; name: string; source: string; saved: string }
@@ -96,7 +97,7 @@ export function App() {
   const exportDisk = () => perform(() => project && files.project ? files.project.exportDisk(project.sessionId, documents.map(item => ({ id: item.sourceId, source: item.source }))) : files.exportDisk(source), 'DSK DATA construit — validation structurelle uniquement');
   return <main className="workbench">
     <header className="topbar">
-      <div className="brand"><span className="brand-mark">μ</span><div><h1>Micro IDE <span>Amstrad</span></h1><p>Atelier Locomotive BASIC · alpha 0.6</p></div></div>
+      <div className="brand"><span className="brand-mark">μ</span><div><h1>Micro IDE <span>Amstrad</span></h1><p>Atelier Locomotive BASIC · alpha 0.7</p></div></div>
       <span className="profile">CPC 6128 · BASIC 1.1</span>
     </header>
     <nav className="toolbar" aria-label="Actions du listing">
@@ -143,7 +144,8 @@ export function App() {
           <p className="muted">{provenance}. Signatures indicatives, options non exhaustives.</p>
         </section>
         <section className="panel"><h2>Votre atelier</h2><p><kbd>F12</kbd> Aller à une ligne ciblée</p><p><kbd>Ctrl Z</kbd> Annuler une modification</p><p>La complétion reconnaît commandes, identifiants observés et numéros de lignes. Elle est désactivée dans les commentaires, chaînes ouvertes et DATA.</p></section>
-        <section className="panel pending"><h2>Prochaines connexions</h2><p>Émulateur chips/WASM : qualification ROM et worker desktop en attente.</p><p>Agent : sources BASIC, références et construction DSK ; pièces jointes et exécution CPC à venir.</p><p>Export : disquette DATA avec sources BASIC ASCII, pas une compilation Z80 ni un lancement automatique.</p></section>
+        <FirmwarePanel busy={busy} />
+        <section className="panel pending"><h2>Prochaines connexions</h2><p>ROM locales configurables ; émulateur chips/WASM : qualification et worker desktop en attente.</p><p>Agent : sources BASIC, références et construction DSK ; pièces jointes et exécution CPC à venir.</p><p>Export : disquette DATA avec sources BASIC ASCII, pas une compilation Z80 ni un lancement automatique.</p></section>
       </aside>
     </div>
     <footer role="status">{busy ? 'Opération en cours…' : status}<span>L{position.line} · C{position.column} · {window.desktop ? 'Bureau local' : 'Aperçu navigateur · enregistrement par téléchargement'}</span></footer>
