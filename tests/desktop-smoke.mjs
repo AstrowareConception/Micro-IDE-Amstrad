@@ -506,6 +506,11 @@ try {
   await expect(searchPanel).toContainText('3 occurrence(s).');
   await searchPanel.getByRole('button', { name: /src\/util.bas · L1:/ }).click();
   await expect(page.getByRole('tab', { name: 'src/util.bas', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('footer')).toContainText('L1 · C13');
+  await input.focus(); await page.keyboard.press('Control+End');
+  await page.getByRole('tab', { name: /src\/main.bas/ }).click();
+  await page.getByRole('tab', { name: 'src/util.bas', exact: true }).click();
+  await expect(page.locator('footer')).toContainText('L3 · C1');
   await searchPanel.getByLabel('Texte de remplacement', { exact: true }).fill('CELESTE');
   await searchPanel.getByRole('button', { name: 'Prévisualiser les remplacements', exact: true }).click();
   await searchPanel.getByLabel('Remplacer dans src/util.bas (1)', { exact: true }).uncheck();

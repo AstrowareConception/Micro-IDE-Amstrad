@@ -21,6 +21,7 @@ export function Editor(props: Props) {
   const latest = useRef(props);
   const models = useRef(new Map<string, { model: monaco.editor.ITextModel; change: monaco.IDisposable; view: monaco.editor.ICodeEditorViewState | null }>());
   const active = useRef<string | undefined>(undefined);
+  const appliedNavigation = useRef<SearchMatch | undefined>(undefined);
   latest.current = props;
   useEffect(() => {
     if (!host.current) return;
@@ -98,10 +99,11 @@ export function Editor(props: Props) {
   }, [props.documents, props.activeId]);
   useEffect(() => {
     const match = props.navigation, editor = instance.current;
-    if (!match || !editor || match.documentId !== props.activeId) return;
+    if (!match || !editor || match === appliedNavigation.current || match.documentId !== props.activeId) return;
     const model = editor.getModel(); if (!model) return;
     const start = model.getPositionAt(match.start), end = model.getPositionAt(match.end);
     const range = new monaco.Range(start.lineNumber, start.column, end.lineNumber, end.column);
+    appliedNavigation.current = match;
     editor.setSelection(range); editor.revealRangeInCenter(range); editor.focus();
   }, [props.navigation, props.activeId]);
   useEffect(() => { instance.current?.updateOptions({ readOnly: props.busy }); }, [props.busy]);
