@@ -6,6 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { buildListingDisk } from '../../packages/basic-language/src/build.ts';
 import { buildProjectDisk } from '../../packages/workspace/src/project.ts';
 import { ProjectStore } from './project-store.ts';
+import { decodeImage } from './image-document.ts';
 import { AgentController } from './agent-controller.ts';
 import { FirmwareStore } from './firmware-store.ts';
 import { romRole } from '../../packages/emulator/src/firmware.ts';
@@ -116,14 +117,14 @@ route('listing:export', async payload => {
 route('project:open', async () => {
   const selection = await dialog.showOpenDialog(window, { properties: ['openDirectory'] });
   if (selection.canceled || !selection.filePaths[0]) return null;
-  const opened = await ProjectStore.open(selection.filePaths[0]);
+  const opened = await ProjectStore.open(selection.filePaths[0], decodeImage);
   project = opened.store; current = undefined; return opened.snapshot;
 });
 route('project:create', async payload => {
   if (typeof payload !== 'string') throw new Error('Nom de projet requis.');
   const selection = await dialog.showOpenDialog(window, { properties: ['openDirectory', 'createDirectory'] });
   if (selection.canceled || !selection.filePaths[0]) return null;
-  const created = await ProjectStore.create(selection.filePaths[0], payload);
+  const created = await ProjectStore.create(selection.filePaths[0], payload, decodeImage);
   project = created.store; current = undefined; return created.snapshot;
 });
 function projectRequest(payload: unknown): { store: ProjectStore; value: Record<string, unknown> } {
@@ -147,9 +148,11 @@ route('project:entry', async payload => {
   return store.setEntry(value.id);
 });
 route('documents:import', async payload => {
-  const { store } = projectRequest(payload);
-  const selection = await dialog.showOpenDialog(window, { properties: ['openFile'], filters: [{ name: 'Document UTF-8 (TXT / Markdown)', extensions: ['txt', 'md'] }] });
+  const { store, value } = projectRequest(payload);
+  if (value.kind !== 'text' && value.kind !== 'image') throw new Error('Catégorie documentaire invalide.');
+  const selection = await dialog.showOpenDialog(window, { properties: ['openFile'], filters: [{ name: value.kind === 'image' ? 'Image PNG / JPEG' : 'Document UTF-8 TXT / Markdown', extensions: value.kind === 'image' ? ['png', 'jpg', 'jpeg'] : ['txt', 'md'] }] });
   if (selection.canceled || !selection.filePaths[0]) return null;
+  if (!(value.kind === 'image' ? /\.(png|jpe?g)$/i : /\.(txt|md)$/i).test(selection.filePaths[0])) throw new Error('Extension hors de la catégorie choisie.');
   return store.importDocument(selection.filePaths[0]);
 });
 route('documents:read', async payload => {

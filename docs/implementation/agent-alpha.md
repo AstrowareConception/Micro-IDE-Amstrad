@@ -20,6 +20,8 @@ Depuis l'alpha 0.9, [documents_list, documents_read_text et documents_search](do
 
 Les aliases API utilisent underscores ; leur fonction correspond au catalogue métier du document 14.
 
+Depuis l'alpha 0.10, [documents_inspect_image](images-alpha.md) retourne un aperçu PNG nettoyé des PNG/JPEG autorisés sous forme de contenu image Responses avec provenance. Pas de transmission initiale de pixels, OCR qualifié ou conversion CPC ; modèle vision requis et recette distante réelle différée.
+
 | Outil | Preuve/capacité réelle |
 | --- | --- |
 | `project_list_files` | Liste complète des IDs/chemins CPC et hashes des buffers autorisés |

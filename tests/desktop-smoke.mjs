@@ -4,6 +4,7 @@ import { mkdtemp, readFile, writeFile, mkdir, rename, readdir } from 'node:fs/pr
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
+import { png, chunk } from './image-fixtures.ts';
 import { readDataDisk, decodeAsciiRecords } from '../packages/cpc-disk/src/data-disk.ts';
 
 const temporary = await mkdtemp(join(tmpdir(), 'microide-desktop-'));
@@ -156,7 +157,7 @@ try {
   await documentsPanel.getByRole('button', { name: 'Cahier-jeu.md', exact: true }).click();
   await expect(documentsPanel.getByLabel('Texte du document', { exact: true })).toHaveValue(brief.replace(/\r\n/g, '\n'));
   assert.equal(await page.evaluate(() => window.documentInjected), undefined);
-  const importedManifest = JSON.parse(await readFile(join(moved, 'microide.project.json'), 'utf8'));
+  let importedManifest = JSON.parse(await readFile(join(moved, 'microide.project.json'), 'utf8'));
   const imported = importedManifest.documents[0];
   assert.equal(imported.sha256, createHash('sha256').update(brief).digest('hex'));
   assert.equal(await readFile(join(moved, imported.path), 'utf8'), brief);
@@ -166,6 +167,34 @@ try {
   const forbiddenDocument = await page.evaluate(() => window.desktop.project.readDocument('stale-session', '../../secret'));
   assert.match(forbiddenDocument.error, /périmée/);
   await documentsPanel.scrollIntoViewIfNeeded(); await page.screenshot({ path: 'out/documents-alpha.png' });
+  const imageBytes = png(), imagePath = join(temporary, 'Titre.png');
+  await writeFile(imagePath, imageBytes);
+  const jpegBytes = Buffer.from(await desktop.evaluate(({ nativeImage }, raw) => [...nativeImage.createFromBuffer(Buffer.from(raw)).toJPEG(85)], [...imageBytes]));
+  const jpegPath = join(temporary, 'Titre.jpg'); await writeFile(jpegPath, jpegBytes);
+  for (const path of [imagePath, jpegPath]) {
+    await desktop.evaluate(({ dialog }, selected) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [selected] }); }, path);
+    await documentsPanel.getByRole('button', { name: 'Importer image PNG / JPEG', exact: true }).click();
+    const name = path.split(/[\\/]/).at(-1);
+    await documentsPanel.getByRole('button', { name, exact: true }).click();
+    const preview = documentsPanel.getByRole('img', { name: `Aperçu de ${name}`, exact: true });
+    await expect(preview).toBeVisible();
+    await expect(preview).toHaveJSProperty('naturalWidth', 320);
+    const src = await preview.getAttribute('src');
+    assert.ok(src.startsWith('data:image/png;base64,'));
+    assert.ok(!Buffer.from(src.split(',')[1], 'base64').includes(Buffer.from('PRIVATE_IMAGE_METADATA')));
+    await expect(documentsPanel).toContainText('320 × 200 pixels');
+  }
+  await documentsPanel.scrollIntoViewIfNeeded(); await page.screenshot({ path: 'out/images-alpha.png' });
+  importedManifest = JSON.parse(await readFile(join(moved, 'microide.project.json'), 'utf8'));
+  assert.equal(importedManifest.documents.length, 3);
+  assert.deepEqual(await readFile(join(moved, importedManifest.documents[1].path)), imageBytes);
+  // A structurally valid PNG with corrupt compressed pixels reaches and fails the real decoder.
+  const brokenPath = join(temporary, 'Broken.png');
+  await writeFile(brokenPath, Buffer.concat([imageBytes.subarray(0, 33), chunk('IDAT', Buffer.from('NOT ZLIB')), chunk('IEND', Buffer.alloc(0))]));
+  await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, brokenPath);
+  await documentsPanel.getByRole('button', { name: 'Importer image PNG / JPEG', exact: true }).click();
+  await expect(documentsPanel).toContainText('Image non décodable');
+  assert.deepEqual(JSON.parse(await readFile(join(moved, 'microide.project.json'), 'utf8')), importedManifest);
   const consent = page.getByRole('checkbox', { name: /^Autoriser les documents du projet/ });
   await expect(consent).not.toBeChecked(); await consent.check();
   await desktop.evaluate(async () => {
@@ -178,15 +207,17 @@ try {
       const output = [];
       if (step === 0) {
         const context = JSON.parse(body.input[0].content).project;
-        if (context.documents?.[0]?.originalName !== 'Cahier-jeu.md' || JSON.stringify(body).includes('PRIVATE UNREAD LAST LINE') || JSON.stringify(body).includes('window.documentInjected')) throw new Error('Wrong document scope or eager content transmission');
+        if (context.documents?.[0]?.originalName !== 'Cahier-jeu.md' || context.documents.length !== 3 || JSON.stringify(body).includes('data:image/png;base64,') || JSON.stringify(body).includes('PRIVATE UNREAD LAST LINE') || JSON.stringify(body).includes('window.documentInjected')) throw new Error('Wrong document scope or eager content transmission');
         await new Promise((resolve, reject) => { globalThis.__agentTestRelease = resolve; init.signal.addEventListener('abort', () => reject(new Error('Aborted')), { once: true }); });
-        output.push(call('list', 'project_list_files', {}), call('docs', 'documents_list', {}), call('searchdocs', 'documents_search', { query: 'TITRE' }), call('readdocs', 'documents_read_text', { id: context.documents[0].id, startLine: 1, endLine: 3 }));
+        output.push(call('list', 'project_list_files', {}), call('docs', 'documents_list', {}), call('searchdocs', 'documents_search', { query: 'TITRE' }), call('readdocs', 'documents_read_text', { id: context.documents[0].id, startLine: 1, endLine: 3 }), call('image', 'documents_inspect_image', { id: context.documents[1].id }));
       } else if (step === 1) output.push(call('read', 'project_read_file', { id: 'main', startLine: 1, endLine: 200 }));
       else if (step === 2) { output.push(call('print', 'reference_read', { id: 'PRINT', startLine: 1, endLine: 1 }), call('end', 'reference_read', { id: 'END', startLine: 1, endLine: 1 })); }
       else if (step === 3) {
-        const documentRead = body.input.filter(item => item.type === 'function_call_output').map(item => JSON.parse(item.output)).find(item => item.originalName === 'Cahier-jeu.md' && item.text);
+        const imageOutput = body.input.find(item => item.type === 'function_call_output' && item.call_id === 'image');
+        if (!Array.isArray(imageOutput?.output) || imageOutput.output[1]?.type !== 'input_image' || !imageOutput.output[1].image_url.startsWith('data:image/png;base64,') || JSON.parse(imageOutput.output[0].text).sha256 !== JSON.parse(body.input[0].content).project.documents[1].sha256) throw new Error('Image not transmitted as bounded content with provenance');
+        const documentRead = body.input.filter(item => item.type === 'function_call_output' && typeof item.output === 'string').map(item => JSON.parse(item.output)).find(item => item.originalName === 'Cahier-jeu.md' && item.text);
         if (!documentRead?.text.includes('window.documentInjected') || !documentRead.truncated || documentRead.trust !== 'untrusted-document-data' || JSON.stringify(body).includes('PRIVATE UNREAD LAST LINE')) throw new Error('Document read was not bounded/inert');
-        const read = body.input.filter(item => item.type === 'function_call_output').map(item => JSON.parse(item.output)).find(item => item.id === 'main' && item.text);
+        const read = body.input.filter(item => item.type === 'function_call_output' && typeof item.output === 'string').map(item => JSON.parse(item.output)).find(item => item.id === 'main' && item.text);
         if (!read?.text.includes('USER DRAFT')) throw new Error('Initial dirty buffer was lost');
         output.push(call('replace', 'project_replace_source', { id: 'main', expectedHash: read.hash, source: '10 PRINT "AGENT"\n20 END\n' }),
           call('create', 'project_create_source', { name: 'HELP', source: '10 PRINT "HELPER"\n20 END\n' }));
@@ -296,7 +327,7 @@ try {
   await expect(romPanel).toContainText('Sélection retirée.');
   await expect(romPanel).toContainText('Jeu incomplet ou invalide');
   assert.deepEqual(errors, []);
-  console.log('Electron smoke: projects, inert TXT/MD import/preview/reopen and authorized progressive agent reads, controlled OpenAI agent and local firmware checks passed. No live API or CPC execution claimed.');
+  console.log('Electron smoke: TXT/MD and real PNG/JPEG decode/import/preview, metadata stripping, corrupt pixels, progressive multimodal agent outputs, projects and firmware checks passed. No live API, real vision or CPC execution claimed.');
 } catch (error) {
   await mkdir('out', { recursive: true });
   await page?.screenshot({ path: 'out/desktop-failure.png', timeout: 5000 }).catch(() => undefined);

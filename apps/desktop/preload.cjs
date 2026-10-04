@@ -24,7 +24,7 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
     add: (sessionId, name) => ipcRenderer.invoke('project:add', { sessionId, name }),
     setEntry: (sessionId, id) => ipcRenderer.invoke('project:entry', { sessionId, id }),
     exportDisk: (sessionId, sources) => ipcRenderer.invoke('project:export', { sessionId, sources }),
-    importDocument: sessionId => ipcRenderer.invoke('documents:import', { sessionId }),
+    importDocument: (sessionId, kind = 'text') => ipcRenderer.invoke('documents:import', { sessionId, kind }),
     readDocument: (sessionId, id) => ipcRenderer.invoke('documents:read', { sessionId, id }),
   }),
 }));

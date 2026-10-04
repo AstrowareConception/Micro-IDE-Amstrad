@@ -84,6 +84,8 @@ La [tranche indépendante 0.9](../implementation/documents-alpha.md) livre TXT/M
 
 Ajouter bibliothèque d'import avec rôles, empreintes, aperçus et limites. Intégrer PDF.js en worker. Fournir sélection de pages/texte et conversion écran CPC modes 0/1/2. Insérer les instructions d'intégration par proposition locale.
 
+La [tranche 0.10](../implementation/images-alpha.md) ajoute import et aperçus PNG/JPEG nettoyés, plus `documents_inspect_image` et sorties multimodales Responses contrôlées. J4-01 reste partiel : WebP/PDF, orientation EXIF et isolation codec ouverts ; J4-02/03/04 à réaliser. Pas de vision OpenAI réelle ni de nouvelle qualification CPC revendiquée.
+
 | Tâche | Dépendance | Critère de sortie |
 | --- | --- | --- |
 | J4-01 — Import immuable et previews sûres | J3 | TXT/MD/PNG/JPEG/WebP/PDF et quotas |

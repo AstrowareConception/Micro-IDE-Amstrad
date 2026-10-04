@@ -1,5 +1,5 @@
 import { buildListingDisk } from '../../../packages/basic-language/src/build.ts';
-import type { ProjectManifest, ProjectSnapshot, DocumentText } from '../../../packages/workspace/src/project.ts';
+import type { ProjectManifest, ProjectSnapshot, DocumentSnapshot } from '../../../packages/workspace/src/project.ts';
 import type { AgentPort } from '../../../packages/agent/src/types.ts';
 import type { FirmwarePort } from '../../../packages/emulator/src/firmware.ts';
 export interface FileResult { name: string; source?: string }
@@ -18,8 +18,8 @@ export interface DesktopPort {
     add(sessionId: string, name: string): Promise<ProjectSnapshot | Failure | null>;
     setEntry(sessionId: string, id: string): Promise<ProjectManifest | Failure | null>;
     exportDisk(sessionId: string, sources: { id: string; source: string }[]): Promise<FileResult | Failure | null>;
-    importDocument(sessionId: string): Promise<ProjectManifest | Failure | null>;
-    readDocument(sessionId: string, id: string): Promise<DocumentText | Failure>;
+    importDocument(sessionId: string, kind?: 'text' | 'image'): Promise<ProjectManifest | Failure | null>;
+    readDocument(sessionId: string, id: string): Promise<DocumentSnapshot | Failure>;
   };
 }
 declare global { interface Window { desktop?: DesktopPort } }

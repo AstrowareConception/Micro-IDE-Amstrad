@@ -1,7 +1,7 @@
 import { lstat, realpath, readFile, writeFile, rename, unlink, mkdir, readdir } from 'node:fs/promises';
 import { join, dirname, relative, isAbsolute, basename, extname } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
-import { parseProject, newProject, addProjectSource, DOCUMENT_TOTAL_LIMIT, DOCUMENT_COUNT_LIMIT, type ProjectManifest, type ProjectSnapshot, type DocumentText } from '../../packages/workspace/src/project.ts';
+import { parseProject, newProject, addProjectSource, DOCUMENT_TOTAL_LIMIT, DOCUMENT_COUNT_LIMIT, type ProjectManifest, type ProjectSnapshot, type DocumentSnapshot, type ImageDecoder } from '../../packages/workspace/src/project.ts';
 import { readDocumentBytes, decodeDocument } from './text-document.ts';
 import type { AgentWorkspaceState } from '../../packages/agent/src/types.ts';
 
@@ -34,13 +34,14 @@ export class ProjectStore {
   private manifestHash: string;
   private hashes = new Map<string, string>();
   private faulted = false;
-  private constructor(root: string, manifest: ProjectManifest, digest: string) { this.root = root; this.manifest = manifest; this.manifestHash = digest; }
-  static async open(folder: string): Promise<{ store: ProjectStore; snapshot: ProjectSnapshot }> {
+  private readonly imageDecoder: ImageDecoder | undefined;
+  private constructor(root: string, manifest: ProjectManifest, digest: string, imageDecoder?: ImageDecoder) { this.root = root; this.manifest = manifest; this.manifestHash = digest; this.imageDecoder = imageDecoder; }
+  static async open(folder: string, imageDecoder?: ImageDecoder): Promise<{ store: ProjectStore; snapshot: ProjectSnapshot }> {
     const root = await realpath(folder);
     if (!(await lstat(root)).isDirectory()) throw new Error('Dossier de projet requis.');
     const content = await bytes(join(root, MANIFEST));
     const manifest = parseProject(JSON.parse(text(content)));
-    const store = new ProjectStore(root, manifest, hash(content));
+    const store = new ProjectStore(root, manifest, hash(content), imageDecoder);
     const files = [];
     let total = 0;
     for (const source of manifest.sources) {
@@ -51,7 +52,7 @@ export class ProjectStore {
     await store.agentDocuments();
     return { store, snapshot: { sessionId: store.sessionId, manifest, files } };
   }
-  static async create(folder: string, name: string): Promise<{ store: ProjectStore; snapshot: ProjectSnapshot }> {
+  static async create(folder: string, name: string, imageDecoder?: ImageDecoder): Promise<{ store: ProjectStore; snapshot: ProjectSnapshot }> {
     const manifest = newProject(name, randomUUID());
     const root = await realpath(folder);
     if ((await readdir(root)).length) throw new Error('Choisissez un dossier vide ; aucun fichier existant n’a été écrasé.');
@@ -59,7 +60,7 @@ export class ProjectStore {
     await writeFile(join(root, 'src/main.bas'), '10 REM MICRO IDE AMSTRAD\n20 END\n', { flag: 'wx' });
     // The manifest is published last. A failed creation is never reported as a valid project.
     await writeFile(join(root, MANIFEST), JSON.stringify(manifest, null, 2) + '\n', { flag: 'wx' });
-    return ProjectStore.open(root);
+    return ProjectStore.open(root, imageDecoder);
   }
   private async path(sourcePath: string): Promise<string> {
     let path = this.root;
@@ -79,16 +80,23 @@ export class ProjectStore {
   }
   assertSession(id: unknown): void { if (id !== this.sessionId) throw new Error('Session de projet périmée.'); }
   async assertCurrent(): Promise<void> { await this.checkManifest(); }
-  async readDocument(id: unknown): Promise<DocumentText> {
+  private async documentView(content: Uint8Array, mediaType: ProjectManifest['documents'][number]['mediaType']) {
+    if (mediaType.startsWith('image/')) {
+      if (!this.imageDecoder) throw new Error('unsupported-capability : décodeur image desktop requis.');
+      return this.imageDecoder(content, mediaType);
+    }
+    return { text: decodeDocument(content) };
+  }
+  async readDocument(id: unknown): Promise<DocumentSnapshot> {
     await this.checkManifest();
     const item = this.manifest.documents.find(item => item.id === id);
     if (!item) throw new Error('scope-denied : document non déclaré.');
     const content = await readDocumentBytes(await this.path(item.path));
     if (hash(content) !== item.sha256) throw new Error(`stale-read : ${item.originalName} a changé sur disque ; original documentaire refusé.`);
-    return { ...item, text: decodeDocument(content), bytes: content.length };
+    return { ...item, ...await this.documentView(content, item.mediaType), bytes: content.length };
   }
-  async agentDocuments(): Promise<DocumentText[]> {
-    const result: DocumentText[] = []; let total = 0;
+  async agentDocuments(): Promise<DocumentSnapshot[]> {
+    const result: DocumentSnapshot[] = []; let total = 0;
     for (const item of this.manifest.documents) {
       const document = await this.readDocument(item.id); total += document.bytes;
       if (total > DOCUMENT_TOTAL_LIMIT) throw new Error('Documents limités à 4 Mio par projet dans cette alpha.');
@@ -100,13 +108,15 @@ export class ProjectStore {
     await this.checkManifest();
     if (this.manifest.documents.length >= DOCUMENT_COUNT_LIMIT) throw new Error('10 documents maximum dans cette alpha.');
     const extension = extname(selected).toLowerCase();
-    if (extension !== '.txt' && extension !== '.md') throw new Error('Choisissez un fichier TXT ou MD.');
-    const content = await readDocumentBytes(selected); decodeDocument(content);
+    const mediaTypes: Record<string, ProjectManifest['documents'][number]['mediaType']> = { '.txt': 'text/plain', '.md': 'text/markdown', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg' };
+    const mediaType = mediaTypes[extension];
+    if (!mediaType) throw new Error('Choisissez un fichier TXT, MD, PNG ou JPEG.');
+    const content = await readDocumentBytes(selected); await this.documentView(content, mediaType);
     const existing = await this.agentDocuments();
     if (existing.reduce((total, item) => total + item.bytes, content.length) > DOCUMENT_TOTAL_LIMIT) throw new Error('Documents limités à 4 Mio par projet dans cette alpha.');
     const id = `doc-${randomUUID()}`, path = `documents/${id}${extension}`;
     const manifest = parseProject({ ...this.manifest, documents: [...this.manifest.documents, {
-      id, path, sha256: hash(content), mediaType: extension === '.md' ? 'text/markdown' : 'text/plain', role: 'context', originalName: basename(selected),
+      id, path, sha256: hash(content), mediaType, role: 'context', originalName: basename(selected),
     }] });
     await mkdir(join(this.root, 'documents')).catch((error: NodeJS.ErrnoException) => { if (error.code !== 'EEXIST') throw error; });
     await this.path('documents');

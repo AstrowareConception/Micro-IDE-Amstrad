@@ -5,6 +5,7 @@ export interface ToolDefinition { type: 'function'; name: string; description: s
 export interface ModelTurn { output: Record<string, unknown>[]; tokens: number }
 export interface ModelPort { respond(input: Record<string, unknown>[], tools: ToolDefinition[], signal: AbortSignal): Promise<ModelTurn> }
 export interface ToolPort { definitions: ToolDefinition[]; execute(name: string, args: unknown): Promise<unknown> }
+export interface ImageToolResult { kind: 'image'; dataUrl: string; metadata: Record<string, unknown> }
 export interface AgentEvent { kind: 'model' | 'tool' | 'message' | 'limit' | 'error'; text: string }
 export interface AgentResult { status: 'completed' | 'blocked' | 'failed' | 'cancelled' | 'paused-limit'; turns: number; calls: number; tokens: number; summary: string }
 export interface AgentView extends AgentResult { taskId: string; running: boolean; events: AgentEvent[]; workspace: AgentWorkspaceState; changed: string[]; before: { id: string; source: string }[]; buildVerified: boolean }
