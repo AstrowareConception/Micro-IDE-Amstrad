@@ -61,7 +61,7 @@ export class AgentController {
     await this.record(job, initial, 'initial'); this.job = job;
     const provider = this.provider;
     void runAgent({ model: provider, tools: job.tools, objective, signal: AbortSignal.any([job.abort.signal, AbortSignal.timeout(15 * 60 * 1000)]),
-      context: { target: initial.manifest.target, entryPoint: initial.manifest.entryPoint, files: initial.manifest.sources, documents: documents.map(({ text, ...metadata }) => metadata), corpusVersion: 'initial-import-1' },
+      context: { target: initial.manifest.target, entryPoint: initial.manifest.entryPoint, files: initial.manifest.sources, documents: documents.map(item => ({ id: item.id, originalName: item.originalName, mediaType: item.mediaType, sha256: item.sha256, bytes: item.bytes })), corpusVersion: 'initial-import-1' },
       emit: event => { if (job.events.length < 150) job.events.push(event); }, takeSteering: () => job.steering.splice(0),
     }).then(async result => {
       job.result = result;

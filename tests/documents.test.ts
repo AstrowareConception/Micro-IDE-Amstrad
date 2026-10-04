@@ -35,7 +35,8 @@ test('import keeps original BOM/CRLF bytes, derived UTF-8/LF view, project porta
   const manifest = await store.importDocument(selected), item = manifest.documents[0]!;
   assert.equal(item.sha256, hash(raw)); assert.equal(item.originalName, 'Cahier français.MD');
   assert.deepEqual(await readFile(join(root, item.path)), raw);
-  assert.equal((await store.readDocument(item.id)).text, '# Jeu\nÉcran titre\n<script>window.documentInjected=true</script>');
+  const preview = await store.readDocument(item.id); assert.ok('text' in preview);
+  assert.equal(preview.text, '# Jeu\nÉcran titre\n<script>window.documentInjected=true</script>');
   await writeFile(selected, 'EXTERNAL ORIGINAL EDIT');
   assert.deepEqual(await readFile(join(root, item.path)), raw);
   const disk = buildProjectDisk(manifest, snapshot.files);
@@ -94,7 +95,7 @@ test('restoration refuses a document added after the mission and cannot drop the
   const { store, snapshot } = await ProjectStore.create(root, 'Restore'); const initial = await store.agentState(snapshot.files);
   await store.importDocument(selected); const item = store.manifest.documents[0]!;
   await assert.rejects(store.applyAgentState(initial), /documents du projet modifiés/);
-  assert.equal((await store.readDocument(item.id)).text, 'New document');
+  const preview = await store.readDocument(item.id); assert.ok('text' in preview); assert.equal(preview.text, 'New document');
   assert.equal(JSON.parse(await readFile(join(root, 'microide.project.json'), 'utf8')).documents.length, 1);
 });
 

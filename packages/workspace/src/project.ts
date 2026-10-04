@@ -3,10 +3,14 @@ import { createDataDisk, readDataDisk } from '../../cpc-disk/src/data-disk.ts';
 
 export interface ProjectSource { id: string; path: string; cpcName: string }
 export interface ProjectDocument {
-  id: string; path: string; sha256: string; mediaType: 'text/plain' | 'text/markdown';
+  id: string; path: string; sha256: string; mediaType: 'text/plain' | 'text/markdown' | 'image/png' | 'image/jpeg';
   role: 'context' | 'inspiration' | 'asset-source'; originalName: string;
 }
 export interface DocumentText extends ProjectDocument { text: string; bytes: number }
+export interface ImagePreview { dataUrl: string; width: number; height: number; previewWidth: number; previewHeight: number }
+export interface DocumentImage extends ProjectDocument, ImagePreview { bytes: number }
+export type DocumentSnapshot = DocumentText | DocumentImage;
+export type ImageDecoder = (bytes: Uint8Array, mediaType: ProjectDocument['mediaType']) => Promise<ImagePreview>;
 export const DOCUMENT_LIMIT = 1024 * 1024;
 export const DOCUMENT_TOTAL_LIMIT = 4 * DOCUMENT_LIMIT;
 export const DOCUMENT_COUNT_LIMIT = 10;
@@ -38,7 +42,7 @@ export function validateSourcePath(path: string): void {
     if (/[. ]$/.test(segment) || /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i.test(segment)) throw new Error('Nom non portable sur Windows.');
   }
 }
-/** Supported v1 subset. Binary assets, non-text documents and other encodings are refused. */
+/** Supported v1 subset. Binary assets, PDF/WebP and other encodings are refused. */
 export function parseProject(value: unknown): ProjectManifest {
   const root = object(value, ['schemaVersion', 'projectId', 'name', 'target', 'entryPoint', 'sources', 'assets', 'documents', 'build']);
   if (root.schemaVersion !== 1) throw new Error('Version de projet non prise en charge ; aucun fichier modifié.');
@@ -47,16 +51,17 @@ export function parseProject(value: unknown): ProjectManifest {
   const target = object(root.target, ['machineProfileId', 'dialect'], ['expectedFirmwareSetId']);
   if (target.machineProfileId !== 'cpc6128-classic-v1' || target.dialect !== 'locomotive-1.1') throw new Error('Profil CPC 6128 / BASIC 1.1 requis.');
   if (!Array.isArray(root.assets) || root.assets.length) throw new Error('Ressources binaires non prises en charge dans cette alpha.');
-  if (!Array.isArray(root.documents) || root.documents.length > DOCUMENT_COUNT_LIMIT) throw new Error('10 documents texte maximum dans cette alpha.');
+  if (!Array.isArray(root.documents) || root.documents.length > DOCUMENT_COUNT_LIMIT) throw new Error('10 documents maximum dans cette alpha.');
   const documents: ProjectDocument[] = root.documents.map(value => {
     const item = object(value, ['id', 'path', 'sha256', 'mediaType', 'role', 'originalName']);
     const id = string(item.id, ID), path = string(item.path, PATH);
-    if (path.length > 240 || !path.startsWith('documents/') || !/\.(txt|md)$/i.test(path) || path.split('/').some(segment => /[. ]$/.test(segment) || /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i.test(segment))) throw new Error('Chemin documentaire TXT/MD relatif portable sous documents/ requis.');
-    if (item.mediaType !== 'text/plain' && item.mediaType !== 'text/markdown') throw new Error('Seuls TXT et Markdown sont pris en charge dans cette alpha.');
-    if ((item.mediaType === 'text/markdown') !== /\.md$/i.test(path)) throw new Error('Extension documentaire incohérente.');
+    if (path.length > 240 || !path.startsWith('documents/') || path.split('/').some(segment => /[. ]$/.test(segment) || /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i.test(segment))) throw new Error('Chemin documentaire relatif portable sous documents/ requis.');
+    const extensions: Record<string, RegExp> = { 'text/plain': /\.txt$/i, 'text/markdown': /\.md$/i, 'image/png': /\.png$/i, 'image/jpeg': /\.jpe?g$/i };
+    if (typeof item.mediaType !== 'string' || !Object.hasOwn(extensions, item.mediaType)) throw new Error('Seuls TXT, Markdown, PNG et JPEG sont pris en charge dans cette alpha.');
+    if (!extensions[item.mediaType]!.test(path)) throw new Error('Extension documentaire incohérente.');
     if (!['context', 'inspiration', 'asset-source'].includes(item.role as string)) throw new Error('Rôle documentaire invalide.');
     if (typeof item.originalName !== 'string' || !item.originalName.trim() || item.originalName.length > 255 || /[\x00-\x1f\x7f/\\]/.test(item.originalName)) throw new Error('Nom original documentaire invalide.');
-    return { id, path, sha256: string(item.sha256, /^[a-f0-9]{64}$/), mediaType: item.mediaType, role: item.role as ProjectDocument['role'], originalName: item.originalName };
+    return { id, path, sha256: string(item.sha256, /^[a-f0-9]{64}$/), mediaType: item.mediaType as ProjectDocument['mediaType'], role: item.role as ProjectDocument['role'], originalName: item.originalName };
   });
   const build = object(root.build, ['listingFormat', 'diskFormat', 'filesystem', 'textEncoding', 'lineEnding', 'asciiEof', 'fileOrder']);
   const supported: ProjectManifest['build'] = { listingFormat: 'ascii', diskFormat: 'standard-dsk', filesystem: 'amsdos-data', textEncoding: 'ascii-strict', lineEnding: 'crlf', asciiEof: 'ctrl-z', fileOrder: 'cpc-name' };

@@ -17,5 +17,6 @@ Une ADR explique une décision durable et ses conséquences. **Acceptée** signi
 | [0011](0011-agent-openai-metier.md) | Agent OpenAI à outils métier, clé de session et checkpoints incrémentaux | Acceptée pour l'alpha 0.6 |
 | [0012](0012-configuration-rom-locale.md) | Import et stockage ROM locaux indépendants de la qualification moteur | Acceptée pour l'alpha 0.7 |
 | [0013](0013-documents-texte-incrementaux.md) | Originaux TXT/MD locaux et contexte agent documentaire explicitement autorisé | Acceptée pour l'alpha 0.9 |
+| [0014](0014-images-natives-et-contexte-visuel.md) | PNG/JPEG locaux, aperçu nettoyé et contenu visuel agent à la demande | Acceptée pour l'alpha 0.10 |
 
 Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou preuve technique, pas parce qu'une technologie différente est disponible.
