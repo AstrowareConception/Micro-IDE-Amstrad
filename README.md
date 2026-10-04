@@ -14,7 +14,7 @@ Un atelier de programmation pour écrire du **Locomotive BASIC**, le tester dans
 
 **Reprise 0.17** : Enregistrer tout journalise ses versions avant/après. À la réouverture d’un projet interrompu, un dialogue natif propose Annuler, Terminer ou Rétablir ; les conflits bloquent la reprise. [Guide et limites](docs/implementation/recovery-alpha.md). Qualification d’arrêt de processus Linux ; historique local, autres mutations et panne électrique restent ouverts.
 
-**Enregistrer tout 0.16** sauvegarde les buffers du projet avec contrôle préalable de toutes les sources, compensation en mémoire sur erreur et undo conservé. [Guide et limites](docs/implementation/save-all-alpha.md). Journal/reprise après crash et historique local restent à construire.
+**Enregistrer tout 0.16** sauvegarde les buffers du projet avec contrôle préalable de toutes les sources, compensation en mémoire sur erreur et undo conservé. [Guide et limites](docs/implementation/save-all-alpha.md). La version 0.17 ajoute le journal et la reprise décrits ci-dessus ; l’historique local reste à construire.
 
 **Recherche 0.15** : `Ctrl/Cmd Maj F` recherche les sources chargées, brouillons compris. Navigation intersource, aperçu et remplacement des fichiers choisis, undo par fichier ; aucune sauvegarde implicite. [Guide et limites](docs/implementation/search-alpha.md).
 
