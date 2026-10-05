@@ -86,6 +86,12 @@ La récupération n’ajoute pas de route renderer à chemins libres : le main i
 
 Routes `history:list({sessionId})` → `HistorySnapshot[]` (UUID, révision SHA du fichier exact, date, raison, métadonnées sources sans contenus) et `history:version({sessionId,snapshotId,id,revision})` → `HistoryVersion` (mêmes références, path/sha256 et source LF). Erreur → `{error}`. Sessions et IDs sont contrôlés côté main ; jamais de chemin hôte fourni. La restauration est une opération de buffer guardée, pas une route d’écriture disque. Enregistrer actif utilise désormais le contrat journalisé save-all sur un snapshot de fichiers disque avec remplacement du seul actif.
 
+### Copie de brouillons livrée — alpha 0.19
+
+`.microide/drafts/current.json` v1 : `{version,id,projectId,manifestHash,createdAt,files:[{id,path,base,baseHash,draft,draftHash}]}`, base/draft en base64 canonique. Budgets 1 Mio/version/source, 8 Mio par ensemble, 24 Mio JSON, 64 sources et huit temporaires conservés maximum. [ADR 0024](../adr/0024-copie-brouillons-et-reprise-buffers.md).
+
+Routes liées à la session : `drafts:status({sessionId})` → `{revision,snapshot}` (nullable, métadonnées seules), `drafts:capture({sessionId,sources:[{id,source}],revision})` → même résumé, `drafts:read({sessionId,revision})` → `{revision,files:[{id,path,base,source}]}` en LF, `drafts:forget({sessionId,revision})` → résumé après confirmation native annulée par défaut. Erreur → `{error}`. Les IDs/chemins/bases sont résolus dans le main, jamais fournis comme destinations renderer. Le record vide signifie effacement explicite. Aucune route ne remplace une source BASIC pour reprendre un brouillon.
+
 ### Formats futurs de partage
 
 Une migration est une fonction version N → N+1, testée sur fixtures, avec sauvegarde avant modification et rapport. Aucun downgrade implicite. Une version future inconnue peut être inspectée sans écriture si son contenu est accessible ; l'utilisateur ne reçoit pas une réécriture destructrice dans le schéma 1. Les versions de recette et de moteur évoluent séparément de la version de manifeste.

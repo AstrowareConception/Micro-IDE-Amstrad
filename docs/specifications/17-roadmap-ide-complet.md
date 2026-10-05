@@ -29,7 +29,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-008 | Journal et reprise après crash de sauvegarde multifichier | P | P0 | IDE-007 | 0.17 : journal versionné, deux choix, SIGKILL Linux, conflits/revisions ; autres mutations, Windows et panne électrique encore non qualifiés |
 | IDE-009 | Historique local durable indépendant de Git | P | P0 | IDE-008 | 0.18 : snapshots avant/après, 20/64 Mio, persistance/déplacement ; labels et autres mutations à venir |
 | IDE-010 | Diff et restauration de fichier/fragment/version locale | P | P0 | IDE-009 | 0.18 : diff Monaco, buffer/revision/disque guards, undo et sauvegarde explicite ; fragments/projet entier à venir |
-| IDE-011 | Autosauvegarde optionnelle et récupération des brouillons | N | P1 | DUR | Politique claire ; arrêt/crash testé ; aucun faux « enregistré » |
+| IDE-011 | Autosauvegarde optionnelle et récupération des brouillons | P | P1 | DUR | 0.19 : copie opt-in/2 s/15 s, SIGKILL, reprise sélective/undo sans faux enregistré ; listings/réglages/plateformes à qualifier |
 | IDE-012 | Watcher externe et rechargement/comparaison contrôlés | N | P1 | DUR | Notifications bornées ; dirty conservé ; rename/delete et clients Git testés |
 
 ## 3. Édition et compréhension de Locomotive BASIC
@@ -150,7 +150,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | Lot | Portée | Sortie attendue et justification |
 | --- | --- | --- |
 | R1 — Navigation et édition de projet | IDE-022/023, IDE-020 partiel | Recherche/remplacement sources avec aperçu et undo ; gain immédiat, sans ROM ni écriture disque |
-| R2 — Sécuriser le travail | IDE-007/008/009/010/011/012 | 0.18 actif/global journalisés, historique/diff/restauration buffer ; suite récupération des brouillons/watcher et autres mutations, avant checkout |
+| R2 — Sécuriser le travail | IDE-007/008/009/010/011/012 | 0.19 ajoute copie/récupération opt-in des brouillons ; suite watcher externe et autres mutations, avant checkout |
 | R3 — Git local complet | IDE-033/034 puis IDE-035 | Commits exacts et versions inspectables ; durabilité avant mutations de branches |
 | R4 — Connexion Git et GitHub | IDE-036/037, puis IDE-039 | HTTPS/SSH et conflits ; confirmations de publication ; pas de faux support via terminal |
 | R5 — Langage et confort | IDE-013/014/015/017/018, IDE-002/004/027/028 | Références/parser renforcés, outils et layout utiles ; incréments parallèles conceptuellement, pas obligation d’agents multiples |
@@ -180,3 +180,7 @@ IDE-008 passe de N à P : journal d’Enregistrer tout publié avant les sources
 ## Avancement R2 — alpha 0.18
 
 IDE-009/010 passent de N à P : versions avant/après des sauvegardes locales de projet, rétention 20 snapshots/64 Mio, persistance/déplacement, diff Monaco et restauration de la source dans le buffer avec Ctrl Z et guards de contenu/révision/disque. Enregistrer actif partage désormais journal et contrôle global avec Enregistrer tout, sans enregistrer les autres brouillons. [Guide et preuves](../implementation/local-history-alpha.md), [ADR 0023](../adr/0023-historique-local-et-restauration-buffer.md). 118 tests Node et recette Electron ; historique fragment/projet, labels et mutations agent restent ouverts. Suite prioritaire : IDE-011 récupération des brouillons et IDE-012 watcher externe, puis extension aux autres mutations, avant checkout Git. R2 reste ouvert.
+
+## Avancement R2 — alpha 0.19
+
+IDE-011 passe de N à P : copie de récupération opt-in distincte des fichiers BASIC, automatique après 2 s de pause et contrôlée toutes les 15 s, protection d’une copie héritée, diff et reprise sélective des buffers avec undo. Révisions/manifeste/bases disque guardés ; aucun statut enregistré implicite ni perte d’un brouillon non sélectionné. [Guide](../implementation/drafts-alpha.md), [ADR 0024](../adr/0024-copie-brouillons-et-reprise-buffers.md). 126 tests Node et recette SIGKILL/relaunch Electron ; limites Linux/processus explicites. IDE-012 reste N : prochaine tranche watcher et revue des modifications externes. Nettoyage automatique/réglage persistant/listings autonomes et mutations agent restent ouverts ; R2/J1-03/ACC-02 non clos.

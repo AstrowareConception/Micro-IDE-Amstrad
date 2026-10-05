@@ -18,6 +18,7 @@ import { applyRenumber } from '../../../packages/basic-language/src/renumber.ts'
 import { CommandPalette, type WorkbenchCommand } from './CommandPalette.tsx';
 import { TerminalPanel } from './TerminalPanel.tsx';
 import { HistoryPanel } from './HistoryPanel.tsx';
+import { DraftPanel } from './DraftPanel.tsx';
 
 const SAMPLE = '10 REM MICRO IDE AMSTRAD\n20 MODE 1\n30 INK 0,0:INK 1,24\n40 PEN 1\n50 PRINT "BONJOUR CPC 6128 !"\n60 FOR I=1 TO 5\n70 PRINT "LOCOMOTIVE BASIC";I\n80 NEXT I\n90 END\n';
 interface Document { id: string; sourceId: string; name: string; source: string; saved: string }
@@ -192,7 +193,7 @@ export function App() {
   const menu = (label: string, ids: string[]) => <details className="workbench-menu"><summary>{label}</summary><div>{commands.filter(command => ids.includes(command.id)).map(command => <button key={command.id} disabled={command.disabled} onClick={event => { event.currentTarget.closest('details')?.removeAttribute('open'); command.run(); }}>{command.label}</button>)}</div></details>;
   return <main className="workbench">
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.18 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.19 · AstroWare Conception</p></div></div>
       <span className="profile">CPC 6128 · BASIC 1.1</span>
     </header>
     <nav className="menubar" aria-label="Menus de l’atelier">
@@ -233,6 +234,11 @@ export function App() {
         </div>
       </section>
       <aside aria-label="Références et état du produit">
+        {project && files.drafts && <DraftPanel key={`drafts:${project.sessionId}`} sessionId={project.sessionId} documents={documents} busy={busy} onApply={changes => {
+          if (!editorWorkspace.current) throw new Error('Éditeur indisponible.');
+          editorWorkspace.current.apply(changes);
+          setStatus('Brouillons récupérés dans les buffers ; non enregistrés. Ctrl Z pour annuler.');
+        }} />}
         {searchOpen && <SearchPanel key={`search:${project?.sessionId ?? documents[0]?.id}`} documents={documents} busy={busy} onClose={() => setSearchOpen(false)} onNavigate={match => { setActiveId(match.documentId); setNavigation({ ...match }); }} onApply={changes => { if (!editorWorkspace.current || busy) throw new Error('Éditeur indisponible.'); editorWorkspace.current.apply(changes); }} />}
         {project && <TerminalPanel key={`terminal:${project.sessionId}`} sessionId={project.sessionId} busy={busy} dirty={dirty} visible={terminalOpen} onBusy={setBusy} />}
         {project && <GitPanel key={`git:${project.sessionId}`} sessionId={project.sessionId} busy={busy} dirty={dirty} documentCount={project.manifest.documents.length} onBusy={setBusy} />}

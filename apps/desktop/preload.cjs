@@ -8,6 +8,12 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
     list: sessionId => ipcRenderer.invoke('history:list', { sessionId }),
     version: (sessionId, snapshotId, id, revision) => ipcRenderer.invoke('history:version', { sessionId, snapshotId, id, revision }),
   }),
+  drafts: Object.freeze({
+    status: sessionId => ipcRenderer.invoke('drafts:status', { sessionId }),
+    capture: (sessionId, sources, revision) => ipcRenderer.invoke('drafts:capture', { sessionId, sources, revision }),
+    read: (sessionId, revision) => ipcRenderer.invoke('drafts:read', { sessionId, revision }),
+    forget: (sessionId, revision) => ipcRenderer.invoke('drafts:forget', { sessionId, revision }),
+  }),
   terminal: Object.freeze({
     run: (sessionId, command) => ipcRenderer.invoke('terminal:run', { sessionId, command }),
     status: (sessionId, id) => ipcRenderer.invoke('terminal:status', { sessionId, id }),

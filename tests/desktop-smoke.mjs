@@ -17,7 +17,7 @@ const listing = join(temporary, 'source.bas');
 const exported = join(temporary, 'program.dsk');
 await writeFile(listing, '10 PRINT "DESKTOP"\r\n20 END\r\n');
 // CI runs an unprivileged user with Chromium sandbox enabled. Do not disable sandbox to pass tests.
-const desktop = await electron.launch({ args: ['.'], timeout: 30000, env: { ...process.env, ELECTRON_ENABLE_LOGGING: '1' } });
+let desktop = await electron.launch({ args: ['.'], timeout: 30000, env: { ...process.env, ELECTRON_ENABLE_LOGGING: '1' } });
 let page;
 try {
   page = await desktop.firstWindow();
@@ -684,6 +684,67 @@ try {
   const staleHistorySession = await page.evaluate(() => window.desktop.history.list('expired-session'));
   assert.match(staleHistorySession.error, /périmée/);
   console.log('Native local history: active-save journal, side-by-side comparison, history/disk revision guards, buffer-only restoration, dirty/undo/redo, explicit save, reopen persistence and expired IPC session passed.');
+  const draftRoot = join(temporary, 'draft-recovery'); await mkdir(join(draftRoot, 'src'), { recursive: true });
+  const draftManifest = newProject('Reprise des brouillons', randomUUID()); draftManifest.sources.push({ id: 'util', path: 'src/util.bas', cpcName: 'UTIL.BAS' });
+  const draftManifestBytes = Buffer.from(JSON.stringify(draftManifest, null, 2) + '\n'); await writeFile(join(draftRoot, 'microide.project.json'), draftManifestBytes);
+  const draftBaseMain = '10 REM BASE MAIN\r\n20 END\r\n', draftBaseUtil = '10 REM BASE UTIL\r\n20 RETURN\r\n';
+  await writeFile(join(draftRoot, 'src/main.bas'), draftBaseMain); await writeFile(join(draftRoot, 'src/util.bas'), draftBaseUtil);
+  await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, draftRoot);
+  await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click(); await page.getByRole('heading', { name: 'Reprise des brouillons', exact: true }).waitFor();
+  let draftsPanel = page.getByRole('region', { name: 'Brouillons récupérables', exact: true });
+  await expect(draftsPanel.getByLabel('Copie automatique des brouillons')).not.toBeChecked();
+  await assert.rejects(readFile(join(draftRoot, '.microide/drafts/current.json')), { code: 'ENOENT' });
+  await draftsPanel.getByLabel('Copie automatique des brouillons').check();
+  const unsavedMain = '10 REM UNSAVED MAIN\n20 END\n', unsavedUtil = '10 REM UNSAVED UTIL\n20 RETURN\n';
+  await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText(unsavedMain);
+  await page.getByRole('tab', { name: 'src/util.bas', exact: true }).click();
+  await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText(unsavedUtil);
+  await expect.poll(async () => { try { return JSON.parse(await readFile(join(draftRoot, '.microide/drafts/current.json'), 'utf8')).files.length; } catch { return 0; } }, { timeout: 10000 }).toBe(2);
+  await expect(draftsPanel).toContainText('2 brouillon(s) copié(s)');
+  await draftsPanel.getByLabel('Copie automatique des brouillons').uncheck();
+  const draftCopy = await readFile(join(draftRoot, '.microide/drafts/current.json'));
+  assert.equal(await readFile(join(draftRoot, 'src/main.bas'), 'utf8'), draftBaseMain); assert.equal(await readFile(join(draftRoot, 'src/util.bas'), 'utf8'), draftBaseUtil);
+  await expect(page.getByRole('tab', { name: /src\/main.bas.*modifié/ })).toBeVisible(); await expect(page.getByRole('tab', { name: /src\/util.bas.*modifié/ })).toBeVisible();
+  assert.deepEqual(errors, []);
+  const child = desktop.process(); const exit = new Promise((resolve, reject) => { const timer = setTimeout(() => reject(new Error('Electron SIGKILL timeout')), 10000); child.once('exit', () => { clearTimeout(timer); resolve(); }); });
+  child.kill('SIGKILL'); await exit; await desktop.close().catch(() => undefined);
+  desktop = await electron.launch({ args: ['.'], timeout: 30000, env: { ...process.env, ELECTRON_ENABLE_LOGGING: '1' } });
+  page = await desktop.firstWindow(); page.on('pageerror', error => errors.push(error.message));
+  await page.getByRole('heading', { name: 'CPCéleste', exact: true }).waitFor();
+  await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, draftRoot);
+  await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click(); await page.getByRole('heading', { name: 'Reprise des brouillons', exact: true }).waitFor();
+  draftsPanel = page.getByRole('region', { name: 'Brouillons récupérables', exact: true });
+  await expect(draftsPanel).toContainText('Copie d’une précédente ouverture conservée');
+  await expect(draftsPanel.getByLabel('Copie automatique des brouillons')).not.toBeChecked(); await expect(draftsPanel.getByLabel('Copie automatique des brouillons')).toBeDisabled();
+  assert.deepEqual(await readFile(join(draftRoot, '.microide/drafts/current.json')), draftCopy);
+  await draftsPanel.getByRole('button', { name: 'Comparer les brouillons récupérables', exact: true }).click();
+  let draftDialog = page.getByRole('dialog', { name: 'Comparer les brouillons récupérables', exact: true });
+  await expect(draftDialog.locator('.history-diff')).toContainText('UNSAVED MAIN'); await page.screenshot({ path: 'out/drafts-alpha.png' });
+  await writeFile(join(draftRoot, 'src/util.bas'), '10 REM EXTERNAL DURING DRAFT PREVIEW\n');
+  await draftDialog.getByRole('button', { name: 'Restaurer les brouillons sélectionnés dans les buffers', exact: true }).click(); await expect(draftDialog).toContainText('Conflit externe');
+  assert.deepEqual(await readFile(join(draftRoot, '.microide/drafts/current.json')), draftCopy); assert.equal(await readFile(join(draftRoot, 'src/main.bas'), 'utf8'), draftBaseMain);
+  await writeFile(join(draftRoot, 'src/util.bas'), draftBaseUtil);
+  await draftDialog.getByLabel('Restaurer src/util.bas', { exact: true }).uncheck();
+  await draftDialog.getByRole('button', { name: 'Restaurer les brouillons sélectionnés dans les buffers', exact: true }).click(); await expect(draftDialog).not.toBeVisible();
+  await expect(page.getByRole('tab', { name: /src\/main.bas.*modifié/ })).toBeVisible(); await expect(page.getByRole('tab', { name: 'src/util.bas', exact: true })).toBeVisible();
+  await expect(draftsPanel.getByLabel('Copie automatique des brouillons')).toBeDisabled();
+  const recoveredInput = page.locator('.listing .monaco-editor textarea'); await recoveredInput.focus(); await page.keyboard.press('Control+z');
+  await expect(page.locator('.listing .view-lines')).toContainText('BASE MAIN'); await page.keyboard.press('Control+Shift+z'); await expect(page.locator('.listing .view-lines')).toContainText('UNSAVED MAIN');
+  await draftsPanel.getByRole('button', { name: 'Comparer les brouillons récupérables', exact: true }).click();
+  draftDialog = page.getByRole('dialog', { name: 'Comparer les brouillons récupérables', exact: true }); await expect(draftDialog.locator('.history-diff')).toContainText('UNSAVED UTIL');
+  await draftDialog.getByRole('button', { name: 'Restaurer les brouillons sélectionnés dans les buffers', exact: true }).click(); await expect(draftDialog).not.toBeVisible();
+  await expect(page.getByRole('tab', { name: /src\/util.bas.*modifié/ })).toBeVisible(); await expect(draftsPanel.getByLabel('Copie automatique des brouillons')).toBeEnabled();
+  assert.equal(await readFile(join(draftRoot, 'src/main.bas'), 'utf8'), draftBaseMain); assert.equal(await readFile(join(draftRoot, 'src/util.bas'), 'utf8'), draftBaseUtil);
+  assert.deepEqual(await readFile(join(draftRoot, 'microide.project.json')), draftManifestBytes); assert.deepEqual(await readFile(join(draftRoot, '.microide/drafts/current.json')), draftCopy);
+  await desktop.evaluate(({ dialog }) => { globalThis.draftForgetResponse = 0; globalThis.draftForgetOptions = []; dialog.showMessageBox = async (_window, options) => { globalThis.draftForgetOptions.push(options); return { response: globalThis.draftForgetResponse, checkboxChecked: false }; }; });
+  await draftsPanel.getByRole('button', { name: 'Effacer la copie de brouillons', exact: true }).click(); await expect(draftsPanel).toContainText('Effacement annulé'); assert.deepEqual(await readFile(join(draftRoot, '.microide/drafts/current.json')), draftCopy);
+  await desktop.evaluate(() => { globalThis.draftForgetResponse = 1; }); await draftsPanel.getByRole('button', { name: 'Effacer la copie de brouillons', exact: true }).click(); await expect(draftsPanel).toContainText('Copie de récupération effacée');
+  assert.equal(JSON.parse(await readFile(join(draftRoot, '.microide/drafts/current.json'), 'utf8')).files.length, 0);
+  const forgetOptions = await desktop.evaluate(() => globalThis.draftForgetOptions[0]); assert.equal(forgetOptions.defaultId, 0); assert.equal(forgetOptions.cancelId, 0);
+  await page.getByRole('button', { name: 'Enregistrer tout', exact: true }).click(); await expect(page.locator('footer')).toContainText('Projet enregistré : 2 source(s) écrite(s)');
+  assert.equal(await readFile(join(draftRoot, 'src/main.bas'), 'utf8'), unsavedMain); assert.equal(await readFile(join(draftRoot, 'src/util.bas'), 'utf8'), unsavedUtil);
+  assert.match((await page.evaluate(() => window.desktop.drafts.status('expired'))).error, /périmée/);
+  console.log('Native draft recovery: optional automatic copy, real Electron SIGKILL/relaunch, pending-copy protection, comparison, external-conflict refusal, selected restoration, preserved unselected draft, dirty/undo/redo, cancel/default-discard guard and explicit save passed.');
   assert.deepEqual(errors, []);
   console.log('Electron smoke: native Git init/status/diffs/stage/unstage, TXT/MD, real PNG/JPEG decode and PDF.js worker import/pagination/reopen/corrupt-file rejection, scoped PDF page excerpts and progressive multimodal agent outputs, projects and firmware checks passed. No live API, real vision or CPC execution claimed.');
 } catch (error) {
@@ -693,5 +754,5 @@ try {
 } finally {
   // Only the test application is destroyed; fixture directory is intentionally retained for debugging.
   await desktop.evaluate(({ BrowserWindow }) => { for (const window of BrowserWindow.getAllWindows()) window.destroy(); }).catch(() => undefined);
-  await desktop.close();
+  await desktop.close().catch(() => undefined);
 }

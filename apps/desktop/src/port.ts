@@ -5,6 +5,7 @@ import type { FirmwarePort } from '../../../packages/emulator/src/firmware.ts';
 import type { VersionControlPort } from '../../../packages/version-control/src/inspection.ts';
 import type { TerminalPort } from '../../../packages/workspace/src/terminal.ts';
 import type { HistoryPort } from '../../../packages/workspace/src/history.ts';
+import type { DraftPort } from '../../../packages/workspace/src/drafts.ts';
 export interface FileResult { name: string; source?: string }
 export interface Failure { error: string }
 export interface DesktopPort {
@@ -17,6 +18,7 @@ export interface DesktopPort {
   git?: VersionControlPort;
   terminal?: TerminalPort;
   history?: HistoryPort;
+  drafts?: DraftPort;
   project?: {
     open(): Promise<ProjectSnapshot | Failure | null>;
     create(name: string): Promise<ProjectSnapshot | Failure | null>;

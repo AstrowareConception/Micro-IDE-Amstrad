@@ -217,6 +217,22 @@ route('project:save-all', async payload => {
   return store.saveAll(sources);
 });
 route('history:list', async payload => { const { store } = projectRequest(payload); return store.historyList(); });
+route('drafts:status', async payload => { const { store } = projectRequest(payload); return store.draftStatus(); });
+route('drafts:capture', async payload => {
+  const { store, value } = projectRequest(payload);
+  if (!Array.isArray(value.sources) || value.sources.length < 1 || value.sources.length > 64 || value.revision !== null && typeof value.revision !== 'string') throw new Error('Snapshot et révision de brouillons requis.');
+  const sources = value.sources.map(item => { if (!item || typeof item !== 'object' || typeof item.id !== 'string') throw new Error('Identifiant de brouillon requis.'); return { id: item.id, source: sourceFrom(item).source }; });
+  return store.captureDrafts(sources, value.revision as string | null);
+});
+route('drafts:read', async payload => { const { store, value } = projectRequest(payload); if (typeof value.revision !== 'string') throw new Error('Révision de brouillons requise.'); return store.readDrafts(value.revision); });
+route('drafts:forget', async payload => {
+  const { store, value } = projectRequest(payload); if (typeof value.revision !== 'string') throw new Error('Révision de brouillons requise.');
+  const status = await store.draftStatus(); if (status.revision !== value.revision) throw new Error('Copie de brouillons périmée.');
+  const choice = await dialog.showMessageBox(window, { type: 'warning', buttons: ['Annuler', 'Effacer la copie'], defaultId: 0, cancelId: 0,
+    message: 'Effacer la copie de récupération des brouillons ?', detail: 'Les buffers ouverts et les fichiers BASIC restent intacts. Cette copie locale ne sera plus récupérable après confirmation.' });
+  if (choice.response !== 1) return status;
+  return store.forgetDrafts(value.revision);
+});
 route('history:version', async payload => {
   const { store, value } = projectRequest(payload);
   if (typeof value.snapshotId !== 'string' || typeof value.id !== 'string' || typeof value.revision !== 'string') throw new Error('Référence historique requise.');

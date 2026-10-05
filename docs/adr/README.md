@@ -27,5 +27,6 @@ Une ADR explique une décision durable et ses conséquences. **Acceptée** signi
 | [0021](0021-enregistrer-tout-compensation.md) | Sauvegarde globale, préconditions de lot et compensation en mémoire | Acceptée pour l’alpha 0.16 |
 | [0022](0022-journal-sauvegarde-et-reprise.md) | Journal global versionné, synchronisation et reprise native explicite | Acceptée pour l’alpha 0.17 |
 | [0023](0023-historique-local-et-restauration-buffer.md) | Snapshots locaux bornés, diff et restauration de buffer avec undo | Acceptée pour l’alpha 0.18 |
+| [0024](0024-copie-brouillons-et-reprise-buffers.md) | Copie opt-in des brouillons, reprise sélective et révisions protégées | Acceptée pour l’alpha 0.19 |
 
 Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou preuve technique, pas parce qu'une technologie différente est disponible.

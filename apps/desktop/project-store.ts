@@ -9,6 +9,8 @@ import { saveBatch, SaveBatchFailure } from '../../packages/workspace/src/save-b
 import { SaveJournal, durableReplace, type RecoveryChoice, type RecoverySummary } from './save-journal.ts';
 import { LocalHistory } from './local-history.ts';
 import type { HistorySnapshot, HistoryVersion } from '../../packages/workspace/src/history.ts';
+import { DraftStore } from './draft-store.ts';
+import type { DraftSummary, DraftRecovery } from '../../packages/workspace/src/drafts.ts';
 
 const MANIFEST = 'microide.project.json';
 const LIMIT = 1024 * 1024;
@@ -232,6 +234,39 @@ export class ProjectStore {
   async historyList(): Promise<HistorySnapshot[]> {
     await this.checkManifest(); await new SaveJournal(this.root, this.manifest, this.manifestHash).assertResolved();
     return new LocalHistory(this.root, this.manifest.projectId).list();
+  }
+  async draftStatus(): Promise<DraftSummary> {
+    await this.checkManifest();
+    return new DraftStore(this.root, this.manifest.projectId).status();
+  }
+  async captureDrafts(buffers: { id: string; source: string }[], revision: string | null): Promise<DraftSummary> {
+    await this.checkManifest(); await new SaveJournal(this.root, this.manifest, this.manifestHash).assertResolved();
+    if (!Array.isArray(buffers) || buffers.length !== this.manifest.sources.length || new Set(buffers.map(item => item?.id)).size !== buffers.length) throw new Error('Snapshot de brouillons incomplet ou dupliqué.');
+    const inputs = [];
+    for (const item of this.manifest.sources) {
+      const buffer = buffers.find(buffer => buffer?.id === item.id); if (!buffer || typeof buffer.source !== 'string') throw new Error('Source de brouillon non déclarée.');
+      const base = await bytes(await this.path(item.path));
+      if (hash(base) !== this.hashes.get(item.id)) throw new Error(`Conflit externe : ${item.path}. Copie précédente conservée.`);
+      inputs.push({ id: item.id, path: item.path, base, source: buffer.source });
+    }
+    await this.checkManifest();
+    return new DraftStore(this.root, this.manifest.projectId).capture(this.manifestHash, inputs, revision);
+  }
+  async readDrafts(revision: string): Promise<DraftRecovery> {
+    await this.checkManifest(); await new SaveJournal(this.root, this.manifest, this.manifestHash).assertResolved();
+    const drafts = new DraftStore(this.root, this.manifest.projectId), item = await drafts.read(revision);
+    if (item.manifestHash !== this.manifestHash) throw new Error('Manifeste différent de la copie de brouillons ; récupération refusée.');
+    for (const base of item.bases) {
+      if (!this.manifest.sources.some(source => source.id === base.id && source.path === base.path)) throw new Error('Identité de brouillon différente ; copie conservée.');
+      const actual = hash(await bytes(await this.path(base.path)));
+      if (actual !== base.hash || actual !== this.hashes.get(base.id)) throw new Error(`Conflit externe : ${base.path}. Brouillons conservés, sans restauration.`);
+    }
+    await this.checkManifest();
+    if ((await drafts.status()).revision !== revision) throw new Error('Copie de brouillons périmée après lecture.');
+    return item.recovery;
+  }
+  async forgetDrafts(revision: string): Promise<DraftSummary> {
+    await this.checkManifest(); return new DraftStore(this.root, this.manifest.projectId).forget(revision);
   }
   async historyVersion(snapshotId: string, id: string, revision: string): Promise<HistoryVersion> {
     await this.checkManifest(); await new SaveJournal(this.root, this.manifest, this.manifestHash).assertResolved();

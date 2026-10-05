@@ -7,14 +7,14 @@ interface Props {
   sessionId: string; sourceId: string; path: string; source: string; busy: boolean;
   onApply(before: string, after: string): void; onClose(): void;
 }
-function HistoryDiff({ before, after }: { before: string; after: string }) {
+export function SourceDiff({ before, after }: { before: string; after: string }) {
   const host = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!host.current) return;
     const original = monaco.editor.createModel(before, language), modified = monaco.editor.createModel(after, language);
     const diff = monaco.editor.createDiffEditor(host.current, { theme: 'cpc-workbench', readOnly: true, originalEditable: false,
       automaticLayout: true, renderSideBySide: true, fontSize: 14, minimap: { enabled: false },
-      maxComputationTime: 1000, ignoreTrimWhitespace: false, ariaLabel: 'Comparaison historique : buffer actuel à gauche, version choisie à droite' });
+      maxComputationTime: 1000, ignoreTrimWhitespace: false, ariaLabel: 'Comparaison : buffer actuel à gauche, version choisie à droite' });
     diff.setModel({ original, modified });
     return () => { diff.dispose(); original.dispose(); modified.dispose(); };
   }, [before, after]);
@@ -64,7 +64,7 @@ export function HistoryPanel({ sessionId, sourceId, path, source, busy, onApply,
       {snapshot.reason === 'before-save' ? 'Avant sauvegarde' : 'Après sauvegarde'} · {new Date(snapshot.createdAt).toLocaleString('fr-FR')} · {snapshot.id.slice(0, 8)}
     </button>)}</div>
     {preview && <><p>À gauche : votre buffer au moment de la comparaison. À droite : la version choisie. Restaurer remplace uniquement ce buffer ; Ctrl Z annule. Enregistrez ensuite pour écrire sur disque.</p>
-      <HistoryDiff before={preview.before} after={preview.version.source} />
+      <SourceDiff before={preview.before} after={preview.version.source} />
       {stale && <p role="status">Buffer modifié depuis la comparaison : comparez de nouveau avant de restaurer.</p>}
       <button disabled={busy || pending || stale || preview.before === preview.version.source} onClick={() => void attempt(async () => {
         if (!files.history) return;
