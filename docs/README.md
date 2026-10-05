@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.19
+# CPCéleste — Dossier de conception et réalisation — version 0.20
+
+La [revue externe 0.20](implementation/external-alpha.md) détecte les changements disque, conserve les buffers et propose comparaison/chargement avec undo ou adoption de base sans remplacement. [ADR 0025](adr/0025-revue-des-modifications-externes.md). IDE-012 devient partiel ; checkpoints agent puis Git local suivent.
 
 La [copie des brouillons 0.19](implementation/drafts-alpha.md) ajoute une récupération opt-in distincte des sources, aperçu/diff et restauration sélective avec undo. Les copies héritées et brouillons non sélectionnés sont conservés ; aucune sauvegarde implicite. [ADR 0024](adr/0024-copie-brouillons-et-reprise-buffers.md). IDE-011 devient partiel ; la suite est IDE-012, watcher externe, puis mutations agent.
 

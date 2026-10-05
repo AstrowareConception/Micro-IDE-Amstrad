@@ -2,6 +2,8 @@
 
 ## Mode de progression
 
+R2 avance en alpha 0.20 : [revue des changements externes](../implementation/external-alpha.md), détection par empreintes, comparaison et adoption explicite avec buffers/undo conservés ([ADR 0025](../adr/0025-revue-des-modifications-externes.md)). IDE-012 devient partiel. Prochaine tranche : checkpoints durables des mutations agent, puis identité/commit Git ; R2 et qualification moteur restent ouverts.
+
 R2 avance en alpha 0.19 : [copie optionnelle des brouillons](../implementation/drafts-alpha.md), reprise sélective dans les buffers avec undo et tests SIGKILL ([ADR 0024](../adr/0024-copie-brouillons-et-reprise-buffers.md)). IDE-011 devient partiel. Suite prioritaire : IDE-012 détection/revue contrôlée des modifications externes, puis extension des checkpoints aux mutations agent avant checkout Git.
 
 R2 avance en alpha 0.18 : [historique local](../implementation/local-history-alpha.md), snapshots/rétention, comparaison et restauration réversible d’une source dans le buffer ; actif/global partagent le journal ([ADR 0023](../adr/0023-historique-local-et-restauration-buffer.md)). IDE-009/010 deviennent partiels. Suite : récupération des brouillons, watcher externe et extension aux mutations agent avant les changements de branche Git.

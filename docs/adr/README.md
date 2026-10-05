@@ -30,3 +30,5 @@ Une ADR explique une décision durable et ses conséquences. **Acceptée** signi
 | [0024](0024-copie-brouillons-et-reprise-buffers.md) | Copie opt-in des brouillons, reprise sélective et révisions protégées | Acceptée pour l’alpha 0.19 |
 
 Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou preuve technique, pas parce qu'une technologie différente est disponible.
+
+- [0025 — Revue des modifications externes](0025-revue-des-modifications-externes.md) : polling, comparaison et adoption explicite de base disque.

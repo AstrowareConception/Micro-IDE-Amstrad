@@ -11,6 +11,7 @@ import { LocalHistory } from './local-history.ts';
 import type { HistorySnapshot, HistoryVersion } from '../../packages/workspace/src/history.ts';
 import { DraftStore } from './draft-store.ts';
 import type { DraftSummary, DraftRecovery } from '../../packages/workspace/src/drafts.ts';
+import type { ExternalChange, ExternalVersion } from '../../packages/workspace/src/external.ts';
 
 const MANIFEST = 'microide.project.json';
 const LIMIT = 1024 * 1024;
@@ -234,6 +235,38 @@ export class ProjectStore {
   async historyList(): Promise<HistorySnapshot[]> {
     await this.checkManifest(); await new SaveJournal(this.root, this.manifest, this.manifestHash).assertResolved();
     return new LocalHistory(this.root, this.manifest.projectId).list();
+  }
+  async externalStatus(): Promise<ExternalChange[]> {
+    await this.checkManifest();
+    const changes: ExternalChange[] = []; let total = 0;
+    for (const item of this.manifest.sources) {
+      try {
+        const content = await bytes(await this.path(item.path)); total += content.length;
+        text(content); const revision = hash(content);
+        if (revision !== this.hashes.get(item.id)) changes.push({ id: item.id, path: item.path, revision });
+      } catch (error) {
+        const missing = (error as NodeJS.ErrnoException).code === 'ENOENT';
+        changes.push({ id: item.id, path: item.path, issue: missing ? 'Source absente (supprimée ou déplacée). Buffer conservé.' : `Source illisible : ${error instanceof Error ? error.message : 'lecture refusée'}` });
+      }
+    }
+    if (total > 8 * LIMIT) throw new Error('Budget de 8 Mio de sources dépassé. Buffers conservés.');
+    await this.checkManifest(); return changes;
+  }
+  async externalVersion(id: string, revision: string): Promise<ExternalVersion> {
+    await this.checkManifest(); await new SaveJournal(this.root, this.manifest, this.manifestHash).assertResolved();
+    const item = this.manifest.sources.find(item => item.id === id);
+    if (!item || !/^[a-f0-9]{64}$/.test(revision)) throw new Error('Référence externe non déclarée ou invalide.');
+    const content = await bytes(await this.path(item.path));
+    if (hash(content) !== revision) throw new Error('Version disque périmée ; actualisez la comparaison.');
+    const source = text(content); await this.checkManifest();
+    return { id, path: item.path, revision, baseRevision: this.hashes.get(id)!, source };
+  }
+  async acceptExternal(id: string, revision: string, baseRevision: string): Promise<ExternalVersion> {
+    await this.externalStatus();
+    const version = await this.externalVersion(id, revision);
+    if (version.baseRevision !== baseRevision) throw new Error('Base de source périmée ; comparez de nouveau.');
+    // Only adopt the reviewed disk baseline; no file is written.
+    this.hashes.set(id, revision); return version;
   }
   async draftStatus(): Promise<DraftSummary> {
     await this.checkManifest();

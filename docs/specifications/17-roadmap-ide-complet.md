@@ -30,7 +30,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-009 | Historique local durable indépendant de Git | P | P0 | IDE-008 | 0.18 : snapshots avant/après, 20/64 Mio, persistance/déplacement ; labels et autres mutations à venir |
 | IDE-010 | Diff et restauration de fichier/fragment/version locale | P | P0 | IDE-009 | 0.18 : diff Monaco, buffer/revision/disque guards, undo et sauvegarde explicite ; fragments/projet entier à venir |
 | IDE-011 | Autosauvegarde optionnelle et récupération des brouillons | P | P1 | DUR | 0.19 : copie opt-in/2 s/15 s, SIGKILL, reprise sélective/undo sans faux enregistré ; listings/réglages/plateformes à qualifier |
-| IDE-012 | Watcher externe et rechargement/comparaison contrôlés | N | P1 | DUR | Notifications bornées ; dirty conservé ; rename/delete et clients Git testés |
+| IDE-012 | Watcher externe et rechargement/comparaison contrôlés | P | P1 | DUR | Notifications bornées ; dirty conservé ; rename/delete et clients Git testés |
 
 ## 3. Édition et compréhension de Locomotive BASIC
 
@@ -184,3 +184,7 @@ IDE-009/010 passent de N à P : versions avant/après des sauvegardes locales de
 ## Avancement R2 — alpha 0.19
 
 IDE-011 passe de N à P : copie de récupération opt-in distincte des fichiers BASIC, automatique après 2 s de pause et contrôlée toutes les 15 s, protection d’une copie héritée, diff et reprise sélective des buffers avec undo. Révisions/manifeste/bases disque guardés ; aucun statut enregistré implicite ni perte d’un brouillon non sélectionné. [Guide](../implementation/drafts-alpha.md), [ADR 0024](../adr/0024-copie-brouillons-et-reprise-buffers.md). 126 tests Node et recette SIGKILL/relaunch Electron ; limites Linux/processus explicites. IDE-012 reste N : prochaine tranche watcher et revue des modifications externes. Nettoyage automatique/réglage persistant/listings autonomes et mutations agent restent ouverts ; R2/J1-03/ACC-02 non clos.
+
+## Avancement alpha 0.20 — 5 octobre 2026
+
+IDE-012 passe de N à P : inspection automatique par empreinte des sources déclarées, alertes modification/absence/manifeste, diff et adoption explicite. Chargement avec undo ou conservation du buffer sans écriture, contrôle version/base et protection des copies de brouillons. [Guide](../implementation/external-alpha.md), [ADR 0025](../adr/0025-revue-des-modifications-externes.md). 132 tests Node et parcours Electron selon preuves de PR. Polling initial ; watcher événementiel, fusion/rename et Windows/macOS restent ouverts. Suite : checkpoints durables et historique des mutations agent, puis identité/commit Git. R2 reste ouvert.

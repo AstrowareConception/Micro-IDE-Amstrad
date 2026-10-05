@@ -6,6 +6,7 @@ import type { VersionControlPort } from '../../../packages/version-control/src/i
 import type { TerminalPort } from '../../../packages/workspace/src/terminal.ts';
 import type { HistoryPort } from '../../../packages/workspace/src/history.ts';
 import type { DraftPort } from '../../../packages/workspace/src/drafts.ts';
+import type { ExternalPort } from '../../../packages/workspace/src/external.ts';
 export interface FileResult { name: string; source?: string }
 export interface Failure { error: string }
 export interface DesktopPort {
@@ -19,6 +20,7 @@ export interface DesktopPort {
   terminal?: TerminalPort;
   history?: HistoryPort;
   drafts?: DraftPort;
+  external?: ExternalPort;
   project?: {
     open(): Promise<ProjectSnapshot | Failure | null>;
     create(name: string): Promise<ProjectSnapshot | Failure | null>;

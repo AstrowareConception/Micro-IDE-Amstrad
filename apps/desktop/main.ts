@@ -216,6 +216,17 @@ route('project:save-all', async payload => {
   });
   return store.saveAll(sources);
 });
+route('external:status', async payload => { const { store } = projectRequest(payload); return store.externalStatus(); });
+route('external:read', async payload => {
+  const { store, value } = projectRequest(payload);
+  if (typeof value.id !== 'string' || typeof value.revision !== 'string') throw new Error('Référence externe requise.');
+  return store.externalVersion(value.id, value.revision);
+});
+route('external:accept', async payload => {
+  const { store, value } = projectRequest(payload);
+  if (typeof value.id !== 'string' || typeof value.revision !== 'string' || typeof value.baseRevision !== 'string') throw new Error('Révision externe et base requises.');
+  return store.acceptExternal(value.id, value.revision, value.baseRevision);
+});
 route('history:list', async payload => { const { store } = projectRequest(payload); return store.historyList(); });
 route('drafts:status', async payload => { const { store } = projectRequest(payload); return store.draftStatus(); });
 route('drafts:capture', async payload => {
