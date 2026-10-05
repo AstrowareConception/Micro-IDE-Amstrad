@@ -58,3 +58,8 @@ La géométrie actuellement acceptée par le wrapper est strictement standard DA
 5. Ajouter les outils agent sur ce service avec budgets, capture et observation à provenance ; test absent/inconnu/timeout reste un résultat de blocage.
 
 Pas de changement du moteur justifié par la seule absence de ROM. Si un essai discriminant échoue, conserver cas/artefact/hashes, corriger le wrapper ou évaluer une alternative avant intégration. La clé API permet l'agent de code ; elle ne lève pas la dépendance firmware de l'exécution CPC.
+
+
+## Mise à jour du 5 octobre — alpha 0.24
+
+L’[intégration Exécuter/F5](emulator-run-alpha.md), [ADR 0029](../adr/0029-executer-buffers-cpc-integre.md), est désormais réalisée en worker desktop expérimental. Un jeu CPC 6128 anglais de référence identifié permet de prouver BASIC 1.1 Ready, RUN disque et POKE ; recette UI PRINT/pause/export/relance ajoutée. Le HOLD historique faute de firmware ne décrit plus le blocage du lancement. Le go global J0 reste partiel, en attente notamment de la relecture indépendante, OPENOUT, audio audible et plateformes ; aucun résultat matériel revendiqué.

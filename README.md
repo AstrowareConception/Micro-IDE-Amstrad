@@ -1,5 +1,7 @@
 # CPCéleste
 
+**Exécution CPC 0.24** : bouton Exécuter/F5, écran CPC 6128 intégré, buffers non enregistrés, lancement RUN par clavier, pause/arrêt/son et export du disque de session. Trois ROM locales sont nécessaires ; le jeu anglais identifié démarre automatiquement, les autres demandent confirmation de Ready. [Guide](docs/implementation/emulator-run-alpha.md).
+
 **Vos idées prennent vie en BASIC.** Un logiciel AstroWare Conception.
 
 <img src="apps/desktop/public/brand/cpceleste-icon.png" alt="Logo CPCéleste : orbite cyan pixelisée, invite de code blanche et étoile ambre" width="128" height="128" />
@@ -8,7 +10,7 @@ Nom de produit du projet historiquement appelé « Micro IDE Amstrad ». [Identi
 
 Un atelier de programmation pour écrire du **Locomotive BASIC**, le tester dans un **Amstrad CPC émulé**, travailler avec une **IA et ses propres documents**, puis partager une **disquette DSK utilisable hors de l'IDE**.
 
-**État au 5 octobre 2026 : alpha desktop, version 0.23.** Electron/Monaco propose édition BASIC, menus/palette/contextes, ouverture rapide, renumérotation conservatrice, projets multifichiers et export DSK, ainsi qu'un agent OpenAI à outils : exploration, références du corpus fourni, documents TXT/MD/PDF texte et aperçus PNG/JPEG autorisés, création/remplacement de sources, renumérotation, analyse et construction, journal, avant/après et restauration de la mission courante. Clé API en mémoire côté main. L'import local des ROM OS/BASIC/AMSDOS et leur vérification sont disponibles ; Git natif ajoute statut/diff, création de dépôt, indexation sélective locale, commits examinés et historique paginé. Le terminal humain exécute des commandes hôte sans PTY, avec confirmation et limites ; aucun accès shell accordé à l’IA. Ce n'est pas encore le MVP : crash recovery complet, WebP/rendu PDF, synchronisation Git intégrée, conversion écran et émulation intégrée qualifiée restent à construire. J0 attend un jeu firmware réel et les essais dans un émulateur indépendant ; aucun boot BASIC ou résultat matériel n'est revendiqué.
+**État au 5 octobre 2026 : alpha desktop, version 0.24.** Electron/Monaco propose édition BASIC, menus/palette/contextes, ouverture rapide, renumérotation conservatrice, projets multifichiers et export DSK, ainsi qu'un agent OpenAI à outils : exploration, références du corpus fourni, documents TXT/MD/PDF texte et aperçus PNG/JPEG autorisés, création/remplacement de sources, renumérotation, analyse et construction, journal, avant/après et restauration de la mission courante. Clé API en mémoire côté main. L'import local des ROM OS/BASIC/AMSDOS et leur vérification sont disponibles ; Git natif ajoute statut/diff, création de dépôt, indexation sélective locale, commits examinés et historique paginé. Le terminal humain exécute des commandes hôte sans PTY, avec confirmation et limites ; aucun accès shell accordé à l’IA. Ce n'est pas encore le MVP : crash recovery complet, WebP/rendu PDF, synchronisation Git intégrée, conversion écran et émulation intégrée qualifiée restent à construire. Boot BASIC 1.1 et RUN depuis DSK sont vérifiés avec un jeu 6128 anglais identifié ; la relecture indépendante et la qualification matérielle globale restent ouvertes.
 
 ## Lancer l'éditeur
 
@@ -37,6 +39,9 @@ Avec Node 24.12+ dans la branche 24 :
 ```bash
 npm ci --ignore-scripts
 node node_modules/electron/install.js
+npm run chips:fetch
+# Installer/activer emsdk 4.0.15, voir le guide Exécuter.
+EMCC=/chemin/emsdk/upstream/emscripten/emcc npm run build:wasm
 npm run build:desktop
 npm start
 ```
@@ -55,11 +60,11 @@ Dans **Documents du projet**, importer un TXT ou Markdown UTF-8. L'original est 
 
 **Importer PDF** ajoute une copie vérifiée et un aperçu texte par page. Extraction PDF.js locale en thread dédié : 20 pages, 64 Kio de texte/page, 256 Kio/PDF, timeout 15 s, quotas d'originaux communs inchangés. L'agent autorisé lit/recherche uniquement les pages et extraits demandés. PDF chiffré refusé ; pas de rendu visuel ni OCR, absence de texte annoncée. [Guide PDF 0.11 et limites d'isolation](docs/implementation/pdf-alpha.md).
 
-Le moteur retenu est **floooh/chips en C/WASM**. [Intégration prévue : worker, ROM, session et outils agent](docs/implementation/emulator-integration.md). Le wrapper/banc existe ; le panneau machine Electron attend le go firmware J0.
+Le moteur retenu est **floooh/chips en C/WASM**. [Intégration et qualification](docs/implementation/emulator-integration.md). Le panneau machine Electron permet désormais Exécuter/F5 ; la qualification complète J0 reste ouverte.
 
 **Git · dépôt et index locaux (0.13)** affiche version, branche, statut et diff index/disque, puis permet de créer un dépôt vide `main` avec exclusions et d'indexer/retirer un seul fichier sélectionné, avec confirmation native et préconditions. Les brouillons bloquent les mutations sans sauvegarde automatique. Git doit être installé séparément ; configurations non qualifiées/worktrees/sous-modules refusés. Sources déclarées, manifeste et `.gitignore` seulement ; pièces jointes privées exclues. [Guide 0.13 et limites](docs/implementation/git-local-index-alpha.md), [lecture 0.12](docs/implementation/git-alpha.md). L’historique paginé est ajouté en 0.14 ; [commits locaux 0.22](docs/implementation/git-commit-alpha.md) disponibles avec identité explicite par commit ; [profil privé d’identité 0.23](docs/implementation/git-identity-alpha.md) disponible ; réglage par dépôt puis clone/remotes/branches/fetch/pull/push restent à construire selon la [spécification JG](docs/specifications/16-integration-git.md). Le terminal humain peut lancer Git sous la responsabilité de l’utilisateur ; il ne remplace pas la qualification des futurs boutons de synchronisation.
 
-Préparer les ROM dans **ROM du CPC 6128** : importer trois fichiers séparés de 16 Kio, vérifier les hashes et retrouver la sélection au redémarrage. Les fichiers restent dans le stockage applicatif local, hors projet et IA. [Guide ROM 0.7 et limites](docs/implementation/firmware-alpha.md). Un jeu complet reste expérimental ; ce panneau ne démarre pas encore la machine.
+Préparer les ROM dans **ROM du CPC 6128** : importer trois fichiers séparés de 16 Kio, vérifier les hashes et retrouver la sélection au redémarrage. Les fichiers restent dans le stockage applicatif local, hors projet et IA. [Guide ROM 0.7 et limites](docs/implementation/firmware-alpha.md). Après cet import, **Exécuter/F5** démarre la machine intégrée. Un jeu complet reste expérimental ; voir le [guide Exécuter](docs/implementation/emulator-run-alpha.md).
 
 `npm run dev:editor` démarre uniquement un aperçu navigateur sur localhost : sauvegarder télécharge un fichier, ce n'est pas l'application de bureau.
 
@@ -85,7 +90,7 @@ Le [backlog complet et qualifié de CPCéleste](docs/specifications/17-roadmap-i
 
 Commencer par le [sommaire du dossier](docs/README.md), puis le [cadrage produit](docs/specifications/00-cadrage-produit.md), le [modèle métier](docs/specifications/03-domaines-ddd.md) et l'[architecture](docs/specifications/04-architecture-technique.md).
 
-Les [décisions d'architecture](docs/adr/README.md) expliquent les arbitrages. La [feuille de route](docs/specifications/12-feuille-de-route.md) définit les critères de sortie. **J0 reste en HOLD pour l'exécution**, mais l'[ADR 0009](docs/adr/0009-edition-independante.md) autorise l'édition indépendante : consulter le [rapport réel J0](docs/implementation/j0-report.md) et le [guide du banc local](tools/j0-harness/README.md).
+Les [décisions d'architecture](docs/adr/README.md) expliquent les arbitrages. La [feuille de route](docs/specifications/12-feuille-de-route.md) définit les critères de sortie. **J0 reste en HOLD pour sa qualification globale**, mais l'[ADR 0009](docs/adr/0009-edition-independante.md) autorise l'édition indépendante : consulter le [rapport réel J0](docs/implementation/j0-report.md) et le [guide du banc local](tools/j0-harness/README.md).
 
 Avec Node 24.12+ dans la branche 24 et Python 3.12 :
 

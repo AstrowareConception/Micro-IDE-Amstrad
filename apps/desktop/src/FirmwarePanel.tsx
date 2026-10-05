@@ -30,7 +30,7 @@ export function FirmwarePanel({ busy }: { busy: boolean }) {
   }
   return <section className="panel firmware-panel" aria-label="Configuration ROM CPC">
     <h2>ROM du CPC 6128</h2>
-    <p className="muted">Choisissez vos ROM locales séparées : 16 Kio chacune. Stockage hors projet, aucune transmission à l’agent. Un jeu complet reste expérimental jusqu’à la recette BASIC.</p>
+    <p className="muted">Choisissez vos ROM locales séparées : 16 Kio chacune. Stockage hors projet, aucune transmission à l’agent. Après import, utilisez Exécuter/F5. Les jeux inconnus demandent une confirmation visuelle de Ready.</p>
     {ROM_ROLES.map(role => {
       const slot = status?.slots.find(item => item.role === role);
       return <div key={role}><h3>{labels[role]}</h3>
@@ -39,7 +39,7 @@ export function FirmwarePanel({ busy }: { busy: boolean }) {
         <button disabled={!port || busy || pending} onClick={() => void perform(role)}>Importer {labels[role]}</button>
       </div>;
     })}
-    <p>{status?.complete ? 'Jeu complet · expérimental · démarrage non qualifié' : 'Jeu incomplet ou invalide'}</p>
+    <p>{status?.complete ? 'Jeu complet · expérimental · prêt pour Exécuter/F5' : 'Jeu incomplet ou invalide'}</p>
     <button disabled={!port || busy || pending} onClick={() => void perform()}>Vérifier les ROM</button>
     <button disabled={!port || busy || pending} onClick={() => void perform(undefined, true)}>Retirer la sélection ROM</button>
     <p className="firmware-notice" aria-live="polite">{message}</p>

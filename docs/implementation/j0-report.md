@@ -68,3 +68,8 @@ Les scénarios ACC-08, ACC-09 et ACC-24 ne sont donc pas clôturés. Les contrô
 Le [guide du harness](../../tools/j0-harness/README.md) donne toutes les commandes et le parcours. Construire hello/probe, fournir les trois ROM de 16 Kio, observer le prompt, lancer `RUN"PROBE.BAS"`, exporter `session.dsk`, vérifier `RESULT.TXT`, puis le relire dans Caprice32. Joindre observations et captures à une nouvelle preuve sans ajouter de ROM au dépôt.
 
 Si lecture ou écriture via la machine échoue, conserver disque, hashes et commande, puis corriger le wrapper ou produire un cas upstream borné. Si le cœur reste incompatible avec les usages requis, comparer un autre moteur et remplacer l'ADR avant J1. Le wrapper actuel ne justifie pas un changement de moteur ; l'absence de firmware n'est pas un échec du moteur.
+
+
+## Mise à jour du 5 octobre — alpha 0.24
+
+L’[intégration Exécuter/F5](emulator-run-alpha.md), [ADR 0029](../adr/0029-executer-buffers-cpc-integre.md), est désormais réalisée en worker desktop expérimental. Un jeu CPC 6128 anglais de référence identifié permet de prouver BASIC 1.1 Ready, RUN disque et POKE ; recette UI PRINT/pause/export/relance ajoutée. Le HOLD historique faute de firmware ne décrit plus le blocage du lancement. Le go global J0 reste partiel, en attente notamment de la relecture indépendante, OPENOUT, audio audible et plateformes ; aucun résultat matériel revendiqué.

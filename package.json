@@ -1,6 +1,6 @@
 {
   "name": "micro-ide-amstrad",
-  "version": "0.23.0",
+  "version": "0.24.0",
   "main": "dist/apps/desktop/main.js",
   "private": true,
   "type": "module",
@@ -10,13 +10,14 @@
   },
   "scripts": {
     "test": "node --test tests/*.test.ts",
-    "typecheck": "node --check tests/editor-smoke.mjs && node --check tests/desktop-smoke.mjs && tsc --noEmit && tsc -p apps/desktop/tsconfig.json && tsc -p apps/desktop/tsconfig.main.json --noEmit",
+    "typecheck": "node --check tests/emulator-ui-smoke.mjs && node --check tests/firmware-runtime.mjs && node --check tests/editor-smoke.mjs && node --check tests/desktop-smoke.mjs && tsc --noEmit && tsc -p apps/desktop/tsconfig.json && tsc -p apps/desktop/tsconfig.main.json --noEmit",
     "dev:editor": "vite --config apps/desktop/vite.config.ts",
     "build:renderer": "vite build --config apps/desktop/vite.config.ts",
     "build:main": "tsc -p apps/desktop/tsconfig.main.json",
     "build:desktop": "node scripts/build-desktop.mjs",
     "start": "electron .",
     "test:editor": "node tests/editor-smoke.mjs",
+    "test:emulator": "node tests/emulator-ui-smoke.mjs",
     "test:desktop": "node tests/desktop-smoke.mjs",
     "build:hello": "node scripts/disk-cli.mjs build examples/hello-cpc/src/main.bas out/hello.dsk MAIN.BAS",
     "build:probe": "node scripts/build-probe.mjs",

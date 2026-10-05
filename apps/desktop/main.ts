@@ -1,7 +1,7 @@
-import { app, BrowserWindow, dialog, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, protocol, net } from 'electron';
 import { readFile, writeFile, rename, unlink, lstat } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
-import { join, dirname } from 'node:path';
+import { join, dirname, relative, isAbsolute } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { buildListingDisk } from '../../packages/basic-language/src/build.ts';
 import { buildProjectDisk } from '../../packages/workspace/src/project.ts';
@@ -10,13 +10,17 @@ import { decodeImage } from './image-document.ts';
 import { extractPdf } from './pdf-document.ts';
 import { AgentController } from './agent-controller.ts';
 import { FirmwareStore } from './firmware-store.ts';
+import { runDisk } from '../../packages/emulator/src/run.ts';
+import { realpath } from 'node:fs/promises';
 import { GitInspection } from './git-inspection.ts';
 import { GitIdentityStore } from './git-identity-store.ts';
 import { ProjectTerminal } from './terminal.ts';
 import { romRole } from '../../packages/emulator/src/firmware.ts';
 
 const base = dirname(fileURLToPath(import.meta.url));
-const page = pathToFileURL(join(base, '../../renderer/index.html')).href;
+const rendererRoot = join(base, '../../renderer');
+protocol.registerSchemesAsPrivileged([{ scheme: 'cpceleste', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
+const page = 'cpceleste://app/index.html';
 const MAX_SOURCE_BYTES = 1024 * 1024;
 let window: BrowserWindow;
 let current: { path: string; hash: string } | undefined;
@@ -66,6 +70,15 @@ function route(channel: string, handler: (payload: unknown) => Promise<unknown>,
 
 // Do not hold the ESM entry point open while waiting for Electron's ready lifecycle.
 void app.whenReady().then(async () => {
+protocol.handle('cpceleste', async request => {
+  try {
+    const url = new URL(request.url), parts = decodeURIComponent(url.pathname).split('/').filter(Boolean);
+    if (request.method !== 'GET' || url.hostname !== 'app' || parts.some(part => part === '..' || part === '.' || part.includes('\\')) || !/\.(html|js|mjs|wasm|css|ttf|png|svg|ico|txt)$/.test(parts.join('/'))) return new Response('Refusé', { status: 403 });
+    const root = await realpath(rendererRoot), path = await realpath(join(root, ...parts)), location = relative(root, path);
+    if (isAbsolute(location) || location.startsWith('..') || !(await lstat(path)).isFile()) return new Response('Refusé', { status: 403 });
+    return net.fetch(pathToFileURL(path).href);
+  } catch { return new Response('Ressource absente', { status: 404 }); }
+});
 agent = new AgentController(join(app.getPath('userData'), 'agent-checkpoints'), join(base, '../../knowledge/locomotive-basic'));
 const gitIdentity = new GitIdentityStore(app.getPath('userData'));
 const firmware = new FirmwareStore(join(app.getPath('userData'), 'firmware'));
@@ -349,7 +362,34 @@ route('agent:restore', async payload => {
   const view = agent.status(value.taskId); store.assertSession(view.workspace.sessionId);
   return agent.restore(value.taskId, bufferRequest(value.buffers));
 });
+route('emulator:prepare', async payload => {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new Error('Snapshot d’exécution invalide.');
+  const value = payload as Record<string, unknown>;
+  let image, label = 'Listing courant';
+  if (Object.hasOwn(value, 'sessionId')) { const { store } = projectRequest(payload); await store.assertCurrent(); image = runDisk(value, store.manifest); label = store.manifest.name; }
+  else image = runDisk(value);
+  const status = await firmware.status();
+  if (!status.complete) throw new Error('ROM CPC manquantes ou invalides : importez OS, BASIC 1.1 et AMSDOS dans Configuration ROM avant Exécuter.');
+  const roms = await firmware.load();
+  return { ...image, label, sha256: hash(image.disk), roms, firmware: Object.fromEntries(Object.entries(roms).map(([role, bytes]) => [role, hash(bytes)])) };
+});
 route('firmware:status', async () => firmware.status());
+route('emulator:export', async payload => {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new Error('Disquette de session invalide.');
+  const value = payload as Record<string, unknown>;
+  if (Object.keys(value).some(key => key !== 'disk' && key !== 'sessionId') || !(value.disk instanceof Uint8Array) || value.disk.length !== 194816) throw new Error('Disquette CPC DATA de session requise.');
+  const owner = project;
+  if (owner) { owner.assertSession(value.sessionId); await owner.assertCurrent(); }
+  else if (value.sessionId !== undefined) throw new Error('Session projet expirée.');
+  const sourcePath = current?.path;
+  const bytes = new Uint8Array(value.disk);
+  const selection = await dialog.showSaveDialog(window, { defaultPath: 'session-cpc.dsk', filters: [{ name: 'Disquette CPC DATA', extensions: ['dsk'] }] });
+  if (selection.canceled || !selection.filePath) return null;
+  if (owner) { await owner.assertCurrent(); await owner.assertExportDestination(selection.filePath); }
+  if (selection.filePath === sourcePath) throw new Error('La destination DSK doit être distincte du listing.');
+  await atomicWrite(selection.filePath, bytes);
+  return { name: selection.filePath.split(/[\\/]/).at(-1) };
+});
 route('firmware:import', async payload => {
   const role = romRole(payload);
   const selection = await dialog.showOpenDialog(window, { properties: ['openFile'], filters: [{ name: 'ROM séparée CPC (16 Kio)', extensions: ['rom', 'bin'] }] });

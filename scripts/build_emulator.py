@@ -27,7 +27,7 @@ if args.target == 'wasm':
         raise SystemExit('Expected Emscripten ' + lock['emscripten'])
     exports = re.findall(r'\b(cpc_bridge_\w+)\s*\(', (ROOT / 'packages/emulator/src/cpc_bridge.h').read_text())
     command = [compiler, *common, '-O2', str(ROOT / 'packages/emulator/src/cpc_bridge.c'),
-        '-sMODULARIZE=1', '-sEXPORT_ES6=1', '-sENVIRONMENT=web,node', '-sFILESYSTEM=0',
+        '-sMODULARIZE=1', '-sEXPORT_ES6=1', '-sENVIRONMENT=web,worker,node', '-sFILESYSTEM=0',
         '-sALLOW_MEMORY_GROWTH=0', '-sINITIAL_MEMORY=16777216', '-sSTACK_SIZE=1048576',
         '-sASSERTIONS=1', '-sABORTING_MALLOC=0', '-sEXPORTED_RUNTIME_METHODS=["HEAPU8","HEAPF32"]',
         '-sEXPORTED_FUNCTIONS=' + json.dumps(['_malloc', '_free'] + ['_' + name for name in exports]),

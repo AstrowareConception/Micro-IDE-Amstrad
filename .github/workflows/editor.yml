@@ -21,10 +21,25 @@ jobs:
         run: |
           sudo chown root:root node_modules/electron/dist/chrome-sandbox
           sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
+      - run: npm run chips:fetch
+      - name: Build pinned CPC WebAssembly engine
+        run: |
+          git clone --depth 1 --branch 4.0.15 https://github.com/emscripten-core/emsdk.git .cache/emsdk
+          test "$(git -C .cache/emsdk rev-parse HEAD)" = "389a68bc35dcff7ebae4614e1615099dafda00d1"
+          .cache/emsdk/emsdk install 4.0.15
+          .cache/emsdk/emsdk activate 4.0.15
+          EMCC=.cache/emsdk/upstream/emscripten/emcc npm run build:wasm
       - run: npm run typecheck && npm test && npm run build:desktop
       - run: npx playwright install --with-deps chromium
       - name: Browser editing and exports
         run: npm run test:editor
+      - name: CPC firmware reference and real runtime recipe
+        run: |
+          git clone --no-checkout https://github.com/floooh/chips-test.git .cache/firmware-reference
+          git -C .cache/firmware-reference checkout 3785836e76c43922f78a50e1f8adfed259ab9672
+          CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node tests/firmware-runtime.mjs
+          CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms CPC_UI_MODE=browser node tests/emulator-ui-smoke.mjs
+          CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms xvfb-run -a node tests/emulator-ui-smoke.mjs
       - name: Native Electron paths and isolation
         run: xvfb-run -a npm run test:desktop
         env:
@@ -34,6 +49,10 @@ jobs:
         with:
           name: editor-alpha-evidence
           path: |
+            out/emulator-browser-alpha.png
+            out/emulator-desktop-alpha.png
+            out/emulator-failure.png
+            out/firmware-runtime.json
             out/editor-alpha.png
             out/desktop-alpha.png
             out/project-alpha.png
@@ -57,4 +76,15 @@ jobs:
             out/git-commit-alpha.png
             out/desktop-failure.png
             out/editor-failure.png
+          retention-days: 7
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: success()
+        with:
+          name: cpceleste-desktop-alpha
+          path: |
+            dist/
+            package.json
+            package-lock.json
+            licenses/
           retention-days: 7

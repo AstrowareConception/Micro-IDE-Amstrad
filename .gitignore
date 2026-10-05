@@ -16,3 +16,5 @@ roms/
 *.dsk
 *.sna
 !.gitkeep
+
+apps/desktop/public/emulator/
