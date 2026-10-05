@@ -39,7 +39,7 @@ export function FirmwarePanel({ busy }: { busy: boolean }) {
         <button disabled={!port || busy || pending} onClick={() => void perform(role)}>Importer {labels[role]}</button>
       </div>;
     })}
-    <p>{status?.complete ? 'Jeu complet · prêt pour Exécuter/F5 · compatibilité dépendant des ROM' : 'Jeu incomplet ou invalide'}</p>
+    <p>{status?.complete ? 'Jeu complet · expérimental · prêt pour Exécuter/F5' : 'Jeu incomplet ou invalide'}</p>
     <button disabled={!port || busy || pending} onClick={() => void perform()}>Vérifier les ROM</button>
     <button disabled={!port || busy || pending} onClick={() => void perform(undefined, true)}>Retirer la sélection ROM</button>
     <p className="firmware-notice" aria-live="polite">{message}</p>
