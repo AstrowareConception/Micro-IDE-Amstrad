@@ -2,6 +2,8 @@
 
 ## Mode de progression
 
+R2 avance en alpha 0.19 : [copie optionnelle des brouillons](../implementation/drafts-alpha.md), reprise sélective dans les buffers avec undo et tests SIGKILL ([ADR 0024](../adr/0024-copie-brouillons-et-reprise-buffers.md)). IDE-011 devient partiel. Suite prioritaire : IDE-012 détection/revue contrôlée des modifications externes, puis extension des checkpoints aux mutations agent avant checkout Git.
+
 R2 avance en alpha 0.18 : [historique local](../implementation/local-history-alpha.md), snapshots/rétention, comparaison et restauration réversible d’une source dans le buffer ; actif/global partagent le journal ([ADR 0023](../adr/0023-historique-local-et-restauration-buffer.md)). IDE-009/010 deviennent partiels. Suite : récupération des brouillons, watcher externe et extension aux mutations agent avant les changements de branche Git.
 
 R2 avance en alpha 0.17 : [journal/reprise des sauvegardes globales](../implementation/recovery-alpha.md), choix natif explicite et arrêts SIGKILL Linux ([ADR 0022](../adr/0022-journal-sauvegarde-et-reprise.md)). IDE-008 devient partiel ; historique local IDE-009/010 et autres mutations suivent. Ni durabilité universelle ni atomicité de projet ne sont annoncées.

@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.18
+# CPCéleste — Dossier de conception et réalisation — version 0.19
+
+La [copie des brouillons 0.19](implementation/drafts-alpha.md) ajoute une récupération opt-in distincte des sources, aperçu/diff et restauration sélective avec undo. Les copies héritées et brouillons non sélectionnés sont conservés ; aucune sauvegarde implicite. [ADR 0024](adr/0024-copie-brouillons-et-reprise-buffers.md). IDE-011 devient partiel ; la suite est IDE-012, watcher externe, puis mutations agent.
 
 L’[historique local 0.18](implementation/local-history-alpha.md) livre snapshots avant/après des sauvegardes de projet, rétention 20/64 Mio, diff et restauration de buffer avec undo. Enregistrer actif partage le journal de reprise. [ADR 0023](adr/0023-historique-local-et-restauration-buffer.md). IDE-009/010 deviennent partiels ; brouillons, watcher et mutations agent suivent.
 
