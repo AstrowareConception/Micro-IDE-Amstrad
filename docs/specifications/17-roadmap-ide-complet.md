@@ -71,7 +71,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | --- | --- | --- | --- | --- | --- |
 | IDE-031 | Découverte Git, init, exclusions, statut et diff | P | P0 | 0.12/13 | Sous-ensemble conservateur livré ; worktrees/configs usuelles à qualifier |
 | IDE-032 | Index fichier/fragment et listes de changements | P | P0 | IDE-031 | Par fichier livré ; staging partiel, renommages/conflits et changelists à traiter |
-| IDE-033 | Identité locale, aperçu et commit exact de l’index | N | P0 | IDE-032 | HEAD/index figés, fichiers privés exclus, hooks/signature explicites, premier commit |
+| IDE-033 | Identité locale, aperçu et commit exact de l’index | P | P0 | IDE-032 | HEAD/index figés, fichiers privés exclus, hooks/signature explicites, premier commit |
 | IDE-034 | Historique Git, diff de version, blame et restauration guidée | P | P1 | IDE-031/DUR | Pagination 0.14 livrée ; version/source/diff/blame/restauration à ajouter |
 | IDE-035 | Branches locales, checkout, tags et stash | N | P1 | IDE-033/DUR | Dirty/conflicts gérés, nom/ref validés, manifeste rechargé sans perte |
 | IDE-036 | Clone/remotes/upstream/fetch/pull/push HTTPS et SSH | N | P0 | IDE-033/NET | Deux clones + vrai transport ; divergence/rejet/credentials ; publication humaine |
@@ -192,3 +192,8 @@ IDE-012 passe de N à P : inspection automatique par empreinte des sources décl
 ## Avancement alpha 0.21 — 5 octobre 2026
 
 IDE-007/008/009/010 progressent avec le journal durable des mutations agent : sources/manifeste/création et retrait lors de restauration, reprise native terminer/rétablir, refus des conflits et snapshots avant/proposés dans l’historique. [Guide](../implementation/agent-durability-alpha.md), [ADR 0026](../adr/0026-journal-durable-des-mutations-agent.md). 139 tests Node, dont onze SIGKILL agent supplémentaires ; recette Electron attestée selon PR. Tous ces items restent P : ajout humain/imports, historique projet complet, panne électrique, Windows/macOS et anciennes missions restent ouverts. R2 ne ferme pas J1-03/ACC-02. Prochain lot : identité et commit Git local, puis branches et synchronisation selon préconditions JG.
+
+
+## Avancement alpha 0.22 — 5 octobre 2026
+
+R3 commence avec [identité explicite et commits locaux](../implementation/git-commit-alpha.md), [ADR 0027](../adr/0027-commit-git-index-exact.md). Aperçu exact de l’index, confirmation native, premiers/seconds commits, préconditions sous verrou et conservation du disque/index/configuration. Git 2.48+, commits non signés et hooks désactivés ; identité persistante, branches et réseau restent ouverts. IDE-033 passe à P ; R3/JG-A/ACC-31 ne sont pas clos. 146 tests Node ; recette Electron et capture attestées dans la PR.

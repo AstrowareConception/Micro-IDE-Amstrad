@@ -190,6 +190,19 @@ route('terminal:stop', async payload => { const { store, value } = projectReques
 function gitMutation(): void {
   if (dirty) throw new Error('Enregistrez ou arbitrez tous les brouillons avant de modifier Git ; aucune sauvegarde automatique.');
 }
+route('git:prepare-commit', async payload => {
+  const { store, value } = projectRequest(payload); gitMutation(); await store.assertCurrent();
+  return gitInspector(store).prepareCommit(value.input);
+});
+route('git:commit', async payload => {
+  const { store, value } = projectRequest(payload); gitMutation(); await store.assertCurrent();
+  const inspector = gitInspector(store), plan = inspector.commitSelection(value.planId);
+  const choice = await dialog.showMessageBox(window, { type: 'question', buttons: ['Annuler', 'Créer le commit local'], defaultId: 0, cancelId: 0,
+    message: `Créer un commit local sur ${plan.branch} dans ${store.root} ?`,
+    detail: `${plan.name} <${plan.email}>\n${plan.message}\n${plan.files.map(file => `${file.status} ${file.path}`).join('\n')}\n\nIndex examiné uniquement. Commit non signé, hooks désactivés. Aucun push et aucune sauvegarde automatique. Les changements hors index restent sur disque.` });
+  if (choice.response !== 1) return null;
+  gitMutation(); await store.assertCurrent(); return inspector.commit(value.planId);
+});
 route('git:prepare-init', async payload => {
   const { store } = projectRequest(payload); gitMutation(); await store.assertCurrent();
   return gitInspector(store).prepareInit();

@@ -171,3 +171,8 @@ Priorités proposées : BASIC tokenisé et import de listings anciens ; debugger
 Le cas d'usage demandé fonctionne, ses invariants ont des preuves, les documents reflètent le code final, la CI pertinente passe, les limites sont explicites et la démonstration est reproductible. La PR expose comportement final et validations. Ne pas multiplier les tests qui répètent une implémentation ; privilégier contrats, frontières, cas limites et parcours à risque.
 
 La tranche [projets BASIC 0.5](../implementation/projects-alpha.md) livre une partie de J1-02/J2-01 : manifeste, dossiers, buffers indépendants, sauvegarde active et DSK multifichier. Pas de journal/recovery ni de clôture J1-03. Prochaine tranche indépendante : sauvegarde coordonnée, checkpoints et récupération, puis enrichissement du langage. La qualification ROM de J0 reste requise avant la boucle d'exécution J3. Les ressources et l'agent restent indispensables au MVP.
+
+
+## Avancement alpha 0.22 — 5 octobre 2026
+
+R3 commence avec [identité explicite et commits locaux](../implementation/git-commit-alpha.md), [ADR 0027](../adr/0027-commit-git-index-exact.md). Aperçu exact de l’index, confirmation native, premiers/seconds commits, préconditions sous verrou et conservation du disque/index/configuration. Git 2.48+, commits non signés et hooks désactivés ; identité persistante, branches et réseau restent ouverts. IDE-033 passe à P ; R3/JG-A/ACC-31 ne sont pas clos. 146 tests Node ; recette Electron et capture attestées dans la PR.

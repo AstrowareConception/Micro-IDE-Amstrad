@@ -53,6 +53,7 @@ jobs:
             out/drafts-alpha.png
             out/external-alpha.png
             out/agent-durability-alpha.png
+            out/git-commit-alpha.png
             out/desktop-failure.png
             out/editor-failure.png
           retention-days: 7

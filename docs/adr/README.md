@@ -34,3 +34,5 @@ Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou
 - [0025 — Revue des modifications externes](0025-revue-des-modifications-externes.md) : polling, comparaison et adoption explicite de base disque.
 
 - [0026 — Journal durable des mutations agent](0026-journal-durable-des-mutations-agent.md) : sources/manifeste/créations, reprise explicite et snapshots locaux.
+
+- [0027 — Commit Git de l’index examiné](0027-commit-git-index-exact.md) : identité explicite, aperçu et publication sous préconditions.

@@ -4,7 +4,7 @@ import { constants } from 'node:fs';
 import { join, dirname, delimiter, isAbsolute, relative, basename } from 'node:path';
 import { devNull } from 'node:os';
 import { randomUUID, createHash } from 'node:crypto';
-import { gitPath, parseStatus, PROJECT_GIT_IGNORE, type GitChange, type GitDiff, type DiffSide, type RepositoryStatus, type GitInitPlan, type IndexAction, type GitHistory } from '../../packages/version-control/src/inspection.ts';
+import { gitPath, parseStatus, commitInput, PROJECT_GIT_IGNORE, type GitCommitInput, type GitCommitPlan, type GitCommitResult, type GitChange, type GitDiff, type DiffSide, type RepositoryStatus, type GitInitPlan, type IndexAction, type GitHistory } from '../../packages/version-control/src/inspection.ts';
 
 const LIMIT = 1024 * 1024;
 const digest = (value: Uint8Array | string) => createHash('sha256').update(value).digest('hex');
@@ -16,6 +16,7 @@ export class GitInspection {
   private snapshot: { id: string; signature: string } | undefined;
   private initPlan: { view: GitInitPlan; signature: string } | undefined;
   private mutating = false;
+  private commitPlan: { view: GitCommitPlan; signature: string; ref: string } | undefined;
   private historyCursor: { id: string; head: string; offset: number } | undefined;
   private readonly root: string;
   private readonly sourcePaths: () => readonly string[];
@@ -38,22 +39,39 @@ export class GitInspection {
     }
     throw new Error('Git introuvable. Installez Git puis redémarrez l’IDE ; l’édition reste disponible.');
   }
-  private async run(args: string[], cwd = this.root, indexFile?: string): Promise<string> {
+  private async run(args: string[], cwd = this.root, indexFile?: string, options?: { input?: string; identity?: GitCommitInput; prepared?: () => Promise<void> }): Promise<string> {
     const executable = await this.locate();
     const env: NodeJS.ProcessEnv = { PATH: this.searchPath, LC_ALL: 'C', GIT_CONFIG_NOSYSTEM: '1',
       GIT_CONFIG_SYSTEM: devNull, GIT_CONFIG_GLOBAL: devNull, GIT_OPTIONAL_LOCKS: '0',
       GIT_TERMINAL_PROMPT: '0', GIT_NO_LAZY_FETCH: '1', GIT_ATTR_NOSYSTEM: '1' };
     if (process.env.SystemRoot) env.SystemRoot = process.env.SystemRoot;
     if (indexFile) env.GIT_INDEX_FILE = indexFile;
+    if (options?.identity) {
+      env.GIT_AUTHOR_NAME = env.GIT_COMMITTER_NAME = options.identity.name;
+      env.GIT_AUTHOR_EMAIL = env.GIT_COMMITTER_EMAIL = options.identity.email;
+    }
     return new Promise((resolve, reject) => {
-      execFile(executable, ['--no-pager', '-c', 'core.fsmonitor=false', '-c', 'core.untrackedCache=false',
+      let preparationError: unknown, preparing = false, output = '';
+      const child = execFile(executable, ['--no-pager', '-c', 'core.fsmonitor=false', '-c', 'core.untrackedCache=false',
         '-c', `core.attributesFile=${devNull}`, '-c', `core.hooksPath=${devNull}`, '-c', 'protocol.allow=never', '-c', 'maintenance.auto=false', '-c', 'gc.auto=0', ...args],
       { cwd, env, shell: false, windowsHide: true, timeout: 10_000, maxBuffer: LIMIT, encoding: 'buffer' }, (error, stdout) => {
         // Never return stderr, config values, credentials or absolute host paths over IPC.
+        if (preparationError) { reject(preparationError); return; }
         if (error) { reject(new Error('Opération Git refusée ou interrompue (10 s / 1 Mio maximum).')); return; }
         try { resolve(new TextDecoder('utf-8', { fatal: true }).decode(stdout)); }
         catch { reject(new Error('Sortie Git UTF-8 requise.')); }
       });
+      child.stdin?.on('error', () => { /* Process error is reported through the callback. */ });
+      if (options?.prepared) {
+        child.stdout?.on('data', bytes => {
+          output += bytes.toString();
+          if (!preparing && output.includes('prepare: ok\n')) {
+            preparing = true;
+            void options.prepared!().then(() => child.stdin?.end('commit\n')).catch(error => { preparationError = error; child.stdin?.end('abort\n'); });
+          }
+        });
+        child.stdin?.write(options.input ?? '');
+      } else child.stdin?.end(options?.input ?? '');
     });
   }
   private async metadata(): Promise<'repository' | 'not-repository' | 'parent-repository'> {
@@ -138,7 +156,7 @@ export class GitInspection {
     throw error;
   }
   private async inspect(): Promise<RepositoryStatus> {
-    this.changes.clear(); this.snapshot = undefined; this.initPlan = undefined;
+    this.changes.clear(); this.snapshot = undefined; this.initPlan = undefined; this.commitPlan = undefined;
     const version = (await this.run(['--version'])).trim();
     if (!/^git version \d+\.\d+\.\d+[^\r\n]*$/.test(version)) throw new Error('Version Git non reconnue.');
     const state = await this.metadata();
@@ -221,6 +239,96 @@ export class GitInspection {
   private async signature(): Promise<string> {
     return digest(JSON.stringify([await this.rawStatus(), digest(await this.bytes('.git/config') ?? ''),
       digest(await this.bytes('.git/index', true) ?? ''), await this.workingSignature()]));
+  }
+  private async commitRef(): Promise<string> {
+    const version = /^git version (\d+)\.(\d+)\./.exec((await this.run(['--version'])).trim());
+    if (!version || Number(version[1]) < 2 || Number(version[1]) === 2 && Number(version[2]) < 48) throw new Error('Git 2.48 ou supérieur requis pour les commits intégrés.');
+    if (await this.metadata() !== 'repository') throw new Error('Aucun dépôt Git local.');
+    for (const marker of ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'rebase-apply', 'rebase-merge', 'BISECT_LOG'])
+      if (await this.exists(join(this.root, '.git', marker))) throw new Error('Opération Git en cours : terminez-la hors de ce panneau.');
+    const status = parseStatus(await this.rawStatus());
+    if (status.branch === '(detached)' || status.changes.some(change => change.kind === 'conflict')) throw new Error('Branche locale sans conflit requise pour créer un commit.');
+    if (status.head !== '(initial)' && !/^[a-f0-9]{40}$/.test(status.head)) throw new Error('Dépôt SHA-1 requis.');
+    const ref = (await this.run(['symbolic-ref', '--quiet', 'HEAD'])).trim();
+    if (!ref.startsWith('refs/heads/') || ref.length > 240 || /[\s\x00-\x1f]/.test(ref)) throw new Error('Référence de branche non qualifiée.');
+    await this.run(['check-ref-format', ref]);
+    if ((await this.bytes('.git/HEAD'))?.toString('utf8') !== `ref: ${ref}\n`) throw new Error('HEAD symbolique non qualifié.');
+    const branch = await this.bytes(`.git/${ref}`, true);
+    if (branch && !/^[a-f0-9]{40}\n?$/.test(branch.toString('utf8'))) throw new Error('Branche indirecte non qualifiée.');
+    return ref;
+  }
+  async prepareCommit(input: unknown): Promise<GitCommitPlan> {
+    this.commitPlan = undefined;
+    const identity = commitInput(input), ref = await this.commitRef(), signature = await this.signature();
+    const staged = await this.run(['diff', '--cached', '--name-status', '-z', '--no-renames', '--']);
+    const fields = staged.split('\0'); if (fields.pop() !== '' || fields.length % 2 || !fields.length || fields.length > 132) throw new Error('Index vide ou trop de fichiers à committer (66 maximum).');
+    const permitted = new Set(this.permittedPaths()); const files: GitCommitPlan['files'] = [];
+    for (let index = 0; index < fields.length; index += 2) {
+      const status = fields[index]!, path = gitPath(fields[index + 1]!);
+      if (!['A', 'M', 'D'].includes(status) || !permitted.has(path)) throw new Error('Commit limité aux changements indexés des sources déclarées, manifeste et .gitignore ; autres contenus exclus.');
+      files.push({ path, status: status as 'A' | 'M' | 'D' });
+    }
+    const entries = (await this.run(['ls-files', '--stage', '-z'])).split('\0').filter(Boolean); let total = 0;
+    for (const file of files.filter(file => file.status !== 'D')) {
+      const entry = entries.find(entry => entry.slice(entry.indexOf('\t') + 1) === file.path);
+      const match = entry && /^(100644|100755) ([a-f0-9]{40}) 0\t/.exec(entry);
+      if (!match) throw new Error('Index sans lien et sans conflit requis.');
+      const content = await this.run(['cat-file', 'blob', match[2]!]); total += Buffer.byteLength(content);
+      if (content.includes('\0') || content.charCodeAt(0) === 0xfeff || total > 8 * LIMIT) throw new Error('Fichiers indexés UTF-8 sans BOM/NUL, 1 Mio/fichier et 8 Mio/commit requis.');
+    }
+    const diff = await this.run(['diff', '--cached', '--no-ext-diff', '--no-textconv', '--no-color', '--no-renames', '--']);
+    const temporary = join(this.root, `.git/microide-commit-index-${randomUUID()}`); let tree: string;
+    try {
+      const bytes = await this.bytes('.git/index'); if (!bytes) throw new Error('Index absent.');
+      await writeFile(temporary, bytes, { flag: 'wx', mode: 0o600 });
+      tree = (await this.run(['write-tree'], this.root, temporary)).trim();
+    } finally { await unlink(temporary).catch(() => undefined); }
+    if (!/^[a-f0-9]{40}$/.test(tree) || ref !== await this.commitRef() || signature !== await this.signature()) throw new Error('Dépôt modifié pendant la préparation du commit.');
+    const head = parseStatus(await this.rawStatus()).head;
+    const view = { ...identity, id: randomUUID(), branch: ref.slice(11), head, tree, files, diff };
+    this.commitPlan = { view, signature, ref }; return structuredClone(view);
+  }
+  commitSelection(id: unknown): GitCommitPlan {
+    if (typeof id !== 'string' || id !== this.commitPlan?.view.id) throw new Error('Aperçu de commit périmé ; préparez de nouveau.');
+    return structuredClone(this.commitPlan.view);
+  }
+  async commit(id: unknown): Promise<GitCommitResult> {
+    if (this.mutating) throw new Error('Mutation Git déjà en cours.');
+    const view = this.commitSelection(id), plan = this.commitPlan!; this.commitPlan = undefined; this.mutating = true;
+    const lockPath = join(this.root, '.git/index.lock'), messagePath = join(this.root, `.git/microide-message-${randomUUID()}`);
+    let lock: Awaited<ReturnType<typeof open>> | undefined, oid: string | undefined, published = false;
+    try {
+      try { lock = await open(lockPath, 'wx', 0o600); } catch { throw new Error('Index Git verrouillé ; verrou existant conservé.'); }
+      const owned = await lock.stat();
+      const check = async () => {
+        const stat = await lstat(lockPath);
+        if (stat.isSymbolicLink() || stat.dev !== owned.dev || stat.ino !== owned.ino || plan.ref !== await this.commitRef() || plan.signature !== await this.signature()) throw new Error('Dépôt/index/fichiers modifiés depuis l’aperçu ; commit refusé.');
+      };
+      await check(); await writeFile(messagePath, view.message, { flag: 'wx', mode: 0o600 });
+      oid = (await this.run(['commit-tree', '--no-gpg-sign', view.tree, ...(view.head === '(initial)' ? [] : ['-p', view.head]), '-F', messagePath], this.root, undefined, { identity: view })).trim();
+      if (!/^[a-f0-9]{40}$/.test(oid)) throw new Error('Objet commit non qualifié.');
+      await check();
+      await this.run(['update-ref', '--stdin', '--create-reflog', '-m', `CPCéleste: ${view.message.split('\n')[0]}`], this.root, undefined,
+        { identity: view, input: `start\nupdate HEAD ${oid} ${view.head === '(initial)' ? '0'.repeat(40) : view.head}\nprepare\n`, prepared: check });
+      published = true;
+      const status = await this.inspect();
+      if (status.head !== oid || status.branch !== view.branch) throw new Error('HEAD modifié après publication.');
+      return { oid, branch: view.branch, status };
+    } catch (error) {
+      // A timeout may happen after update-ref; never retry a commit silently.
+      if (oid) {
+        try { published ||= parseStatus(await this.rawStatus()).head === oid; } catch { /* Result remains unconfirmed. */ }
+        if (published) throw new Error(`Commit ${oid} créé mais résultat non confirmé ; consultez l’historique avant de reprendre.`);
+      }
+      return this.failure(error);
+    } finally {
+      if (lock) {
+        const owned = await lock.stat().catch(() => undefined); await lock.close().catch(() => undefined);
+        const current = await lstat(lockPath).catch(() => undefined);
+        if (owned && current && !current.isSymbolicLink() && owned.dev === current.dev && owned.ino === current.ino) await unlink(lockPath).catch(() => undefined);
+      }
+      await unlink(messagePath).catch(() => undefined); this.mutating = false;
+    }
   }
   async prepareInit(): Promise<GitInitPlan> {
     try {
