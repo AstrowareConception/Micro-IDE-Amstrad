@@ -1,0 +1,26 @@
+import fs from 'node:fs';
+import { syncBuiltinESMExports } from 'node:module';
+import { join } from 'node:path';
+import { AgentJournal } from '../apps/desktop/agent-journal.ts';
+const root = process.argv[2]!, stop = process.argv[3]!;
+const pause = async () => { process.on('message', () => {}); process.send?.({ ready: true }); await new Promise(() => {}); };
+const prepare = AgentJournal.prototype.prepare;
+AgentJournal.prototype.prepare = async function(...args) { const result = await prepare.apply(this, args); if (stop === 'prepared') await pause(); return result; };
+const rename = fs.promises.rename;
+fs.promises.rename = async (old, next) => {
+  await rename(old, next);
+  if (String(next) === join(root, stop === 'main' ? 'src/main.bas' : stop === 'new' ? 'src/new.bas' : 'microide.project.json') && ['main', 'new', 'manifest'].includes(stop)) await pause();
+};
+const unlink = fs.promises.unlink;
+fs.promises.unlink = async path => { await unlink(path); if (stop === 'removed' && String(path) === join(root, 'src/new.bas')) await pause(); };
+syncBuiltinESMExports();
+const { ProjectStore } = await import('../apps/desktop/project-store.ts');
+const { addProjectSource } = await import('../packages/workspace/src/project.ts');
+const { store, snapshot } = await ProjectStore.open(root);
+const initial = await store.agentState(snapshot.files.map(file => ({ id: file.id, source: file.source })));
+const candidate = structuredClone(initial); candidate.files[0]!.saved = candidate.files[0]!.source = '10 REM AGENT MAIN\n20 END\n';
+candidate.manifest = addProjectSource(candidate.manifest, 'NEW'); candidate.files.push({ ...candidate.manifest.sources.at(-1)!, source: '10 REM AGENT NEW\n20 RETURN\n', saved: '10 REM AGENT NEW\n20 RETURN\n' });
+await store.applyAgentState(candidate);
+if (stop === 'removed') await store.applyAgentState(initial);
+if (stop === 'committed') await pause();
+throw new Error('Fixture boundary not reached: ' + stop);

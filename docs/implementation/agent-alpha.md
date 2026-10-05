@@ -45,6 +45,8 @@ Une réponse incomplète ou invalide ne déclenche aucun outil. Le même `callId
 
 ## Checkpoints et récupération
 
+**Évolution 0.21** : les écritures de sources/manifeste disposent désormais d’un [journal durable de mutation et d’une reprise native](agent-durability-alpha.md). Les limites ci-dessous décrivent le checkpoint de conversation/mission 0.6, distinct du journal de mutation ; elles ne signifient plus que les écritures de projet sont dépourvues de reprise.
+
 Le main écrit `<userData>/agent-checkpoints/<taskId>/checkpoint.json`, permissions demandées 0700/0600 sur les hôtes POSIX. Il contient manifeste, sources avant/après, versions disque et brouillons initiaux, phase, résultats et activité publique. Ni clé, ni ROM, ni conversation complète du fournisseur ; il est hors projet/Git/DSK. Ce contenu est privé et peut inclure le texte du projet. Les ACL Windows héritent du profil utilisateur ; aucun chiffrement du checkpoint n'est revendiqué.
 
 Les phases initial/prepared/committed/finished/restore-prepared/restored aident à examiner un incident. En cas de crash, **ne pas rejouer les mutations automatiquement** : copier d'abord le projet courant et le checkpoint, comparer leurs fichiers, restaurer les sources initiales dans un dossier de travail séparé, puis seulement reprendre volontairement. Il n'y a pas encore de navigateur de checkpoints, migration, effacement UI ou reprise après redémarrage. La restauration du bouton ne concerne que la mission courante dans le processus courant. Un échec de journal ou rollback est signalé ; le projet est bloqué si la restauration in-process est incomplète. Les courses avec un processus externe entre contrôle hash et rename, et la panne électrique, restent ouvertes.

@@ -101,3 +101,7 @@ Partager un projet inclut manifeste, sources et ressources nécessaires ; docume
 ## Inspection externe alpha 0.20
 
 `external:status(sessionId)` retourne au plus 64 sources déclarées modifiées (`id`, `path`, SHA-256 `revision`) ou illisibles (`issue`). `external:read(sessionId,id,revision)` retourne texte LF, révision disque et `baseRevision` connue. `external:accept(sessionId,id,revision,baseRevision)` recontrôle manifeste/journal/version/base puis adopte la base en mémoire ; aucun fichier écrit. Session liée à la fenêtre et mêmes gardes main que les autres ports. Le renderer met à jour la référence enregistrée et conserve son buffer, ou applique le texte via les opérations Monaco guardées/undo. [ADR 0025](../adr/0025-revue-des-modifications-externes.md).
+
+## Journal de mutation agent alpha 0.21
+
+Record local privé v1 `.microide/agent-journal/current.json` : UUID/projet/date/phase, manifeste avant/après et union des sources avec contenu base64/SHA-256 ; null signifie absence prévue. Phases pending/committed/restored. Versions UTF-8, manifeste 1 Mio/version, sources 64 Kio/version et 256 Kio/ensemble, record 4 Mio. Lecture/reprise en main, aucun chemin libre renderer ; choix natif à l’ouverture. Révision SHA-256 des octets exacts du record contrôlée pendant la reprise. Historique source étend les raisons à `before-agent` et `after-agent` (version préparée, pas preuve d’application). [ADR 0026](../adr/0026-journal-durable-des-mutations-agent.md).

@@ -9,6 +9,7 @@ import { saveBatch, SaveBatchFailure } from '../../packages/workspace/src/save-b
 import { SaveJournal, durableReplace, type RecoveryChoice, type RecoverySummary } from './save-journal.ts';
 import { LocalHistory } from './local-history.ts';
 import type { HistorySnapshot, HistoryVersion } from '../../packages/workspace/src/history.ts';
+import { AgentJournal, type AgentJournalSource } from './agent-journal.ts';
 import { DraftStore } from './draft-store.ts';
 import type { DraftSummary, DraftRecovery } from '../../packages/workspace/src/drafts.ts';
 import type { ExternalChange, ExternalVersion } from '../../packages/workspace/src/external.ts';
@@ -49,6 +50,7 @@ export class ProjectStore {
   static async open(folder: string, imageDecoder?: ImageDecoder, pdfExtractor?: PdfExtractor): Promise<{ store: ProjectStore; snapshot: ProjectSnapshot }> {
     const root = await realpath(folder);
     if (!(await lstat(root)).isDirectory()) throw new Error('Dossier de projet requis.');
+    await new AgentJournal(root).assertResolved();
     const content = await bytes(join(root, MANIFEST));
     const manifest = parseProject(JSON.parse(text(content)));
     const store = new ProjectStore(root, manifest, hash(content), imageDecoder, pdfExtractor);
@@ -63,6 +65,8 @@ export class ProjectStore {
     await store.agentDocuments();
     return { store, snapshot: { sessionId: store.sessionId, manifest, files } };
   }
+  static async agentRecoveryStatus(folder: string): Promise<RecoverySummary | undefined> { return new AgentJournal(await realpath(folder)).status(); }
+  static async recoverAgent(folder: string, id: string, choice: RecoveryChoice, revision: string): Promise<void> { await new AgentJournal(await realpath(folder)).recover(id, choice, revision); }
   private static async journal(folder: string): Promise<SaveJournal> {
     const root = await realpath(folder);
     if (!(await lstat(root)).isDirectory()) throw new Error('Dossier de projet requis.');
@@ -94,6 +98,7 @@ export class ProjectStore {
     return canonical;
   }
   private async checkManifest(): Promise<void> {
+    await new AgentJournal(this.root).assertResolved();
     if (this.faulted) throw new Error('Projet bloqué après échec de restauration ; conserver les versions locales et rouvrir après examen.');
     if (hash(await bytes(join(this.root, MANIFEST))) !== this.manifestHash) throw new Error('Le manifeste a changé sur disque. Rouvrez le projet ; aucune modification écrasée.');
   }
@@ -174,56 +179,47 @@ export class ProjectStore {
     if (files.reduce((size, file) => size + Buffer.byteLength(file.saved), 0) > 256 * 1024) throw new Error('Mission agent limitée à 256 Kio de sources disque.');
     return { sessionId: this.sessionId, manifest: structuredClone(this.manifest), files };
   }
-  /** Main-owned candidate only. Roll back a failed batch in-process; durable crash replay remains separate. */
+  /** Main-owned candidate; journal the entire source/manifest mutation before writing. */
   async applyAgentState(state: AgentWorkspaceState): Promise<void> {
     this.assertSession(state.sessionId); await this.checkManifest();
+    await new SaveJournal(this.root, this.manifest, this.manifestHash).assertResolved();
     const manifest = parseProject(state.manifest);
     if (JSON.stringify(manifest.documents) !== JSON.stringify(this.manifest.documents)) throw new Error('stale-read : documents du projet modifiés depuis la mission ; restauration refusée.');
     await this.agentDocuments();
     if (manifest.projectId !== this.manifest.projectId || state.files.length !== manifest.sources.length || new Set(state.files.map(file => file.id)).size !== state.files.length) throw new Error('Snapshot agent invalide.');
-    const before = new Map<string, { path: string; content: Buffer }>();
+    const entries = new Map<string, AgentJournalSource>();
     for (const item of this.manifest.sources) {
-      const path = await this.path(item.path), content = await bytes(path);
+      const content = await bytes(await this.path(item.path));
       if (hash(content) !== this.hashes.get(item.id)) throw new Error(`${item.path} a changé sur disque.`);
-      before.set(item.id, { path, content });
+      entries.set(item.id, { id: item.id, path: item.path, before: content, after: null });
     }
-    const manifestBefore = await bytes(join(this.root, MANIFEST));
-    const written = new Map<string, { path: string; digest: string }>();
-    const removed = new Set<string>(); let manifestWritten = false;
-    await this.path('src');
-    try {
-      for (const item of manifest.sources) {
-        const file = state.files.find(file => file.id === item.id);
-        if (!file || file.path !== item.path || file.cpcName !== item.cpcName || typeof file.saved !== 'string' || Buffer.byteLength(file.saved) > 65536 || file.saved.includes('\0') || file.saved.charCodeAt(0) === 0xfeff) throw new Error('Source agent invalide.');
-        const oldItem = this.manifest.sources.find(source => source.id === item.id);
-        if (oldItem && (oldItem.path !== item.path || oldItem.cpcName !== item.cpcName)) throw new Error('Renommage agent non disponible.');
-        const content = Buffer.from(file.saved.replace(/\r\n?/g, '\n'));
-        const old = before.get(item.id);
-        if (old && text(old.content) === file.saved) continue; // Preserve untouched bytes, including CRLF.
-        const path = old?.path ?? join(this.root, item.path);
-        if (!old && item.path !== `src/${item.id}.bas`) throw new Error('Création agent limitée aux sources plates.');
-        if (old) await atomic(path, content);
-        else await writeFile(path, content, { flag: 'wx', mode: 0o600 });
-        written.set(item.id, { path, digest: hash(content) });
+    await this.path('src'); let total = 0;
+    for (const item of manifest.sources) {
+      const file = state.files.find(file => file.id === item.id);
+      if (!file || file.path !== item.path || file.cpcName !== item.cpcName || typeof file.saved !== 'string' || file.saved.includes('\0') || file.saved.charCodeAt(0) === 0xfeff) throw new Error('Source agent invalide.');
+      const old = this.manifest.sources.find(source => source.id === item.id);
+      if (old && (old.path !== item.path || old.cpcName !== item.cpcName)) throw new Error('Renommage agent non disponible.');
+      const normalized = file.saved.replace(/\r\n?/g, '\n'), content = Buffer.from(normalized); total += content.length;
+      if (content.length > 65536 || total > 256 * 1024) throw new Error('Sources agent limitées à 64 Kio/source et 256 Kio/projet.');
+      const entry = entries.get(item.id);
+      if (entry) entry.after = text(entry.before!) === normalized ? entry.before : content;
+      else {
+        if (item.path !== `src/${item.id}.bas`) throw new Error('Création agent limitée aux sources plates.');
+        try { await lstat(join(this.root, item.path)); throw new Error(`EEXIST : destination agent occupée : ${item.path}.`); }
+        catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+        entries.set(item.id, { id: item.id, path: item.path, before: null, after: content });
       }
-      if (JSON.stringify(manifest) !== JSON.stringify(this.manifest)) {
-        await atomic(join(this.root, MANIFEST), Buffer.from(JSON.stringify(manifest, null, 2) + '\n')); manifestWritten = true;
-      }
-      for (const [id, item] of before) if (!manifest.sources.some(source => source.id === id)) { await unlink(item.path); removed.add(id); }
-    } catch (error) {
-      try {
-        for (const [id, item] of written) {
-          if (hash(await bytes(item.path)) !== item.digest) throw new Error('Conflit externe pendant rollback.');
-          const old = before.get(id); if (old) await atomic(item.path, old.content); else await unlink(item.path);
-        }
-        for (const id of removed) { const old = before.get(id)!; await writeFile(old.path, old.content, { flag: 'wx', mode: 0o600 }); }
-        if (manifestWritten) await atomic(join(this.root, MANIFEST), manifestBefore);
-      } catch { this.faulted = true; throw new Error('Échec partiel et rollback incomplet : projet bloqué. Conserver le checkpoint local avant toute reprise.'); }
-      throw error;
     }
-    this.manifest = manifest; this.manifestHash = hash(manifestWritten ? Buffer.from(JSON.stringify(manifest, null, 2) + '\n') : manifestBefore);
-    this.hashes.clear();
-    for (const item of manifest.sources) this.hashes.set(item.id, written.get(item.id)?.digest ?? hash(before.get(item.id)!.content));
+    const before = await bytes(join(this.root, MANIFEST));
+    if (hash(before) !== this.manifestHash) throw new Error('Manifeste périmé avant mutation agent.');
+    const after = JSON.stringify(manifest) === JSON.stringify(this.manifest) ? before : Buffer.from(JSON.stringify(manifest, null, 2) + '\n');
+    const files = [...entries.values()];
+    if (hash(before) === hash(after) && files.every(file => file.before !== null && file.after !== null && hash(file.before) === hash(file.after))) return;
+    const journal = new AgentJournal(this.root), transaction = await journal.prepare(before, after, files);
+    try { await journal.recover(transaction.id, 'finish', transaction.revision!); }
+    catch (error) { this.faulted = true; throw new Error(`Mutation agent interrompue ; journal conservé. Rouvrez le projet pour récupérer. ${String(error)}`); }
+    this.manifest = manifest; this.manifestHash = hash(after); this.hashes.clear();
+    for (const file of files) if (file.after !== null) this.hashes.set(file.id, hash(file.after));
   }
   async save(id: string, source: string): Promise<void> {
     await this.checkManifest();

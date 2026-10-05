@@ -126,6 +126,14 @@ route('listing:export', async payload => {
 route('project:open', async () => {
   const selection = await dialog.showOpenDialog(window, { properties: ['openDirectory'] });
   if (selection.canceled || !selection.filePaths[0]) return null;
+  const agentRecovery = await ProjectStore.agentRecoveryStatus(selection.filePaths[0]);
+  if (agentRecovery) {
+    const choice = await dialog.showMessageBox(window, { type: 'warning', buttons: ['Annuler', 'Terminer la mutation agent', 'Rétablir les versions avant mutation'], defaultId: 0, cancelId: 0,
+      message: 'Une mutation de l’agent a été interrompue.',
+      detail: `${agentRecovery.createdAt}\n${agentRecovery.files.join('\n')}\n\nTerminer applique les sources et le manifeste préparés. Rétablir revient aux octets précédents et retire les sources créées par cette mutation. Tout conflit externe bloque la reprise. Les prompts et la mission distante ne sont pas relancés ; les brouillons non enregistrés restent distincts.` });
+    if (choice.response !== 1 && choice.response !== 2) return null;
+    await ProjectStore.recoverAgent(selection.filePaths[0], agentRecovery.id, choice.response === 1 ? 'finish' : 'restore', agentRecovery.revision!);
+  }
   const recovery = await ProjectStore.recoveryStatus(selection.filePaths[0]);
   if (recovery) {
     const choice = await dialog.showMessageBox(window, { type: 'warning', buttons: ['Annuler', 'Terminer la sauvegarde', 'Rétablir les anciennes versions'], defaultId: 0, cancelId: 0,

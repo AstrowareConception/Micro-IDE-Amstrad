@@ -88,7 +88,7 @@ test('OpenAI transport uses Responses, exact schemas, no storage or retry, and n
   const leaking = new OpenAIProvider(key, DEFAULT_MODEL, async () => Response.json({ status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: key }] }], usage: { total_tokens: 5 } }));
   await assert.rejects(leaking.respond([], [], new AbortController().signal), /secret refusée/);
 });
-test('agent batch rolls back if a new destination is occupied, keeps external bytes and restores created files safely', async () => {
+test('agent batch preflight refuses an occupied destination, keeps external bytes and restores created files safely', async () => {
   const root = await mkdtemp(join(tmpdir(), 'agent-batch-')); const { store } = await ProjectStore.create(root, 'Batch');
   const baseline = await readFile(join(root, 'src/main.bas'), 'utf8');
   const initial = await store.agentState([{ id: 'main', source: baseline + '30 REM UNSAVED' }]);
