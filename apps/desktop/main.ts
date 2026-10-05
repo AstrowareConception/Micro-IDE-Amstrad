@@ -11,6 +11,7 @@ import { extractPdf } from './pdf-document.ts';
 import { AgentController } from './agent-controller.ts';
 import { FirmwareStore } from './firmware-store.ts';
 import { GitInspection } from './git-inspection.ts';
+import { GitIdentityStore } from './git-identity-store.ts';
 import { ProjectTerminal } from './terminal.ts';
 import { romRole } from '../../packages/emulator/src/firmware.ts';
 
@@ -66,6 +67,7 @@ function route(channel: string, handler: (payload: unknown) => Promise<unknown>,
 // Do not hold the ESM entry point open while waiting for Electron's ready lifecycle.
 void app.whenReady().then(async () => {
 agent = new AgentController(join(app.getPath('userData'), 'agent-checkpoints'), join(base, '../../knowledge/locomotive-basic'));
+const gitIdentity = new GitIdentityStore(app.getPath('userData'));
 const firmware = new FirmwareStore(join(app.getPath('userData'), 'firmware'));
 window = new BrowserWindow({ width: 1440, height: 960, minWidth: 900, minHeight: 650,
   backgroundColor: '#10151d', title: 'CPCéleste — Atelier Amstrad CPC', icon: join(base, '../../renderer/brand/cpceleste-icon.png'),
@@ -162,6 +164,9 @@ function gitInspector(store: ProjectStore): GitInspection {
     inspector: new GitInspection(store.root, () => store.manifest.sources.map(source => source.path)) };
   return gitSession.inspector;
 }
+route('git:identity', async payload => { projectRequest(payload); return gitIdentity.status(); });
+route('git:remember-identity', async payload => { const { value } = projectRequest(payload); return gitIdentity.remember(value.revision, value.identity); });
+route('git:forget-identity', async payload => { const { value } = projectRequest(payload); return gitIdentity.forget(value.revision); });
 route('git:status', async payload => {
   const { store } = projectRequest(payload); await store.assertCurrent();
   return gitInspector(store).status();

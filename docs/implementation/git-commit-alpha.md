@@ -25,3 +25,5 @@ La préparation peut créer des objets arbre ; une erreur après création du co
 146 tests Node, dont sept nouveaux tests avec Git réel : premiers/seconds commits, octets indexés distincts du disque, identité/message, parents/reflogs, index/config inchangés, conflits HEAD/branche/index/source/config, fichiers privés/binaires/liens, hooks et verrous externes, refus après préparation sous verrou Git. Recette Electron ajoutée : aperçu, annulation native, deux commits, historique, conflit pendant confirmation, buffers dirty et session périmée. Son exécution effective et la capture sont attestées dans la PR de cet incrément.
 
 [ADR 0027](../adr/0027-commit-git-index-exact.md). IDE-033 devient partiel ; R3/JG-A/ACC-31 restent ouverts. Suite : identité persistante qualifiée et branches locales avec protection des buffers/projet avant synchronisation réseau.
+
+L’[alpha 0.23](git-identity-alpha.md) ajoute un profil privé d’identité facultatif ; la configuration Git reste inchangée.
