@@ -32,3 +32,5 @@ Une ADR explique une décision durable et ses conséquences. **Acceptée** signi
 Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou preuve technique, pas parce qu'une technologie différente est disponible.
 
 - [0025 — Revue des modifications externes](0025-revue-des-modifications-externes.md) : polling, comparaison et adoption explicite de base disque.
+
+- [0026 — Journal durable des mutations agent](0026-journal-durable-des-mutations-agent.md) : sources/manifeste/créations, reprise explicite et snapshots locaux.

@@ -188,3 +188,7 @@ IDE-011 passe de N à P : copie de récupération opt-in distincte des fichiers 
 ## Avancement alpha 0.20 — 5 octobre 2026
 
 IDE-012 passe de N à P : inspection automatique par empreinte des sources déclarées, alertes modification/absence/manifeste, diff et adoption explicite. Chargement avec undo ou conservation du buffer sans écriture, contrôle version/base et protection des copies de brouillons. [Guide](../implementation/external-alpha.md), [ADR 0025](../adr/0025-revue-des-modifications-externes.md). 132 tests Node et parcours Electron selon preuves de PR. Polling initial ; watcher événementiel, fusion/rename et Windows/macOS restent ouverts. Suite : checkpoints durables et historique des mutations agent, puis identité/commit Git. R2 reste ouvert.
+
+## Avancement alpha 0.21 — 5 octobre 2026
+
+IDE-007/008/009/010 progressent avec le journal durable des mutations agent : sources/manifeste/création et retrait lors de restauration, reprise native terminer/rétablir, refus des conflits et snapshots avant/proposés dans l’historique. [Guide](../implementation/agent-durability-alpha.md), [ADR 0026](../adr/0026-journal-durable-des-mutations-agent.md). 139 tests Node, dont onze SIGKILL agent supplémentaires ; recette Electron attestée selon PR. Tous ces items restent P : ajout humain/imports, historique projet complet, panne électrique, Windows/macOS et anciennes missions restent ouverts. R2 ne ferme pas J1-03/ACC-02. Prochain lot : identité et commit Git local, puis branches et synchronisation selon préconditions JG.

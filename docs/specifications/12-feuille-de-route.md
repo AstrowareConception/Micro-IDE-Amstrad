@@ -2,6 +2,8 @@
 
 ## Mode de progression
 
+R2 avance en alpha 0.21 : [journal des mutations agent](../implementation/agent-durability-alpha.md), créations/remplacements/renumérotation et restauration courante, reprise native et versions avant/proposées dans l’historique ([ADR 0026](../adr/0026-journal-durable-des-mutations-agent.md)). Les arrêts de processus Linux sont testés ; R2/J1-03/ACC-02 restent partiels. Suite prioritaire : identité et commit Git local avant réseau/changements de branche.
+
 R2 avance en alpha 0.20 : [revue des changements externes](../implementation/external-alpha.md), détection par empreintes, comparaison et adoption explicite avec buffers/undo conservés ([ADR 0025](../adr/0025-revue-des-modifications-externes.md)). IDE-012 devient partiel. Prochaine tranche : checkpoints durables des mutations agent, puis identité/commit Git ; R2 et qualification moteur restent ouverts.
 
 R2 avance en alpha 0.19 : [copie optionnelle des brouillons](../implementation/drafts-alpha.md), reprise sélective dans les buffers avec undo et tests SIGKILL ([ADR 0024](../adr/0024-copie-brouillons-et-reprise-buffers.md)). IDE-011 devient partiel. Suite prioritaire : IDE-012 détection/revue contrôlée des modifications externes, puis extension des checkpoints aux mutations agent avant checkout Git.

@@ -194,7 +194,7 @@ export function App() {
   const menu = (label: string, ids: string[]) => <details className="workbench-menu"><summary>{label}</summary><div>{commands.filter(command => ids.includes(command.id)).map(command => <button key={command.id} disabled={command.disabled} onClick={event => { event.currentTarget.closest('details')?.removeAttribute('open'); command.run(); }}>{command.label}</button>)}</div></details>;
   return <main className="workbench">
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.20 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.21 · AstroWare Conception</p></div></div>
       <span className="profile">CPC 6128 · BASIC 1.1</span>
     </header>
     <nav className="menubar" aria-label="Menus de l’atelier">

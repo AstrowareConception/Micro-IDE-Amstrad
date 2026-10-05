@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.20
+# CPCéleste — Dossier de conception et réalisation — version 0.21
+
+La [reprise des mutations agent 0.21](implementation/agent-durability-alpha.md) ajoute journal durable des sources/manifeste, choix natif terminer/rétablir, créations/retrait lors de restauration et snapshots agent dans l’historique local. [ADR 0026](adr/0026-journal-durable-des-mutations-agent.md). R2 reste ouvert ; identité/commit Git suit.
 
 La [revue externe 0.20](implementation/external-alpha.md) détecte les changements disque, conserve les buffers et propose comparaison/chargement avec undo ou adoption de base sans remplacement. [ADR 0025](adr/0025-revue-des-modifications-externes.md). IDE-012 devient partiel ; checkpoints agent puis Git local suivent.
 

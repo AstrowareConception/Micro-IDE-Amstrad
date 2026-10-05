@@ -26,7 +26,7 @@ function decode(entry: Entry): Buffer {
 }
 function parse(value: unknown, projectId: string): RecordV1 {
   const item = keys(value, ['version', 'id', 'projectId', 'createdAt', 'reason', 'files']);
-  if (item.version !== 1 || typeof item.id !== 'string' || !UUID.test(item.id) || item.projectId !== projectId || typeof item.createdAt !== 'string' || item.createdAt.length !== 24 || !Number.isFinite(Date.parse(item.createdAt)) || new Date(item.createdAt).toISOString() !== item.createdAt || !['before-save', 'after-save'].includes(item.reason as string) || !Array.isArray(item.files) || !item.files.length || item.files.length > 64) throw new Error('Version ou projet historique inconnu ; données conservées.');
+  if (item.version !== 1 || typeof item.id !== 'string' || !UUID.test(item.id) || item.projectId !== projectId || typeof item.createdAt !== 'string' || item.createdAt.length !== 24 || !Number.isFinite(Date.parse(item.createdAt)) || new Date(item.createdAt).toISOString() !== item.createdAt || !['before-save', 'after-save', 'before-agent', 'after-agent'].includes(item.reason as string) || !Array.isArray(item.files) || !item.files.length || item.files.length > 64) throw new Error('Version ou projet historique inconnu ; données conservées.');
   let total = 0;
   for (const raw of item.files) {
     const entry = keys(raw, ['id', 'path', 'sha256', 'content']);
