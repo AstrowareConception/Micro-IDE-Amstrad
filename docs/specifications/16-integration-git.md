@@ -82,3 +82,8 @@ L'alpha 0.13 complète init/exclusions et stage/unstage d'un fichier autorisé a
 L’alpha 0.14 ajoute la lecture d’historique (20 commits/page, 2 000 au total, HEAD capturé, curseur opaque), sans checkout/restauration/commit. [Guide atelier](../implementation/workbench-alpha.md), [ADR 0019](../adr/0019-outils-atelier-et-terminal-humain.md). Le terminal humain est une commande système explicitement confirmée, séparée du port Git conservateur et des outils IA ; il ne qualifie aucune opération Git réseau intégrée. L’identité/commit et les critères complets JG-A restent ouverts.
 
 Références officielles consultées le 2026-10-04 : [statut porcelain](https://git-scm.com/docs/git-status), [pull et stratégies](https://git-scm.com/docs/git-pull), [credentials](https://git-scm.com/docs/gitcredentials), [configuration](https://git-scm.com/docs/git-config), [hooks](https://git-scm.com/docs/githooks). Les politiques de confiance et de publication ci-dessus sont des décisions du produit, pas des garanties fournies par Git.
+
+
+## Avancement alpha 0.22 — 5 octobre 2026
+
+R3 commence avec [identité explicite et commits locaux](../implementation/git-commit-alpha.md), [ADR 0027](../adr/0027-commit-git-index-exact.md). Aperçu exact de l’index, confirmation native, premiers/seconds commits, préconditions sous verrou et conservation du disque/index/configuration. Git 2.48+, commits non signés et hooks désactivés ; identité persistante, branches et réseau restent ouverts. IDE-033 passe à P ; R3/JG-A/ACC-31 ne sont pas clos. 146 tests Node ; recette Electron et capture attestées dans la PR.

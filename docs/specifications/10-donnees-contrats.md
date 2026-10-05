@@ -105,3 +105,8 @@ Partager un projet inclut manifeste, sources et ressources nécessaires ; docume
 ## Journal de mutation agent alpha 0.21
 
 Record local privé v1 `.microide/agent-journal/current.json` : UUID/projet/date/phase, manifeste avant/après et union des sources avec contenu base64/SHA-256 ; null signifie absence prévue. Phases pending/committed/restored. Versions UTF-8, manifeste 1 Mio/version, sources 64 Kio/version et 256 Kio/ensemble, record 4 Mio. Lecture/reprise en main, aucun chemin libre renderer ; choix natif à l’ouverture. Révision SHA-256 des octets exacts du record contrôlée pendant la reprise. Historique source étend les raisons à `before-agent` et `after-agent` (version préparée, pas preuve d’application). [ADR 0026](../adr/0026-journal-durable-des-mutations-agent.md).
+
+
+## Commit Git alpha 0.22
+
+`GitCommitInput` : propriétés exactes `{name,email,message}` ; limites 100/254/8192 caractères et contrôles refusés. `GitCommitPlan` : entrée normalisée, UUID opaque, branche, HEAD ou initial, arbre SHA-1, changements `{path,status:A|M|D}` et diff UTF-8. `prepareCommit(sessionId,input)` ne publie pas HEAD. `commit(sessionId,planId)` retourne null après annulation native, `{error}` après refus, ou `{oid,branch,status}` après publication. Plan conservé en main, invalidé par nouvelle inspection/mutation/entrée ; aucune destination ni commande libre fournie par renderer. Auteur/committer identiques, identité en mémoire de session uniquement ; [ADR 0027](../adr/0027-commit-git-index-exact.md).

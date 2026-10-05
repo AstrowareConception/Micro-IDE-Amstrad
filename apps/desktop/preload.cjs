@@ -25,6 +25,8 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
     stop: (sessionId, id) => ipcRenderer.invoke('terminal:stop', { sessionId, id }),
   }),
   git: Object.freeze({
+    prepareCommit: (sessionId, input) => ipcRenderer.invoke('git:prepare-commit', { sessionId, input }),
+    commit: (sessionId, planId) => ipcRenderer.invoke('git:commit', { sessionId, planId }),
     status: sessionId => ipcRenderer.invoke('git:status', { sessionId }),
     diff: (sessionId, changeId, side) => ipcRenderer.invoke('git:diff', { sessionId, changeId, side }),
     history: (sessionId, cursor) => ipcRenderer.invoke('git:history', { sessionId, cursor }),
