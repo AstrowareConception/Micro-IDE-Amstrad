@@ -2,6 +2,12 @@
 
 ## Mode de progression
 
+
+## Priorité Exécuter — alpha 0.24, 5 octobre 2026
+
+À la demande utilisateur, [Exécuter/F5 dans le CPC intégré](../implementation/emulator-run-alpha.md) passe avant la suite Git. [ADR 0029](../adr/0029-executer-buffers-cpc-integre.md) : worker chips/WASM, DSK des buffers, trois ROM privées, écran/clavier/pause/arrêt/son/export session et RUN automatique pour le jeu anglais reconnu (Ready manuel sinon). Boot BASIC 1.1, RUN disque et POKE sont prouvés sur le jeu identifié ; pixels PRINT vérifiés par recette UI. 157 tests Node ; preuves Electron dans la PR. J0/J3 restent partiels, oracle indépendant/OPENOUT/audio audible/autres plateformes ouverts ; aucun CPC physique qualifié. Suite immédiate : renforcer les recettes CPC, avant branches Git et outils d’exécution IA.
+
+
 R2 avance en alpha 0.21 : [journal des mutations agent](../implementation/agent-durability-alpha.md), créations/remplacements/renumérotation et restauration courante, reprise native et versions avant/proposées dans l’historique ([ADR 0026](../adr/0026-journal-durable-des-mutations-agent.md)). Les arrêts de processus Linux sont testés ; R2/J1-03/ACC-02 restent partiels. Suite prioritaire : identité et commit Git local avant réseau/changements de branche.
 
 R2 avance en alpha 0.20 : [revue des changements externes](../implementation/external-alpha.md), détection par empreintes, comparaison et adoption explicite avec buffers/undo conservés ([ADR 0025](../adr/0025-revue-des-modifications-externes.md)). IDE-012 devient partiel. Prochaine tranche : checkpoints durables des mutations agent, puis identité/commit Git ; R2 et qualification moteur restent ouverts.

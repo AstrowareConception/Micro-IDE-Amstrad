@@ -1,6 +1,7 @@
 import { buildListingDisk } from '../../../packages/basic-language/src/build.ts';
 import type { ProjectManifest, ProjectSnapshot, DocumentSnapshot } from '../../../packages/workspace/src/project.ts';
 import type { AgentPort } from '../../../packages/agent/src/types.ts';
+import type { EmulatorPort } from '../../../packages/emulator/src/run.ts';
 import type { FirmwarePort } from '../../../packages/emulator/src/firmware.ts';
 import type { VersionControlPort } from '../../../packages/version-control/src/inspection.ts';
 import type { TerminalPort } from '../../../packages/workspace/src/terminal.ts';
@@ -16,6 +17,7 @@ export interface DesktopPort {
   setDirty(dirty: boolean): void;
   agent?: AgentPort;
   firmware?: FirmwarePort;
+  emulator?: EmulatorPort;
   git?: VersionControlPort;
   terminal?: TerminalPort;
   history?: HistoryPort;

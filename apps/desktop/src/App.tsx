@@ -9,6 +9,7 @@ import { monaco, provenance } from './monaco-language.ts';
 import type { ProjectManifest, ProjectSnapshot } from '../../../packages/workspace/src/project.ts';
 import type { AgentWorkspaceState } from '../../../packages/agent/src/types.ts';
 import { AgentPanel } from './AgentPanel.tsx';
+import { EmulatorPanel, type EmulatorLaunch } from './EmulatorPanel.tsx';
 import { FirmwarePanel } from './FirmwarePanel.tsx';
 import { DocumentsPanel } from './DocumentsPanel.tsx';
 import { GitPanel } from './GitPanel.tsx';
@@ -33,6 +34,9 @@ export function App() {
   const active = documents.find(document => document.id === activeId)!;
   const { source } = active;
   const [status, setStatus] = useState('Prêt. Écrivez du BASIC, sans ROM ni connexion.');
+  const [emulatorLaunch, setEmulatorLaunch] = useState<EmulatorLaunch>();
+  const runCurrent = useRef<() => void>(() => undefined);
+  runCurrent.current = () => { if (!busy) setEmulatorLaunch({ id: crypto.randomUUID(), request: project ? { sessionId: project.sessionId, sources: documents.map(document => ({ id: document.sourceId, source: document.source })) } : { source } }); };
   const [fileBusy, setBusy] = useState(false);
   const [agentBusy, setAgentBusy] = useState(false);
   const [renumberOpen, setRenumberOpen] = useState(false);
@@ -55,6 +59,7 @@ export function App() {
   useEffect(() => { files.setDirty(dirty); }, [dirty]);
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
+      if (event.key === 'F5') { event.preventDefault(); event.stopPropagation(); runCurrent.current(); return; }
       if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'f') {
         event.preventDefault(); event.stopPropagation(); setSearchOpen(true);
       }
@@ -161,6 +166,7 @@ export function App() {
     { id: 'save', label: 'Enregistrer le listing actif', detail: 'Ctrl S', disabled: busy, run: () => void save() },
     { id: 'save-all', label: 'Enregistrer tout le projet', disabled: busy || !project || !files.project, run: () => void saveAll() },
     { id: 'local-history', label: 'Historique local de la source', disabled: busy || !project || !files.history, run: () => setHistoryOpen(true) },
+    { id: 'run', label: 'Exécuter dans le CPC 6128', detail: 'F5 · buffers courants', disabled: busy, run: () => runCurrent.current() },
     { id: 'export', label: 'Exporter le projet en DSK', disabled: busy, run: () => void exportDisk() },
     { id: 'undo', label: 'Annuler la modification', disabled: busy, run: () => { editor.current?.focus(); editor.current?.trigger('workbench', 'undo', null); } },
     { id: 'redo', label: 'Rétablir la modification', disabled: busy, run: () => { editor.current?.focus(); editor.current?.trigger('workbench', 'redo', null); } },
@@ -194,12 +200,12 @@ export function App() {
   const menu = (label: string, ids: string[]) => <details className="workbench-menu"><summary>{label}</summary><div>{commands.filter(command => ids.includes(command.id)).map(command => <button key={command.id} disabled={command.disabled} onClick={event => { event.currentTarget.closest('details')?.removeAttribute('open'); command.run(); }}>{command.label}</button>)}</div></details>;
   return <main className="workbench">
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.23 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.24 · AstroWare Conception</p></div></div>
       <span className="profile">CPC 6128 · BASIC 1.1</span>
     </header>
     <nav className="menubar" aria-label="Menus de l’atelier">
       {menu('Fichier', ['open', 'project', 'save', 'save-all', 'local-history', 'export'])}{menu('Édition', ['undo', 'redo', 'find', 'replace', 'search-sources', 'line'])}
-      {menu('BASIC', ['renumber', 'complete'])}{menu('Affichage', ['minimap', 'zoom-in', 'zoom-out', 'terminal'])}
+      {menu('BASIC', ['run', 'renumber', 'complete'])}{menu('Affichage', ['minimap', 'zoom-in', 'zoom-out', 'terminal'])}
       <button onClick={() => setPalette('all')}>Commandes <kbd>Ctrl Maj P</kbd></button><button onClick={() => setPalette('sources')}>Sources <kbd>Ctrl P</kbd></button>
     </nav>
     {palette && <CommandPalette key={palette} title={palette === 'all' ? 'Commandes CPCéleste' : 'Ouvrir rapidement une source'} commands={palette === 'all' ? commands : commands.filter(command => command.id.startsWith('source:'))} onClose={() => setPalette(undefined)} />}
@@ -216,10 +222,12 @@ export function App() {
       <button disabled={busy || !project || !files.project} onClick={() => void saveAll()}>Enregistrer tout</button>
       <button disabled={busy || !project || !files.history} onClick={() => setHistoryOpen(true)}>Historique local</button>
       <button disabled={busy || !!project} onClick={() => void perform(() => files.save(source, true), 'Listing enregistré', true)}>Enregistrer sous</button>
+      <button className="primary" disabled={busy} onClick={() => runCurrent.current()}>Exécuter <kbd>F5</kbd></button>
       <button className="primary" disabled={busy} onClick={() => void exportDisk()}>Exporter DSK</button>
       <button onClick={() => { editor.current?.focus(); void editor.current?.getAction('editor.action.triggerSuggest')?.run(); }}>Compléter <kbd>Ctrl Espace</kbd></button>
       <button disabled={busy} onClick={() => setRenumberOpen(true)}>Renuméroter</button>
     </nav>
+    {emulatorLaunch && <EmulatorPanel key={emulatorLaunch.id} launch={emulatorLaunch} onClose={() => setEmulatorLaunch(undefined)} />}
     <div className="workspace">
       <section className="listing" aria-label="Éditeur">
         <div className="tabs" role="tablist" aria-label="Sources ouvertes">{documents.map(document => <button role="tab" aria-selected={document.id === activeId} className="tab" key={document.id} disabled={busy} onClick={() => setActiveId(document.id)} onContextMenu={event => { event.preventDefault(); setContextSource(document.id); }} onKeyDown={event => { if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) { event.preventDefault(); setContextSource(document.id); } }}>{document.name}{document.source !== document.saved ? ' • modifié' : ''}</button>)}</div>

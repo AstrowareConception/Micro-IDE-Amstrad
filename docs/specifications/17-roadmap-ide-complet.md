@@ -86,7 +86,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-040 | Terminal à commandes hôte avec sortie/arrêt | P | P1 | 0.14/WIN | Non interactif livré Linux, garde dirty/IA ; Windows/macOS encore non qualifiés |
 | IDE-041 | PTY interactif, shells et sessions multiples | N | P1 | IDE-040/WIN | Resize/stdin/cancel/process trees ; SSH/REPL ; pas de capacité agent implicite |
 | IDE-042 | Configurations de tâches/build, variables autorisées | N | P1 | IDE-040/J3 | Profils typés ; cwd, env et capacités explicités ; pas d’exécution automatique d’un projet ouvert |
-| IDE-043 | Console CPC/BASIC distincte du shell hôte | B | P0 | FW/J3 | Entrées machine, sortie et interruptions sans confusion de clavier/plateforme |
+| IDE-043 | Console CPC/BASIC distincte du shell hôte | P | P0 | FW/J3 | Entrées machine, sortie et interruptions sans confusion de clavier/plateforme |
 
 ## 8. Construction, supports et distribution CPC
 
@@ -97,16 +97,16 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-046 | Import/inspection DSK standard/Extended et extraction | P | P1 | Codecs/DUR | Reader borné livré ; UI/import/écriture/extraction sûrs à compléter |
 | IDE-047 | BASIC tokenisé, binaires AMSDOS et ressources CPC | P | P1 | Codecs/J4 | Types/EOF/adresses/checksum qualifiés ; tokenisation à construire |
 | IDE-048 | Export dossier/ZIP projet, paquet CPC et README de lancement | N | P1 | J3/J4 | Projet complet avec originaux autorisés ; confidentialité ; RUN et profil exacts |
-| IDE-049 | Tests reproductibles de programmes, captures de référence | B | P1 | FW | Builds sur révisions, attentes écran/sorties, limite temps et seeds |
+| IDE-049 | Tests reproductibles de programmes, captures de référence | P | P1 | FW | Builds sur révisions, attentes écran/sorties, limite temps et seeds |
 
 ## 9. Émulation et diagnostic CPC
 
 | ID | Fonction et qualification | État | Priorité | Dépendance | Critère de validation |
 | --- | --- | --- | --- | --- | --- |
 | IDE-050 | ROM locales, hashes, profils et diagnostic firmware | P | P0 | 0.7/FW | Import/vérification livrés ; vrais jeux/boot/droits qualifiés |
-| IDE-051 | Moteur CPC 6128 intégré en worker, boot/run/reset/pause | B | P0 | FW/J0 | Boot BASIC réel, RAM/banques, temps/audio/vidéo et disque vérifiés |
-| IDE-052 | Clavier/focus, joystick, écran pixel net et audio | B | P0 | IDE-051 | Relâchement touches, ESC et retour focus ; captures non altérées |
-| IDE-053 | Disque mutable, OPENOUT, sauvegarde et export session | B | P0 | IDE-051 | Écriture relue par émulateur indépendant ; original DSK intact |
+| IDE-051 | Moteur CPC 6128 intégré en worker, boot/run/reset/pause | P | P0 | FW/J0 | Boot BASIC réel, RAM/banques, temps/audio/vidéo et disque vérifiés |
+| IDE-052 | Clavier/focus, joystick, écran pixel net et audio | P | P0 | IDE-051 | Relâchement touches, ESC et retour focus ; captures non altérées |
+| IDE-053 | Disque mutable, OPENOUT, sauvegarde et export session | P | P0 | IDE-051 | Écriture relue par émulateur indépendant ; original DSK intact |
 | IDE-054 | Breakpoints/pas à pas BASIC, variables et pile | B | P2 | FW/Instrumentation | État réel expliqué, pas de debugger simulé ; limites ROM visibles |
 | IDE-055 | Mémoire, banques, désassemblage Z80 et snapshots | B | P2 | IDE-051 | Adresses/mappage/snapshots exacts, restauration révisionnée |
 | IDE-056 | CPC 464/664 puis Plus et autres Amstrad | N | P2 | Profils qualifiés | Recette propre à chaque machine ; aucun support déduit du seul 6128 |
@@ -202,3 +202,8 @@ R3 commence avec [identité explicite et commits locaux](../implementation/git-c
 ## Avancement alpha 0.23 — 5 octobre 2026
 
 Le [profil privé d’identité Git](../implementation/git-identity-alpha.md), [ADR 0028](../adr/0028-profil-prive-identite-git.md), complète R3 avec mémorisation opt-in, chargement initial/explicite, oubli et protection des révisions. La préférence est commune aux projets CPCéleste et ne modifie pas la configuration Git ; le réglage par dépôt du document 16 reste ouvert. IDE-033 reste P, R3/JG-A/ACC-31 ne sont pas clos. 152 tests Node ; recette Electron de persistance après SIGKILL et capture attestées dans la PR. Suite prioritaire : liste/création de branches locales, puis bascule protégée avant réseau.
+
+
+## Priorité Exécuter — alpha 0.24, 5 octobre 2026
+
+À la demande utilisateur, [Exécuter/F5 dans le CPC intégré](../implementation/emulator-run-alpha.md) passe avant la suite Git. [ADR 0029](../adr/0029-executer-buffers-cpc-integre.md) : worker chips/WASM, DSK des buffers, trois ROM privées, écran/clavier/pause/arrêt/son/export session et RUN automatique pour le jeu anglais reconnu (Ready manuel sinon). Boot BASIC 1.1, RUN disque et POKE sont prouvés sur le jeu identifié ; pixels PRINT vérifiés par recette UI. 157 tests Node ; preuves Electron dans la PR. J0/J3 restent partiels, oracle indépendant/OPENOUT/audio audible/autres plateformes ouverts ; aucun CPC physique qualifié. Suite immédiate : renforcer les recettes CPC, avant branches Git et outils d’exécution IA.

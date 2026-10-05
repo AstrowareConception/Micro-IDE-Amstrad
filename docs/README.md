@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.23
+# CPCéleste — Dossier de conception et réalisation — version 0.24
+
+**Exécution CPC 0.24** : bouton Exécuter/F5, écran CPC 6128 intégré, buffers non enregistrés, lancement RUN par clavier, pause/arrêt/son et export du disque de session. Trois ROM locales sont nécessaires ; le jeu anglais identifié démarre automatiquement, les autres demandent confirmation de Ready. [Guide](implementation/emulator-run-alpha.md).
 
 Le [profil privé d’identité Git 0.23](implementation/git-identity-alpha.md) ajoute mémorisation opt-in, chargement et oubli avec révisions protégées. [ADR 0028](adr/0028-profil-prive-identite-git.md). Suite : branches locales ; IDE-033 reste partiel.
 

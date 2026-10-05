@@ -67,3 +67,8 @@ Les registres Z80 et mémoire brute peuvent servir au harness technique, sans de
 J0 doit prouver : boot avec ROM identifiées, CAT, RUN d'un ASCII, LOAD binaire à adresse, OPENOUT/CLOSEOUT puis relecture du disque exporté, interruption, reset, clavier de jeu, vidéo et son, boucles longues sans gel UI, mesures de temps et sérialisation du disque. L'export doit fonctionner dans un émulateur indépendant, par exemple Caprice32 installé pour l'essai.
 
 Si un point nécessaire échoue, un écart reproductible est enregistré. Une correction ciblée du wrapper ou un patch upstream est préférée lorsque bornée. Si le cœur ne satisfait pas les critères, l'ADR moteur est remplacée après comparaison d'un autre cœur réellement intégrable. Caprice32 est un oracle et une alternative étudiable, avec conséquences GPL à examiner avant redistribution ; il n'est pas un fallback automatiquement embarqué. L'architecture ne change pas pour masquer un échec de qualification.
+
+
+## Priorité Exécuter — alpha 0.24, 5 octobre 2026
+
+À la demande utilisateur, [Exécuter/F5 dans le CPC intégré](../implementation/emulator-run-alpha.md) passe avant la suite Git. [ADR 0029](../adr/0029-executer-buffers-cpc-integre.md) : worker chips/WASM, DSK des buffers, trois ROM privées, écran/clavier/pause/arrêt/son/export session et RUN automatique pour le jeu anglais reconnu (Ready manuel sinon). Boot BASIC 1.1, RUN disque et POKE sont prouvés sur le jeu identifié ; pixels PRINT vérifiés par recette UI. 157 tests Node ; preuves Electron dans la PR. J0/J3 restent partiels, oracle indépendant/OPENOUT/audio audible/autres plateformes ouverts ; aucun CPC physique qualifié. Suite immédiate : renforcer les recettes CPC, avant branches Git et outils d’exécution IA.

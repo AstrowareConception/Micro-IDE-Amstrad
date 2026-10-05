@@ -37,6 +37,7 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
     init: (sessionId, planId) => ipcRenderer.invoke('git:init', { sessionId, planId }),
     changeIndex: (sessionId, snapshotId, changeId, action) => ipcRenderer.invoke('git:index', { sessionId, snapshotId, changeId, action }),
   }),
+  emulator: Object.freeze({ prepare: request => ipcRenderer.invoke('emulator:prepare', request) }),
   firmware: Object.freeze({
     status: () => ipcRenderer.invoke('firmware:status'),
     importRom: role => ipcRenderer.invoke('firmware:import', role),

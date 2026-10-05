@@ -1,5 +1,7 @@
 # CPCéleste
 
+**Exécution CPC 0.24** : bouton Exécuter/F5, écran CPC 6128 intégré, buffers non enregistrés, lancement RUN par clavier, pause/arrêt/son et export du disque de session. Trois ROM locales sont nécessaires ; le jeu anglais identifié démarre automatiquement, les autres demandent confirmation de Ready. [Guide](docs/implementation/emulator-run-alpha.md).
+
 **Vos idées prennent vie en BASIC.** Un logiciel AstroWare Conception.
 
 <img src="apps/desktop/public/brand/cpceleste-icon.png" alt="Logo CPCéleste : orbite cyan pixelisée, invite de code blanche et étoile ambre" width="128" height="128" />
@@ -8,7 +10,7 @@ Nom de produit du projet historiquement appelé « Micro IDE Amstrad ». [Identi
 
 Un atelier de programmation pour écrire du **Locomotive BASIC**, le tester dans un **Amstrad CPC émulé**, travailler avec une **IA et ses propres documents**, puis partager une **disquette DSK utilisable hors de l'IDE**.
 
-**État au 5 octobre 2026 : alpha desktop, version 0.23.** Electron/Monaco propose édition BASIC, menus/palette/contextes, ouverture rapide, renumérotation conservatrice, projets multifichiers et export DSK, ainsi qu'un agent OpenAI à outils : exploration, références du corpus fourni, documents TXT/MD/PDF texte et aperçus PNG/JPEG autorisés, création/remplacement de sources, renumérotation, analyse et construction, journal, avant/après et restauration de la mission courante. Clé API en mémoire côté main. L'import local des ROM OS/BASIC/AMSDOS et leur vérification sont disponibles ; Git natif ajoute statut/diff, création de dépôt, indexation sélective locale, commits examinés et historique paginé. Le terminal humain exécute des commandes hôte sans PTY, avec confirmation et limites ; aucun accès shell accordé à l’IA. Ce n'est pas encore le MVP : crash recovery complet, WebP/rendu PDF, synchronisation Git intégrée, conversion écran et émulation intégrée qualifiée restent à construire. J0 attend un jeu firmware réel et les essais dans un émulateur indépendant ; aucun boot BASIC ou résultat matériel n'est revendiqué.
+**État au 5 octobre 2026 : alpha desktop, version 0.24.** Electron/Monaco propose édition BASIC, menus/palette/contextes, ouverture rapide, renumérotation conservatrice, projets multifichiers et export DSK, ainsi qu'un agent OpenAI à outils : exploration, références du corpus fourni, documents TXT/MD/PDF texte et aperçus PNG/JPEG autorisés, création/remplacement de sources, renumérotation, analyse et construction, journal, avant/après et restauration de la mission courante. Clé API en mémoire côté main. L'import local des ROM OS/BASIC/AMSDOS et leur vérification sont disponibles ; Git natif ajoute statut/diff, création de dépôt, indexation sélective locale, commits examinés et historique paginé. Le terminal humain exécute des commandes hôte sans PTY, avec confirmation et limites ; aucun accès shell accordé à l’IA. Ce n'est pas encore le MVP : crash recovery complet, WebP/rendu PDF, synchronisation Git intégrée, conversion écran et émulation intégrée qualifiée restent à construire. Boot BASIC 1.1 et RUN depuis DSK sont vérifiés avec un jeu 6128 anglais identifié ; la relecture indépendante et la qualification matérielle globale restent ouvertes.
 
 ## Lancer l'éditeur
 

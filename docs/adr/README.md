@@ -38,3 +38,5 @@ Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou
 - [0027 — Commit Git de l’index examiné](0027-commit-git-index-exact.md) : identité explicite, aperçu et publication sous préconditions.
 
 - [0028 — Profil privé d’identité Git](0028-profil-prive-identite-git.md) : préférence facultative, révision, chargement/oubli et configuration Git conservée.
+
+- [0029 — Exécuter les buffers dans le CPC intégré](0029-executer-buffers-cpc-integre.md) : worker WASM, Exécuter/F5, prompt identifié et copie de disque de session.
