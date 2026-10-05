@@ -51,6 +51,7 @@ jobs:
             out/recovery-alpha.png
             out/local-history-alpha.png
             out/drafts-alpha.png
+            out/external-alpha.png
             out/desktop-failure.png
             out/editor-failure.png
           retention-days: 7

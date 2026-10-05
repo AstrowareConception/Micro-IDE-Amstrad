@@ -8,6 +8,11 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
     list: sessionId => ipcRenderer.invoke('history:list', { sessionId }),
     version: (sessionId, snapshotId, id, revision) => ipcRenderer.invoke('history:version', { sessionId, snapshotId, id, revision }),
   }),
+  external: Object.freeze({
+    status: sessionId => ipcRenderer.invoke('external:status', { sessionId }),
+    read: (sessionId, id, revision) => ipcRenderer.invoke('external:read', { sessionId, id, revision }),
+    accept: (sessionId, id, revision, baseRevision) => ipcRenderer.invoke('external:accept', { sessionId, id, revision, baseRevision }),
+  }),
   drafts: Object.freeze({
     status: sessionId => ipcRenderer.invoke('drafts:status', { sessionId }),
     capture: (sessionId, sources, revision) => ipcRenderer.invoke('drafts:capture', { sessionId, sources, revision }),

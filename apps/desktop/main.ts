@@ -49,16 +49,17 @@ async function atomicWrite(path: string, bytes: Uint8Array): Promise<void> {
   try { await writeFile(temp, bytes, { flag: 'wx', mode: 0o600 }); await rename(temp, path); }
   finally { await unlink(temp).catch(() => undefined); }
 }
-function route(channel: string, handler: (payload: unknown) => Promise<unknown>) {
+function route(channel: string, handler: (payload: unknown) => Promise<unknown>, passive = false) {
+  let inspecting = false;
   ipcMain.handle(channel, async (event, payload: unknown) => {
     trusted(event);
     if (terminal.running && !channel.startsWith('terminal:')) return { error: 'Une commande terminal est active ; arrêtez-la avant les opérations disque ou IA.' };
     if (agent?.running && !channel.startsWith('agent:')) return { error: 'Une mission agent est active ; arrêtez-la avant les opérations disque.' };
-    if (inFlight) return { error: 'Une opération disque est déjà en cours.' };
-    inFlight = true;
+    if (inFlight || passive && inspecting) return { error: 'Une opération disque est déjà en cours.' };
+    if (passive) inspecting = true; else inFlight = true;
     try { return await handler(payload); }
     catch (error) { return { error: error instanceof Error ? error.message : 'Échec de l’opération.' }; }
-    finally { inFlight = false; }
+    finally { if (passive) inspecting = false; else inFlight = false; }
   });
 }
 
@@ -215,6 +216,19 @@ route('project:save-all', async payload => {
     return { id: item.id, source: sourceFrom(item).source };
   });
   return store.saveAll(sources);
+});
+// A bounded read-only poll must not reserve the foreground mutation lock.
+// Its results are advisory; every explicit read/adoption rechecks disk revisions.
+route('external:status', async payload => { const { store } = projectRequest(payload); return store.externalStatus(); }, true);
+route('external:read', async payload => {
+  const { store, value } = projectRequest(payload);
+  if (typeof value.id !== 'string' || typeof value.revision !== 'string') throw new Error('Référence externe requise.');
+  return store.externalVersion(value.id, value.revision);
+});
+route('external:accept', async payload => {
+  const { store, value } = projectRequest(payload);
+  if (typeof value.id !== 'string' || typeof value.revision !== 'string' || typeof value.baseRevision !== 'string') throw new Error('Révision externe et base requises.');
+  return store.acceptExternal(value.id, value.revision, value.baseRevision);
 });
 route('history:list', async payload => { const { store } = projectRequest(payload); return store.historyList(); });
 route('drafts:status', async payload => { const { store } = projectRequest(payload); return store.draftStatus(); });

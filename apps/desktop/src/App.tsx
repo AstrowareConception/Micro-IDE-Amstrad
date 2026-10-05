@@ -18,6 +18,7 @@ import { applyRenumber } from '../../../packages/basic-language/src/renumber.ts'
 import { CommandPalette, type WorkbenchCommand } from './CommandPalette.tsx';
 import { TerminalPanel } from './TerminalPanel.tsx';
 import { HistoryPanel } from './HistoryPanel.tsx';
+import { ExternalPanel } from './ExternalPanel.tsx';
 import { DraftPanel } from './DraftPanel.tsx';
 
 const SAMPLE = '10 REM MICRO IDE AMSTRAD\n20 MODE 1\n30 INK 0,0:INK 1,24\n40 PEN 1\n50 PRINT "BONJOUR CPC 6128 !"\n60 FOR I=1 TO 5\n70 PRINT "LOCOMOTIVE BASIC";I\n80 NEXT I\n90 END\n';
@@ -193,7 +194,7 @@ export function App() {
   const menu = (label: string, ids: string[]) => <details className="workbench-menu"><summary>{label}</summary><div>{commands.filter(command => ids.includes(command.id)).map(command => <button key={command.id} disabled={command.disabled} onClick={event => { event.currentTarget.closest('details')?.removeAttribute('open'); command.run(); }}>{command.label}</button>)}</div></details>;
   return <main className="workbench">
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.19 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.20 · AstroWare Conception</p></div></div>
       <span className="profile">CPC 6128 · BASIC 1.1</span>
     </header>
     <nav className="menubar" aria-label="Menus de l’atelier">
@@ -234,6 +235,16 @@ export function App() {
         </div>
       </section>
       <aside aria-label="Références et état du produit">
+        {project && files.external && <ExternalPanel key={`external:${project.sessionId}`} sessionId={project.sessionId} documents={documents} busy={busy} onAccept={(version, before, reload) => {
+          const id = `${project.sessionId}:${version.id}`;
+          let loaded = false;
+          if (reload && !busy && editorWorkspace.current?.source(id) === before) {
+            try { editorWorkspace.current.apply([{ id, name: version.path, before, after: version.source, count: 1 }]); loaded = true; }
+            catch { /* Keep the buffer if it changed while the disk baseline was being adopted. */ }
+          }
+          setDocuments(items => items.map(item => item.id === id ? { ...item, saved: version.source } : item));
+          setStatus(loaded ? 'Version disque chargée ; Ctrl Z annule dans le buffer.' : 'Buffer conservé. La prochaine sauvegarde explicite remplacera la version disque comparée.');
+        }} />}
         {project && files.drafts && <DraftPanel key={`drafts:${project.sessionId}`} sessionId={project.sessionId} documents={documents} busy={busy} onApply={changes => {
           if (!editorWorkspace.current) throw new Error('Éditeur indisponible.');
           editorWorkspace.current.apply(changes);

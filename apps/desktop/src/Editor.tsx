@@ -4,7 +4,7 @@ import { analyze, commandAt, type Diagnostic } from '../../../packages/basic-lan
 import type { CommandCard } from '../../../packages/basic-language/src/catalog.ts';
 import type { SearchChange, SearchMatch } from '../../../packages/workspace/src/search.ts';
 
-export interface EditorWorkspace { apply(changes: SearchChange[]): void }
+export interface EditorWorkspace { apply(changes: SearchChange[]): void; source(id: string): string | undefined }
 
 interface Props {
   documents: { id: string; source: string }[]; activeId: string; diagnostics: Diagnostic[]; busy: boolean;
@@ -54,7 +54,7 @@ export function Editor(props: Props) {
       if (target) { editor.setPosition({ lineNumber: target.line, column: target.start + 1 }); editor.revealLineInCenter(target.line); }
     } });
     latest.current.onReady(editor);
-    latest.current.onWorkspaceReady({ apply(changes) {
+    latest.current.onWorkspaceReady({ source: id => models.current.get(id)?.model.getValue(), apply(changes) {
       if (latest.current.busy) throw new Error('Atelier occupé.');
       if (!changes.length || new Set(changes.map(change => change.id)).size !== changes.length) throw new Error('Sélection de sources invalide.');
       const edits = changes.map(change => {

@@ -97,3 +97,7 @@ Routes liées à la session : `drafts:status({sessionId})` → `{revision,snapsh
 Une migration est une fonction version N → N+1, testée sur fixtures, avec sauvegarde avant modification et rapport. Aucun downgrade implicite. Une version future inconnue peut être inspectée sans écriture si son contenu est accessible ; l'utilisateur ne reçoit pas une réécriture destructrice dans le schéma 1. Les versions de recette et de moteur évoluent séparément de la version de manifeste.
 
 Partager un projet inclut manifeste, sources et ressources nécessaires ; documents de contexte sont sélectionnés, conversation et historique local exclus par défaut. Une archive future exige règles anti-traversal et quotas avant extraction. Le DSK exporté reste indépendant de ce partage et ne contient que son catalogue. Les formats publics pourront être documentés sans dépendre du code interne de l'UI.
+
+## Inspection externe alpha 0.20
+
+`external:status(sessionId)` retourne au plus 64 sources déclarées modifiées (`id`, `path`, SHA-256 `revision`) ou illisibles (`issue`). `external:read(sessionId,id,revision)` retourne texte LF, révision disque et `baseRevision` connue. `external:accept(sessionId,id,revision,baseRevision)` recontrôle manifeste/journal/version/base puis adopte la base en mémoire ; aucun fichier écrit. Session liée à la fenêtre et mêmes gardes main que les autres ports. Le renderer met à jour la référence enregistrée et conserve son buffer, ou applique le texte via les opérations Monaco guardées/undo. [ADR 0025](../adr/0025-revue-des-modifications-externes.md).
