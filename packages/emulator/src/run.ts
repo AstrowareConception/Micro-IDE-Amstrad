@@ -2,7 +2,10 @@ import { buildListingDisk } from '../../basic-language/src/build.ts';
 import { buildProjectDisk, type ProjectManifest } from '../../workspace/src/project.ts';
 export interface RunRequest { source?: string; sessionId?: string; sources?: { id: string; source: string }[] }
 export interface RunImage { disk: Uint8Array; entry: string; label: string; sha256: string; roms: Record<'os' | 'basic' | 'amsdos', Uint8Array>; firmware: Record<'os' | 'basic' | 'amsdos', string> }
-export interface EmulatorPort { prepare(request: RunRequest): Promise<RunImage | { error: string }> }
+export interface EmulatorPort {
+  prepare(request: RunRequest): Promise<RunImage | { error: string }>;
+  exportDisk?(disk: Uint8Array, sessionId?: string): Promise<{ name: string } | { error: string } | null>;
+}
 export function runDisk(value: unknown, manifest?: ProjectManifest): { disk: Uint8Array; entry: string } {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Snapshot d’exécution invalide.');
   const request = value as Record<string, unknown>;

@@ -374,6 +374,22 @@ route('emulator:prepare', async payload => {
   return { ...image, label, sha256: hash(image.disk), roms, firmware: Object.fromEntries(Object.entries(roms).map(([role, bytes]) => [role, hash(bytes)])) };
 });
 route('firmware:status', async () => firmware.status());
+route('emulator:export', async payload => {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new Error('Disquette de session invalide.');
+  const value = payload as Record<string, unknown>;
+  if (Object.keys(value).some(key => key !== 'disk' && key !== 'sessionId') || !(value.disk instanceof Uint8Array) || value.disk.length !== 194816) throw new Error('Disquette CPC DATA de session requise.');
+  const owner = project;
+  if (owner) { owner.assertSession(value.sessionId); await owner.assertCurrent(); }
+  else if (value.sessionId !== undefined) throw new Error('Session projet expirée.');
+  const sourcePath = current?.path;
+  const bytes = new Uint8Array(value.disk);
+  const selection = await dialog.showSaveDialog(window, { defaultPath: 'session-cpc.dsk', filters: [{ name: 'Disquette CPC DATA', extensions: ['dsk'] }] });
+  if (selection.canceled || !selection.filePath) return null;
+  if (owner) { await owner.assertCurrent(); await owner.assertExportDestination(selection.filePath); }
+  if (selection.filePath === sourcePath) throw new Error('La destination DSK doit être distincte du listing.');
+  await atomicWrite(selection.filePath, bytes);
+  return { name: selection.filePath.split(/[\\/]/).at(-1) };
+});
 route('firmware:import', async payload => {
   const role = romRole(payload);
   const selection = await dialog.showOpenDialog(window, { properties: ['openFile'], filters: [{ name: 'ROM séparée CPC (16 Kio)', extensions: ['rom', 'bin'] }] });

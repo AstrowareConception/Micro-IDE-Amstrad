@@ -16,6 +16,8 @@ Cliquer l’écran pour utiliser le clavier : caractères ASCII, Entrée, ESC, s
 
 F5 relance une machine propre depuis les dernières modifications ; la session précédente est détruite. Exporter auparavant ses écritures utiles : le disque de session est distinct du DSK construit et des sources. Modifier le code ne modifie pas le programme déjà chargé ; relancer. Une saisie de commande interrompue par pause/perte de focus peut nécessiter F5. L’écran reste dans l’atelier et le code peut être édité pendant l’exécution.
 
+L’export desktop utilise le dialogue natif puis une écriture atomique : annulation sans écriture, destination hors du projet, listing ouvert protégé et session projet revalidée. La prévisualisation navigateur utilise un téléchargement. Une réponse d’export arrivée après fermeture ou relance ne modifie pas le panneau suivant.
+
 ## Préparer le build desktop
 
 Node 24.12+ et dépendances npm figées. Le moteur est compilé depuis les headers verrouillés ; aucun binaire téléchargé à l’insu du build :

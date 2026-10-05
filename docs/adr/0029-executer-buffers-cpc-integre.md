@@ -12,6 +12,8 @@ Main valide snapshot/session/projet, construit le DSK avec le codec existant et 
 
 Le renderer utilise désormais l’origine locale standard et sécurisée cpceleste://app. Le protocole sert uniquement les fichiers statiques réguliers de dist/renderer, sous cette racine et avec types autorisés ; pas de fichiers de projet. La confiance IPC vérifie toujours fenêtre et URL exacte. CSP conserve les restrictions et autorise seulement la compilation WASM (wasm-unsafe-eval). Worker module, génération UUID, arrêt par terminate, expiration d’initialisation 30 s, tranches CPU 10 ms et backlog 40 ms. Une frame transférée au maximum attend un acquittement avant la suivante ; audio borné, muet par défaut, activation explicite, files nettoyées à pause/fermeture.
 
+L’export du disque mutable traverse un port dédié vers le dialogue natif : payload borné à la géométrie DATA, session projet vérifiée et protection des fichiers du projet. Les téléchargements Blob restent propres à la prévisualisation navigateur ; l’application sous protocole sécurisé ne dépend pas de leur prise en charge.
+
 ## Prompt et preuves
 
 Une signature SHA-256 d’écran indexé (768 × 108 premiers pixels, hors curseur clignotant) observée avec le jeu 6128 anglais identifié par les trois SHA-256 déclenche RUN. Elle est vérifiée dans la recette firmware WASM, après observation du vrai écran BASIC 1.1/Ready dans le cœur natif. Ce signal n’est pas un délai arbitraire. Aucun autre jeu ne bénéficie de cette reconnaissance ; confirmation manuelle Ready pour lancer son entrée. RUN est injecté par touches espacées de 60 ms émulées, sans hook remplaçant l’interpréteur.

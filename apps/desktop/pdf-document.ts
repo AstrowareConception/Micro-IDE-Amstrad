@@ -24,7 +24,7 @@ export async function extractPdf(bytes: Uint8Array, options: { signal?: AbortSig
       const timer = setTimeout(() => finish(new Error('timeout : extraction PDF arrêtée après le délai autorisé.')), timeout);
       options.signal?.addEventListener('abort', abort, { once: true });
       if (options.signal?.aborted) abort();
-      worker.once('error', () => finish(new Error('PDF : worker interrompu ou budget mémoire dépassé.')));
+      worker.once('error', (error: Error & { code?: string }) => finish(new Error(error.code === 'ERR_WORKER_OUT_OF_MEMORY' ? 'quota-exceeded : budget mémoire du décodeur PDF dépassé.' : 'PDF : worker interrompu.')));
       worker.once('exit', () => finish(new Error('PDF : worker terminé sans résultat.')));
       worker.once('message', (message: unknown) => {
         if (message && typeof message === 'object' && 'error' in message) {

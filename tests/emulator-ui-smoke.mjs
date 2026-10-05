@@ -49,8 +49,16 @@ try {
   await page.screenshot({ path: `out/emulator-${browserMode ? 'browser' : 'desktop'}-alpha.png` });
   await machine.getByRole('button', { name: 'Pause CPC', exact: true }).click(); await expect(machine).toContainText('En pause');
   const clock = (await machine.innerText()).match(/([\d.]+) s émulées/)[1]; await page.waitForTimeout(300); assert.equal((await machine.innerText()).match(/([\d.]+) s émulées/)[1], clock);
-  const downloaded = page.waitForEvent('download'); await machine.getByRole('button', { name: 'Exporter la disquette de session', exact: true }).click(); const download = await downloaded;
-  const files = readDataDisk(new Uint8Array(await readFile(await download.path()))); assert.equal(new TextDecoder().decode(decodeAsciiRecords(files[0].records)).replace(/\r\n/g, '\n').replace(/\x1a$/, ''), source);
+  let exported;
+  if (browserMode) {
+    const downloaded = page.waitForEvent('download'); await machine.getByRole('button', { name: 'Exporter la disquette de session', exact: true }).click(); exported = await (await downloaded).path();
+  } else {
+    exported = join(temporary, 'session-cpc.dsk');
+    await desktop.evaluate(({ dialog }, path) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath: path }); }, exported);
+    await machine.getByRole('button', { name: 'Exporter la disquette de session', exact: true }).click(); await expect(machine).toContainText('Disquette de session exportée');
+    assert.ok((await page.evaluate(() => window.desktop.emulator.exportDisk(new Uint8Array(1)))).error);
+  }
+  const files = readDataDisk(new Uint8Array(await readFile(exported))); assert.equal(new TextDecoder().decode(decodeAsciiRecords(files[0].records)).replace(/\r\n/g, '\n').replace(/\x1a$/, ''), source);
   await machine.getByRole('button', { name: 'Reprendre le CPC', exact: true }).click(); await expect(machine).toContainText('Machine active');
   // Relaunch uses edited buffers, disposes the prior worker and keeps the editor dirty.
   await editor.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText('10 MODE 1:PRINT "SECOND RUN"\n20 END\n'); await page.keyboard.press('F5');
@@ -63,6 +71,9 @@ try {
     await desktop.evaluate(({ dialog }, path) => { dialog.showMessageBox = async () => ({ response: 1, checkboxChecked: false }); dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, projectRoot);
     await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click(); await page.getByRole('tab', { name: 'src/other.bas', exact: true }).click();
     await editor.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText(source); await run.click(); await expect(machine).toContainText('Commande RUN"OTHER.BAS" envoyée', { timeout: 30000 }); await expect.poll(screenPrefix, { timeout: 30000 }).toBe(reference.outputFramePrefix);
+    assert.equal(await readFile(join(projectRoot, 'src/other.bas'), 'utf8'), '10 REM OLD DISK\n20 END\n');
+    await desktop.evaluate(({ dialog }, path) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath: path }); }, join(projectRoot, 'src/other.bas'));
+    await machine.getByRole('button', { name: 'Exporter la disquette de session', exact: true }).click(); await expect(machine).toContainText('hors du dossier projet');
     assert.equal(await readFile(join(projectRoot, 'src/other.bas'), 'utf8'), '10 REM OLD DISK\n20 END\n');
     assert.ok((await page.evaluate(() => window.desktop.emulator.prepare({ sessionId: 'expired', sources: [] }))).error);
     await machine.getByRole('button', { name: 'Arrêter et fermer le CPC', exact: true }).click();

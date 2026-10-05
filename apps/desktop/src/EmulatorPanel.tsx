@@ -41,8 +41,14 @@ export function EmulatorPanel({ launch, onClose }: { launch: EmulatorLaunch; onC
           node.onended = () => { currentNodes.delete(node); node.disconnect(); };
           const when = Math.max(context.currentTime + .015, nextAudio.current); node.start(when); nextAudio.current = when + buffer.duration;
         } else if (value.type === 'disk' && value.disk instanceof Uint8Array && value.disk.length === 194816) {
-          const url = URL.createObjectURL(new Blob([value.disk])); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'session-cpc.dsk'; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-          setMessage('Disquette de session exportée, y compris les écritures du CPC.');
+          if (files.emulator?.exportDisk) {
+            void files.emulator.exportDisk(value.disk, launch.request.sessionId).then(result => {
+              if (!cancelled) setMessage(result === null ? 'Export annulé.' : 'error' in result ? result.error : `Disquette de session exportée : ${result.name}.`);
+            }).catch(() => { if (!cancelled) setMessage('Export de la disquette impossible.'); });
+          } else {
+            const url = URL.createObjectURL(new Blob([value.disk])); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'session-cpc.dsk'; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+            setMessage('Disquette de session exportée, y compris les écritures du CPC.');
+          }
         }
       };
       current.postMessage({ type: 'start', id: launch.id, image: result });
