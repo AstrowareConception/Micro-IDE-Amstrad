@@ -69,6 +69,8 @@ try {
     const manifest = newProject('Exécution multifichier', randomUUID()); manifest.sources.push({ id: 'other', path: 'src/other.bas', cpcName: 'OTHER.BAS' }); manifest.entryPoint = 'other';
     await writeFile(join(projectRoot, 'microide.project.json'), JSON.stringify(manifest)); await writeFile(join(projectRoot, 'src/main.bas'), '10 REM MAIN DISK\n20 END\n'); await writeFile(join(projectRoot, 'src/other.bas'), '10 REM OLD DISK\n20 END\n');
     await desktop.evaluate(({ dialog }, path) => { dialog.showMessageBox = async () => ({ response: 1, checkboxChecked: false }); dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, projectRoot);
+    // Choose deliberate discard for the fixture switch; Electron native dialogs are covered by the desktop suite.
+    await page.evaluate(() => { window.confirm = () => true; });
     await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click(); await page.getByRole('tab', { name: 'src/other.bas', exact: true }).click();
     await editor.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText(source); await run.click(); await expect(machine).toContainText('Commande RUN"OTHER.BAS" envoyée', { timeout: 30000 }); await expect.poll(screenPrefix, { timeout: 30000 }).toBe(reference.outputFramePrefix);
     assert.equal(await readFile(join(projectRoot, 'src/other.bas'), 'utf8'), '10 REM OLD DISK\n20 END\n');

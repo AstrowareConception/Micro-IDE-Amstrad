@@ -8,7 +8,7 @@ Dans l'application Electron, panneau **ROM du CPC 6128**, choisir séparément *
 
 Le panneau affiche l'empreinte de chaque sélection et son état : non configurée, disponible, absente/corrompue. **Vérifier les ROM** relit le cache et vérifie les hashes. Une sélection valide est retrouvée au prochain démarrage. **Retirer la sélection ROM** enlève seulement les associations, pas les fichiers du cache. Annuler le dialogue ou sélectionner une taille incorrecte conserve la configuration précédente.
 
-Tous les jeux restent **expérimentaux**, y compris complets. Le rôle est indiqué par l'utilisateur : aucun contrôle du contenu ne prouve encore qu'il s'agit d'un OS 6128, de BASIC 1.1 ou d'AMSDOS. Cette tranche ne démarre pas la machine. Le moteur reste chips/C/WASM ; [plan d'intégration](emulator-integration.md).
+Tous les jeux restent **expérimentaux**, y compris complets. Le rôle est indiqué par l'utilisateur : aucun contrôle du contenu ne prouve encore qu'il s'agit d'un OS 6128, de BASIC 1.1 ou d'AMSDOS. La tranche historique 0.7 ne démarrait pas la machine ; depuis [l’alpha 0.24](emulator-run-alpha.md), Exécuter/F5 utilise ce profil pour démarrer le CPC intégré. Le moteur reste chips/C/WASM ; [plan d'intégration](emulator-integration.md).
 
 ## Stockage et frontières
 
