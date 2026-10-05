@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.22
+# CPCéleste — Dossier de conception et réalisation — version 0.23
+
+Le [profil privé d’identité Git 0.23](implementation/git-identity-alpha.md) ajoute mémorisation opt-in, chargement et oubli avec révisions protégées. [ADR 0028](adr/0028-profil-prive-identite-git.md). Suite : branches locales ; IDE-033 reste partiel.
 
 Les [commits Git 0.22](implementation/git-commit-alpha.md) commencent R3 : identité par commit, aperçu de l’index et publication confirmée. [ADR 0027](adr/0027-commit-git-index-exact.md). IDE-033 reste partiel ; branches et réseau suivent.
 

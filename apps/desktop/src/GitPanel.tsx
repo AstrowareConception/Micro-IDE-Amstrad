@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { GitDiff, RepositoryStatus, DiffSide, GitInitPlan, IndexAction, GitHistory, GitCommitPlan } from '../../../packages/version-control/src/inspection.ts';
+import type { GitDiff, RepositoryStatus, DiffSide, GitInitPlan, IndexAction, GitHistory, GitCommitPlan, GitIdentitySnapshot } from '../../../packages/version-control/src/inspection.ts';
 import { files } from './port.ts';
 
 interface Props { sessionId: string; busy: boolean; dirty: boolean; documentCount: number; onBusy(value: boolean): void }
@@ -11,7 +11,30 @@ export function GitPanel(props: Props) {
   const [history, setHistory] = useState<GitHistory>();
   const [commitPlan, setCommitPlan] = useState<GitCommitPlan>();
   const [name, setName] = useState(''), [email, setEmail] = useState(''), [message, setMessage] = useState('');
+  const [identityProfile, setIdentityProfile] = useState<GitIdentitySnapshot>();
+  const [identityNotice, setIdentityNotice] = useState('Aucune identité mémorisée sans votre demande.');
   const port = files.git;
+  async function loadIdentity() {
+    if (!port) return;
+    const result = await port.identity(props.sessionId);
+    if ('error' in result) { setIdentityProfile(undefined); setIdentityNotice(result.error); return; }
+    setIdentityProfile(result);
+    if (result.identity) { setName(result.identity.name); setEmail(result.identity.email); setCommitPlan(undefined); }
+    setIdentityNotice(result.identity ? 'Identité mémorisée chargée ; vous pouvez la modifier pour ce commit.' : 'Aucune identité mémorisée. Les champs courants restent libres.');
+  }
+  async function identityAction(action: 'load' | 'remember' | 'forget') {
+    if (!port || props.busy || action !== 'load' && !identityProfile) return;
+    props.onBusy(true);
+    try {
+      if (action === 'load') { await loadIdentity(); return; }
+      const result = action === 'remember' ? await port.rememberIdentity(props.sessionId, identityProfile!.revision, { name, email }) : await port.forgetIdentity(props.sessionId, identityProfile!.revision);
+      if ('error' in result) { setIdentityProfile(undefined); setIdentityNotice(result.error); return; }
+      setIdentityProfile(result);
+      if (result.identity) { setName(result.identity.name); setEmail(result.identity.email); setCommitPlan(undefined); }
+      setIdentityNotice(action === 'remember' ? 'Identité mémorisée dans le profil privé CPCéleste pour vos prochains projets et redémarrages.' : 'Identité mémorisée oubliée ; les champs de ce commit restent inchangés.');
+    } catch { setIdentityProfile(undefined); setIdentityNotice('Profil non confirmé ; rechargez l’identité avant de reprendre.'); }
+    finally { props.onBusy(false); }
+  }
   async function prepareCommit() {
     if (!port || props.busy || props.dirty) return;
     props.onBusy(true); setCommitPlan(undefined);
@@ -47,6 +70,10 @@ export function GitPanel(props: Props) {
     if (!port || props.busy) return;
     props.onBusy(true); setCommitPlan(undefined); setDiff(undefined); setSnapshot(undefined); setPlan(undefined);
     try {
+      if (!identityProfile) {
+        try { await loadIdentity(); }
+        catch { setIdentityNotice('Profil indisponible ; saisissez librement une identité pour ce commit.'); }
+      }
       const result = await port.status(props.sessionId);
       if ('error' in result) setNotice(result.error);
       else { setSnapshot(result); setNotice(result.state === 'parent-repository' ? 'Dépôt parent détecté : ouvrez une racine de projet égale à celle du dépôt. Aucun périmètre élargi.' :
@@ -115,9 +142,13 @@ export function GitPanel(props: Props) {
       <p>{snapshot.version} · branche {snapshot.branch} · {snapshot.head === '(initial)' ? 'sans premier commit' : snapshot.head.slice(0, 12)}</p>
       <p>{snapshot.changes.length} changement(s) · index / disque</p>
       <div className="git-commit-form"><h3>Commit local · Git 2.48+</h3>
-        <p>Identité pour ce commit, conservée dans le panneau pendant cette session. Aucun changement de configuration Git globale/locale.</p>
+        <p>Identité pour ce commit. Mémorisation facultative dans le profil privé CPCéleste, commune à tous les projets. Aucun changement de configuration Git globale/locale.</p>
         <label>Nom de l’auteur<input aria-label="Nom de l’auteur Git" maxLength={100} disabled={props.busy} value={name} onChange={event => { setName(event.target.value); setCommitPlan(undefined); }} /></label>
         <label>Email de l’auteur<input aria-label="Email de l’auteur Git" maxLength={254} disabled={props.busy} value={email} onChange={event => { setEmail(event.target.value); setCommitPlan(undefined); }} /></label>
+        <button disabled={props.busy || !identityProfile || !name.trim() || !email} onClick={() => void identityAction('remember')}>Mémoriser cette identité</button>
+        <button disabled={props.busy} onClick={() => void identityAction('load')}>Charger l’identité mémorisée</button>
+        <button disabled={props.busy || !identityProfile?.identity} onClick={() => void identityAction('forget')}>Oublier l’identité mémorisée</button>
+        <p aria-live="polite" className="muted">{identityNotice}</p>
         <label>Message<textarea aria-label="Message du commit Git" rows={3} maxLength={8192} disabled={props.busy} value={message} onChange={event => { setMessage(event.target.value); setCommitPlan(undefined); }} /></label>
         <button disabled={props.busy || props.dirty || !name.trim() || !email || !message.trim()} onClick={() => void prepareCommit()}>Préparer le commit de l’index</button>
         {commitPlan && <div className="git-init-preview"><h3>Aperçu du commit · {commitPlan.branch}</h3>

@@ -18,7 +18,8 @@ const listing = join(temporary, 'source.bas');
 const exported = join(temporary, 'program.dsk');
 await writeFile(listing, '10 PRINT "DESKTOP"\r\n20 END\r\n');
 // CI runs an unprivileged user with Chromium sandbox enabled. Do not disable sandbox to pass tests.
-let desktop = await electron.launch({ args: ['.'], timeout: 30000, env: { ...process.env, ELECTRON_ENABLE_LOGGING: '1' } });
+const desktopEnv = { ...process.env, XDG_CONFIG_HOME: join(temporary, 'config'), ELECTRON_ENABLE_LOGGING: '1' };
+let desktop = await electron.launch({ args: ['.'], timeout: 30000, env: desktopEnv });
 let page;
 try {
   page = await desktop.firstWindow();
@@ -709,7 +710,7 @@ try {
   assert.deepEqual(errors, []);
   const child = desktop.process(); const exit = new Promise((resolve, reject) => { const timer = setTimeout(() => reject(new Error('Electron SIGKILL timeout')), 10000); child.once('exit', () => { clearTimeout(timer); resolve(); }); });
   child.kill('SIGKILL'); await exit; await desktop.close().catch(() => undefined);
-  desktop = await electron.launch({ args: ['.'], timeout: 30000, env: { ...process.env, ELECTRON_ENABLE_LOGGING: '1' } });
+  desktop = await electron.launch({ args: ['.'], timeout: 30000, env: desktopEnv });
   page = await desktop.firstWindow(); page.on('pageerror', error => errors.push(error.message));
   await page.getByRole('heading', { name: 'CPCéleste', exact: true }).waitFor();
   await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, draftRoot);
@@ -870,6 +871,41 @@ try {
   await expect(commitPanel.getByRole('button', { name: 'Préparer le commit de l’index', exact: true })).toBeDisabled();
   assert.match((await page.evaluate(() => window.desktop.git.prepareCommit('expired', { name: 'Test', email: 'x@y', message: 'Test' }))).error, /périmée/);
   console.log('Native Git commit: explicit author/message, staged-only preview, cancel/default guard, first and second commit, exact index/config/worktree preservation, history refresh, conflict during confirmation and dirty/expired IPC refusal passed.');
+  // Profile changes are independent of dirty source buffers and never alter Git config/index.
+  const identityIndex = await readFile(join(commitRoot, '.git/index')), identitySource = await readFile(join(commitRoot, 'src/main.bas'));
+  const identityRoot = await desktop.evaluate(({ app }) => app.getPath('userData'));
+  if (process.platform === 'linux') assert.ok(identityRoot.startsWith(join(temporary, 'config')));
+  const identityPath = join(identityRoot, 'git-profile/identity.json');
+  await commitPanel.getByRole('button', { name: 'Mémoriser cette identité', exact: true }).click(); await expect(commitPanel).toContainText('Identité mémorisée dans le profil privé');
+  const rememberedIdentity = await readFile(identityPath); const identityRecord = JSON.parse(rememberedIdentity.toString());
+  assert.deepEqual(identityRecord.identity, { name: 'CPCéleste Test', email: 'cpceleste@example.invalid' }); assert.deepEqual(Object.keys(identityRecord).sort(), ['id', 'identity', 'version']);
+  await commitPanel.getByLabel('Nom de l’auteur Git', { exact: true }).fill('Session temporaire'); await commitPanel.getByLabel('Message du commit Git', { exact: true }).fill('Message jamais mémorisé');
+  await commitPanel.getByRole('button', { name: 'Charger l’identité mémorisée', exact: true }).click(); await expect(commitPanel.getByLabel('Nom de l’auteur Git', { exact: true })).toHaveValue('CPCéleste Test');
+  await expect(commitPanel.getByLabel('Message du commit Git', { exact: true })).toHaveValue('Message jamais mémorisé'); assert.deepEqual(await readFile(identityPath), rememberedIdentity);
+  const externalIdentity = Buffer.from(JSON.stringify({ version: 1, id: randomUUID(), identity: { name: 'Profil externe', email: 'external@example.invalid' } }) + '\n'); await writeFile(identityPath, externalIdentity);
+  await commitPanel.getByRole('button', { name: 'Mémoriser cette identité', exact: true }).click(); await expect(commitPanel).toContainText('Profil Git modifié depuis sa lecture'); assert.deepEqual(await readFile(identityPath), externalIdentity);
+  await expect(commitPanel.getByRole('button', { name: 'Mémoriser cette identité', exact: true })).toBeDisabled();
+  await commitPanel.getByRole('button', { name: 'Charger l’identité mémorisée', exact: true }).click(); await expect(commitPanel.getByLabel('Nom de l’auteur Git', { exact: true })).toHaveValue('Profil externe');
+  await commitPanel.getByLabel('Nom de l’auteur Git', { exact: true }).fill('CPCéleste Test'); await commitPanel.getByLabel('Email de l’auteur Git', { exact: true }).fill('cpceleste@example.invalid');
+  await commitPanel.getByRole('button', { name: 'Mémoriser cette identité', exact: true }).click(); await expect(commitPanel).toContainText('Identité mémorisée dans le profil privé');
+  const identityBeforeRestart = await readFile(identityPath);
+  const profileChild = desktop.process(), profileExit = new Promise(resolve => profileChild.once('exit', resolve)); profileChild.kill('SIGKILL'); await profileExit; await desktop.close().catch(() => undefined);
+  desktop = await electron.launch({ args: ['.'], timeout: 30000, env: desktopEnv }); page = await desktop.firstWindow();
+  await page.getByRole('heading', { name: 'CPCéleste', exact: true }).waitFor();
+  await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, commitRoot);
+  await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click(); await page.getByRole('heading', { name: 'Commits locaux', exact: true }).waitFor();
+  const identityPanel = page.getByRole('region', { name: 'Contrôle de version Git', exact: true }); await identityPanel.getByRole('button', { name: 'Actualiser Git', exact: true }).click();
+  await expect(identityPanel.getByLabel('Nom de l’auteur Git', { exact: true })).toHaveValue('CPCéleste Test'); await expect(identityPanel.getByLabel('Email de l’auteur Git', { exact: true })).toHaveValue('cpceleste@example.invalid');
+  await expect(identityPanel.getByLabel('Message du commit Git', { exact: true })).toHaveValue(''); assert.deepEqual(await readFile(identityPath), identityBeforeRestart);
+  await identityPanel.getByRole('button', { name: 'Oublier l’identité mémorisée', exact: true }).scrollIntoViewIfNeeded(); await page.screenshot({ path: 'out/git-identity-alpha.png' });
+  assert.match((await page.evaluate(() => window.desktop.git.rememberIdentity('expired', null, { name: 'Test', email: 'x@y' }))).error, /périmée/);
+  await identityPanel.getByRole('button', { name: 'Oublier l’identité mémorisée', exact: true }).click(); await expect(identityPanel).toContainText('Identité mémorisée oubliée');
+  assert.equal(JSON.parse(await readFile(identityPath, 'utf8')).identity, null); await expect(identityPanel.getByLabel('Nom de l’auteur Git', { exact: true })).toHaveValue('CPCéleste Test');
+  await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click(); await page.getByRole('heading', { name: 'Commits locaux', exact: true }).waitFor(); await identityPanel.getByRole('button', { name: 'Actualiser Git', exact: true }).click();
+  await expect(identityPanel.getByLabel('Nom de l’auteur Git', { exact: true })).toHaveValue(''); await expect(identityPanel.getByLabel('Email de l’auteur Git', { exact: true })).toHaveValue('');
+  assert.deepEqual(await readFile(join(commitRoot, '.git/index')), identityIndex); assert.deepEqual(await readFile(join(commitRoot, '.git/config')), commitConfigBefore); assert.deepEqual(await readFile(join(commitRoot, 'src/main.bas')), identitySource); assert.equal(commitGit('rev-list', '--count', 'HEAD').trim(), '2');
+  console.log('Native Git identity: opt-in private profile, dirty-safe preference update, explicit reload preserves message, external revision conflict, SIGKILL/restart reload, forget/reopen, expired IPC and unchanged repository bytes/history passed.');
+
   console.log('Electron smoke: native Git init/status/diffs/stage/unstage, TXT/MD, real PNG/JPEG decode and PDF.js worker import/pagination/reopen/corrupt-file rejection, scoped PDF page excerpts and progressive multimodal agent outputs, projects and firmware checks passed. No live API, real vision or CPC execution claimed.');
 } catch (error) {
   await mkdir('out', { recursive: true });

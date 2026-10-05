@@ -197,3 +197,8 @@ IDE-007/008/009/010 progressent avec le journal durable des mutations agent : so
 ## Avancement alpha 0.22 — 5 octobre 2026
 
 R3 commence avec [identité explicite et commits locaux](../implementation/git-commit-alpha.md), [ADR 0027](../adr/0027-commit-git-index-exact.md). Aperçu exact de l’index, confirmation native, premiers/seconds commits, préconditions sous verrou et conservation du disque/index/configuration. Git 2.48+, commits non signés et hooks désactivés ; identité persistante, branches et réseau restent ouverts. IDE-033 passe à P ; R3/JG-A/ACC-31 ne sont pas clos. 146 tests Node ; recette Electron et capture attestées dans la PR.
+
+
+## Avancement alpha 0.23 — 5 octobre 2026
+
+Le [profil privé d’identité Git](../implementation/git-identity-alpha.md), [ADR 0028](../adr/0028-profil-prive-identite-git.md), complète R3 avec mémorisation opt-in, chargement initial/explicite, oubli et protection des révisions. La préférence est commune aux projets CPCéleste et ne modifie pas la configuration Git ; le réglage par dépôt du document 16 reste ouvert. IDE-033 reste P, R3/JG-A/ACC-31 ne sont pas clos. 152 tests Node ; recette Electron de persistance après SIGKILL et capture attestées dans la PR. Suite prioritaire : liste/création de branches locales, puis bascule protégée avant réseau.

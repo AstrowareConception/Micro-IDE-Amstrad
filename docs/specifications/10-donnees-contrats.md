@@ -110,3 +110,8 @@ Record local privé v1 `.microide/agent-journal/current.json` : UUID/projet/date
 ## Commit Git alpha 0.22
 
 `GitCommitInput` : propriétés exactes `{name,email,message}` ; limites 100/254/8192 caractères et contrôles refusés. `GitCommitPlan` : entrée normalisée, UUID opaque, branche, HEAD ou initial, arbre SHA-1, changements `{path,status:A|M|D}` et diff UTF-8. `prepareCommit(sessionId,input)` ne publie pas HEAD. `commit(sessionId,planId)` retourne null après annulation native, `{error}` après refus, ou `{oid,branch,status}` après publication. Plan conservé en main, invalidé par nouvelle inspection/mutation/entrée ; aucune destination ni commande libre fournie par renderer. Auteur/committer identiques, identité en mémoire de session uniquement ; [ADR 0027](../adr/0027-commit-git-index-exact.md).
+
+
+## Profil d’identité Git alpha 0.23
+
+`GitIdentity` est `{name,email}`, propriétés exactes, validation commune avec `GitCommitInput`. `GitIdentitySnapshot` : `{revision:string|null,identity:GitIdentity|null}` ; révision SHA-256 des octets du record, null seulement si absent. `identity(sessionId)` lit le profil privé ; `rememberIdentity(sessionId,revision,identity)` et `forgetIdentity(sessionId,revision)` vérifient la révision puis publient un record v1 `{version,id,identity}` neuf. L’oubli persiste null avec une révision neuve. Les trois routes retournent `{error}` en cas de refus et n’acceptent aucun chemin fourni par renderer. Elles valident la session, sont sérialisées et autorisent les buffers dirty sans sauvegarde. Ni nom/email ni message ne sont écrits dans la configuration Git ; le message reste limité au plan de commit. [ADR 0028](../adr/0028-profil-prive-identite-git.md).

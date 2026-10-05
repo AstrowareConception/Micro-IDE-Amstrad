@@ -25,7 +25,15 @@ export interface GitInitPlan { id: string; rootName: string; branch: 'main'; ign
 export const PROJECT_GIT_IGNORE = '# Micro IDE Amstrad — contenu local privé et artefacts\n' +
   '/documents/\n/roms/\n/firmware/\n/.microide/\n/.microide-*/\n/out/\n/dist/\n/node_modules/\n/cache/\n/checkpoints/\n/conversations/\n/logs/\n' +
   '.env\n.env.*\n*.rom\n*.dsk\n*.sna\n*.log\n*.local.json\n';
-export interface GitCommitInput { name: string; email: string; message: string }
+export interface GitIdentity { name: string; email: string }
+export interface GitIdentitySnapshot { revision: string | null; identity: GitIdentity | null }
+export function gitIdentity(value: unknown): GitIdentity {
+  if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== 2 || !['name', 'email'].every(key => Object.hasOwn(value, key))) throw new Error('Nom et email Git requis, sans propriété supplémentaire.');
+  const { name, email } = value as Record<string, unknown>;
+  if (typeof name !== 'string' || !name.trim() || name.length > 100 || /[\x00-\x1f\x7f-\x9f<>]/.test(name) || typeof email !== 'string' || email.length > 254 || !/^[^\s<>@\x00-\x1f\x7f-\x9f]+@[^\s<>@\x00-\x1f\x7f-\x9f]+$/.test(email)) throw new Error('Nom (1–100 caractères) et email Git valides requis.');
+  return { name: name.trim(), email };
+}
+export interface GitCommitInput extends GitIdentity { message: string }
 export interface GitCommitPlan extends GitCommitInput {
   id: string; branch: string; head: string; tree: string;
   files: { path: string; status: 'A' | 'M' | 'D' }[]; diff: string;
@@ -34,11 +42,14 @@ export interface GitCommitResult { oid: string; branch: string; status: Reposito
 export function commitInput(value: unknown): GitCommitInput {
   if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length !== 3 || !['name', 'email', 'message'].every(key => Object.hasOwn(value, key))) throw new Error('Identité et message de commit requis.');
   const { name, email, message } = value as Record<string, unknown>;
-  if (typeof name !== 'string' || !name.trim() || name.length > 100 || /[\x00-\x1f\x7f-\x9f<>]/.test(name) || typeof email !== 'string' || email.length > 254 || !/^[^\s<>@\x00-\x1f\x7f-\x9f]+@[^\s<>@\x00-\x1f\x7f-\x9f]+$/.test(email)) throw new Error('Nom (1–100 caractères) et email Git valides requis.');
+  const identity = gitIdentity({ name, email });
   if (typeof message !== 'string' || !message.trim() || message.length > 8192 || /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(message)) throw new Error('Message de commit requis, 8 192 caractères maximum.');
-  return { name: name.trim(), email, message: message.replace(/\r\n?/g, '\n').trim() + '\n' };
+  return { ...identity, message: message.replace(/\r\n?/g, '\n').trim() + '\n' };
 }
 export interface VersionControlPort {
+  identity(sessionId: string): Promise<GitIdentitySnapshot | { error: string }>;
+  rememberIdentity(sessionId: string, revision: string | null, identity: GitIdentity): Promise<GitIdentitySnapshot | { error: string }>;
+  forgetIdentity(sessionId: string, revision: string | null): Promise<GitIdentitySnapshot | { error: string }>;
   prepareCommit(sessionId: string, input: GitCommitInput): Promise<GitCommitPlan | { error: string }>;
   commit(sessionId: string, planId: string): Promise<GitCommitResult | { error: string } | null>;
   status(sessionId: string): Promise<RepositoryStatus | { error: string }>;
