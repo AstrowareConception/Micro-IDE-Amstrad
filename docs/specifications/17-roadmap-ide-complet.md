@@ -43,6 +43,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-017 | Renommage sémantique de variables/fonctions | N | P1 | IDE-014 | Suffixes/types, portée et chaînes/DATA/commentaires préservés |
 | IDE-018 | Templates/snippets, insertion de lignes et conventions | N | P1 | IDE-014 | Numéros sans collision ; génération minimale conforme au profil |
 | IDE-019 | Formatage optionnel et inspections/corrections ciblées | N | P2 | IDE-014 | Sémantique inchangée ; aperçu ; aucune casse/espacement opaque détruit |
+| IDE-076 | Rapport de qualité BASIC à la demande | P | P2 | IDE-014 | 0.36 : métriques lexicales, complexité estimée, cinq règles, navigation protégée et exports ; graphe de contrôle, sous-programmes et revue IA contextuelle restent ouverts |
 | IDE-020 | Multi-curseurs, pliage, signets, navigation retour/avance | P | P1 | Monaco | Gestes repris explicitement en recette, sessions conservées ; capacité Monaco seule insuffisante |
 
 ## 4. Recherche et transformations textuelles
@@ -234,3 +235,7 @@ La demande utilisateur priorise [Git et GitHub intégrés](../implementation/git
 ## Explorateur — alpha 0.30, 6 octobre 2026
 
 IDE-002 avance avec [l’arbre réel du projet](../implementation/project-explorer-alpha.md) : lecture à la demande, filtre des dossiers chargés, états de brouillon, sources conservant leurs buffers, documents rejoignant leurs aperçus et fichiers ordinaires UTF-8 en lecture seule. Les liens sont identifiés sans parcours, les listes/lectures bornées, les versions périmées refusées. [ADR 0037](../adr/0037-explorateur-projet-lecture-seule.md). Lot 1, IDE-002/003/004 et R5 restent partiels : mutations humaines durables, édition des fichiers ordinaires, onglet de prévisualisation, badges Git, exclusions configurables et persistance des vues à réaliser ; parser ensuite selon le document 18.
+
+## Qualité BASIC — alpha 0.36, 6 octobre 2026
+
+Demande produit : rapport ponctuel de longueur, complexité et code smells. [Réalisation](../implementation/basic-quality-alpha.md), [ADR 0043](../adr/0043-rapport-qualite-basic.md). Le socle local travaille en worker jetable sur un snapshot de buffers, sans passe supplémentaire pendant la frappe. Les remarques sont des observations ou des pistes de revue, distinctes des diagnostics syntaxiques. La complexité est une estimation lexicale par listing ; aucun score global ni somme entre programmes. Les corrections et la revue IA restent explicites et à construire.

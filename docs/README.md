@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.35
+# CPCéleste — Dossier de conception et réalisation — version 0.36
+
+**Qualité BASIC 0.36** : rapport local à la demande sur la source active ou les buffers chargés ; longueurs, segments, complexité estimée et cinq pistes de revue localisées. Exports Markdown/JSON, annulation et sources modifiées signalées. [Guide et limites](implementation/basic-quality-alpha.md).
 
 **Inspection CPC 0.35** : registres Z80 et RAM logique en pause, lecture à la demande ; première preuve ciblée de frontières BASIC en natif/WASM, sans débogueur BASIC public. [Guide et limites](implementation/cpc-inspection-alpha.md).
 

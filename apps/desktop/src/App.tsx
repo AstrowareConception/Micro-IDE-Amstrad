@@ -13,6 +13,8 @@ import { appendNotification, canRevealNotification, LEVEL_LABELS, SOURCE_LABELS,
 import { useBasicAnalysis } from './useBasicAnalysis.ts';
 import { ProblemsPanel } from './ProblemsPanel.tsx';
 import { PerformancePanel } from './PerformancePanel.tsx';
+import { QualityPanel } from './QualityPanel.tsx';
+import type { QualityFinding } from '../../../packages/basic-language/src/quality.ts';
 import type { Diagnostic } from '../../../packages/basic-language/src/language.ts';
 import { WorkbenchMenus } from './WorkbenchMenus.tsx';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
@@ -150,6 +152,7 @@ export function App() {
     const doc = documents.find(item => item.id === id); if (!doc) return;
     setActiveId(id); setProblemNavigation({ id, source: doc.source, diagnostic });
   }, [documents]);
+  const revealQuality = useCallback((id: string, finding: QualityFinding) => revealProblem(id, { ...finding, severity: 'warning' }), [revealProblem]);
   function nextProblem(reverse: boolean, line: number, column: number) {
     if (!allProblems.length) return;
     const order = reverse ? [...allProblems].reverse() : allProblems;
@@ -425,6 +428,7 @@ export function App() {
     { id: 'focus-mode', label: focused ? 'Quitter le mode Concentration' : 'Activer le mode Concentration', run: toggleFocus },
     { id: 'problems', label: 'Afficher les problèmes', run: () => showOutput('problems') },
     { id: 'performance', label: 'Afficher les mesures de performance', run: () => showOutput('performance') },
+    { id: 'quality', label: 'Rapport de qualité BASIC…', run: () => showOutput('quality') },
     { id: 'notifications', label: 'Centre de notifications', run: () => setNotificationsOpen(true) },
     { id: 'sidebar', label: 'Afficher / masquer les outils', detail: 'Ctrl B', run: () => setSidebarOpen(value => !value) },
     { id: 'output', label: 'Afficher / masquer les sorties', detail: 'Ctrl J', run: () => setOutputOpen(value => !value) },
@@ -457,13 +461,13 @@ export function App() {
   ] : [];
   return <main className="workbench" style={{ '--sidebar-width': `${preferences.sidebarWidth}px`, '--agent-width': `${preferences.agentWidth}px`, '--output-height': `${preferences.outputHeight}px` } as CSSProperties}>
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.35 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.36 · AstroWare Conception</p></div></div>
       <div className="topbar-actions"><Button icon="bell" aria-label={`Centre de notifications · ${unreadNotifications} non lue(s)`} onClick={() => setNotificationsOpen(true)}><span className="notification-badge">{unreadNotifications}</span></Button><span className="profile">CPC 6128 · BASIC 1.1</span></div>
     </header>
     <WorkbenchMenus groups={[
       ['Fichier', ['open', 'project', 'recent-projects', 'clone', 'create-project', 'save', 'save-all', 'save-as', 'local-history', 'export']],
       ['Édition', ['undo', 'redo', 'find', 'replace', 'search-sources', 'line', 'basic-comment', 'editor.action.copyLinesDownAction', 'editor.action.moveLinesUpAction', 'editor.action.moveLinesDownAction', 'editor.action.deleteLines', 'editor.action.addSelectionToNextFindMatch', 'next-tab', 'previous-tab', 'close-tab']],
-      ['BASIC', ['run', 'renumber', 'complete', 'editor.action.revealDefinition', 'editor.action.marker.next', 'editor.action.marker.prev', 'reference']],
+      ['BASIC', ['run', 'quality', 'renumber', 'complete', 'editor.action.revealDefinition', 'editor.action.marker.next', 'editor.action.marker.prev', 'reference']],
       ['Git', ['git', 'git-refresh', 'git-init', 'git-commit', 'git-ai-message', 'git-history', 'git-branches', 'git-create-branch', 'git-remotes', 'git-fetch', 'git-pull', 'git-push', 'clone', 'github', 'git-prs']],
       ['Projet', ['explorer', 'source-rename', 'source-move', 'source-delete', 'source-restore', 'source-archive', 'documents', 'recovery']],
       ['Affichage', ['sidebar', 'agent', 'output', 'problems', 'performance', 'notifications', 'terminal', 'git-history', 'reset-layout', 'layout-edit', 'layout-run', 'layout-agent', 'focus-mode', 'minimap', 'zoom-in', 'zoom-out', 'palette', 'quick-sources']],
@@ -558,8 +562,9 @@ export function App() {
           onPosition={(line, column) => setPosition({ line, column })}
           onSave={() => void save()} onReady={value => { editor.current = value; }} onPalette={() => setPalette('all')} onRenumber={() => setRenumberOpen(true)} onExport={() => void exportDisk()} />
         <ResizeHandle label="Hauteur des sorties" orientation="horizontal" reverse value={Math.min(preferences.outputHeight, Math.max(120, workspaceSize.height - 180))} min={120} max={Math.min(1200, workspaceSize.height - 180)} hidden={!outputOpen || panels.output.floating} onChange={outputHeight => setPreferences(previous => ({ ...previous, outputHeight }))} />
-        <DockPanel className="output-dock" label="Sorties de l’atelier" name="les sorties" hidden={!outputOpen} layout={panels.output} onLayout={value => updatePanel('output', value)} onHide={() => setOutputOpen(false)} tabs={<nav className="output-tabs" aria-label="Panneaux de sortie"><Button aria-pressed={outputTab === 'problems'} onClick={() => showOutput('problems')} icon="warning">Problèmes {allProblems.length}</Button><Button aria-pressed={outputTab === 'emulator'} onClick={() => showOutput('emulator')} icon="chip">CPC</Button><Button aria-pressed={outputTab === 'terminal'} onClick={() => showOutput('terminal')} icon="terminal">Terminal</Button><Button aria-pressed={outputTab === 'performance'} onClick={() => showOutput('performance')} icon="settings">Performance</Button><Button aria-pressed={outputTab === 'git-log'} onClick={() => showOutput('git-log')} icon="git">Git</Button></nav>}><div hidden={outputTab !== 'problems'}><ProblemsPanel documents={documents} entries={analysis.entries} onReveal={revealProblem} onRetry={analysis.retry} /></div>
+        <DockPanel className="output-dock" label="Sorties de l’atelier" name="les sorties" hidden={!outputOpen} layout={panels.output} onLayout={value => updatePanel('output', value)} onHide={() => setOutputOpen(false)} tabs={<nav className="output-tabs" aria-label="Panneaux de sortie"><Button aria-pressed={outputTab === 'problems'} onClick={() => showOutput('problems')} icon="warning">Problèmes {allProblems.length}</Button><Button aria-pressed={outputTab === 'emulator'} onClick={() => showOutput('emulator')} icon="chip">CPC</Button><Button aria-pressed={outputTab === 'terminal'} onClick={() => showOutput('terminal')} icon="terminal">Terminal</Button><Button aria-pressed={outputTab === 'quality'} onClick={() => showOutput('quality')} icon="warning">Qualité</Button><Button aria-pressed={outputTab === 'performance'} onClick={() => showOutput('performance')} icon="settings">Performance</Button><Button aria-pressed={outputTab === 'git-log'} onClick={() => showOutput('git-log')} icon="git">Git</Button></nav>}><div hidden={outputTab !== 'problems'}><ProblemsPanel documents={documents} entries={analysis.entries} onReveal={revealProblem} onRetry={analysis.retry} /></div>
         {outputOpen && outputTab === 'performance' && <PerformancePanel visible snapshot={analysis} documents={documents} />}
+        <div hidden={outputTab !== 'quality'}><QualityPanel documents={documents} activeId={activeId} scopeId={project?.sessionId ?? 'standalone'} onReveal={revealQuality} /></div>
         <div className="emulator-output" hidden={outputTab !== 'emulator'}>{emulatorLaunch ? <EmulatorPanel key={emulatorLaunch.id} launch={emulatorLaunch} onNotify={notify} onClose={() => setEmulatorLaunch(undefined)} onConfigure={() => showTool('firmware')} /> : <div className="empty-tool"><Icon name="chip" /><p>Exécutez le listing avec le bouton Exécuter pour ouvrir le CPC.</p></div>}</div>
         {project ? <GitLogPanel key={`git-log:${project.sessionId}`} sessionId={project.sessionId} busy={busy} visible={outputTab === 'git-log'} /> : outputTab === 'git-log' && <div className="empty-tool">Ouvrez un projet pour consulter son journal Git.</div>}
         {project ? <TerminalPanel key={`terminal:${project.sessionId}`} sessionId={project.sessionId} busy={busy} dirty={dirty} visible={terminalOpen && outputTab === 'terminal'} onBusy={setBusy} onNotify={notify} /> : outputTab === 'terminal' && <div className="empty-tool">Ouvrez un projet pour exécuter des commandes dans son dossier.</div>}

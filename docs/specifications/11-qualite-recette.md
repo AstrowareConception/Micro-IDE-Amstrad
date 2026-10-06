@@ -45,6 +45,7 @@ La validation distingue cinq niveaux : contrat de données, règles métier, int
 | ACC-33 | Deux clones et remote bare local : fetch, upstream, pull fast-forward, divergence et push rejeté ; tests HTTPS/SSH distincts pour erreurs credentials/TLS/clé inconnue et annulation ; API GitHub testée séparément lorsqu'ajoutée. | JG-B, extension GitHub |
 | ACC-34 | Divergence et conflits source/manifeste : merge/rebase continue/abort, stash avec conflit sans perte, revert/cherry-pick, tags/blame ; interruptions inspectées et projet revalidé avant nouvelles écritures. | JG-C |
 | ACC-35 | Hooks/filtres/helpers/URL réécrites hostiles, chemins sortants, ROM/clé/doc privé déjà suivi ou dans commit antérieur, callId rejoué et demande IA de push : aucun code non approuvé ni publication automatique ; logs/IPC expurgés. | JG-A/B/C |
+| ACC-36 | Générer un rapport actif/multisource sans sauvegarder, vérifier longueur/complexité et règles sur chaînes, REM, DATA et événements ; naviguer vers une occurrence, modifier la source et constater l’obsolescence sans recalcul automatique. Annuler, simuler un échec worker, réessayer et exporter méthode/couverture sans code source. Quotas expliqués. | J2, extension 0.36 |
 
 Les cas « Suite » sont préparés comme contrats de recette, pas ajoutés à la définition de terminé du MVP. Les scénarios associant plusieurs jalons sont raffinés progressivement et rejoués si le composant concerné change.
 

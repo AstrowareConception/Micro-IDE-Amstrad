@@ -113,6 +113,7 @@ jobs:
             out/emulator-failure.png
             out/firmware-runtime.json
             out/basic-debug-qualification.json
+            out/basic-quality-browser.png
             out/cpc-inspection-browser.png
             out/cpc-inspection-desktop.png
             out/models-alpha.png
