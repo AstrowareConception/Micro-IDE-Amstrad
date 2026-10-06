@@ -33,7 +33,7 @@ jobs:
         run: |
           npm run typecheck
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          node --test tests/build-toolchain.test.mjs tests/recent-projects.test.ts tests/git-operations.test.ts tests/github-session.test.ts tests/project-explorer.test.ts tests/source-operations.test.ts tests/personalization.test.ts tests/notifications.test.ts
+          node --test tests/build-toolchain.test.mjs tests/recent-projects.test.ts tests/git-operations.test.ts tests/github-session.test.ts tests/project-explorer.test.ts tests/source-operations.test.ts tests/personalization.test.ts tests/notifications.test.ts tests/basic-language.test.ts tests/basic-syntax.test.ts tests/basic-analysis-service.test.ts tests/model-analysis.test.ts
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run build:hello
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -82,6 +82,8 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Browser editing and exports
         run: npm run test:editor
+      - name: Bounded BASIC parser benchmark
+        run: node scripts/benchmark-basic-analysis.mjs > out/basic-analysis-benchmark.json
       - name: CPC firmware reference and real runtime recipe
         run: |
           git clone --no-checkout https://github.com/floooh/chips-test.git .cache/firmware-reference
@@ -102,6 +104,9 @@ jobs:
         with:
           name: editor-alpha-evidence
           path: |
+            out/basic-analysis-benchmark.json
+            out/basic-diagnostics-alpha.png
+            out/basic-diagnostics-failure.png
             out/emulator-browser-alpha.png
             out/emulator-desktop-alpha.png
             out/emulator-failure.png

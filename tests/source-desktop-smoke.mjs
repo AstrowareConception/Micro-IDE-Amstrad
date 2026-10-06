@@ -17,7 +17,14 @@ try {
   await desktop.evaluate(({ dialog }, root) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [root] }); dialog.showMessageBox = async () => ({ response: 1, checkboxChecked: false }); }, root);
   const staleId = await page.evaluate(async () => (await window.desktop.project.open()).sessionId);
   await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click(); await expect(page.getByRole('tab', { name: 'src/main.bas', exact: true })).toBeVisible();
-  assert.match((await page.evaluate(sessionId => window.desktop.sourceOperations.prepare(sessionId, { action: 'rename', id: 'main', name: 'BAD' }), staleId)).error, /périmée/);
+  // Project/explorer reads can still own the disk gate after tabs appear.
+  // Retry only that transient refusal, then assert the stale-session guard itself.
+  let staleResponse;
+  await expect.poll(async () => {
+    staleResponse = await page.evaluate(sessionId => window.desktop.sourceOperations.prepare(sessionId, { action: 'rename', id: 'main', name: 'BAD' }), staleId);
+    return staleResponse.error !== 'Une opération disque est déjà en cours.';
+  }).toBe(true);
+  assert.match(staleResponse.error, /périmée/);
   const input = page.locator('.listing .monaco-editor textarea'); await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('30 REM NATIVE MAIN DRAFT');
   await page.getByRole('tab', { name: 'src/util.bas', exact: true }).click(); await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('30 REM NATIVE UTIL DRAFT');
   await page.getByRole('tab', { name: /src\/main.bas/ }).click();

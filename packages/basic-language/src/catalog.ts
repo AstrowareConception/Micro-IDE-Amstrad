@@ -82,4 +82,6 @@ export const KEYWORDS = new Set([
   'RIGHT$', 'RND', 'ROUND', 'SAVE', 'SGN', 'SIN', 'SPACE$', 'SPEED', 'SQR', 'STR$', 'STRING$',
   'SYMBOL', 'TAB', 'TAG', 'TAGOFF', 'TEST', 'TESTR', 'TIME', 'TROFF', 'TRON', 'UPPER$', 'VAL',
   'VPOS', 'WAIT', 'WEND', 'WHILE', 'WIDTH', 'WINDOW', 'WRITE', 'ZONE',
+  // Native BASIC 1.1 spellings: recognised lexically, without an invented help card.
+  'COPYCHR$', 'CURSOR', 'DEC$', 'DERR', 'FILL', 'FRAME', 'GRAPHICS', 'MASK', 'SPC', 'SWAP', 'USING',
 ]);

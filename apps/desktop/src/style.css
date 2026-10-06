@@ -236,3 +236,14 @@ select{font:inherit;width:100%;margin:8px 0;background:var(--input);color:inheri
 .notification-list li[data-level=error],.notification-preview[data-level=error]{border-left-color:#f48484}.notification-list li[data-level=warning],.notification-preview[data-level=warning]{border-left-color:#d69b36}.notification-list li[data-level=success],.notification-preview[data-level=success]{border-left-color:#51ab75}
 .notification-preview{position:relative;flex-shrink:0;width:100%;min-height:58px;max-height:82px;background:var(--panel);border:1px solid var(--line-strong);border-left:4px solid var(--accent);border-radius:0;padding:8px 16px;display:flex;align-items:center;gap:10px}.notification-preview div{min-width:0;flex:1}.notification-preview strong{font-size:12px}.notification-preview p{font-size:12px;margin:5px 0 0;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.notification-preview button{flex-shrink:0;font-size:12px}
 @media(max-width:600px){.notification-filters{grid-template-columns:1fr}.notification-preview{gap:6px;padding:8px}.topbar-actions{gap:6px}.topbar-actions .profile{display:none}.notification-center{padding:14px}}
+.diagnostic-filters { display: flex; gap: .7rem; flex-wrap: wrap; margin: .6rem 0; }
+.diagnostic-filters label { display: flex; flex-direction: column; gap: .25rem; }
+.problems li button { display: block; text-align: left; width: 100%; }
+.problems li small { display: block; color: var(--muted); margin-top: .2rem; }
+.tab-problems { font-size: .8em; margin-left: .4rem; padding: 0 .3rem; border-radius: .3rem; background: var(--selected); }
+.performance-panel { padding: .8rem; }
+.performance-panel dl { display: grid; grid-template-columns: minmax(140px, 1fr) 2fr; gap: .5rem; }
+.performance-panel dd { margin: 0; }
+.performance-table { overflow: auto; }
+.performance-table table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+.performance-table th, .performance-table td { padding: .5rem; text-align: left; border-bottom: 1px solid var(--line); }
