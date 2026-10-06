@@ -33,7 +33,7 @@ jobs:
         run: |
           npm run typecheck
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          node --test tests/build-toolchain.test.mjs tests/recent-projects.test.ts
+          node --test tests/build-toolchain.test.mjs tests/recent-projects.test.ts tests/git-operations.test.ts tests/github-session.test.ts
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run build:hello
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -127,6 +127,10 @@ jobs:
             out/external-alpha.png
             out/agent-durability-alpha.png
             out/git-identity-alpha.png
+            out/git-remote-alpha.png
+            out/github-private-alpha.png
+            out/git-network-desktop-alpha.png
+            out/github-private-desktop-alpha.png
             out/git-commit-alpha.png
             out/desktop-failure.png
             out/editor-failure.png

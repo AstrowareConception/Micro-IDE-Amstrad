@@ -50,3 +50,5 @@ Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou
 - [0033 — Panneaux flottants et écran CPC](0033-panneaux-flottants-et-ecran-cpc.md).
 
 - [0034 — Projets récents et placement des menus](0034-projets-recents-et-placement-menus.md).
+
+- [0035 — Atelier Git réseau et GitHub](0035-atelier-git-reseau-et-github.md).

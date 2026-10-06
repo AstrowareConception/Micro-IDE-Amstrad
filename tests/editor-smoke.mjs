@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { verifyGitWorkbench } from './git-workbench-smoke.mjs';
 import { verifyRecentProjects } from './recent-projects-smoke.mjs';
 import { verifyPanelLayout } from './panel-layout-smoke.mjs';
 import { chromium, expect } from '@playwright/test';
@@ -324,6 +325,7 @@ try {
   await expect(modelsPage.getByRole('tab', { name: /modifié/ })).toHaveCount(0);
   await modelsPage.close();
   await verifyRecentProjects(browser, errors);
+  await verifyGitWorkbench(browser, errors);
   assert.deepEqual(errors, [], 'No browser errors');
   console.log('Editor browser smoke: completion, coloration, help, diagnostics, F12, downloads, dirty protection plus renumber preview/apply/DSK/undo/redo/stale revision passed.');
 } catch (error) {

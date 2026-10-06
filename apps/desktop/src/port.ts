@@ -1,4 +1,5 @@
 import type { RecentProjectsPort } from '../../../packages/workspace/src/recent-projects.ts';
+import type { GitOperationsPort, GitHubPort } from '../../../packages/version-control/src/operations.ts';
 import { feedbackReport, type FeedbackInput } from '../feedback.ts';
 import { buildListingDisk } from '../../../packages/basic-language/src/build.ts';
 import type { ProjectManifest, ProjectSnapshot, DocumentSnapshot } from '../../../packages/workspace/src/project.ts';
@@ -22,6 +23,8 @@ export interface DesktopPort {
   firmware?: FirmwarePort;
   emulator?: EmulatorPort;
   git?: VersionControlPort;
+  gitOperations?: GitOperationsPort & { clone(url: string, name: string): Promise<ProjectSnapshot | Failure | null> };
+  github?: GitHubPort;
   terminal?: TerminalPort;
   history?: HistoryPort;
   drafts?: DraftPort;

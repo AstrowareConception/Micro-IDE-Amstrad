@@ -73,11 +73,11 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-032 | Index fichier/fragment et listes de changements | P | P0 | IDE-031 | Par fichier livré ; staging partiel, renommages/conflits et changelists à traiter |
 | IDE-033 | Identité locale, aperçu et commit exact de l’index | P | P0 | IDE-032 | HEAD/index figés, fichiers privés exclus, hooks/signature explicites, premier commit |
 | IDE-034 | Historique Git, diff de version, blame et restauration guidée | P | P1 | IDE-031/DUR | Pagination 0.14 livrée ; version/source/diff/blame/restauration à ajouter |
-| IDE-035 | Branches locales, checkout, tags et stash | N | P1 | IDE-033/DUR | Dirty/conflicts gérés, nom/ref validés, manifeste rechargé sans perte |
-| IDE-036 | Clone/remotes/upstream/fetch/pull/push HTTPS et SSH | N | P0 | IDE-033/NET | Deux clones + vrai transport ; divergence/rejet/credentials ; publication humaine |
+| IDE-035 | Branches locales, checkout, tags et stash | P | P1 | IDE-033/DUR | Dirty/conflicts gérés, nom/ref validés, manifeste rechargé sans perte |
+| IDE-036 | Clone/remotes/upstream/fetch/pull/push HTTPS et SSH | P | P0 | IDE-033/NET | 0.28 : deux clones, HTTPS/TLS, branches/remotes et publication humaine ; SSH et récupération globale restent ouverts |
 | IDE-037 | Merge/rebase/conflits 3 versions, continue/abort | N | P1 | IDE-036/DUR | Rollback/reprise et conflits de manifestes/documents qualifiés |
 | IDE-038 | Revert/cherry-pick et comparaison de branches | N | P2 | IDE-037 | Sélections exactes ; aucune réécriture publiée implicite |
-| IDE-039 | GitHub : connexion, création remote, PR et checks | N | P2 | NET | OAuth/token sécurisé ; scope visible ; lien PR/CI ; Git reste utilisable sans API GitHub |
+| IDE-039 | GitHub : connexion, création remote, PR et checks | P | P2 | NET | 0.28 : token mémoire/CLI, dépôts privés et PR brouillon, liens PR/CI ; OAuth/coffre/checks détaillés ouverts |
 
 ## 7. Terminal et tâches
 
@@ -219,3 +219,10 @@ IDE-027 progresse : séparateurs souris/clavier pour largeurs et hauteur des sor
 ## Incrément 0.27 — Projets récents et menus
 
 IDE-005 avance avec la liste privée des vingt derniers projets, réouverture avec les contrôles existants, recherche nom/dossier, retrait/oubli et détection de présence des chemins. La clé opaque choisie par le renderer est résolue côté main ; aucune racine arbitraire reçue par l’IPC de réouverture. Un projet différent remplaçant celui mémorisé demande une ouverture explicite. Les menus sont mesurés et bornés à la fenêtre, avec recette de tous les groupes à 1440, 729 et 420 px. [Guide](../implementation/recent-projects-alpha.md), [ADR 0034](../adr/0034-projets-recents-et-placement-menus.md). Les modèles/assistant de démarrage restent ouverts.
+
+
+## Avancement alpha 0.28 — 6 octobre 2026
+
+La demande utilisateur priorise [Git et GitHub intégrés](../implementation/git-network-alpha.md), [ADR 0035](../adr/0035-atelier-git-reseau-et-github.md). Menu Git, branches locales/distantes, remotes, upstream, clone dans un nouveau dossier, fetch, pull avec fetch préparatoire/fast-forward et push examinés ; buffers propres, cible projet vérifiée puis session rechargée. Init préserve un ignore existant avec exclusions locales. Compte GitHub privé par jeton en mémoire ou CLI, listing/association, dépôt personnel privé par défaut et PR brouillon, liens PR/CI. Suggestion IA du message depuis le seul diff indexé, sans outils ni commit automatique.
+
+192 tests Node ; transport HTTPS/TLS réel avec deux clones, rejets et arrêt, API privées contrôlées, recettes navigateur/Electron et build Windows consignés dans la PR. IDE-035/036/039 restent P : tags/stash, merge/rebase/conflits, OAuth/coffre système, qualification SSH/macOS et comptes/fournisseurs réels restent ouverts. Aucun jalon JG/R3/R4 global clos.

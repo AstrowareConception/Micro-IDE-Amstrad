@@ -21,7 +21,7 @@ export interface GitDiff { path: string; side: DiffSide; text: string }
 export interface GitCommit { oid: string; date: string; subject: string }
 export interface GitHistory { head: string; commits: GitCommit[]; nextCursor?: string }
 export type IndexAction = 'stage' | 'unstage';
-export interface GitInitPlan { id: string; rootName: string; branch: 'main'; ignoreText: string; version: string }
+export interface GitInitPlan { id: string; rootName: string; branch: 'main'; ignoreText: string; version: string; preserveIgnore?: boolean }
 export const PROJECT_GIT_IGNORE = '# Micro IDE Amstrad — contenu local privé et artefacts\n' +
   '/documents/\n/roms/\n/firmware/\n/.microide/\n/.microide-*/\n/out/\n/dist/\n/node_modules/\n/cache/\n/checkpoints/\n/conversations/\n/logs/\n' +
   '.env\n.env.*\n*.rom\n*.dsk\n*.sna\n*.log\n*.local.json\n';

@@ -1,6 +1,9 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
-export type IconName = 'file' | 'folder' | 'save' | 'saveAll' | 'search' | 'replace' | 'run' | 'stop' | 'pause' | 'disk' | 'undo' | 'redo' | 'git' | 'history' | 'branch' | 'terminal' | 'code' | 'book' | 'chip' | 'spark' | 'settings' | 'close' | 'plus' | 'check' | 'warning' | 'download' | 'trash' | 'eye' | 'key' | 'zoom' | 'menu' | 'dock' | 'undock' | 'maximize' | 'restore' | 'grip' | 'resize';
+export type IconName = 'file' | 'folder' | 'save' | 'saveAll' | 'search' | 'replace' | 'run' | 'stop' | 'pause' | 'disk' | 'undo' | 'redo' | 'git' | 'history' | 'branch' | 'terminal' | 'code' | 'book' | 'chip' | 'spark' | 'settings' | 'close' | 'plus' | 'check' | 'warning' | 'download' | 'trash' | 'eye' | 'key' | 'zoom' | 'menu' | 'dock' | 'undock' | 'maximize' | 'restore' | 'grip' | 'resize' | 'upload' | 'github' | 'pullRequest';
 const paths: Record<IconName, string> = {
+ upload: 'M12 21V5 M7 10l5-5 5 5 M3 5V3h18v2',
+ github: 'M9 19v3 M15 19v3 M7 4L5 2v6a7 7 0 0 0 14 0V2l-2 2 M5 16c-4 0-4-4-4-4',
+ pullRequest: 'M6 3v14 M4 3h4 M4 19a2 2 0 1 0 4 0 2 2 0 0 0-4 0 M18 17V9c0-3-4-4-6-4 M14 2l-3 3 3 3 M16 19a2 2 0 1 0 4 0 2 2 0 0 0-4 0',
  file: 'M6 3h8l4 4v14H6z M14 3v5h4 M9 12h6 M9 16h6',
  folder: 'M3 6h7l2 3h9v11H3z', save: 'M4 3h14l3 3v15H3V3z M7 3v6h9V3 M7 21v-8h10v8',
  saveAll: 'M7 3h11l3 3v12H7z M10 3v5h6V3 M3 7v14h14',
@@ -37,7 +40,7 @@ export function Icon({ name, className = '' }: { name: IconName; className?: str
 }
 export function iconForLabel(label: string): IconName {
  const value = label.toLocaleLowerCase('fr');
- const choices: [RegExp, IconName][] = [[/paramètre|réglage/, 'settings'], [/proposer|amélioration/, 'plus'], [/problème|diagnostic/, 'warning'], [/annuler la modification/, 'undo'], [/fermer|annuler|masquer|écarter/, 'close'], [/git|index|commit|dépôt/, 'git'], [/historique|version|checkpoint|récup|brouillon/, 'history'], [/clé/, 'key'], [/agent|mission/, 'spark'], [/terminal|système/, 'terminal'], [/rom|firmware/, 'chip'], [/disquette|dsk/, 'disk'], [/enregistrer tout/, 'saveAll'], [/enregistrer|sauvegard/, 'save'], [/rétablir/, 'redo'], [/remplac/, 'replace'], [/recherch/, 'search'], [/exécuter|lancer|reprendre/, 'run'], [/arrêter|interrompre/, 'stop'], [/pause/, 'pause'], [/import|export|télécharg/, 'download'], [/retirer|oubli|supprim/, 'trash'], [/ajouter|créer/, 'plus'], [/projet|explorateur/, 'folder'], [/référence|aide|commande basic/, 'book'], [/zoom|agrandir|réduire/, 'zoom'], [/vérifier|confirmer|appliquer|autoriser/, 'check'], [/source|listing|ouvrir/, 'file']];
+ const choices: [RegExp, IconName][] = [[/paramètre|réglage/, 'settings'], [/proposer|amélioration/, 'plus'], [/problème|diagnostic/, 'warning'], [/annuler la modification/, 'undo'], [/fermer|annuler|masquer|écarter/, 'close'], [/github/, 'github'], [/pull request|\bpr\b/, 'pullRequest'], [/branche/, 'branch'], [/push/, 'upload'], [/fetch|pull|cloner/, 'download'], [/git|index|commit|dépôt/, 'git'], [/historique|version|checkpoint|récup|brouillon/, 'history'], [/clé/, 'key'], [/agent|mission/, 'spark'], [/terminal|système/, 'terminal'], [/rom|firmware/, 'chip'], [/disquette|dsk/, 'disk'], [/enregistrer tout/, 'saveAll'], [/enregistrer|sauvegard/, 'save'], [/rétablir/, 'redo'], [/remplac/, 'replace'], [/recherch/, 'search'], [/exécuter|lancer|reprendre/, 'run'], [/arrêter|interrompre/, 'stop'], [/pause/, 'pause'], [/import|export|télécharg/, 'download'], [/retirer|oubli|supprim/, 'trash'], [/ajouter|créer/, 'plus'], [/projet|explorateur/, 'folder'], [/référence|aide|commande basic/, 'book'], [/zoom|agrandir|réduire/, 'zoom'], [/vérifier|confirmer|appliquer|autoriser/, 'check'], [/source|listing|ouvrir/, 'file']];
  return choices.find(([pattern]) => pattern.test(value))?.[1] ?? 'code';
 }
 function textOf(value: ReactNode): string { return typeof value === 'string' ? value : Array.isArray(value) ? value.map(textOf).join(' ') : ''; }

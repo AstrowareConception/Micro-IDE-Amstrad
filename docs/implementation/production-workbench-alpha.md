@@ -23,6 +23,7 @@ Le CPC affiche les commandes **en colonne à gauche**, l’écran à droite. Le 
 | Palette / ouverture rapide | Ctrl Maj P / Ctrl P |
 | Listing / projet / projets récents | Ctrl O / Ctrl Maj O / Ctrl R |
 | Enregistrer actif / tout / sous | Ctrl S / Ctrl Maj S / Ctrl Alt S |
+| Push / Fetch / branches Git (0.28) | Ctrl Alt K / Ctrl Alt G / Ctrl Alt B |
 | Explorateur / recherche projet / Git | Ctrl Maj E / Ctrl Maj F / Ctrl Maj G |
 | Documents / IA / ROM | Ctrl Maj D / Ctrl Maj A / Ctrl Alt R |
 | Outils / sorties | Ctrl B / Ctrl J |

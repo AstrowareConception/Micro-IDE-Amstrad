@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.27
+# CPCéleste — Dossier de conception et réalisation — version 0.28
+
+**Git et GitHub 0.28** : branches/remotes/clone, fetch/pull fast-forward/push, GitHub privé et PR, message IA relu. [Guide](implementation/git-network-alpha.md), [ADR 0035](adr/0035-atelier-git-reseau-et-github.md).
 
 **Projets récents 0.27** : réouverture par registre privé, noms/dossiers/date/filtre, retrait et chemins indisponibles ; menus bornés au viewport. [Guide](implementation/recent-projects-alpha.md), [ADR 0034](adr/0034-projets-recents-et-placement-menus.md).
 

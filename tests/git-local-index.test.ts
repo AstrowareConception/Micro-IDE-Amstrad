@@ -38,13 +38,15 @@ test('init preview and exclusive creation use main, private exclusions, no templ
   await assert.rejects(inspector.prepareInit(), /existant/);
 });
 
-test('init refuses stale previews, existing ignore files, parent/bare repositories and occupied git paths without overwrites', async () => {
+test('init refuses stale previews, preserves existing ignore files and rejects parent/bare repositories or occupied git paths', async () => {
   const stale = await project(), plan = await stale.inspector.prepareInit();
   await writeFile(join(stale.root, 'src/main.bas'), '10 REM EXTERNAL\n');
   await assert.rejects(stale.inspector.init(plan.id), /modifié/);
   await assert.rejects(lstat(join(stale.root, '.git')), { code: 'ENOENT' });
   const existing = await project(); await writeFile(join(existing.root, '.gitignore'), '# USER ORIGINAL\n');
-  await assert.rejects(existing.inspector.prepareInit(), /existe déjà/);
+  const existingPlan = await existing.inspector.prepareInit(); assert.equal(existingPlan.preserveIgnore, true);
+  await existing.inspector.init(existingPlan.id);
+  assert.equal(await readFile(join(existing.root, '.git/info/exclude'), 'utf8'), PROJECT_GIT_IGNORE);
   assert.equal(await readFile(join(existing.root, '.gitignore'), 'utf8'), '# USER ORIGINAL\n');
   const occupied = await project(), occupiedPlan = await occupied.inspector.prepareInit();
   await writeFile(join(occupied.root, '.git'), 'ORIGINAL OCCUPIED');

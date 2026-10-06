@@ -8,7 +8,7 @@ import { gitPath, parseStatus, commitInput, PROJECT_GIT_IGNORE, type GitCommitIn
 
 const LIMIT = 1024 * 1024;
 const digest = (value: Uint8Array | string) => createHash('sha256').update(value).digest('hex');
-const safeKeys = /^(core\.(repositoryformatversion|filemode|bare|logallrefupdates|ignorecase|precomposeunicode|autocrlf|eol|safecrlf|ignorestat|symlinks|protecthfs|protectntfs)|user\.(name|email)|remote\.[^.]+\.(url|pushurl|fetch)|branch\..+\.(remote|merge))$/i;
+const safeKeys = /^(core\.(repositoryformatversion|filemode|bare|logallrefupdates|ignorecase|precomposeunicode|autocrlf|eol|safecrlf|ignorestat|symlinks|protecthfs|protectntfs)|user\.(name|email)|remote\.[^.]+\.(url|pushurl|fetch|tagopt)|branch\..+\.(remote|merge))$/i;
 /** Host-only, deliberately conservative inspection policy, not an OS sandbox. */
 export class GitInspection {
   private executable: string | undefined;
@@ -113,7 +113,7 @@ export class GitInspection {
     const config = await this.run(['config', '--file', join(this.root, '.git/config'), '--no-includes', '--null', '--list']);
     for (const record of config.split('\0').filter(Boolean)) {
       const newline = record.indexOf('\n'), key = newline < 0 ? record : record.slice(0, newline), value = newline < 0 ? '' : record.slice(newline + 1);
-      if (!safeKeys.test(key) || (key.toLowerCase() === 'core.bare' && value.toLowerCase() !== 'false') ||
+      if (!safeKeys.test(key) || (/^remote\..+\.tagopt$/i.test(key) && !['--tags', '--no-tags'].includes(value)) || (key.toLowerCase() === 'core.bare' && value.toLowerCase() !== 'false') ||
           (key.toLowerCase() === 'core.repositoryformatversion' && value !== '0'))
         throw new Error('Configuration Git non qualifiée : includes, filtres, extensions et commandes auxiliaires refusés.');
     }
@@ -240,6 +240,13 @@ export class GitInspection {
     return digest(JSON.stringify([await this.rawStatus(), digest(await this.bytes('.git/config') ?? ''),
       digest(await this.bytes('.git/index', true) ?? ''), await this.workingSignature()]));
   }
+  /** Host adapters use the same metadata policy before typed Git operations. */
+  async operationRevision(): Promise<string> {
+    if (await this.metadata() !== 'repository') throw new Error('Créez d’abord un dépôt Git à la racine du projet.');
+    return digest(JSON.stringify([await this.signature(), await this.run(['for-each-ref', '--format=%(refname) %(objectname)'])]));
+  }
+  async workspaceRevision(): Promise<string> { await this.metadata(); return this.signature(); }
+  async executablePath(): Promise<string> { return this.locate(); }
   private async commitRef(): Promise<string> {
     const version = /^git version (\d+)\.(\d+)\./.exec((await this.run(['--version'])).trim());
     if (!version || Number(version[1]) < 2 || Number(version[1]) === 2 && Number(version[2]) < 48) throw new Error('Git 2.48 ou supérieur requis pour les commits intégrés.');
@@ -335,8 +342,9 @@ export class GitInspection {
       this.initPlan = undefined;
       const status = await this.inspect();
       if (status.state !== 'not-repository') throw new Error('Dépôt existant ou parent : initialisation refusée.');
-      if (await this.exists(join(this.root, '.gitignore'))) throw new Error('.gitignore existe déjà : conservé intact. Création depuis l’IDE non prise en charge pour ce cas.');
-      const view: GitInitPlan = { id: randomUUID(), rootName: basename(this.root), branch: 'main', ignoreText: PROJECT_GIT_IGNORE, version: status.version };
+      const preserveIgnore = await this.exists(join(this.root, '.gitignore'));
+      if (preserveIgnore) { const bytes = await this.bytes('.gitignore'); if (!bytes || bytes.length > 16 * 1024) throw new Error('.gitignore non qualifié ou supérieur à 16 Kio.'); new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
+      const view: GitInitPlan = { id: randomUUID(), rootName: basename(this.root), branch: 'main', ignoreText: PROJECT_GIT_IGNORE, version: status.version, preserveIgnore };
       this.initPlan = { view, signature: await this.workingSignature() }; return { ...view };
     } catch (error) { return this.failure(error); }
   }
@@ -347,16 +355,18 @@ export class GitInspection {
     try {
       const plan = this.initPlan; this.initPlan = undefined;
       if (typeof id !== 'string' || !plan || plan.view.id !== id) throw new Error('Plan Git périmé ; préparez à nouveau la création.');
-      if (await this.metadata() !== 'not-repository' || await this.exists(join(this.root, '.gitignore')) || plan.signature !== await this.workingSignature())
+      if (await this.metadata() !== 'not-repository' || plan.signature !== await this.workingSignature())
         throw new Error('Projet modifié depuis l’aperçu ; aucun dépôt créé.');
       // Exclusive claim: never reinitialize, replace or delete an existing repository/ignore file.
       await mkdir(join(this.root, '.git'), { mode: 0o700 }); claimed = true;
       await writeFile(join(this.root, '.git/microide-init-pending'), plan.view.id, { flag: 'wx', mode: 0o600 });
-      await writeFile(join(this.root, '.gitignore'), PROJECT_GIT_IGNORE, { flag: 'wx', mode: 0o600 });
+      if (!plan.view.preserveIgnore) await writeFile(join(this.root, '.gitignore'), PROJECT_GIT_IGNORE, { flag: 'wx', mode: 0o600 });
       const template = await mkdtemp(join(this.root, '.git/empty-template-'));
       await this.run([`--git-dir=${join(this.root, '.git')}`, `--work-tree=${this.root}`, 'init', '--quiet', '--initial-branch=main',
         '--object-format=sha1', '--ref-format=files', `--template=${template}`]);
-      await rmdir(template); await unlink(join(this.root, '.git/microide-init-pending'));
+      await rmdir(template);
+      if (plan.view.preserveIgnore) { await mkdir(join(this.root, '.git/info'), { recursive: true }); await writeFile(join(this.root, '.git/info/exclude'), PROJECT_GIT_IGNORE, { flag: 'wx', mode: 0o600 }); }
+      await unlink(join(this.root, '.git/microide-init-pending'));
       return await this.inspect();
     } catch (error) {
       if (claimed) throw new Error('Création Git non confirmée : conserver .git et .gitignore, examiner le dossier ; aucune suppression automatique.');

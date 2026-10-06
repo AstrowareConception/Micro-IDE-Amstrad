@@ -2,8 +2,10 @@ import { Button } from './Icon.tsx';
 import { useState } from 'react';
 import type { GitDiff, RepositoryStatus, DiffSide, GitInitPlan, IndexAction, GitHistory, GitCommitPlan, GitIdentitySnapshot } from '../../../packages/version-control/src/inspection.ts';
 import { files } from './port.ts';
+import { GitRemotePanel } from './GitRemotePanel.tsx';
+import type { ProjectSnapshot } from '../../../packages/workspace/src/project.ts';
 
-interface Props { sessionId: string; busy: boolean; dirty: boolean; documentCount: number; onBusy(value: boolean): void }
+interface Props { sessionId: string; busy: boolean; dirty: boolean; documentCount: number; onBusy(value: boolean): void; onProject(project: ProjectSnapshot): void }
 export function GitPanel(props: Props) {
   const [snapshot, setSnapshot] = useState<RepositoryStatus>();
   const [diff, setDiff] = useState<GitDiff>();
@@ -15,6 +17,17 @@ export function GitPanel(props: Props) {
   const [identityProfile, setIdentityProfile] = useState<GitIdentitySnapshot>();
   const [identityNotice, setIdentityNotice] = useState('Aucune identité mémorisée sans votre demande.');
   const port = files.git;
+  async function suggestMessage() {
+    if (!files.gitOperations || props.busy || props.dirty) return;
+    props.onBusy(true); setCommitPlan(undefined);
+    try {
+      const result = await files.gitOperations.suggestMessage(props.sessionId, { name, email });
+      if (!result) setNotice('Suggestion IA annulée ; message conservé.');
+      else if ('error' in result) setNotice(result.error);
+      else { setMessage(result.message); setNotice('Message proposé par ' + result.model + '. Relisez et modifiez-le avant de préparer le commit.'); }
+    } catch { setNotice('Suggestion IA non confirmée ; message conservé.'); }
+    finally { props.onBusy(false); }
+  }
   async function loadIdentity() {
     if (!port) return;
     const result = await port.identity(props.sessionId);
@@ -125,14 +138,17 @@ export function GitPanel(props: Props) {
     finally { props.onBusy(false); }
   }
   return <section className="panel git-panel" aria-label="Contrôle de version Git">
-    <h2>Git · dépôt et index locaux</h2>
-    <p className="muted">Statut, diff, création main et staging par fichier avec confirmation native. Commits locaux non signés, hooks désactivés. Aucun accès réseau ni outil Git pour l’IA.</p>
+    <h2>Git · contrôle de version</h2>
+    <p className="muted">Dépôt local, changements, commits, branches et synchronisation. Les publications restent confirmées. Commits locaux non signés, hooks désactivés.</p>
     {props.dirty && <p className="git-dirty">Brouillons non enregistrés : ils ne figurent pas dans le diff Git. Mutations Git bloquées ; aucune sauvegarde automatique.</p>}
-    <Button disabled={props.busy || !port} onClick={() => void refresh()}>Actualiser Git</Button>
+    <Button data-git-action="refresh" disabled={props.busy || !port} onClick={() => void refresh()}>Actualiser Git</Button>
     <Button disabled={props.busy || !port} onClick={() => void readHistory()}>Historique Git</Button>
-    {snapshot?.state === 'not-repository' && <Button disabled={props.busy || props.dirty || !port} onClick={() => void prepare()}>Préparer la création Git</Button>}
+    {snapshot?.state !== 'repository' && <Button data-git-action="init" disabled={props.busy || props.dirty || !port} onClick={() => void prepare()}>Préparer la création Git</Button>}
     <p aria-live="polite" className="git-notice">{notice}</p>
-    {plan && <div className="git-init-preview"><h3>Créer dans {plan.rootName} · branche main</h3><p>{plan.version} · .gitignore créé sans écrasement</p>
+    <details className="git-network-tools"><summary>Branches, remotes et GitHub</summary>
+    <GitRemotePanel sessionId={props.sessionId} busy={props.busy} dirty={props.dirty} onBusy={props.onBusy} onProject={props.onProject} />
+    </details>
+    {plan && <div className="git-init-preview"><h3>Créer dans {plan.rootName} · branche main</h3><p>{plan.version} · {plan.preserveIgnore ? 'exclusions locales, .gitignore existant conservé' : '.gitignore créé sans écrasement'}</p>
       <textarea aria-label="Exclusions Git proposées" readOnly rows={8} value={plan.ignoreText} />
       <p>Aucun fichier ne sera indexé automatiquement. Vérifiez la racine dans la confirmation native.</p>
       <Button disabled={props.busy || props.dirty} onClick={() => void initialize()}>Créer le dépôt Git local</Button>
@@ -151,6 +167,7 @@ export function GitPanel(props: Props) {
         <Button disabled={props.busy || !identityProfile?.identity} onClick={() => void identityAction('forget')}>Oublier l’identité mémorisée</Button>
         <p aria-live="polite" className="muted">{identityNotice}</p>
         <label>Message<textarea aria-label="Message du commit Git" rows={3} maxLength={8192} disabled={props.busy} value={message} onChange={event => { setMessage(event.target.value); setCommitPlan(undefined); }} /></label>
+        <Button icon="spark" data-git-action="suggest-message" disabled={props.busy || props.dirty || !files.gitOperations || !name.trim() || !email} onClick={() => void suggestMessage()}>Proposer le message par IA…</Button>
         <Button disabled={props.busy || props.dirty || !name.trim() || !email || !message.trim()} onClick={() => void prepareCommit()}>Préparer le commit de l’index</Button>
         {commitPlan && <div className="git-init-preview"><h3>Aperçu du commit · {commitPlan.branch}</h3>
           <p>{commitPlan.name} &lt;{commitPlan.email}&gt; · parent {commitPlan.head === '(initial)' ? 'premier commit' : commitPlan.head.slice(0, 12)}</p>

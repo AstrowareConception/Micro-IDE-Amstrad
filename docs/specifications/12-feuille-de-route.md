@@ -7,7 +7,7 @@ Demande du 6 octobre : explorer l’intégralité du projet, retrouver les sorti
 
 ## Priorité ergonomie — alpha 0.25, 6 octobre 2026
 
-La demande utilisateur priorise l’[atelier 0.25](../implementation/production-workbench-alpha.md) : colonne IA dédiée, outils/Git à gauche, menus exclusifs, icônes, raccourcis et diagnostics avant exécution. [ADR 0030](../adr/0030-atelier-menus-diagnostics.md). IDE-014/026/027/028 restent partiels : le parser couvre des expressions et instructions courantes, sans validation exhaustive ; paramètres et dimensions persistés sont livrés selon l’ADR 0032 ; la disposition 0.26 est décrite par l’ADR 0033 ; fenêtres système indépendantes, explorateur intégral, keymap et Git branches/réseau restent ouverts.
+La demande utilisateur priorise l’[atelier 0.25](../implementation/production-workbench-alpha.md) : colonne IA dédiée, outils/Git à gauche, menus exclusifs, icônes, raccourcis et diagnostics avant exécution. [ADR 0030](../adr/0030-atelier-menus-diagnostics.md). IDE-014/026/027/028 restent partiels : le parser couvre des expressions et instructions courantes, sans validation exhaustive ; paramètres et dimensions persistés sont livrés selon l’ADR 0032 ; la disposition 0.26 est décrite par l’ADR 0033 ; fenêtres système indépendantes, explorateur intégral, keymap restent ouverts ; branches/réseau commencent en 0.28.
 
 ## Priorité Exécuter — alpha 0.24, 5 octobre 2026
 
@@ -197,3 +197,10 @@ Le [profil privé d’identité Git](../implementation/git-identity-alpha.md), [
 ## Avancement alpha 0.27 — 6 octobre 2026
 
 Projets récents livré : registre local des vingt dernières racines ouvertes/créées, filtre, réouverture protégée, retrait/oubli sans suppression et présence des dossiers périmés. Fichier/palette/Ctrl R ; menus recadrés dans le viewport au lieu de l’alignement à droite selon leur index. [Guide](../implementation/recent-projects-alpha.md), [ADR 0034](../adr/0034-projets-recents-et-placement-menus.md). IDE-005 passe de N à P : modèles de projet et assistant de démarrage restent ouverts.
+
+
+## Avancement alpha 0.28 — 6 octobre 2026
+
+La demande utilisateur priorise [Git et GitHub intégrés](../implementation/git-network-alpha.md), [ADR 0035](../adr/0035-atelier-git-reseau-et-github.md). Menu Git, branches locales/distantes, remotes, upstream, clone dans un nouveau dossier, fetch, pull avec fetch préparatoire/fast-forward et push examinés ; buffers propres, cible projet vérifiée puis session rechargée. Init préserve un ignore existant avec exclusions locales. Compte GitHub privé par jeton en mémoire ou CLI, listing/association, dépôt personnel privé par défaut et PR brouillon, liens PR/CI. Suggestion IA du message depuis le seul diff indexé, sans outils ni commit automatique.
+
+192 tests Node ; transport HTTPS/TLS réel avec deux clones, rejets et arrêt, API privées contrôlées, recettes navigateur/Electron et build Windows consignés dans la PR. IDE-035/036/039 restent P : tags/stash, merge/rebase/conflits, OAuth/coffre système, qualification SSH/macOS et comptes/fournisseurs réels restent ouverts. Aucun jalon JG/R3/R4 global clos.
