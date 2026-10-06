@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { runAgent } from '../../packages/agent/src/runner.ts';
 import { WorkspaceTools } from '../../packages/agent/src/workspace-tools.ts';
-import type { AgentEvent, AgentResult, AgentView, AgentWorkspaceState } from '../../packages/agent/src/types.ts';
+import type { AgentEvent, AgentResult, AgentView, AgentWorkspaceState, ModelCatalog } from '../../packages/agent/src/types.ts';
 import { OpenAIProvider, DEFAULT_MODEL } from './openai-provider.ts';
 import type { ProjectStore } from './project-store.ts';
 
@@ -14,13 +14,35 @@ export class AgentController {
   private job: Job | undefined;
   private readonly storage: string;
   private readonly corpusRoot: string;
-  constructor(storage: string, corpusRoot: string) { this.storage = storage; this.corpusRoot = corpusRoot; }
+  private catalog: ModelCatalog | undefined;
+  private configurationRevision = 0;
+  private selectionRequired = false;
+  private readonly transport: typeof fetch | undefined;
+  constructor(storage: string, corpusRoot: string, transport?: typeof fetch) { this.storage = storage; this.corpusRoot = corpusRoot; this.transport = transport; }
   get running(): boolean { return this.job?.running ?? false; }
   configure(key: unknown, model: unknown): { configured: boolean; model: string } {
     if (this.running) throw new Error('Arrêtez la mission avant de changer la configuration.');
-    if (key === '') { this.provider = undefined; return { configured: false, model: DEFAULT_MODEL }; }
+    if (key === '') { this.provider = undefined; this.catalog = undefined; this.selectionRequired = false; this.configurationRevision++; return { configured: false, model: DEFAULT_MODEL }; }
     if (typeof key !== 'string' || typeof model !== 'string') throw new Error('Configuration invalide.');
-    this.provider = new OpenAIProvider(key, model); return { configured: true, model };
+    this.provider = new OpenAIProvider(key, model, this.transport ?? fetch); this.catalog = undefined; this.selectionRequired = false; this.configurationRevision++; return { configured: true, model };
+  }
+  async models(key?: unknown): Promise<ModelCatalog> {
+    if (this.running) throw new Error('Arrêtez la mission avant d’actualiser les modèles.');
+    if (key !== undefined && typeof key !== 'string') throw new Error('Clé invalide.');
+    const revision = this.configurationRevision;
+    const candidate = key === undefined ? this.provider : new OpenAIProvider(key as string, DEFAULT_MODEL, this.transport ?? fetch);
+    if (!candidate) throw new Error('Configurez une clé OpenAI pour charger les modèles.');
+    const models = await candidate.listModels();
+    if (this.running || revision !== this.configurationRevision) throw new Error('Configuration modifiée pendant la lecture ; réessayez.');
+    if (key !== undefined) { this.provider = candidate; this.selectionRequired = true; this.configurationRevision++; }
+    this.catalog = { models, fetchedAt: new Date().toISOString(), model: this.selectionRequired ? '' : candidate.model };
+    return structuredClone(this.catalog);
+  }
+  selectModel(model: unknown): { model: string } {
+    if (this.running) throw new Error('Arrêtez la mission avant de changer de modèle.');
+    if (typeof model !== 'string' || !this.provider || !this.catalog?.models.some(item => item.id === model)) throw new Error('Choisissez un modèle dans la liste OpenAI actualisée.');
+    this.provider = this.provider.withModel(model); this.catalog.model = model; this.selectionRequired = false; this.configurationRevision++;
+    return { model };
   }
   private async corpus() {
     const catalog = JSON.parse(await readFile(join(this.corpusRoot, 'catalog.json'), 'utf8')) as { sources: { id: string; path: string; sha256: string }[] };
@@ -41,6 +63,7 @@ export class AgentController {
     await rename(temp, join(job.directory, 'checkpoint.json'));
   }
   async start(store: ProjectStore, objective: unknown, buffers: { id: string; source: string }[], includeDocuments = false): Promise<{ taskId: string }> {
+    if (this.selectionRequired) throw new Error('Choisissez un modèle OpenAI avant de lancer une mission.');
     if (this.running) throw new Error('Une mission est déjà active.');
     if (!this.provider) throw new Error('Configurez une clé API OpenAI.');
     if (typeof objective !== 'string' || !objective.trim() || objective.length > 20000) throw new Error('Mission requise, 20 000 caractères maximum.');

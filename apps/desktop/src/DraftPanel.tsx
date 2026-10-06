@@ -1,3 +1,4 @@
+import { Button } from './Icon.tsx';
 import { useEffect, useRef, useState } from 'react';
 import { files } from './port.ts';
 import { SourceDiff } from './HistoryPanel.tsx';
@@ -17,10 +18,10 @@ function DraftPreview({ preview, documents, busy, onClose, onRestore }: { previe
   useEffect(() => { alive.current = true; dialog.current?.showModal(); return () => { alive.current = false; }; }, []);
   return <dialog ref={dialog} className="history-dialog draft-dialog" aria-label="Comparer les brouillons récupérables" onClose={onClose}>
     <h2>Comparer les brouillons récupérables</h2><p>Buffer actuel à gauche, copie de récupération à droite. Choisissez les sources à restaurer ; les fichiers BASIC restent intacts. Ctrl Z annule par source.</p>
-    <div className="draft-selection">{preview.changes.map(change => <div key={change.id}><label><input type="checkbox" checked={selected.includes(change.id)} onChange={event => setSelected(ids => event.target.checked ? [...ids, change.id] : ids.filter(id => id !== change.id))} />Restaurer {change.name}</label><button aria-pressed={active === change.id} onClick={() => setActive(change.id)}>Comparer {change.name}</button></div>)}</div>
+    <div className="draft-selection">{preview.changes.map(change => <div key={change.id}><label><input type="checkbox" checked={selected.includes(change.id)} onChange={event => setSelected(ids => event.target.checked ? [...ids, change.id] : ids.filter(id => id !== change.id))} />Restaurer {change.name}</label><Button aria-pressed={active === change.id} onClick={() => setActive(change.id)}>Comparer {change.name}</Button></div>)}</div>
     <SourceDiff before={selectedChange.before} after={selectedChange.after} />
     {stale && <p role="status">Buffers modifiés depuis l’aperçu : comparez de nouveau.</p>}
-    <button disabled={busy || pending || stale || !selected.length} onClick={() => {
+    <Button disabled={busy || pending || stale || !selected.length} onClick={() => {
       setPending(true); setMessage('');
       void files.drafts!.read(preview.sessionId, preview.recovery.revision).then(result => {
         if (!alive.current) return;
@@ -29,8 +30,8 @@ function DraftPreview({ preview, documents, busy, onClose, onRestore }: { previe
         onRestore(preview.changes.filter(change => selected.includes(change.id))); dialog.current?.close();
       }).catch(error => { if (alive.current) setMessage(error instanceof Error ? error.message : 'Récupération impossible.'); })
         .finally(() => { if (alive.current) setPending(false); });
-    }}>Restaurer les brouillons sélectionnés dans les buffers</button>
-    <button onClick={() => dialog.current?.close()}>Fermer la comparaison des brouillons</button>
+    }}>Restaurer les brouillons sélectionnés dans les buffers</Button>
+    <Button onClick={() => dialog.current?.close()}>Fermer la comparaison des brouillons</Button>
     {message && <p role="status">{message}</p>}
   </dialog>;
 }
@@ -81,11 +82,11 @@ export function DraftPanel(props: Props) {
     <h2>Brouillons récupérables</h2>
     <p className="muted">Copie locale séparée des fichiers BASIC. Activation pour cette session ; 2 s après une pause de saisie, vérification toutes les 15 s pendant une saisie continue. Les onglets restent modifiés.</p>
     <label><input type="checkbox" checked={enabled} disabled={!summary || !owned || props.busy || pending} onChange={event => setEnabled(event.target.checked)} />Copie automatique des brouillons</label>
-    <button disabled={props.busy || pending} onClick={() => void attempt(refresh)}>Relire la copie de brouillons</button>
-    <button disabled={!summary || !owned || !dirty || props.busy || pending || !!preview} onClick={() => void attempt(capture)}>Copier les brouillons maintenant</button>
+    <Button disabled={props.busy || pending} onClick={() => void attempt(refresh)}>Relire la copie de brouillons</Button>
+    <Button disabled={!summary || !owned || !dirty || props.busy || pending || !!preview} onClick={() => void attempt(capture)}>Copier les brouillons maintenant</Button>
     {summary?.snapshot && <><p>Copie disponible : <time>{new Date(summary.snapshot.createdAt).toLocaleString('fr-FR')}</time></p><ul>{summary.snapshot.files.map(file => <li key={file.id}>{file.path} · {file.bytes} octets</li>)}</ul>
       {!owned && <p>Copie d’une précédente ouverture conservée. Comparez et restaurez-la, ou effacez-la explicitement avant une nouvelle copie.</p>}
-      <button disabled={props.busy || pending} onClick={() => void attempt(async () => {
+      <Button disabled={props.busy || pending} onClick={() => void attempt(async () => {
         const before = latest.current.documents.map(document => ({ ...document }));
         const result = await files.drafts!.read(props.sessionId, summary.revision!); if (!alive.current) return;
         if ('error' in result) throw new Error(result.error);
@@ -96,13 +97,13 @@ export function DraftPanel(props: Props) {
         }).filter(change => change.before !== change.after);
         if (!changes.length) { setOwned(true); setMessage('Les buffers correspondent déjà à la copie. Elle reste conservée.'); return; }
         setPreview({ sessionId: props.sessionId, recovery: result, changes });
-      })}>Comparer les brouillons récupérables</button>
-      <button disabled={props.busy || pending} onClick={() => void attempt(async () => {
+      })}>Comparer les brouillons récupérables</Button>
+      <Button disabled={props.busy || pending} onClick={() => void attempt(async () => {
         const result = await files.drafts!.forget(props.sessionId, summary.revision!); if (!alive.current) return;
         if ('error' in result) throw new Error(result.error);
         setSummary(result); if (!result.snapshot) { setOwned(true); setEnabled(false); }
         setMessage(result.snapshot ? 'Effacement annulé ; copie conservée.' : 'Copie de récupération effacée ; buffers conservés.');
-      })}>Effacer la copie de brouillons</button></>}
+      })}>Effacer la copie de brouillons</Button></>}
     {preview && <DraftPreview key={preview.recovery.revision} preview={preview} documents={props.documents} busy={props.busy} onClose={() => setPreview(undefined)} onRestore={changes => {
       props.onApply(changes);
       const complete = changes.length === preview.changes.length;

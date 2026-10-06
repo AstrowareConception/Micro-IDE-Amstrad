@@ -1,3 +1,4 @@
+import { Button } from './Icon.tsx';
 import { useEffect, useRef, useState } from 'react';
 import { files } from './port.ts';
 import { SourceDiff } from './HistoryPanel.tsx';
@@ -37,15 +38,15 @@ export function ExternalPanel(props: Props) {
   return <section className="panel" aria-label="Modifications externes">
     <h2>Modifications externes</h2>
     <p>Contrôle toutes les 5 s et au retour dans la fenêtre. Aucun rechargement automatique.</p>
-    <button disabled={props.busy || pending || !!preview} onClick={() => void attempt(refresh)}>Vérifier les fichiers disque</button>
+    <Button disabled={props.busy || pending || !!preview} onClick={() => void attempt(refresh)}>Vérifier les fichiers disque</Button>
     {changes.map(change => <div key={change.id}><p>{change.path}{change.issue ? ` · ${change.issue}` : ' · modifié sur disque'}</p>
-      {change.revision && <button disabled={props.busy || pending || !!preview} onClick={() => void attempt(async () => {
+      {change.revision && <Button disabled={props.busy || pending || !!preview} onClick={() => void attempt(async () => {
         const result = await files.external!.read(props.sessionId, change.id, change.revision!); if (!alive.current) return;
         if ('error' in result) throw new Error(result.error);
         const buffer = latest.current.documents.find(item => item.sourceId === change.id);
         if (!buffer) throw new Error('Buffer indisponible.');
         setPreview({ version: result, before: buffer.source }); setMessage('');
-      })}>Comparer {change.path}</button>}
+      })}>Comparer {change.path}</Button>}
     </div>)}
     {message && <p role="status">{message}</p>}
     {preview && <ExternalPreview version={preview.version} before={preview.before}
@@ -71,9 +72,9 @@ function ExternalPreview({ version, before, stale, pending, message, onClose, on
     {stale && <p role="status">Buffer modifié depuis l’aperçu : fermez et comparez de nouveau.</p>}
     {message && <p role="status">{message}</p>}
     <div className="history-actions">
-      <button disabled={pending || stale} onClick={() => onAccept(true)}>Charger la version disque dans le buffer</button>
-      <button disabled={pending || stale} onClick={() => onAccept(false)}>Conserver mon buffer après comparaison</button>
-      <button disabled={pending} onClick={() => dialog.current?.close()}>Fermer la comparaison disque</button>
+      <Button disabled={pending || stale} onClick={() => onAccept(true)}>Charger la version disque dans le buffer</Button>
+      <Button disabled={pending || stale} onClick={() => onAccept(false)}>Conserver mon buffer après comparaison</Button>
+      <Button disabled={pending} onClick={() => dialog.current?.close()}>Fermer la comparaison disque</Button>
     </div>
   </dialog>;
 }

@@ -1,4 +1,5 @@
 import * as monaco from 'monaco-editor/editor/editor.api.js';
+import 'monaco-editor/editor/browser/coreCommands.js';
 import 'monaco-editor/editor/contrib/suggest/browser/suggestController.js';
 import 'monaco-editor/editor/contrib/hover/browser/hoverContribution.js';
 import 'monaco-editor/editor/contrib/gotoSymbol/browser/goToCommands.js';
@@ -7,6 +8,10 @@ import 'monaco-editor/editor/contrib/clipboard/browser/clipboard.js';
 import 'monaco-editor/editor/contrib/contextmenu/browser/contextmenu.js';
 import 'monaco-editor/editor/contrib/bracketMatching/browser/bracketMatching.js';
 import 'monaco-editor/features/find/register.js';
+import 'monaco-editor/features/linesOperations/register.js';
+import 'monaco-editor/features/multicursor/register.js';
+import 'monaco-editor/features/gotoError/register.js';
+import 'monaco-editor/features/folding/register.js';
 import EditorWorker from 'monaco-editor/editor/editor.worker.js?worker';
 import { COMMANDS, REFERENCE } from '../../../packages/basic-language/src/catalog.ts';
 import { analyze, commandAt, completionContext, tokenize } from '../../../packages/basic-language/src/language.ts';
@@ -34,6 +39,14 @@ monaco.editor.defineTheme('cpc-workbench', {
     { token: 'string', foreground: 'ADE5B0' }, { token: 'comment', foreground: '829383', fontStyle: 'italic' },
     { token: 'data', foreground: 'CAB4F0' }, { token: 'identifier', foreground: 'E5EBF3' },
   ], colors: { 'editor.background': '#111821', 'editorLineNumber.foreground': '#596878', 'editor.lineHighlightBackground': '#172331' },
+});
+monaco.editor.defineTheme('cpc-workbench-light', {
+  base: 'vs', inherit: true,
+  rules: [
+    { token: 'keyword', foreground: '005EA8' }, { token: 'number', foreground: '995B00' },
+    { token: 'string', foreground: '176E39' }, { token: 'comment', foreground: '526951', fontStyle: 'italic' },
+    { token: 'data', foreground: '7146A8' }, { token: 'identifier', foreground: '21354B' },
+  ], colors: { 'editor.background': '#ffffff', 'editorLineNumber.foreground': '#65758a', 'editor.lineHighlightBackground': '#eaf3ff' },
 });
 export const provenance = `Référence fournie · ${REFERENCE.id} · ${REFERENCE.version} · sous-ensemble éditorial, non qualifié sur ROM`;
 monaco.languages.registerCompletionItemProvider(language, {

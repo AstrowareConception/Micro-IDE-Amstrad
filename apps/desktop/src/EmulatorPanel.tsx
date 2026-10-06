@@ -1,9 +1,10 @@
+import { Button } from './Icon.tsx';
 import { useEffect, useRef, useState } from 'react';
 import type { RunRequest } from '../../../packages/emulator/src/run.ts';
 import { files } from './port.ts';
 export interface EmulatorLaunch { id: string; request: RunRequest }
 const specials: Record<string, number> = { Enter: 13, Escape: 3, Backspace: 1, Delete: 12, ArrowLeft: 8, ArrowRight: 9, ArrowDown: 10, ArrowUp: 11 };
-export function EmulatorPanel({ launch, onClose }: { launch: EmulatorLaunch; onClose(): void }) {
+export function EmulatorPanel({ launch, onClose, onConfigure }: { launch: EmulatorLaunch; onClose(): void; onConfigure(): void }) {
   const canvas = useRef<HTMLCanvasElement>(null), worker = useRef<Worker | undefined>(undefined);
   const [message, setMessage] = useState('Construction et vérification des ROM…'), [phase, setPhase] = useState('preparing'), [paused, setPaused] = useState(false);
   const [seconds, setSeconds] = useState(0), [provenance, setProvenance] = useState(''), [sound, setSound] = useState(false);
@@ -64,7 +65,7 @@ export function EmulatorPanel({ launch, onClose }: { launch: EmulatorLaunch; onC
   }
   const active = phase === 'manual' || phase === 'running';
   return <section className="emulator-window" role="dialog" aria-label="Émulateur CPC 6128">
-    <div className="emulator-heading"><h2>CPC 6128 · Exécution</h2><button onClick={onClose}>Arrêter et fermer le CPC</button></div>
+    <div className="emulator-heading"><h2>CPC 6128 · Exécution</h2><Button onClick={onClose}>Arrêter et fermer le CPC</Button></div>
     <p role="status">{message}</p><p className="muted">{provenance || 'Les buffers courants sont utilisés ; aucune sauvegarde automatique.'}</p>
     <canvas ref={canvas} width={768} height={272} tabIndex={0} aria-label="Écran et clavier du CPC" onBlur={release} onKeyDown={event => {
       if (!active || paused || event.ctrlKey || event.metaKey || event.repeat) return;
@@ -73,12 +74,12 @@ export function EmulatorPanel({ launch, onClose }: { launch: EmulatorLaunch; onC
     }} onKeyUp={event => { const key = physical.current.get(event.code); if (key !== undefined) { event.preventDefault(); physical.current.delete(event.code); send({ type: 'key', key, down: false }); } }} />
     <p>{seconds.toFixed(2)} s émulées · {paused ? 'En pause' : active ? 'Machine active' : 'Préparation'} · Cliquez dans l’écran pour utiliser le clavier CPC.</p>
     <div className="emulator-controls">
-      {phase === 'manual' && <button disabled={paused} onClick={() => send({ type: 'ready' })}>Ready est visible : lancer le programme</button>}
-      <button disabled={!active} onClick={() => { release(); clearAudio(); send({ type: 'pause', paused: !paused }); }}>{paused ? 'Reprendre le CPC' : 'Pause CPC'}</button>
-      <button disabled={!active || paused} onClick={() => send({ type: 'break' })}>Interrompre BASIC (ESC)</button>
-      <button disabled={!active} onClick={() => void toggleSound()}>{sound ? 'Couper le son CPC' : 'Activer le son CPC'}</button>
-      <button disabled={!active} onClick={() => send({ type: 'export' })}>Exporter la disquette de session</button>
-      <button onClick={() => { onClose(); document.querySelector<HTMLElement>('.firmware-panel')?.scrollIntoView({ block: 'center' }); }}>Configurer les ROM</button>
+      {phase === 'manual' && <Button disabled={paused} onClick={() => send({ type: 'ready' })}>Ready est visible : lancer le programme</Button>}
+      <Button disabled={!active} onClick={() => { release(); clearAudio(); send({ type: 'pause', paused: !paused }); }}>{paused ? 'Reprendre le CPC' : 'Pause CPC'}</Button>
+      <Button disabled={!active || paused} onClick={() => send({ type: 'break' })}>Interrompre BASIC (ESC)</Button>
+      <Button disabled={!active} onClick={() => void toggleSound()}>{sound ? 'Couper le son CPC' : 'Activer le son CPC'}</Button>
+      <Button disabled={!active} onClick={() => send({ type: 'export' })}>Exporter la disquette de session</Button>
+      <Button onClick={() => { onClose(); onConfigure(); }}>Configurer les ROM</Button>
     </div>
     <p className="muted">Relancez avec Exécuter/F5 pour une machine propre et les dernières modifications. Le programme d’entrée du projet est lancé ; les autres sources restent des fichiers séparés sur le disque. Firmware inconnu : confirmation manuelle de Ready. Compatibilité matérielle complète en cours de qualification.</p>
   </section>;

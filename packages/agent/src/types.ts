@@ -9,7 +9,11 @@ export interface ImageToolResult { kind: 'image'; dataUrl: string; metadata: Rec
 export interface AgentEvent { kind: 'model' | 'tool' | 'message' | 'limit' | 'error'; text: string }
 export interface AgentResult { status: 'completed' | 'blocked' | 'failed' | 'cancelled' | 'paused-limit'; turns: number; calls: number; tokens: number; summary: string }
 export interface AgentView extends AgentResult { taskId: string; running: boolean; events: AgentEvent[]; workspace: AgentWorkspaceState; changed: string[]; before: { id: string; source: string }[]; buildVerified: boolean }
+export interface OpenAIModel { id: string; created: number; owner: string; shutdownDate?: string }
+export interface ModelCatalog { models: OpenAIModel[]; fetchedAt: string; model: string }
 export interface AgentPort {
+  models(key?: string): Promise<ModelCatalog | { error: string }>;
+  selectModel(model: string): Promise<{ model: string } | { error: string }>;
   configure(key: string, model: string): Promise<{ configured: boolean; model: string } | { error: string }>;
   start(sessionId: string, objective: string, buffers: { id: string; source: string }[], includeDocuments?: boolean): Promise<{ taskId: string } | { error: string }>;
   status(taskId: string): Promise<AgentView | { error: string }>;

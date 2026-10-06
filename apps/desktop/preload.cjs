@@ -3,6 +3,7 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
   open: () => ipcRenderer.invoke('listing:open'),
   save: (source, saveAs = false) => ipcRenderer.invoke('listing:save', { source, saveAs }),
   exportDisk: source => ipcRenderer.invoke('listing:export', { source }),
+  feedback: Object.freeze({ open: input => ipcRenderer.invoke('feedback:open', input) }),
   setDirty: dirty => ipcRenderer.send('listing:dirty', dirty),
   history: Object.freeze({
     list: sessionId => ipcRenderer.invoke('history:list', { sessionId }),
@@ -45,6 +46,8 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
   }),
   agent: Object.freeze({
     configure: (key, model) => ipcRenderer.invoke('agent:configure', { key, model }),
+    models: key => ipcRenderer.invoke('agent:models', key === undefined ? undefined : { key }),
+    selectModel: model => ipcRenderer.invoke('agent:select-model', model),
     start: (sessionId, objective, buffers, includeDocuments = false) => ipcRenderer.invoke('agent:start', { sessionId, objective, buffers, includeDocuments }),
     status: taskId => ipcRenderer.invoke('agent:status', taskId),
     cancel: taskId => ipcRenderer.invoke('agent:cancel', taskId),

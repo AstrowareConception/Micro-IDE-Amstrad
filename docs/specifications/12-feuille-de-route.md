@@ -1,7 +1,13 @@
 # 12 — Feuille de route et backlog de réalisation
 
+Demande du 6 octobre : explorer l’intégralité du projet, retrouver les sorties en bas et adapter l’IDE aux habitudes de chacun. La tranche 0.25 ajoute préférences persistantes, auto-save opt-in, journal des commits en bas et formulaire de retour utilisateur (issues GitHub). Suite explicite : arbre complet avec fichiers non BASIC et vues adaptées, séparateurs déplaçables, docking/détachement, PTY, journaux d’opérations et keymap. Une réorganisation d’interface ne suffit pas à qualifier la production.
+
 ## Mode de progression
 
+
+## Priorité ergonomie — alpha 0.25, 6 octobre 2026
+
+La demande utilisateur priorise l’[atelier 0.25](../implementation/production-workbench-alpha.md) : colonne IA dédiée, outils/Git à gauche, menus exclusifs, icônes, raccourcis et diagnostics avant exécution. [ADR 0030](../adr/0030-atelier-menus-diagnostics.md). IDE-014/026/027/028 restent partiels : le parser couvre des expressions et instructions courantes, sans validation exhaustive ; paramètres et dimensions persistés sont livrés selon l’ADR 0032 ; ancrage/détachement, explorateur intégral, keymap et Git branches/réseau restent ouverts.
 
 ## Priorité Exécuter — alpha 0.24, 5 octobre 2026
 

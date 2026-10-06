@@ -1,10 +1,11 @@
-import { app, BrowserWindow, dialog, ipcMain, protocol, net } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, protocol, net, shell } from 'electron';
 import { readFile, writeFile, rename, unlink, lstat } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
 import { join, dirname, relative, isAbsolute } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { buildListingDisk } from '../../packages/basic-language/src/build.ts';
 import { buildProjectDisk } from '../../packages/workspace/src/project.ts';
+import { feedbackReport } from './feedback.ts';
 import { ProjectStore } from './project-store.ts';
 import { decodeImage } from './image-document.ts';
 import { extractPdf } from './pdf-document.ts';
@@ -70,6 +71,12 @@ function route(channel: string, handler: (payload: unknown) => Promise<unknown>,
 
 // Do not hold the ESM entry point open while waiting for Electron's ready lifecycle.
 void app.whenReady().then(async () => {
+ipcMain.handle('feedback:open', async (event, payload: unknown) => {
+  trusted(event);
+  try { const report = feedbackReport(payload); await shell.openExternal(report.url); return { url: report.url, prefilled: report.prefilled }; }
+  catch (error) { return { error: error instanceof Error ? error.message : 'Ouverture du ticket impossible.' }; }
+});
+
 protocol.handle('cpceleste', async request => {
   try {
     const url = new URL(request.url), parts = decodeURIComponent(url.pathname).split('/').filter(Boolean);
@@ -342,6 +349,11 @@ function bufferRequest(value: unknown): { id: string; source: string }[] {
     return { id, source };
   });
 }
+route('agent:models', async payload => {
+  if (payload !== undefined && (!payload || typeof payload !== 'object' || Array.isArray(payload))) throw new Error('Demande de modèles invalide.');
+  return agent.models((payload as { key?: unknown } | undefined)?.key);
+});
+route('agent:select-model', async payload => agent.selectModel(payload));
 route('agent:configure', async payload => {
   if (!payload || typeof payload !== 'object') throw new Error('Configuration invalide.');
   const value = payload as Record<string, unknown>; return agent.configure(value.key, value.model);
