@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { appendNotification, canRevealNotification, filterNotifications, notificationMessage, NOTIFICATION_LIMIT, type NotificationInput } from '../apps/desktop/src/notifications.ts';
 import { parsePreferences, DEFAULT_PREFERENCES } from '../apps/desktop/src/preferences.ts';
 import { exportProfile, importProfile } from '../apps/desktop/src/personalization-profiles.ts';
+import { DEFAULT_KEYMAP, keymapErrors, parseKeymap } from '../apps/desktop/src/keymap.ts';
 const input: NotificationInput = { source: 'git', target: 'git', level: 'error', sessionId: 'project-a', message: 'Transfert interrompu.' };
 test('notifications coalesce a repeated outcome without mutating existing read state', () => {
   const first = appendNotification([], input, 'first', 10).map(item => ({ ...item, read: true }));
@@ -46,4 +47,12 @@ test('popup preferences accept only known modes and travel with portable profile
     const preferences = parsePreferences({ ...DEFAULT_PREFERENCES, notificationPopups: mode });
     assert.equal(importProfile(exportProfile('Atelier', preferences)).preferences.notificationPopups, mode);
   }
+});
+test('adding the notification command preserves an older shortcut assigned to the new default', () => {
+  const { notifications: _notifications, ...legacy } = DEFAULT_KEYMAP;
+  const migrated = parseKeymap({ ...legacy, run: 'Mod+Alt+N' });
+  assert.equal(migrated.run, 'Mod+Alt+N'); assert.equal(migrated.notifications, ''); assert.deepEqual(keymapErrors(migrated), []);
+  assert.equal(parseKeymap(legacy).notifications, 'Mod+Alt+N');
+  const preferences = parsePreferences({ keymap: { ...legacy, run: 'Mod+Alt+N' } });
+  assert.equal(importProfile(exportProfile('Ancien atelier', preferences)).preferences.keymap.run, 'Mod+Alt+N');
 });

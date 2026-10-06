@@ -32,6 +32,9 @@ export function parseKeymap(value: unknown): Keymap {
   const result: Keymap = { ...DEFAULT_KEYMAP };
   if (!value || typeof value !== 'object' || Array.isArray(value)) return result;
   for (const id of Object.keys(result) as (keyof Keymap)[]) if (typeof (value as Keymap)[id] === 'string') result[id] = (value as Keymap)[id];
+  // The 0.33 command must not invalidate an older, valid custom keymap.
+  // Keep its default only when the legacy map leaves that combination free.
+  if (!Object.hasOwn(value, 'notifications') && Object.entries(result).some(([id, binding]) => id !== 'notifications' && binding === result.notifications)) result.notifications = '';
   return keymapErrors(result).length ? { ...DEFAULT_KEYMAP } : result;
 }
 export function keymapPreset(name: string): Keymap {

@@ -16,7 +16,7 @@ Les opérations sur les sources, Git, le terminal, les transitions de mission et
 
 Les cibles sont uniquement des vues connues, jamais des URL ou fonctions de mutation. Une notification liée à une session projet ne peut ouvrir son panneau après changement de projet. « Voir les détails » marque le message lu et rejoint la vue ; cela ne relance ni opération ni mission. Quitter Concentration pour montrer la vue restaure sa disposition antérieure.
 
-La cloche, Affichage, la palette et la keymap partagent la même commande. Le dialogue possède recherche, filtres, états vides et actions explicites ; le focus revient à l’éditeur. Un aperçu non modal reste disponible sans focus forcé et peut être masqué sans effacer le message. Le réglage `notificationPopups` accepte `all`, `errors`, `off` ; il est ajouté à l’enveloppe de préférences version 2 et aux profils par liste blanche. Les anciennes valeurs absentes prennent `all`.
+La cloche, Affichage, la palette et la keymap partagent la même commande. Le dialogue possède recherche, filtres, états vides et actions explicites ; le focus revient à l’éditeur. Un aperçu non modal reste disponible sans focus forcé et peut être masqué sans effacer le message. Le réglage `notificationPopups` accepte `all`, `errors`, `off` ; il est ajouté à l’enveloppe de préférences version 2 et aux profils par liste blanche. Les anciennes valeurs absentes prennent `all`. Si une ancienne keymap attribue déjà la combinaison de la nouvelle commande, celle-ci reste sans raccourci ; les anciennes attributions sont préservées.
 
 ## Conséquences
 

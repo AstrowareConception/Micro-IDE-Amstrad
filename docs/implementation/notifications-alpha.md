@@ -4,7 +4,7 @@ Date : 6 octobre 2026. Réalisation partielle d’IDE-029 et du lot 7 ; [ADR 004
 
 ## Utilisation
 
-La cloche indique les messages non lus. Affichage → Centre de notifications, palette et `Ctrl/Cmd Alt N` ouvrent la même vue ; la combinaison est modifiable dans Paramètres → Raccourcis. Le centre conserve les 100 messages les plus récents de la session, avec heure, origine, niveau et compteur de répétitions consécutives rapprochées.
+La cloche indique les messages non lus. Affichage → Centre de notifications, palette et `Ctrl/Cmd Alt N` ouvrent la même vue ; la combinaison est modifiable dans Paramètres → Raccourcis. Si un ancien raccourci utilise déjà cette combinaison, la migration préserve ce choix et laisse le centre sans raccourci. Le centre conserve les 100 messages les plus récents de la session, avec heure, origine, niveau et compteur de répétitions consécutives rapprochées.
 
 Rechercher filtre les messages et leurs libellés. Niveau, origine et « Non lues seulement » se combinent. Marquer comme lu, tout marquer, retirer un message et effacer l’historique ne touchent ni fichiers ni opérations. Ouvrir le centre ne marque pas automatiquement ses messages lus. Une répétition récente remet un message lu dans les non lus.
 
@@ -22,6 +22,6 @@ Le redémarrage et une nouvelle fenêtre commencent sans historique de notificat
 
 ## Vérification et suite
 
-233 tests Node passent localement, dont six tests du registre : répétition et lecture immuable, rétention et séparation des contextes, masquage/bornes, filtres combinés, cible d’une autre session et profils portables. Typage strict et builds renderer/main exécutés. La recette navigateur complète passe localement sans erreur, y compris fenêtres 729 × 720 et 420 × 650, sessions Git périmées et résumés de mission sans contenu privé. La recette navigateur et la recette Electron de personnalisation/redémarrage incluent cloche/menu/keymap, filtres/lecture/effacement, aperçus, navigation CPC/paramètres et préservation de l’éditeur/undo. Les résultats effectivement exécutés sont consignés dans la PR.
+234 tests Node passent localement, dont sept tests du registre : répétition et lecture immuable, rétention et séparation des contextes, masquage/bornes, filtres combinés, cible d’une autre session, profils portables et migration de keymap conflictuelle. Typage strict et builds renderer/main exécutés. La recette navigateur complète passe localement sans erreur, y compris fenêtres 729 × 720 et 420 × 650, sessions Git périmées et résumés de mission sans contenu privé. La recette navigateur et la recette Electron de personnalisation/redémarrage incluent cloche/menu/keymap, filtres/lecture/effacement, aperçus, navigation CPC/paramètres et préservation de l’éditeur/undo. Les résultats effectivement exécutés sont consignés dans la PR.
 
 Un journal de tâches durable et unifié, toutes les erreurs de dialogues, annulation depuis le centre, progression détaillée, notifications système, lecteur d’écran et qualification macOS restent ouverts. Les arrêts Git, terminal et agent existants restent disponibles dans leurs panneaux. Les réglages par projet et fenêtres système indépendantes suivent dans le lot 7.
