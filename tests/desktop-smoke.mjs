@@ -32,6 +32,15 @@ try {
   const preferences = await desktop.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences());
   assert.equal(preferences.contextIsolation, true); assert.equal(preferences.sandbox, true); assert.equal(preferences.nodeIntegration, false);
   assert.deepEqual(await page.evaluate(() => [typeof window.require, typeof window.process]), ['undefined', 'undefined']);
+  // Fixed-destination issue drafts use the native browser bridge, with no ticket submission.
+  await desktop.evaluate(({ shell }) => { shell.openExternal = async url => { globalThis.feedbackURL = url; }; });
+  const feedbackResult = await page.evaluate(() => window.desktop.feedback.open({ kind: 'feature', title: 'Deux vues', usage: 'Jeu CPC', need: 'Comparer deux sources', expected: 'Deux panneaux' }));
+  assert.equal(feedbackResult.prefilled, true);
+  const nativeTicket = new URL(await desktop.evaluate(() => globalThis.feedbackURL));
+  assert.equal(nativeTicket.origin + nativeTicket.pathname, 'https://github.com/AstrowareConception/Micro-IDE-Amstrad/issues/new');
+  assert.ok(nativeTicket.searchParams.get('body').includes('Comparer deux sources'));
+  const invalidFeedback = await page.evaluate(() => window.desktop.feedback.open({ url: 'https://example.invalid' }));
+  assert.match(invalidFeedback.error, /invalide/);
   await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, listing);
   await page.getByRole('button', { name: 'Ouvrir', exact: true }).click();
   await page.getByRole('status').filter({ hasText: /Listing ouvert/ }).waitFor();
@@ -92,6 +101,21 @@ try {
   await newProjectDialog.getByLabel('Nom du nouveau projet', { exact: true }).fill('Autre projet');
   await page.keyboard.press('Escape'); await expect(newProjectDialog).toHaveCount(0);
   await expect(page.getByRole('tab', { name: 'src/main.bas', exact: true })).toBeVisible();
+  // Opt-in delayed auto-save writes through the same guarded native project batch path.
+  const autoSaveBaseline = await readFile(join(root, 'src/main.bas'), 'utf8');
+  await page.keyboard.press('Control+,');
+  let autoPreferences = page.getByRole('dialog', { name: 'Paramètres de CPCéleste', exact: true });
+  await autoPreferences.getByLabel('Enregistrement automatique des sources du projet', { exact: true }).check();
+  await autoPreferences.getByLabel('Délai d’enregistrement automatique (ms)', { exact: true }).fill('1000');
+  await autoPreferences.getByRole('button', { name: 'Appliquer les paramètres', exact: true }).click();
+  await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('30 REM AUTO SAVE');
+  await expect.poll(() => readFile(join(root, 'src/main.bas'), 'utf8')).toBe(autoSaveBaseline + '30 REM AUTO SAVE');
+  await expect(page.getByRole('tab', { name: /modifié/ })).toHaveCount(0);
+  await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText(autoSaveBaseline);
+  await expect.poll(() => readFile(join(root, 'src/main.bas'), 'utf8')).toBe(autoSaveBaseline);
+  await page.keyboard.press('Control+,'); autoPreferences = page.getByRole('dialog', { name: 'Paramètres de CPCéleste', exact: true });
+  await autoPreferences.getByLabel('Enregistrement automatique des sources du projet', { exact: true }).uncheck();
+  await autoPreferences.getByRole('button', { name: 'Appliquer les paramètres', exact: true }).click();
   const baseline = await readFile(join(root, 'src/main.bas'), 'utf8');
   await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('30 REM MAIN DRAFT');
   await page.getByLabel('Nouvelle source (1–8 caractères)', { exact: true }).fill('UTIL');
@@ -445,6 +469,9 @@ try {
   await showTool(page, 'Git');
   await gitPanel.getByRole('button', { name: 'Historique Git', exact: true }).click();
   await expect(gitPanel.getByLabel('Historique des commits', { exact: true })).toContainText('Original native fixture');
+  await page.getByRole('navigation', { name: 'Panneaux de sortie', exact: true }).getByRole('button', { name: 'Git', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Journal Git', exact: true })).toContainText('Original native fixture');
+
   await expect(gitPanel.getByRole('button', { name: 'Indexer src/main.bas', exact: true })).toBeDisabled();
   await showTool(page, 'Git');
   await gitPanel.getByRole('button', { name: 'Diff index src/main.bas', exact: true }).click();
@@ -1035,6 +1062,8 @@ try {
 }
 
 async function showTool(page, label) {
+  // Opening a project resets its selected tool when the asynchronous load completes.
+  await expect(page.getByRole('button', { name: 'Ouvrir', exact: true })).toBeEnabled();
   const button = page.getByRole('button', { name: `Afficher ${label}`, exact: true });
   if (await button.getAttribute('aria-pressed') !== 'true') await button.click();
 }

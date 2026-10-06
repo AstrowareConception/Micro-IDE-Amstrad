@@ -1,3 +1,4 @@
+import { feedbackReport, type FeedbackInput } from '../feedback.ts';
 import { buildListingDisk } from '../../../packages/basic-language/src/build.ts';
 import type { ProjectManifest, ProjectSnapshot, DocumentSnapshot } from '../../../packages/workspace/src/project.ts';
 import type { AgentPort } from '../../../packages/agent/src/types.ts';
@@ -15,6 +16,7 @@ export interface DesktopPort {
   save(source: string, saveAs?: boolean): Promise<FileResult | Failure | null>;
   exportDisk(source: string): Promise<FileResult | Failure | null>;
   setDirty(dirty: boolean): void;
+  feedback?: { open(input: FeedbackInput): Promise<{ url: string; prefilled: boolean } | Failure> };
   agent?: AgentPort;
   firmware?: FirmwarePort;
   emulator?: EmulatorPort;
@@ -44,6 +46,7 @@ function download(name: string, bytes: Uint8Array): void {
 }
 /** Preview adapter only: browsers cannot persist a native document handle. */
 const preview: DesktopPort = {
+  feedback: { open: async input => { const report = feedbackReport(input); window.open(report.url, '_blank', 'noopener,noreferrer'); return report; } },
   open: () => new Promise(resolve => {
     const input = document.createElement('input'); input.type = 'file'; input.accept = '.bas,.txt';
     input.addEventListener('cancel', () => resolve(null), { once: true });

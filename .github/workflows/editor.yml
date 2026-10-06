@@ -103,6 +103,7 @@ jobs:
             out/emulator-failure.png
             out/firmware-runtime.json
             out/models-alpha.png
+            out/workbench-light.png
             out/editor-alpha.png
             out/desktop-alpha.png
             out/project-alpha.png

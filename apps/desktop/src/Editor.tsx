@@ -1,3 +1,4 @@
+import type { Preferences } from './preferences.ts';
 import { useEffect, useRef } from 'react';
 import { monaco, language } from './monaco-language.ts';
 import { analyze, commandAt, type Diagnostic } from '../../../packages/basic-language/src/language.ts';
@@ -7,6 +8,7 @@ import type { SearchChange, SearchMatch } from '../../../packages/workspace/src/
 export interface EditorWorkspace { apply(changes: SearchChange[]): void; source(id: string): string | undefined }
 
 interface Props {
+  preferences: Preferences;
   documents: { id: string; source: string }[]; activeId: string; diagnostics: Diagnostic[]; busy: boolean;
   onChange(id: string, source: string): void; onCommand(card: CommandCard | undefined): void;
   onPosition(line: number, column: number): void;
@@ -126,6 +128,11 @@ export function Editor(props: Props) {
     editor.setSelection(range); editor.revealRangeInCenter(range); editor.focus();
   }, [props.navigation, props.activeId]);
   useEffect(() => { instance.current?.updateOptions({ readOnly: props.busy }); }, [props.busy]);
+  useEffect(() => {
+    const p = props.preferences;
+    instance.current?.updateOptions({ fontFamily: p.fontFamily, fontSize: p.fontSize, tabSize: p.tabSize, insertSpaces: p.insertSpaces, wordWrap: p.wordWrap ? 'on' : 'off', minimap: { enabled: p.minimap }, autoIndent: p.autoIndent ? 'advanced' : 'none', autoClosingBrackets: p.autoClosingBrackets ? 'languageDefined' : 'never' });
+    for (const item of models.current.values()) item.model.updateOptions({ tabSize: p.tabSize, insertSpaces: p.insertSpaces });
+  }, [props.preferences, props.activeId]);
   useEffect(() => {
     const model = instance.current?.getModel();
     if (model) monaco.editor.setModelMarkers(model, language, props.diagnostics.map(d => ({

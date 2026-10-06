@@ -89,3 +89,5 @@ Les mots **DOIT**, **NE DOIT PAS**, **DEVRAIT** décrivent respectivement une ob
 Le périmètre du **MVP produit** inclut l'éditeur, l'émulation, le DSK, les pièces jointes et l'IA. J1 ou J2 sont des incréments techniques, pas un MVP qui oublierait l'assistance IA. Les fonctions ultérieures sont explicitement identifiées.
 
 En cas de contradiction : contrat métier et exigence spécifique priment sur illustration ; une ADR remplace un choix précédent seulement lorsqu'elle le dit. Tout changement incompatible exige une mise à jour coordonnée des schémas, exemples, scénarios et ADR concernés. Aucun texte ne doit présenter un objectif de performance ou un essai prévu comme une mesure effectuée.
+
+Les [préférences et retours utilisateurs 0.25](adr/0032-preferences-et-retours-utilisateurs.md) ajoutent thèmes/police/édition/disposition persistés, auto-save de projet opt-in, journal Git dans le dock et tickets préparés depuis Aide.

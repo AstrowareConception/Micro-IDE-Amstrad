@@ -15,7 +15,8 @@ try {
     server.once('exit', code => { clearTimeout(timeout); reject(new Error(`Preview exited ${code}`)); });
   });
   browser = await chromium.launch({ headless: true });
-  page = await browser.newPage({ viewport: { width: 1440, height: 960 } });
+  const editorContext = await browser.newContext({ viewport: { width: 1440, height: 960 } });
+  page = await editorContext.newPage();
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
   await page.goto('http://127.0.0.1:5173');
@@ -171,17 +172,71 @@ try {
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'No page-wide horizontal overflow');
   await page.setViewportSize({ width: 1440, height: 960 });
   await mkdir('out', { recursive: true }); await page.screenshot({ path: 'out/workbench-alpha.png' });
+  // Preferences apply to the existing buffer and persist across windows of the same profile.
+  await page.keyboard.press('Control+,');
+  let settings = page.getByRole('dialog', { name: 'Paramètres de CPCéleste', exact: true });
+  await settings.getByLabel('Thème', { exact: true }).selectOption('light');
+  await settings.getByLabel('Taille du code (px)', { exact: true }).fill('19');
+  await settings.getByLabel('Police du code', { exact: true }).fill('Courier New, monospace');
+  await settings.getByLabel('Taille d’indentation', { exact: true }).fill('4');
+  await settings.getByLabel('Largeur des outils (px)', { exact: true }).fill('280');
+  await settings.getByLabel('Largeur de l’assistant (px)', { exact: true }).fill('330');
+  await settings.getByRole('button', { name: 'Appliquer les paramètres', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expect.poll(async () => Math.round((await left.boundingBox()).width)).toBe(280);
+  await expect(page.locator('.view-lines')).toContainText('REPLACED');
+  await expect.poll(() => page.locator('.view-lines').evaluate(element => getComputedStyle(element).fontSize)).toBe('19px');
+  const settingsPage = await page.context().newPage();
+  settingsPage.on('pageerror', error => errors.push(error.message));
+  await settingsPage.addInitScript(() => { window.open = url => { window.lastFeedbackURL = String(url); return null; }; });
+  await settingsPage.goto('http://127.0.0.1:5173');
+  await expect(settingsPage.locator('html')).toHaveAttribute('data-theme', 'light');
+  await settingsPage.keyboard.press('Control+,');
+  settings = settingsPage.getByRole('dialog', { name: 'Paramètres de CPCéleste', exact: true });
+  await expect(settings.getByLabel('Police du code', { exact: true })).toHaveValue('Courier New, monospace');
+  await expect(settings.getByLabel('Taille du code (px)', { exact: true })).toHaveValue('19');
+  await expect(settings.getByLabel('Taille d’indentation', { exact: true })).toHaveValue('4');
+  await settings.getByLabel('Thème', { exact: true }).selectOption('system');
+  await settings.getByRole('button', { name: 'Appliquer les paramètres', exact: true }).click();
+  await settingsPage.emulateMedia({ colorScheme: 'dark' }); await expect(settingsPage.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await settingsPage.emulateMedia({ colorScheme: 'light' }); await expect(settingsPage.locator('html')).toHaveAttribute('data-theme', 'light');
+  await settingsPage.screenshot({ path: 'out/workbench-light.png' });
+  await settingsPage.keyboard.press('Control+,');
+  settings = settingsPage.getByRole('dialog', { name: 'Paramètres de CPCéleste', exact: true });
+  await settings.getByRole('button', { name: 'Valeurs par défaut', exact: true }).click();
+  await settings.getByRole('button', { name: 'Appliquer les paramètres', exact: true }).click();
+  await expect(settingsPage.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await settingsPage.getByRole('navigation', { name: 'Menus de l’atelier', exact: true }).getByRole('button', { name: 'Aide', exact: true }).click();
+  await settingsPage.getByRole('menuitem', { name: 'Proposer une amélioration ou signaler un problème', exact: true }).click();
+  const feedback = settingsPage.getByRole('dialog', { name: 'Faire évoluer CPCéleste', exact: true });
+  await expect(feedback.getByRole('button', { name: 'Ouvrir le ticket GitHub', exact: true })).toBeDisabled();
+  await feedback.getByLabel('Titre de la demande', { exact: true }).fill('Comparer deux sources');
+  await feedback.getByLabel('Mon utilisation de l’IDE', { exact: true }).fill('Je programme des jeux CPC.');
+  await feedback.getByLabel('Besoin et difficulté actuelle', { exact: true }).fill('Afficher deux fichiers ensemble.');
+  await feedback.getByRole('button', { name: 'Ouvrir le ticket GitHub', exact: true }).click();
+  await expect(feedback).toContainText('Ticket prérempli ouvert');
+  const ticketURL = new URL(await settingsPage.evaluate(() => window.lastFeedbackURL));
+  assert.equal(ticketURL.origin + ticketURL.pathname, 'https://github.com/AstrowareConception/Micro-IDE-Amstrad/issues/new');
+  assert.equal(ticketURL.searchParams.get('title'), '[Amélioration] Comparer deux sources');
+  assert.ok(ticketURL.searchParams.get('body').includes('Je programme des jeux CPC.'));
+  await settingsPage.close();
   // UI model catalogue recipe uses a deterministic IPC fixture, never a paid API call.
   const modelsPage = await browser.newPage({ viewport: { width: 1440, height: 960 } });
   modelsPage.on('pageerror', error => errors.push(error.message));
   await modelsPage.addInitScript(() => {
     let calls = 0, chosen = '';
-    window.desktop = { project: { open: async () => ({ sessionId: 'ui-tabs', manifest: { name: 'Recette sources', sources: [{ id: 'main', path: 'src/main.bas', cpcName: 'MAIN.BAS' }, { id: 'util', path: 'src/util.bas', cpcName: 'UTIL.BAS' }], entryPoint: 'main', documents: [] }, files: [{ id: 'main', path: 'src/main.bas', source: '10 REM MAIN\n20 END\n' }, { id: 'util', path: 'src/util.bas', source: '10 REM UTIL\n20 RETURN\n' }] }) }, setDirty() {}, open: async () => null, save: async () => null, exportDisk: async () => null, agent: {
+    const realNow = Date.now.bind(Date);
+    window.advanceCatalogueTime = offset => { Date.now = () => realNow() + offset; };
+    const realSetInterval = window.setInterval.bind(window);
+    // Accelerate only the catalogue cadence; keep animation/performance clocks native.
+    window.setInterval = (handler, delay, ...args) => realSetInterval(handler, delay === 60000 ? 1000 : delay, ...args);
+    window.autoSaveCalls = [];
+    window.desktop = { project: { saveAll: async (sessionId, sources) => { window.autoSaveCalls.push({ sessionId, sources }); return { name: 'Recette sources', savedIds: sources.map(source => source.id), changedCount: sources.length }; }, open: async () => ({ sessionId: 'ui-tabs', manifest: { name: 'Recette sources', sources: [{ id: 'main', path: 'src/main.bas', cpcName: 'MAIN.BAS' }, { id: 'util', path: 'src/util.bas', cpcName: 'UTIL.BAS' }], entryPoint: 'main', documents: [] }, files: [{ id: 'main', path: 'src/main.bas', source: '10 REM MAIN\n20 END\n' }, { id: 'util', path: 'src/util.bas', source: '10 REM UTIL\n20 RETURN\n' }] }) }, setDirty() {}, open: async () => null, save: async () => null, exportDisk: async () => null, agent: {
       models: async key => {
         calls++;
         if (calls === 3) return { error: 'Connexion indisponible (recette)' };
         if (key !== undefined) { if (key !== 'sk-ui-fixture-not-real') return { error: 'Clé refusée' }; chosen = ''; }
-        return { models: [{ id: 'gpt-99-ui', created: 100, owner: 'openai' }, ...(calls > 1 ? [{ id: 'gpt-100-ui-new', created: 200, owner: 'openai' }] : [])], fetchedAt: new Date().toISOString(), model: chosen };
+        return { models: [{ id: 'gpt-99-ui', created: 100, owner: 'openai' }, ...(calls > 1 ? [{ id: 'gpt-100-ui-new', created: 200, owner: 'openai' }] : []), ...(calls >= 4 ? [{ id: 'gpt-101-ui-timer', created: 300, owner: 'openai' }] : []), ...(calls >= 5 ? [{ id: 'gpt-102-ui-focus', created: 400, owner: 'openai' }] : [])], fetchedAt: new Date(Date.now()).toISOString(), model: chosen };
       },
       selectModel: async model => { chosen = model; return { model }; },
       configure: async key => { if (key !== '') throw new Error('UI must use official listing'); chosen = ''; return { configured: false, model: '' }; },
@@ -201,6 +256,13 @@ try {
   await modelPicker.selectOption('gpt-100-ui-new'); await expect(modelPicker).toHaveValue('gpt-100-ui-new');
   await modelsPage.getByRole('button', { name: 'Actualiser les modèles', exact: true }).click();
   await expect(modelsPage.locator('.agent-notice')).toContainText('Dernière liste conservée');
+  await expect(modelPicker).toHaveValue('gpt-100-ui-new');
+  await modelsPage.evaluate(() => window.advanceCatalogueTime(16 * 60 * 1000));
+  await expect(modelPicker).toContainText('gpt-101-ui-timer');
+  await expect(modelPicker).toHaveValue('gpt-100-ui-new');
+  await modelsPage.evaluate(() => window.advanceCatalogueTime(32 * 60 * 1000));
+  await modelsPage.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(modelPicker).toContainText('gpt-102-ui-focus');
   await expect(modelPicker).toHaveValue('gpt-100-ui-new');
   await modelsPage.screenshot({ path: 'out/models-alpha.png' });
   await modelsPage.getByRole('button', { name: 'Oublier la clé', exact: true }).click();
@@ -229,6 +291,17 @@ try {
   await modelInput.focus(); await modelsPage.keyboard.press('Control+z');
   await expect(modelsPage.locator('.view-lines')).not.toContainText('MAIN DRAFT');
   await modelsPage.keyboard.press('Control+Shift+z'); await expect(modelsPage.locator('.view-lines')).toContainText('MAIN DRAFT');
+  await expect.poll(() => modelsPage.evaluate(() => window.autoSaveCalls.length)).toBe(0);
+  await modelsPage.keyboard.press('Control+,');
+  const autoSettings = modelsPage.getByRole('dialog', { name: 'Paramètres de CPCéleste', exact: true });
+  await autoSettings.getByLabel('Enregistrement automatique des sources du projet', { exact: true }).check();
+  await autoSettings.getByLabel('Délai d’enregistrement automatique (ms)', { exact: true }).fill('1000');
+  await autoSettings.getByRole('button', { name: 'Appliquer les paramètres', exact: true }).click();
+  await expect.poll(() => modelsPage.evaluate(() => window.autoSaveCalls.length)).toBe(1);
+  const automaticBatch = await modelsPage.evaluate(() => window.autoSaveCalls[0]);
+  assert.deepEqual(automaticBatch.sources.map(source => source.id), ['main', 'util']);
+  assert.ok(automaticBatch.sources.every(source => source.source.includes('DRAFT')));
+  await expect(modelsPage.getByRole('tab', { name: /modifié/ })).toHaveCount(0);
   await modelsPage.close();
   assert.deepEqual(errors, [], 'No browser errors');
   console.log('Editor browser smoke: completion, coloration, help, diagnostics, F12, downloads, dirty protection plus renumber preview/apply/DSK/undo/redo/stale revision passed.');

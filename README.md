@@ -131,3 +131,5 @@ Les commandes Python vérifient la documentation et les contrats. Le workflow Gi
 - Chaque incrément fait évoluer ensemble code, spécifications et preuves de recette.
 
 Les fichiers de référence fournis au lancement ont été inventoriés dans [le dossier de sources](docs/reference/sources.md). Les contributions propres au projet sont sous [licence MIT](LICENSE) ; les dépendances et les contenus tiers conservent leurs conditions respectives.
+
+**Préférences et retours 0.25** : Outils → Paramètres (`Ctrl/Cmd ,`) conserve thème, police, édition, dimensions et auto-save des sources du projet (opt-in). Le dock accueille le journal Git. Aide → Proposer une amélioration prépare un ticket à relire/envoyer sur GitHub ; [guide](docs/implementation/production-workbench-alpha.md).

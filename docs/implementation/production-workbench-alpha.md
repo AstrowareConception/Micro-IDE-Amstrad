@@ -36,6 +36,16 @@ Les expressions ordinaires d’affectation, MODE/MEMORY/ERROR/WHILE et condition
 
 Les commentaires, chaînes, DATA et RSX ne sont pas interprétés comme du code. Les formes compactes ambiguës et certaines grammaires natives restent opaques. Un listing sans diagnostic n’est pas garanti exécutable. Cette analyse supplémentaire de l’éditeur ne modifie pas les règles de construction DSK ni les préconditions de renumérotation.
 
+## Paramètres et retours utilisateurs
+
+Outils → Paramètres (Ctrl/Cmd virgule) applique des réglages conservés entre les sessions : thèmes clair/sombre/système, police et taille, indentation et espaces, retour visuel, parenthèses, minimap, largeurs des colonnes et hauteur des sorties. Les valeurs initiales de renumérotation sont configurables. L’annulation conserve les anciens réglages et le bouton valeurs par défaut prépare leur restauration.
+
+L’enregistrement automatique est désactivé par défaut. Une fois activé, une pause de saisie enregistre les sources du projet par le chemin natif existant, avec contrôle des conflits disque. Il se suspend pendant les opérations disque, missions IA et commandes terminal. Le statut affiche Auto-save. Les listings isolés restent enregistrés avec Ctrl S.
+
+Le dock propose aussi Git : journal paginé des commits, actualisation et chargement des pages suivantes. Git → Historique des commits ouvre cette zone. Il s’agit de l’historique des commits, pas d’une console de commandes Git.
+
+Aide → Proposer une amélioration ou signaler un problème ouvre un formulaire de retour, disponible aussi dans la palette. Usage, difficulté et résultat attendu composent une description copiable et consultable. Le bouton ouvre un ticket GitHub prérempli dans le navigateur ; l’utilisateur le relit et le publie avec son compte. Les tickets sont publics et seules les saisies du formulaire composent le ticket. [ADR 0032](../adr/0032-preferences-et-retours-utilisateurs.md).
+
 ## Recette
 
 L’assistant propose désormais un menu déroulant chargé par l’API officielle OpenAI avec la clé configurée. Il faut choisir un modèle après chaque nouvelle connexion. La liste est triée par création, datée et actualisée à la demande ou toutes les 15 minutes au repos ; un échec conserve la dernière liste explicitement datée. Les modèles dont le retrait est annoncé portent la date ; ceux déjà retirés sont exclus. La disponibilité API ne prouve pas la prise en charge des outils : voir [ADR 0031](../adr/0031-catalogue-modeles-openai-dynamique.md).
@@ -51,4 +61,4 @@ python scripts/check_specs.py --schemas
 
 La recette navigateur vérifie aussi fermeture/réouverture de buffers modifiés, undo/redo entre sources, absence de collage molette et de saut de ligne parasite dans l’ouverture rapide, puis menus exclusifs, focus/flèches/Échap/clic extérieur, réouverture de la recherche par raccourci, panneaux masquables, Git découvrable, assistant séparé, icônes, trois erreurs pendant la saisie, F8, commentaire BASIC et éditeur visible pendant l’exécution. Les recettes Electron conservent les contrôles de persistence, IA, documents, terminal, Git, récupération et protection des buffers. Les preuves sont produites dans `out/` et publiées par CI ; aucune ROM dans Git.
 
-Cette tranche améliore l’ergonomie de l’alpha sans qualifier le produit 1.0 : dispositions persistées/redimensionnement, keymap configurable, parser BASIC complet, branches et synchronisation Git restent ouverts. Voir [ADR 0030](../adr/0030-atelier-menus-diagnostics.md).
+Cette tranche améliore l’ergonomie de l’alpha sans qualifier le produit 1.0 : explorateur intégral des fichiers, séparateurs déplaçables, ancrage/fenêtres détachées, keymap configurable, parser BASIC complet, PTY et branches/synchronisation Git restent ouverts. Voir [ADR 0030](../adr/0030-atelier-menus-diagnostics.md).

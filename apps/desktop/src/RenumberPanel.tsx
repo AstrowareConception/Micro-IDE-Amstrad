@@ -5,11 +5,12 @@ import type { RenumberPlan } from '../../../packages/basic-language/src/renumber
 
 export interface RenumberRequest { plan: RenumberPlan; documentId: string; version: number }
 interface Props {
+  defaultStart: number; defaultStep: number;
   source: string; documentId: string; busy: boolean;
   revision(): number; onApply(request: RenumberRequest): void; onClose(): void;
 }
 export function RenumberPanel(props: Props) {
-  const [start, setStart] = useState('10'), [step, setStep] = useState('10');
+  const [start, setStart] = useState(String(props.defaultStart)), [step, setStep] = useState(String(props.defaultStep));
   const [from, setFrom] = useState('1'), [to, setTo] = useState('65535');
   const [request, setRequest] = useState<RenumberRequest>(), [message, setMessage] = useState('');
   function preview() {

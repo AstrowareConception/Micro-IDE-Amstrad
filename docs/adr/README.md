@@ -44,3 +44,5 @@ Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou
 - [0030 — Atelier, menus et diagnostics](0030-atelier-menus-diagnostics.md) : outils séparés, commandes accessibles, parser d’expressions partiel et marqueurs immédiats.
 
 - [0031 — Catalogue OpenAI dynamique](0031-catalogue-modeles-openai-dynamique.md) : select actualisé via API officielle, permissions de clé et choix explicite.
+
+- [0032 — Préférences persistantes et retours utilisateurs](0032-preferences-et-retours-utilisateurs.md).

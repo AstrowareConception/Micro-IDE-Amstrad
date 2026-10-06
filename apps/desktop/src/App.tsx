@@ -3,6 +3,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { analyzeEditor } from '../../../packages/basic-language/src/syntax.ts';
 import { WorkbenchMenus } from './WorkbenchMenus.tsx';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
+import { FeedbackDialog } from './FeedbackDialog.tsx';
+import { SettingsDialog } from './SettingsDialog.tsx';
+import { loadPreferences, persistPreferences, type Preferences } from './preferences.ts';
+import type { CSSProperties } from 'react';
 import { NewProjectDialog } from './NewProjectDialog.tsx';
 import { Icon } from './Icon.tsx';
 import { COMMANDS, type CommandCard } from '../../../packages/basic-language/src/catalog.ts';
@@ -17,6 +21,7 @@ import { AgentPanel } from './AgentPanel.tsx';
 import { EmulatorPanel, type EmulatorLaunch } from './EmulatorPanel.tsx';
 import { FirmwarePanel } from './FirmwarePanel.tsx';
 import { DocumentsPanel } from './DocumentsPanel.tsx';
+import { GitLogPanel } from './GitLogPanel.tsx';
 import { GitPanel } from './GitPanel.tsx';
 import { RenumberPanel } from './RenumberPanel.tsx';
 import type { RenumberRequest } from './RenumberPanel.tsx';
@@ -31,6 +36,10 @@ const SAMPLE = '10 REM MICRO IDE AMSTRAD\n20 MODE 1\n30 INK 0,0:INK 1,24\n40 PEN
 interface Document { id: string; sourceId: string; name: string; source: string; saved: string }
 
 export function App() {
+  const [preferences, setPreferences] = useState<Preferences>(loadPreferences);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const autoSaveAttempt = useRef('');
   const [documents, setDocuments] = useState<Document[]>([{ id: 'initial', sourceId: 'main', name: 'MAIN.bas', source: SAMPLE, saved: SAMPLE }]);
   const [activeId, setActiveId] = useState('initial');
   const [project, setProject] = useState<{ sessionId: string; manifest: ProjectManifest } | undefined>();
@@ -69,7 +78,6 @@ export function App() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [navigation, setNavigation] = useState<SearchMatch>();
   const editorWorkspace = useRef<EditorWorkspace | undefined>(undefined);
-  const [minimap, setMinimap] = useState(false);
   const busy = fileBusy || agentBusy;
   const [card, setCard] = useState<CommandCard | undefined>();
   const [query, setQuery] = useState('');
@@ -77,6 +85,20 @@ export function App() {
   const editor = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const analysis = useMemo(() => analyzeEditor(source), [source]);
   const dirty = documents.some(document => document.source !== document.saved);
+  useEffect(() => {
+    if (!persistPreferences(preferences)) setStatus('Paramètres appliqués pour cette session ; conservation indisponible.');
+    const media = window.matchMedia('(prefers-color-scheme: light)');
+    const applyTheme = () => { const light = preferences.theme === 'light' || preferences.theme === 'system' && media.matches; document.documentElement.dataset.theme = light ? 'light' : 'dark'; monaco.editor.setTheme(light ? 'cpc-workbench-light' : 'cpc-workbench'); };
+    applyTheme(); media.addEventListener('change', applyTheme);
+    return () => media.removeEventListener('change', applyTheme);
+  }, [preferences]);
+  useEffect(() => {
+    if (!preferences.autoSave || !project || !files.project || busy || !dirty) return;
+    const revision = JSON.stringify([project.sessionId, preferences.autoSaveDelay, documents.map(item => [item.id, item.source, item.saved])]);
+    if (autoSaveAttempt.current === revision) return;
+    const timer = setTimeout(() => { autoSaveAttempt.current = revision; void saveAll(); }, preferences.autoSaveDelay);
+    return () => clearTimeout(timer);
+  }, [preferences.autoSave, preferences.autoSaveDelay, project?.sessionId, busy, dirty, documents]);
   useEffect(() => { files.setDirty(dirty); }, [dirty]);
   useEffect(() => { if (searchOpen) showTool('search'); }, [searchOpen]);
   useEffect(() => { setClosedTabs(previous => { if (!previous.has(activeId)) return previous; const next = new Set(previous); next.delete(activeId); return next; }); }, [activeId]);
@@ -84,7 +106,7 @@ export function App() {
     const shortcut = (event: KeyboardEvent) => {
       if ((event.target as Element)?.closest?.('dialog[open]')) return;
       const modifier = event.ctrlKey || event.metaKey, key = event.key.toLowerCase();
-      const id = event.key === 'F5' ? 'run' : event.key === 'F1' ? 'reference'
+      const id = modifier && key === ',' ? 'settings' : event.key === 'F5' ? 'run' : event.key === 'F1' ? 'reference'
         : modifier && event.shiftKey && key === 'p' ? 'palette'
         : modifier && !event.shiftKey && key === 'p' ? 'quick-sources'
         : modifier && event.shiftKey && key === 'o' ? 'project'
@@ -219,7 +241,7 @@ export function App() {
     { id: 'line', label: 'Aller à une ligne physique', detail: 'Ctrl G · distinct du numéro BASIC', run: () => editorAction('editor.action.gotoLine') },
     { id: 'renumber', detail: 'Ctrl Maj R', label: 'Renuméroter le BASIC', disabled: busy, run: () => setRenumberOpen(true) },
     { id: 'complete', label: 'Compléter le BASIC', detail: 'Ctrl Espace', disabled: busy, run: () => editorAction('editor.action.triggerSuggest') },
-    { id: 'minimap', label: minimap ? 'Masquer la minimap' : 'Afficher la minimap', run: () => { editor.current?.updateOptions({ minimap: { enabled: !minimap } }); setMinimap(!minimap); } },
+    { id: 'minimap', label: preferences.minimap ? 'Masquer la minimap' : 'Afficher la minimap', run: () => setPreferences(previous => ({ ...previous, minimap: !previous.minimap })) },
     { id: 'zoom-in', label: 'Agrandir le texte du code', run: () => editor.current?.updateOptions({ fontSize: Math.min(28, (editor.current?.getOption(monaco.editor.EditorOption.fontSize) ?? 16) + 1) }) },
     { id: 'zoom-out', label: 'Réduire le texte du code', run: () => editor.current?.updateOptions({ fontSize: Math.max(12, (editor.current?.getOption(monaco.editor.EditorOption.fontSize) ?? 16) - 1) }) },
     ...[
@@ -238,7 +260,7 @@ export function App() {
     { id: 'explorer', label: 'Afficher l’explorateur', detail: 'Ctrl Maj E', run: () => showTool('project') },
     { id: 'git', label: 'Afficher Git', detail: 'Ctrl Maj G', run: () => showTool('git') },
     { id: 'git-refresh', label: 'Actualiser Git', disabled: busy || !project || !files.git, run: () => { showTool('git'); requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('.git-panel button')?.click()); } },
-    { id: 'git-history', label: 'Historique des commits Git', disabled: busy || !project || !files.git, run: () => { showTool('git'); requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('.git-panel button:nth-of-type(2)')?.click()); } },
+    { id: 'git-history', label: 'Historique des commits Git', disabled: busy || !project || !files.git, run: () => showOutput('git-log') },
     { id: 'git-commit', label: 'Préparer un commit Git', disabled: busy || !project || !files.git, run: () => { showTool('git'); requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>('.git-commit-form textarea')?.focus()); } },
     { id: 'documents', label: 'Afficher les documents du projet', detail: 'Ctrl Maj D', run: () => showTool('documents') },
     { id: 'reference', label: 'Référence Locomotive BASIC', detail: 'F1', run: () => showTool('reference') },
@@ -250,6 +272,8 @@ export function App() {
     { id: 'output', label: 'Afficher / masquer les sorties', detail: 'Ctrl J', run: () => setOutputOpen(value => !value) },
     { id: 'palette', label: 'Palette des commandes', detail: 'Ctrl Maj P', run: () => setPalette('all') },
     { id: 'quick-sources', label: 'Ouvrir rapidement une source', detail: 'Ctrl P', run: () => setPalette('sources') },
+    { id: 'feedback', label: 'Proposer une amélioration ou signaler un problème', run: () => setFeedbackOpen(true) },
+    { id: 'settings', label: 'Paramètres de CPCéleste', detail: 'Ctrl ,', run: () => setSettingsOpen(true) },
     { id: 'shortcuts', label: 'Raccourcis clavier et souris', run: () => setShortcutsOpen(true) },
     { id: 'close-tab', label: 'Fermer l’onglet actif', detail: 'Ctrl W · buffer conservé', disabled: busy || documents.filter(item => !closedTabs.has(item.id)).length < 2, run: () => closeTab(activeId) },
     { id: 'next-tab', label: 'Source suivante', detail: 'Ctrl Tab', disabled: busy, run: () => setActiveId(documents[(documents.findIndex(item => item.id === activeId) + 1) % documents.length]!.id) },
@@ -272,7 +296,7 @@ export function App() {
     } },
     { id: 'entry', label: 'Définir cette source comme entrée', disabled: busy || !project || selectedSource.sourceId === project.manifest.entryPoint, run: () => { if (project && files.project) void projectOperation(() => files.project!.setEntry(project.sessionId, selectedSource.sourceId)); } },
   ] : [];
-  return <main className="workbench">
+  return <main className="workbench" style={{ '--sidebar-width': `${preferences.sidebarWidth}px`, '--agent-width': `${preferences.agentWidth}px`, '--output-height': `${preferences.outputHeight}px` } as CSSProperties}>
     <header className="topbar">
       <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.25 · AstroWare Conception</p></div></div>
       <span className="profile">CPC 6128 · BASIC 1.1</span>
@@ -283,11 +307,12 @@ export function App() {
       ['BASIC', ['run', 'renumber', 'complete', 'editor.action.revealDefinition', 'editor.action.marker.next', 'editor.action.marker.prev', 'reference']],
       ['Git', ['git', 'git-refresh', 'git-history', 'git-commit']],
       ['Projet', ['explorer', 'documents', 'recovery']],
-      ['Affichage', ['sidebar', 'agent', 'output', 'problems', 'terminal', 'minimap', 'zoom-in', 'zoom-out', 'palette', 'quick-sources']],
-      ['Outils', ['firmware', 'shortcuts']],
+      ['Affichage', ['sidebar', 'agent', 'output', 'problems', 'terminal', 'git-history', 'minimap', 'zoom-in', 'zoom-out', 'palette', 'quick-sources']],
+      ['Outils', ['firmware', 'settings', 'shortcuts']],
+      ['Aide', ['reference', 'shortcuts', 'feedback']],
     ].map(([label, ids]) => ({ label: label as string, commands: (ids as string[]).map(id => commands.find(command => command.id === id)!) }))} />
     {newProjectOpen && <NewProjectDialog busy={busy} onClose={() => setNewProjectOpen(false)} onCreate={name => { setProjectName(name); openProject(true, name); }} />}
-    {renumberOpen && <RenumberPanel source={source} documentId={activeId} busy={busy} revision={() => editor.current?.getModel()?.getVersionId() ?? -1} onApply={renumber} onClose={() => setRenumberOpen(false)} />}
+    {renumberOpen && <RenumberPanel source={source} documentId={activeId} busy={busy} defaultStart={preferences.renumberStart} defaultStep={preferences.renumberStep} revision={() => editor.current?.getModel()?.getVersionId() ?? -1} onApply={renumber} onClose={() => setRenumberOpen(false)} />}
     {palette && <CommandPalette key={palette} title={palette === 'all' ? 'Commandes CPCéleste' : 'Ouvrir rapidement une source'} commands={palette === 'all' ? commands : commands.filter(command => command.id.startsWith('source:'))} onClose={() => setPalette(undefined)} />}
     {selectedSource && <CommandPalette title={`Actions de ${selectedSource.name}`} searchable={false} commands={sourceCommands} onClose={() => setContextSource(undefined)} />}
     {historyOpen && project && <HistoryPanel key={`history:${project.sessionId}:${active.id}`} sessionId={project.sessionId} sourceId={active.sourceId} path={active.name} source={source} busy={busy} onClose={() => setHistoryOpen(false)} onApply={(before, after) => {
@@ -363,17 +388,18 @@ export function App() {
 
       <section className="listing" aria-label="Éditeur">
         <div className="tabs" role="tablist" aria-label="Sources ouvertes">{documents.filter(document => !closedTabs.has(document.id)).map(document => <div className="tab-entry" key={document.id}><Button role="tab" aria-selected={document.id === activeId} className="tab" disabled={busy} onClick={() => setActiveId(document.id)} onMouseDown={event => { if (event.button === 1) { event.preventDefault(); event.currentTarget.focus(); } }} onAuxClick={event => { if (event.button === 1) { event.preventDefault(); event.stopPropagation(); requestAnimationFrame(() => closeTab(document.id)); } }} onContextMenu={event => { event.preventDefault(); setContextSource(document.id); }} onKeyDown={event => { if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) { event.preventDefault(); setContextSource(document.id); } }}>{document.name}{document.source !== document.saved ? ' • modifié' : ''}</Button><Button icon="close" className="tab-close" aria-label={`Fermer l’onglet ${document.name}`} title="Fermer la vue · buffer conservé · Ctrl W" disabled={busy || documents.filter(item => !closedTabs.has(item.id)).length < 2} onClick={() => closeTab(document.id)} /></div>)}</div>
-        <Editor documents={documents} activeId={activeId} diagnostics={analysis.diagnostics} busy={busy} onChange={(id, value) => setDocuments(items => items.map(item => item.id === id ? { ...item, source: value } : item))} onCommand={setCard}
+        <Editor preferences={preferences} documents={documents} activeId={activeId} diagnostics={analysis.diagnostics} busy={busy} onChange={(id, value) => setDocuments(items => items.map(item => item.id === id ? { ...item, source: value } : item))} onCommand={setCard}
           navigation={navigation} onWorkspaceReady={value => { editorWorkspace.current = value; }}
           onPosition={(line, column) => setPosition({ line, column })}
           onSave={() => void save()} onReady={value => { editor.current = value; }} onPalette={() => setPalette('all')} onRenumber={() => setRenumberOpen(true)} onExport={() => void exportDisk()} />
-        <div className="output-dock" hidden={!outputOpen}><nav className="output-tabs" aria-label="Panneaux de sortie"><Button aria-pressed={outputTab === 'problems'} onClick={() => showOutput('problems')} icon="warning">Problèmes {analysis.diagnostics.length}</Button><Button aria-pressed={outputTab === 'emulator'} onClick={() => showOutput('emulator')} icon="chip">CPC</Button><Button aria-pressed={outputTab === 'terminal'} onClick={() => showOutput('terminal')} icon="terminal">Terminal</Button><Button aria-label="Masquer les sorties" icon="close" onClick={() => setOutputOpen(false)} /></nav><div hidden={outputTab !== 'problems'} className="problems"><h2>Diagnostics <span>{analysis.diagnostics.length}</span></h2>
+        <div className="output-dock" hidden={!outputOpen}><nav className="output-tabs" aria-label="Panneaux de sortie"><Button aria-pressed={outputTab === 'problems'} onClick={() => showOutput('problems')} icon="warning">Problèmes {analysis.diagnostics.length}</Button><Button aria-pressed={outputTab === 'emulator'} onClick={() => showOutput('emulator')} icon="chip">CPC</Button><Button aria-pressed={outputTab === 'terminal'} onClick={() => showOutput('terminal')} icon="terminal">Terminal</Button><Button aria-pressed={outputTab === 'git-log'} onClick={() => showOutput('git-log')} icon="git">Git</Button><Button aria-label="Masquer les sorties" icon="close" onClick={() => setOutputOpen(false)} /></nav><div hidden={outputTab !== 'problems'} className="problems"><h2>Diagnostics <span>{analysis.diagnostics.length}</span></h2>
           <p className="muted">Analyse syntaxique conservative : expressions incomplètes, parenthèses, IF/FOR, arguments, cibles et export. Un listing sans diagnostic n’est pas garanti exécutable.</p>
           {analysis.diagnostics.length ? <ul>{analysis.diagnostics.map((d, i) => <li key={`${d.line}-${d.start}-${i}`}><Button onClick={() => {
             editor.current?.revealLineInCenter(d.line); editor.current?.setPosition({ lineNumber: d.line, column: d.start + 1 }); editor.current?.focus();
           }}>L{d.line} · {d.severity === 'error' ? 'Erreur' : 'Avertissement'} · {d.message}</Button></li>)}</ul> : <p className="success">Aucun problème détecté dans le sous-ensemble analysé.</p>}
         </div>
         <div hidden={outputTab !== 'emulator'}>{emulatorLaunch ? <EmulatorPanel key={emulatorLaunch.id} launch={emulatorLaunch} onClose={() => setEmulatorLaunch(undefined)} onConfigure={() => showTool('firmware')} /> : <div className="empty-tool"><Icon name="chip" /><p>Exécutez le listing avec F5 pour ouvrir le CPC.</p></div>}</div>
+        {project ? <GitLogPanel key={`git-log:${project.sessionId}`} sessionId={project.sessionId} busy={busy} visible={outputTab === 'git-log'} /> : outputTab === 'git-log' && <div className="empty-tool">Ouvrez un projet pour consulter son journal Git.</div>}
         {project ? <TerminalPanel key={`terminal:${project.sessionId}`} sessionId={project.sessionId} busy={busy} dirty={dirty} visible={terminalOpen && outputTab === 'terminal'} onBusy={setBusy} /> : outputTab === 'terminal' && <div className="empty-tool">Ouvrez un projet pour exécuter des commandes dans son dossier.</div>}
         </div>
       </section>
@@ -382,7 +408,9 @@ export function App() {
         <AgentPanel sessionId={project?.sessionId} documentCount={project?.manifest.documents.length ?? 0} buffers={documents.map(document => ({ id: document.sourceId, source: document.source }))} busy={busy} onRunning={setAgentBusy} onState={acceptAgent} />
       </aside>
     </div>
+    {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
+    {settingsOpen && <SettingsDialog preferences={preferences} onApply={setPreferences} onClose={() => setSettingsOpen(false)} />}
     {shortcutsOpen && <ShortcutsDialog commands={commands} onClose={() => setShortcutsOpen(false)} />}
-    <footer role="status"><Button icon="warning" title="Afficher les diagnostics" onClick={() => showOutput('problems')}>{analysis.diagnostics.filter(item => item.severity === 'error').length} erreur(s)</Button>{busy ? 'Opération en cours…' : status}<span>L{position.line} · C{position.column} · {window.desktop ? 'Bureau local' : 'Aperçu navigateur · enregistrement par téléchargement'}</span></footer>
+    <footer role="status"><Button icon="warning" title="Afficher les diagnostics" onClick={() => showOutput('problems')}>{analysis.diagnostics.filter(item => item.severity === 'error').length} erreur(s)</Button>{busy ? 'Opération en cours…' : status}{preferences.autoSave && <span>Auto-save</span>}<span>L{position.line} · C{position.column} · {window.desktop ? 'Bureau local' : 'Aperçu navigateur · enregistrement par téléchargement'}</span></footer>
   </main>;
 }

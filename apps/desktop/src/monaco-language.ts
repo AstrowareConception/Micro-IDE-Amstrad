@@ -40,6 +40,14 @@ monaco.editor.defineTheme('cpc-workbench', {
     { token: 'data', foreground: 'CAB4F0' }, { token: 'identifier', foreground: 'E5EBF3' },
   ], colors: { 'editor.background': '#111821', 'editorLineNumber.foreground': '#596878', 'editor.lineHighlightBackground': '#172331' },
 });
+monaco.editor.defineTheme('cpc-workbench-light', {
+  base: 'vs', inherit: true,
+  rules: [
+    { token: 'keyword', foreground: '005EA8' }, { token: 'number', foreground: '995B00' },
+    { token: 'string', foreground: '176E39' }, { token: 'comment', foreground: '526951', fontStyle: 'italic' },
+    { token: 'data', foreground: '7146A8' }, { token: 'identifier', foreground: '21354B' },
+  ], colors: { 'editor.background': '#ffffff', 'editorLineNumber.foreground': '#65758a', 'editor.lineHighlightBackground': '#eaf3ff' },
+});
 export const provenance = `Référence fournie · ${REFERENCE.id} · ${REFERENCE.version} · sous-ensemble éditorial, non qualifié sur ROM`;
 monaco.languages.registerCompletionItemProvider(language, {
   triggerCharacters: [' ', '$'],

@@ -19,7 +19,7 @@ La colonne unique mêlait projets, Git, ROM, documentation et IA. Les menus `det
 
 L’analyse est partielle : aucune validation complète des types, de la grammaire ou des comportements ROM. Les formes compactes ambiguës, DATA, commentaires, RSX et formes spéciales restent opaques. Les expressions de plus de 1024 tokens et les formes stream/adresse/FN séparé ne sont pas validées par Pratt. L’absence de diagnostic ne garantit pas l’exécution.
 
-Les panneaux restent montés lorsqu’ils sont masqués afin de conserver les tâches et sessions ; leurs défilements sont indépendants. Les dispositions et raccourcis personnalisés persistants ainsi que les branches/réseau Git ne sont pas livrés par cette tranche. La qualification matérielle de l’émulateur reste distincte de la recette de l’atelier.
+Les panneaux restent montés lorsqu’ils sont masqués afin de conserver les tâches et sessions ; leurs défilements sont indépendants. Les dimensions et réglages de code sont persistés selon l’ADR 0032. L’ancrage réorganisable, les fenêtres détachées, les raccourcis personnalisés et les branches/réseau Git restent ouverts. La qualification matérielle de l’émulateur reste distincte de la recette de l’atelier.
 
 ## Vérification
 
