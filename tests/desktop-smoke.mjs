@@ -372,7 +372,7 @@ try {
   const checkpoints = await Promise.all((await readdir(checkpointDirectory)).map(id => readFile(join(checkpointDirectory, id, 'checkpoint.json'), 'utf8')));
   assert.ok(checkpoints.some(text => text.includes('USER DRAFT')));
   assert.ok(checkpoints.every(text => !text.includes('sk-test-fixture-not-real')));
-  await page.locator('.agent-result summary').click();
+  await page.locator('.agent-result summary').filter({ hasText: /^Changements/ }).click();
   await expect(page.locator('.agent-result')).toContainText('Avant');
   await page.screenshot({ path: 'out/agent-alpha.png' });
   // Do not overwrite a manual change made after the mission.

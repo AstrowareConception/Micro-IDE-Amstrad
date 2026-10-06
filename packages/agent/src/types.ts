@@ -8,7 +8,7 @@ export interface ModelPort { respond(input: Record<string, unknown>[], tools: To
 export interface ToolPort { definitions: ToolDefinition[]; execute(name: string, args: unknown): Promise<unknown> }
 export interface ImageToolResult { kind: 'image'; dataUrl: string; metadata: Record<string, unknown> }
 export interface AgentBudget { maxTurns: number; maxCalls: number; maxTokens: number }
-export interface PricingProfile { model: string; input: number; cached: number; output: number; cacheWriteMultiplier: number; longContext?: { threshold: number; inputMultiplier: number; outputMultiplier: number }; fetchedAt: string; source: string }
+export interface PricingProfile { model: string; billedModels?: string[]; input: number; cached: number; output: number; cacheWriteMultiplier: number; longContext?: { threshold: number; inputMultiplier: number; outputMultiplier: number }; fetchedAt: string; source: string }
 export interface AgentEvent { kind: 'model' | 'tool' | 'tool-result' | 'message' | 'limit' | 'error'; text: string; tool?: string; success?: boolean }
 export interface AgentResult { status: 'completed' | 'blocked' | 'failed' | 'cancelled' | 'paused-limit'; turns: number; calls: number; tokens: number; summary: string; usage?: TokenUsage | undefined; failedCalls?: number; estimatedUsd?: number; costComplete?: boolean }
 export interface AgentView extends AgentResult { taskId: string; running: boolean; events: AgentEvent[]; workspace: AgentWorkspaceState; changed: string[]; before: { id: string; source: string }[]; buildVerified: boolean; model?: string | undefined; budget?: AgentBudget; pricing?: PricingProfile | undefined; resumable?: boolean }

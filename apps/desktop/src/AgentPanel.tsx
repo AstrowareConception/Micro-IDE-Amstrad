@@ -74,11 +74,11 @@ export function AgentPanel(props: Props) {
       if (forget) {
         const result = await port.configure('', '');
         if ('error' in result) setMessage(result.error);
-        else { setConfigured(false); setCatalog(undefined); setModel(''); setPricing(undefined); setMessage('Clé oubliée.'); }
+        else { setConfigured(false); setView(previous => previous ? { ...previous, resumable: false } : previous); setCatalog(undefined); setModel(''); setPricing(undefined); setMessage('Clé oubliée.'); }
       } else {
         const result = await port.models(key);
         if ('error' in result) setMessage(result.error);
-        else { setConfigured(true); setCatalog(result); setModel(result.model); setPricing(undefined); setMessage('Clé vérifiée, conservée en mémoire. Choisissez un modèle dans la liste OpenAI.'); }
+        else { setConfigured(true); setView(previous => previous ? { ...previous, resumable: false } : previous); setCatalog(result); setModel(result.model); setPricing(undefined); setMessage('Clé vérifiée, conservée en mémoire. Choisissez un modèle dans la liste OpenAI.'); }
       }
     } catch { setMessage('Configuration impossible.'); }
     finally { setKey(''); modelRequest.current = false; setRequesting(false); }

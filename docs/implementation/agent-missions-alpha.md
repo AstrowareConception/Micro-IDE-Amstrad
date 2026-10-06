@@ -4,7 +4,7 @@
 
 Ouvrir un projet puis **Réglages IA** : clé, catalogue officiel et modèle. La clé disparaît du champ et reste en mémoire côté main. Le tarif est lu dans la fiche officielle publique, sans clé ; actualisation distincte. Régler les budgets, fermer le dialogue et saisir la mission. La consigne de suivi est facultative.
 
-La mission affiche messages publics, compteurs, tokens, fichiers réellement modifiés, construction et estimation API en USD quand les données sont complètes. **Journal technique** donne résultats et erreurs des outils. En pause tours/outils/tokens, **Reprendre la mission** conserve contexte et checkpoint initial ; budget supplémentaire et facturation possible sont indiqués. Une édition humaine/disque bloque la reprise. **Changements** compare avant/après ; **Restaurer le checkpoint initial** est disponible pour des fichiers changés, avec préconditions existantes.
+La mission affiche messages publics, compteurs, tokens, fichiers réellement modifiés, construction et estimation API en USD quand les données sont complètes. **Journal technique** donne résultats et erreurs des outils. En pause tours/outils/tokens, **Reprendre la mission** conserve contexte et checkpoint initial ; budget supplémentaire et facturation possible sont indiqués. Une édition humaine/disque bloque la reprise ; changer/oublier la clé l’invalide et libère l’ancien provider. **Changements** compare avant/après ; **Restaurer le checkpoint initial** est disponible pour des fichiers changés, avec préconditions existantes.
 
 ## Correction
 
@@ -12,7 +12,7 @@ Les fiches complètes de `reference_search` comptent comme consultées ; `refere
 
 Défaut : 20 tours / 60 outils / 60 000 tokens, 15 minutes par lancement/reprise, compteurs cumulés. Appels en attente et callIds conservés sans rejeu des outils traités. Pas de retry API automatique. Sortie fournisseur : 8 192 tokens ; réponse incomplète sans mutation mais usage connu compté.
 
-Tarif lu à la sélection, actualisable et relu avant lancement après une heure. Parsing limité aux fiches textuelles et règles standard reconnues. Pas de table figée inventée. Usage incomplet, tarif périmé/inaccessible, alias effectif différent ou tier inconnu : coût indisponible. Un total agrégé ancien ne reconstruit pas une facture.
+Tarif lu à la sélection, actualisable et relu avant lancement après une heure. Parsing limité aux fiches textuelles et règles standard reconnues. Pas de table figée inventée. Usage incomplet, tarif périmé/inaccessible, snapshot/alias effectif non attesté par la fiche ou tier inconnu : coût indisponible. Un total agrégé ancien ne reconstruit pas une facture.
 
 ## Spécifications et preuves
 

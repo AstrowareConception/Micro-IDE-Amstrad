@@ -24,7 +24,7 @@ export function readUsage(value: unknown, cacheWritesRequired: boolean): TokenUs
   return { input, output, cached, cacheWrite: cacheWrite as number ?? 0, reasoning, complete: cacheWrite !== undefined };
 }
 export function estimateTurn(usage: TokenUsage | undefined, pricing: PricingProfile | undefined, model: string | undefined, tier: string | undefined): number | undefined {
-  if (!usage?.complete || !pricing || model !== pricing.model || tier !== 'default') return undefined;
+  if (!usage?.complete || !pricing || !model || (model !== pricing.model && !pricing.billedModels?.includes(model)) || tier !== 'default') return undefined;
   const age = Date.now() - Date.parse(pricing.fetchedAt);
   if (!Number.isFinite(age) || age < 0 || age > 60 * 60 * 1000) return undefined;
   const long = pricing.longContext && usage.input > pricing.longContext.threshold ? pricing.longContext : undefined;

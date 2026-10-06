@@ -102,6 +102,17 @@ test('official pricing is public, bounded, unambiguous and fails closed on chang
   await assert.rejects(fetchOfficialPricing('gpt-5.6-luna', async () => new Response('a'.repeat(65537))), /volumineux/);
 });
 
+test('dated snapshot prices use only the default mapping attested by the official model page', async () => {
+  const dated = 'gpt-5.6-luna-2026-10-01', documented = markdown.replace('## Pricing', `- Default snapshot: \`${dated}\`\n\n## Pricing`);
+  const transport: typeof fetch = async url => String(url).includes(dated) ? new Response('', { status: 404 }) : new Response(documented);
+  const profile = await fetchOfficialPricing(dated, transport);
+  assert.equal(profile.model, dated); assert.ok(profile.source.endsWith('gpt-5.6-luna'));
+  assert.notEqual(estimateTurn(readUsage(rawUsage, true), profile, dated, 'default'), undefined);
+  await assert.rejects(fetchOfficialPricing('gpt-5.6-luna-2026-09-01', transport), /correspondance/);
+  const alias = parseOfficialPricing(documented, 'gpt-5.6-luna');
+  assert.notEqual(estimateTurn(readUsage(rawUsage, true), alias, dated, 'default'), undefined);
+});
+
 test('incomplete and cancelled responses retain known billed usage and never execute their proposed writes', async () => {
   const provider = new OpenAIProvider('sk-test-fixture-not-real', 'gpt-5.6-luna', async () => Response.json({ status: 'incomplete', output: [call('write', 'project_create_source', { name: 'OTHER', source: '10 END' })], usage: rawUsage, model: 'gpt-5.6-luna', service_tier: 'default' }));
   const tools = new WorkspaceTools(state(), async () => assert.fail(), hash, []);
@@ -132,6 +143,17 @@ test('controller resumes the same task/checkpoint but refuses edited buffers, ex
   assert.equal(checkpoint.initial.files[0].source, initial);
   await controller.restore(taskId, [{ id: 'main', source: '10 PRINT "RESUMED"\n20 END\n' }]);
   await assert.rejects(controller.resume(taskId, store, [{ id: 'main', source: initial }]), /ne peut pas être reprise/);
+  for (const key of ['', 'sk-replacement-fixture-key']) {
+    step = 0;
+    const next = await controller.start(store, objective, [{ id: 'main', source: initial }], false, { maxTurns: 1, maxCalls: 60, maxTokens: 60000 });
+    for (let i = 0; i < 200 && controller.running; i++) await new Promise(resolve => setTimeout(resolve, 5));
+    assert.equal(controller.status(next.taskId).resumable, true);
+    controller.configure(key, 'gpt-5.6-luna');
+    assert.equal(controller.status(next.taskId).resumable, false);
+    await assert.rejects(controller.resume(next.taskId, store, [{ id: 'main', source: initial }]), /ne peut pas être reprise/);
+    assert.equal(step, 1);
+    controller.configure('sk-test-fixture-not-real', 'gpt-5.6-luna');
+  }
 });
 
 test('budget defaults and IPC values have finite integer bounds', () => {

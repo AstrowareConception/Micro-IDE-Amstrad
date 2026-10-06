@@ -12,6 +12,8 @@ export function parseOfficialPricing(text: string, model: string, fetchedAt = ne
   };
   const profile: PricingProfile = { model, input: price('Input'), cached: price('Cached input'), output: price('Output'), cacheWriteMultiplier: 1,
     fetchedAt, source: `https://developers.openai.com/api/docs/models/${model}` };
+  const snapshot = /^- Default snapshot: `([A-Za-z0-9._-]{1,80})`$/m.exec(text)?.[1];
+  if (snapshot) profile.billedModels = [...new Set([model, snapshot])];
   for (const note of section.split('\n').filter(line => line.startsWith('- '))) {
     const long = /^- Prompts with >([\d]+)K input tokens are priced at ([\d.]+)x input and ([\d.]+)x output for the full request\.$/.exec(note);
     const write = /^- Cache writes are billed at ([\d.]+)x the uncached input token rate\.$/.exec(note);
@@ -24,6 +26,16 @@ export function parseOfficialPricing(text: string, model: string, fetchedAt = ne
 }
 export async function fetchOfficialPricing(model: string, transport: typeof fetch = fetch): Promise<PricingProfile> {
   if (!/^[A-Za-z0-9._-]{1,80}$/.test(model)) throw new Error('Modèle tarifaire invalide.');
+  try { return await fetchPage(model, transport); }
+  catch (error) {
+    const alias = model.replace(/-\d{4}-\d{2}-\d{2}$/, '');
+    if (alias === model) throw error;
+    const profile = await fetchPage(alias, transport);
+    if (!profile.billedModels?.includes(model)) throw new Error('Snapshot sans correspondance tarifaire officielle ; estimation indisponible.');
+    return { ...profile, model };
+  }
+}
+async function fetchPage(model: string, transport: typeof fetch): Promise<PricingProfile> {
   // Public documentation: no key, source code or billable inference.
   const response = await transport(`https://developers.openai.com/api/docs/models/${model}.md`, { redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(15000), headers: { Accept: 'text/markdown' } });
   if (!response.ok || !response.body) { await response.body?.cancel(); throw new Error('Tarif officiel inaccessible ; estimation indisponible.'); }
