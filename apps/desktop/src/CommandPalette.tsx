@@ -22,7 +22,7 @@ export function CommandPalette({ commands, title, searchable = true, onClose }: 
     }}>
     <h2>{title}</h2>
     {searchable && <input aria-label="Rechercher une action ou une source" autoFocus placeholder="Action, fichier…" value={query} onChange={event => setQuery(event.target.value)} onKeyDown={event => {
-      if (event.key === 'Enter') { const first = filtered.find(command => !command.disabled); if (first) execute(first); }
+      if (event.key === 'Enter') { event.preventDefault(); event.stopPropagation(); const first = filtered.find(command => !command.disabled); if (first) execute(first); }
     }} />}
     <div className="command-results">{filtered.map(command => <Button key={command.id} disabled={command.disabled} onClick={() => execute(command)}><strong>{command.label}</strong>{command.detail && <small>{command.detail}</small>}</Button>)}</div>
     {!filtered.length && <p>Aucune commande correspondante.</p>}

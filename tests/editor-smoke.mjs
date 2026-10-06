@@ -176,7 +176,7 @@ try {
   modelsPage.on('pageerror', error => errors.push(error.message));
   await modelsPage.addInitScript(() => {
     let calls = 0, chosen = '';
-    window.desktop = { setDirty() {}, open: async () => null, save: async () => null, exportDisk: async () => null, agent: {
+    window.desktop = { project: { open: async () => ({ sessionId: 'ui-tabs', manifest: { name: 'Recette sources', sources: [{ id: 'main', path: 'src/main.bas', cpcName: 'MAIN.BAS' }, { id: 'util', path: 'src/util.bas', cpcName: 'UTIL.BAS' }], entryPoint: 'main', documents: [] }, files: [{ id: 'main', path: 'src/main.bas', source: '10 REM MAIN\n20 END\n' }, { id: 'util', path: 'src/util.bas', source: '10 REM UTIL\n20 RETURN\n' }] }) }, setDirty() {}, open: async () => null, save: async () => null, exportDisk: async () => null, agent: {
       models: async key => {
         calls++;
         if (calls === 3) return { error: 'Connexion indisponible (recette)' };
@@ -205,6 +205,30 @@ try {
   await modelsPage.screenshot({ path: 'out/models-alpha.png' });
   await modelsPage.getByRole('button', { name: 'Oublier la clé', exact: true }).click();
   await expect(modelPicker).toBeDisabled(); await expect(modelPicker).toHaveValue('');
+  await modelsPage.getByRole('button', { name: 'Ouvrir projet', exact: true }).click();
+  await modelsPage.bringToFront();
+  const modelInput = modelsPage.locator('.listing .monaco-editor textarea');
+  await expect(modelsPage.locator('.view-lines')).toContainText('10 REM MAIN');
+  await modelInput.focus(); await modelsPage.keyboard.press('Control+End'); await modelsPage.keyboard.insertText('30 REM MAIN DRAFT');
+  await modelsPage.getByRole('tab', { name: /src\/util.bas/ }).click();
+  await expect(modelsPage.locator('.view-lines')).toContainText('10 REM UTIL');
+  await modelInput.focus(); await modelsPage.keyboard.press('Control+End'); await modelsPage.keyboard.insertText('30 REM UTIL DRAFT');
+  await modelsPage.getByRole('tab', { name: /src\/util.bas/ }).click({ button: 'middle' });
+  await expect(modelsPage.getByRole('tab', { name: /src\/util.bas/ })).toHaveCount(0);
+  await modelsPage.getByRole('navigation', { name: 'Explorateur de sources', exact: true }).getByRole('button', { name: /^src\/util.bas/ }).click();
+  await expect(modelsPage.locator('.view-lines')).toContainText('UTIL DRAFT');
+  await modelsPage.keyboard.press('Control+w');
+  await modelsPage.keyboard.press('Control+p');
+  await modelsPage.getByRole('dialog', { name: 'Ouvrir rapidement une source', exact: true }).getByRole('textbox').fill('util.bas');
+  await modelsPage.keyboard.press('Enter');
+  await expect(modelsPage.locator('.view-lines')).toContainText('UTIL DRAFT');
+  await expect(modelsPage.locator('.view-lines .view-line')).toHaveCount(3);
+  await modelsPage.getByRole('tab', { name: /src\/main.bas/ }).click();
+  await expect(modelsPage.locator('.view-lines')).toContainText('MAIN DRAFT');
+  await expect(modelsPage.locator('.view-lines')).not.toContainText('TARGET');
+  await modelInput.focus(); await modelsPage.keyboard.press('Control+z');
+  await expect(modelsPage.locator('.view-lines')).not.toContainText('MAIN DRAFT');
+  await modelsPage.keyboard.press('Control+Shift+z'); await expect(modelsPage.locator('.view-lines')).toContainText('MAIN DRAFT');
   await modelsPage.close();
   assert.deepEqual(errors, [], 'No browser errors');
   console.log('Editor browser smoke: completion, coloration, help, diagnostics, F12, downloads, dirty protection plus renumber preview/apply/DSK/undo/redo/stale revision passed.');

@@ -112,6 +112,7 @@ try {
   await expect(page.locator('.monaco-editor .view-lines')).toContainText('UTIL DRAFT');
   assert.equal(await readFile(join(root, 'src/util.bas'), 'utf8'), utilityBaseline);
   await page.getByRole('tab', { name: /src\/main.bas/ }).click();
+  await expect(page.locator('.monaco-editor .view-lines')).toContainText('MAIN DRAFT');
   await input.focus(); await page.keyboard.press('Control+z');
   // Monaco groups typing into undo elements, not necessarily one whole insertText call.
   // Observe an actual changed buffer rather than assuming Ctrl Z restores the initial file.

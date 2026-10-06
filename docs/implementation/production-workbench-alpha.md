@@ -28,7 +28,7 @@ Un seul menu reste ouvert. Clic extérieur, Échap, Tab, perte de focus et activ
 | Zoom du code | Ctrl molette ; commandes de menu |
 | Actions de source / code | Clic droit ; Maj F10 ou touche menu sur un onglet |
 
-Outils → Raccourcis clavier et souris présente la fiche intégrée. Les actions d’atelier acceptent Cmd sur macOS ; la recette interactive de cette plateforme reste à réaliser. Les modèles et états undo des sources restent présents quand leur vue se ferme ; la dernière vue est conservée.
+Outils → Raccourcis clavier et souris présente la fiche intégrée. Les actions d’atelier acceptent Cmd sur macOS ; la recette interactive de cette plateforme reste à réaliser. Les modèles et états undo des sources restent présents quand leur vue se ferme ; la dernière vue est conservée. Le clic molette ferme après relâchement, hors focus de saisie, pour éviter le collage de la sélection primaire sous Linux. Entrée dans l’ouverture rapide est consommée avant le retour au code.
 
 ## Diagnostics avant exécution
 
@@ -49,6 +49,6 @@ xvfb-run -a npm run test:desktop
 python scripts/check_specs.py --schemas
 ```
 
-La recette navigateur vérifie aussi menus exclusifs, focus/flèches/Échap/clic extérieur, réouverture de la recherche par raccourci, panneaux masquables, Git découvrable, assistant séparé, icônes, trois erreurs pendant la saisie, F8, commentaire BASIC et éditeur visible pendant l’exécution. Les recettes Electron conservent les contrôles de persistence, IA, documents, terminal, Git, récupération et protection des buffers. Les preuves sont produites dans `out/` et publiées par CI ; aucune ROM dans Git.
+La recette navigateur vérifie aussi fermeture/réouverture de buffers modifiés, undo/redo entre sources, absence de collage molette et de saut de ligne parasite dans l’ouverture rapide, puis menus exclusifs, focus/flèches/Échap/clic extérieur, réouverture de la recherche par raccourci, panneaux masquables, Git découvrable, assistant séparé, icônes, trois erreurs pendant la saisie, F8, commentaire BASIC et éditeur visible pendant l’exécution. Les recettes Electron conservent les contrôles de persistence, IA, documents, terminal, Git, récupération et protection des buffers. Les preuves sont produites dans `out/` et publiées par CI ; aucune ROM dans Git.
 
 Cette tranche améliore l’ergonomie de l’alpha sans qualifier le produit 1.0 : dispositions persistées/redimensionnement, keymap configurable, parser BASIC complet, branches et synchronisation Git restent ouverts. Voir [ADR 0030](../adr/0030-atelier-menus-diagnostics.md).
