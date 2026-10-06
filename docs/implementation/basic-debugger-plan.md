@@ -1,6 +1,6 @@
 # Débogueur BASIC — faisabilité et prochain incrément
 
-Date : 6 octobre 2026. **Étude technique, fonctionnalités à réaliser.** IDE-054 demeure bloqué par qualification firmware/instrumentation. Le [lot 5](../specifications/18-increments-ide-production.md) interdit de présenter un état Z80 comme état BASIC qualifié.
+Date : 6 octobre 2026. **D1 partiellement prouvé en 0.35 ; interface BASIC à réaliser.** [Inspection et recette de frontière native/WASM](cpc-inspection-alpha.md). IDE-054 demeure bloqué pour son interface publique par qualification des événements et du mapping source. Le [lot 5](../specifications/18-increments-ide-production.md) interdit de présenter un état Z80 comme état BASIC qualifié.
 
 ## Ce qui existe réellement
 
@@ -8,7 +8,7 @@ L’application exécute un DSK à travers les ROM CPC locales ; le jeu 6128 ang
 
 Le manuel utilisateur CPC 6128 documente **TRON/TROFF**, qui activent/désactivent l’affichage des numéros de lignes exécutées entre crochets ([chapitre BASIC, transcription du manuel](https://www.cpcalive.com/docs/basic_doc.html)). Une ligne `10 TRON` peut servir de trace native dans un programme de diagnostic ; l’IDE ne transforme pas cette sortie en ligne courante fiable. Le programme peut effacer/redéfinir l’écran, détourner les flux et désactiver la trace. Cette étude ne prétend pas avoir qualifié une capture structurée de TRON sur ROM.
 
-La version épinglée de `chips`, commit `9e88298ce56319953ac7a43213a1120359f7a3a6`, possède `chips_debug_t`, un callback et un drapeau d’arrêt dans `cpc_desc_t`. `cpc_exec` distingue explicitement exécution sans hook et exécution avec callback par tick. Le fichier [cpc.h épinglé](https://github.com/floooh/chips/blob/9e88298ce56319953ac7a43213a1120359f7a3a6/systems/cpc.h) a été consulté ; empreinte attendue dans [chips.lock.json](../../packages/emulator/chips.lock.json). Notre pont C initialise actuellement le descripteur sans callback. **Le mécanisme technique d’arrêt est disponible ; la correspondance BASIC reste à démontrer.**
+La version épinglée de `chips`, commit `9e88298ce56319953ac7a43213a1120359f7a3a6`, possède `chips_debug_t`, un callback et un drapeau d’arrêt dans `cpc_desc_t`. `cpc_exec` distingue explicitement exécution sans hook et exécution avec callback par tick. Le fichier [cpc.h épinglé](https://github.com/floooh/chips/blob/9e88298ce56319953ac7a43213a1120359f7a3a6/systems/cpc.h) a été consulté ; empreinte attendue dans [chips.lock.json](../../packages/emulator/chips.lock.json). Le pont garde le hook absent en usage normal et l’arme uniquement dans la recette D1 : neuf fetches `DE60` rapprochés de `HL`, `AE1D` et du listing tokenisé chargé, identiques en natif/WASM. **Preuve ciblée sur un seul jeu ROM ; couverture des événements et liaison au buffer source ouvertes.**
 
 ## Tranches et preuves de sortie
 

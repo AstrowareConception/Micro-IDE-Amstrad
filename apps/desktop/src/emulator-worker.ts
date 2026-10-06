@@ -1,5 +1,6 @@
 /// <reference lib="webworker" />
 import { runCommand, type RunImage } from '../../../packages/emulator/src/run.ts';
+import { CPC_REGISTER_NAMES } from '../../../packages/emulator/src/inspection.ts';
 interface Cpc {
   HEAPU8: Uint8Array; HEAPF32: Float32Array;
   _malloc(bytes: number): number; _free(pointer: number): void;
@@ -10,6 +11,7 @@ interface Cpc {
   _cpc_bridge_width(): number; _cpc_bridge_height(): number; _cpc_bridge_stride(): number;
   _cpc_bridge_frame(): number; _cpc_bridge_palette(): number; _cpc_bridge_ticks(): number;
   _cpc_bridge_audio(pointer: number, capacity: number): number; _cpc_bridge_export(pointer: number, capacity: number): number;
+  _cpc_bridge_register(index: number): number; _cpc_bridge_read_ram(address: number, pointer: number, length: number): number;
 }
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 let cpc: Cpc | undefined, id = '', paused = false, live = false, starting = false, launched = false;
@@ -99,6 +101,13 @@ scope.onmessage = event => {
     else if (value.type === 'release') release();
     else if (value.type === 'break' && !paused) { release(); queue = [3, 3]; }
     else if (value.type === 'key' && !paused && !queue.length && held === undefined && Number.isInteger(value.key) && value.key >= 0 && value.key <= 255 && typeof value.down === 'boolean') check(cpc._cpc_bridge_key(value.key, Number(value.down)));
+    else if (value.type === 'inspect' && paused && Number.isInteger(value.address) && value.address >= 0 && value.address <= 65535 && Number.isSafeInteger(value.sequence)) {
+      const length = Math.min(64, 65536 - value.address);
+      check(cpc._cpc_bridge_read_ram(value.address, output, length));
+      const registers = CPC_REGISTER_NAMES.map((_, index) => check(cpc!._cpc_bridge_register(index)));
+      const bytes = cpc.HEAPU8.slice(output, output + length);
+      send({ type: 'inspection', sequence: value.sequence, snapshot: { address: value.address, bytes, registers, ticks: cpc._cpc_bridge_ticks() } }, [bytes.buffer]);
+    }
     else if (value.type === 'export') { const size = check(cpc._cpc_bridge_export(output, 194816)); const disk = cpc.HEAPU8.slice(output, output + size); send({ type: 'disk', disk }, [disk.buffer]); }
   } catch { send({ type: 'error', message: 'Commande CPC refusée ; relancez une session propre.' }); }
 };

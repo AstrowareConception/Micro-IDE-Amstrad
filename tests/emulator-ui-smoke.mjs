@@ -52,11 +52,28 @@ try {
   await expect.poll(screenPrefix, { timeout: 30000 }).toBe(reference.outputFramePrefix);
   await page.screenshot({ path: `out/emulator-${browserMode ? 'browser' : 'desktop'}-alpha.png` });
   await machine.getByRole('button', { name: 'Pause CPC', exact: true }).click(); await expect(machine).toContainText('En pause');
+  await machine.getByText('Inspection CPC en pause', { exact: true }).click();
+  const inspect = machine.getByRole('button', { name: 'Lire les registres et la RAM', exact: true });
+  await inspect.click();
+  const inspected = machine.getByRole('region', { name: 'État CPC inspecté', exact: true });
+  await expect(inspected).toContainText('Instant de lecture');
+  await expect(inspected.locator('tbody tr').first()).toContainText('&8000');
+  await expect(inspected.locator('tbody tr').first().locator('td').first()).toContainText(/^A5 /);
+  await machine.getByLabel('Adresse RAM hexadécimale', { exact: true }).fill('10000');
+  await expect(inspect).toBeDisabled();
+  await machine.getByLabel('Adresse RAM hexadécimale', { exact: true }).fill('FFFF'); await inspect.click();
+  await expect(inspected.locator('tbody tr')).toHaveCount(1);
+  await expect(inspected.locator('tbody tr th')).toContainText('&FFFF');
+  await expect(inspected.locator('tbody tr td').first()).toHaveText(/^[A-F0-9]{2}$/);
+  await machine.getByLabel('Adresse RAM hexadécimale', { exact: true }).fill('8000'); await inspect.click();
+  await expect(inspected.locator('tbody tr').first()).toContainText('&8000');
   const clock = (await machine.innerText()).match(/([\d.]+) s émulées/)[1]; await page.waitForTimeout(300); assert.equal((await machine.innerText()).match(/([\d.]+) s émulées/)[1], clock);
   const dock = page.locator('.output-dock'), originalSize = await screen.boundingBox();
   await page.evaluate(() => { window.originalCpcCanvas = document.querySelector('.emulator-window canvas'); });
   await page.getByRole('button', { name: 'Détacher les sorties', exact: true }).click();
   await expect(dock).toHaveAttribute('data-floating', 'true');
+  await page.screenshot({ path: `out/cpc-inspection-${browserMode ? 'browser' : 'desktop'}.png` });
+  await machine.getByText('Inspection CPC en pause', { exact: true }).click();
   await expect.poll(async () => (await screen.boundingBox()).height).toBeGreaterThan(originalSize.height + 150);
   const controls = await machine.locator('.emulator-command-column').boundingBox(), displayed = await screen.boundingBox();
   assert.ok(controls.x + controls.width < displayed.x, 'Controls are left of the CPC screen');
@@ -82,6 +99,8 @@ try {
   }
   const files = readDataDisk(new Uint8Array(await readFile(exported))); assert.equal(new TextDecoder().decode(decodeAsciiRecords(files[0].records)).replace(/\r\n/g, '\n').replace(/\x1a$/, ''), source);
   await machine.getByRole('button', { name: 'Reprendre le CPC', exact: true }).click(); await expect(machine).toContainText('Machine active');
+  await machine.getByText('Inspection CPC en pause', { exact: true }).click();
+  await expect(inspected).toHaveCount(0); await expect(inspect).toBeDisabled();
   // Relaunch uses edited buffers, disposes the prior worker and keeps the editor dirty.
   await editor.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText('10 MODE 1:PRINT "SECOND RUN"\n20 END\n'); await page.keyboard.press('F5');
   await expect(machine).toContainText('Commande RUN"MAIN.BAS" envoyée', { timeout: 30000 }); await expect.poll(screenPrefix, { timeout: 15000 }).not.toBe(reference.outputFramePrefix);

@@ -74,6 +74,8 @@ Couverture : IDE-043 à 056. Conserver commandes en colonne et écran voisin ave
 
 Les observations comportent source/révision, hash DSK/firmware, instant ou nombre de frames et provenance moteur. Captures, palette, mémoire, fichiers écrits et erreurs disponibles deviennent des preuves exportables. Débogage BASIC (ligne, variables, breakpoints/pas) est une capacité distincte : l’état Z80 seul ne prouve pas une correspondance BASIC. Ne pas afficher un débogueur BASIC tant que cette correspondance n’est pas qualifiée.
 
+**Tranche 0.35** : [inspection en pause et première preuve D1](../implementation/cpc-inspection-alpha.md). Registres/64 octets de RAM logique à la demande, sans hook en usage normal. Neuf frontières BASIC du jeu anglais rapprochées du programme tokenisé réel en natif et WASM ; événements/mapping source restent ouverts. LOT-5 et IDE-054 non clos ; IDE-055 partiel.
+
 Créer des recettes automatisées boot/RUN/clavier/écran/écriture disque et comparaison attendue, avec tolérance explicitée. Sauvegarder/reprendre une session sans confusion avec la source. L’import/export de ressources respecte les contraintes CPC : MODE 1, quatre couleurs par pixel et résolution effective ; zoom IDE n’améliore pas les pixels générés.
 
 **Recette LOT-5** : titre fixe MODE 1, pixels attendus et palette, arrêt d’un programme en boucle, export puis relecture d’une écriture disque, reprise de session et firmware absent/non reconnu. Vérification indépendante prescrite par les documents 06/11 avant clôture J0/J3. Qualification anglaise ne vaut pas qualification de toutes les ROM FR/AZERTY.

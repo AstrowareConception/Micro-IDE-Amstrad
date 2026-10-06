@@ -108,7 +108,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-052 | Clavier/focus, joystick, écran pixel net et audio | P | P0 | IDE-051 | Relâchement touches, ESC et retour focus ; captures non altérées |
 | IDE-053 | Disque mutable, OPENOUT, sauvegarde et export session | P | P0 | IDE-051 | Écriture relue par émulateur indépendant ; original DSK intact |
 | IDE-054 | Breakpoints/pas à pas BASIC, variables et pile | B | P2 | FW/Instrumentation | État réel expliqué, pas de debugger simulé ; limites ROM visibles |
-| IDE-055 | Mémoire, banques, désassemblage Z80 et snapshots | B | P2 | IDE-051 | Adresses/mappage/snapshots exacts, restauration révisionnée |
+| IDE-055 | Mémoire, banques, désassemblage Z80 et snapshots | P | P2 | IDE-051 | 0.35 : registres et RAM derrière ROM en pause, huit configurations de banques ; désassemblage/snapshots/restauration ouverts |
 | IDE-056 | CPC 464/664 puis Plus et autres Amstrad | N | P2 | Profils qualifiés | Recette propre à chaque machine ; aucun support déduit du seul 6128 |
 
 ## 10. Images, son, sprites et pièces jointes

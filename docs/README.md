@@ -1,6 +1,8 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.34
+# CPCéleste — Dossier de conception et réalisation — version 0.35
 
-**Diagnostics et performance 0.34** : analyse BASIC en worker temporisé, révisions protégées, contrôles structurels étendus, diagnostics multifichiers et monitoring à la demande. [Guide](implementation/basic-diagnostics-alpha.md). Débogueur BASIC : [faisabilité et étapes](implementation/basic-debugger-plan.md), mapping ROM encore à qualifier.
+**Inspection CPC 0.35** : registres Z80 et RAM logique en pause, lecture à la demande ; première preuve ciblée de frontières BASIC en natif/WASM, sans débogueur BASIC public. [Guide et limites](implementation/cpc-inspection-alpha.md).
+
+**Diagnostics et performance 0.34** : analyse BASIC en worker temporisé, révisions protégées, contrôles structurels étendus, diagnostics multifichiers et monitoring à la demande. [Guide](implementation/basic-diagnostics-alpha.md). Débogueur BASIC : [faisabilité et étapes](implementation/basic-debugger-plan.md), mapping source et événements encore à qualifier.
 
 **Notifications 0.33** : registre de session borné, filtres/niveaux/origines/non lus, détails et aperçus personnalisables. [Guide](implementation/notifications-alpha.md), [ADR 0040](adr/0040-centre-notifications-session.md). IDE-029 et lot 7 partiels.
 
