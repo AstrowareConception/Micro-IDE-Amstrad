@@ -86,6 +86,12 @@ try {
   await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click();
   await expect(page.getByRole('button', { name: /^Enregistrer Ctrl/ })).toBeEnabled();
   await page.getByRole('status').filter({ hasText: /Projet mis à jour/ }).waitFor();
+  await page.getByRole('navigation', { name: 'Menus de l’atelier', exact: true }).getByRole('button', { name: 'Fichier', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Créer un projet', exact: true }).click();
+  const newProjectDialog = page.getByRole('dialog', { name: 'Nouveau projet BASIC', exact: true });
+  await newProjectDialog.getByLabel('Nom du nouveau projet', { exact: true }).fill('Autre projet');
+  await page.keyboard.press('Escape'); await expect(newProjectDialog).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: 'src/main.bas', exact: true })).toBeVisible();
   const baseline = await readFile(join(root, 'src/main.bas'), 'utf8');
   await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('30 REM MAIN DRAFT');
   await page.getByLabel('Nouvelle source (1–8 caractères)', { exact: true }).fill('UTIL');

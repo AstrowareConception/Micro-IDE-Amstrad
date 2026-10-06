@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { analyzeEditor } from '../../../packages/basic-language/src/syntax.ts';
 import { WorkbenchMenus } from './WorkbenchMenus.tsx';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
+import { NewProjectDialog } from './NewProjectDialog.tsx';
 import { Icon } from './Icon.tsx';
 import { COMMANDS, type CommandCard } from '../../../packages/basic-language/src/catalog.ts';
 import { files, type Failure, type FileResult } from './port.ts';
@@ -34,6 +35,7 @@ export function App() {
   const [activeId, setActiveId] = useState('initial');
   const [project, setProject] = useState<{ sessionId: string; manifest: ProjectManifest } | undefined>();
   const [projectName, setProjectName] = useState('Mon projet CPC');
+  const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [sourceName, setSourceName] = useState('');
   const active = documents.find(document => document.id === activeId)!;
   const { source } = active;
@@ -168,10 +170,10 @@ export function App() {
     } catch (error) { setStatus(String(error)); }
     finally { setBusy(false); }
   }
-  function openProject(create: boolean) {
+  function openProject(create: boolean, name = projectName) {
     const port = files.project;
     if (!port || busy || (dirty && !window.confirm('Abandonner les modifications non enregistrées ?'))) return;
-    void projectOperation(() => create ? port.create(projectName) : port.open());
+    void projectOperation(() => create ? port.create(name) : port.open());
   }
   const save = () => perform(() => project && files.project ? files.project.save(project.sessionId, active.sourceId, source) : files.save(source), 'Listing enregistré', true);
   async function saveAll() {
@@ -232,7 +234,7 @@ export function App() {
     ].map(([id, label, detail]) => ({ id: id!, label: label!, detail: detail!, disabled: busy, run: () => editorAction(id === 'editor.action.revealDefinition' ? 'basic-goto-line' : id === 'editor.action.marker.next' ? 'cpc-next-problem' : id === 'editor.action.marker.prev' ? 'cpc-previous-problem' : id!) })),
     { id: 'terminal', label: 'Afficher le terminal', detail: 'Ctrl `', run: () => showOutput('terminal') },
     { id: 'save-as', label: 'Enregistrer sous', detail: 'Ctrl Alt S', disabled: busy || !!project, run: () => void perform(() => files.save(source, true), 'Listing enregistré', true) },
-    { id: 'create-project', label: 'Créer un projet', disabled: busy || !files.project, run: () => { if (project) openProject(true); else { showTool('project'); requestAnimationFrame(() => document.getElementById('project-name')?.focus()); } } },
+    { id: 'create-project', label: 'Créer un projet', disabled: busy || !files.project, run: () => setNewProjectOpen(true) },
     { id: 'explorer', label: 'Afficher l’explorateur', detail: 'Ctrl Maj E', run: () => showTool('project') },
     { id: 'git', label: 'Afficher Git', detail: 'Ctrl Maj G', run: () => showTool('git') },
     { id: 'git-refresh', label: 'Actualiser Git', disabled: busy || !project || !files.git, run: () => { showTool('git'); requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('.git-panel button')?.click()); } },
@@ -284,7 +286,8 @@ export function App() {
       ['Affichage', ['sidebar', 'agent', 'output', 'problems', 'terminal', 'minimap', 'zoom-in', 'zoom-out', 'palette', 'quick-sources']],
       ['Outils', ['firmware', 'shortcuts']],
     ].map(([label, ids]) => ({ label: label as string, commands: (ids as string[]).map(id => commands.find(command => command.id === id)!) }))} />
-        {renumberOpen && <RenumberPanel source={source} documentId={activeId} busy={busy} revision={() => editor.current?.getModel()?.getVersionId() ?? -1} onApply={renumber} onClose={() => setRenumberOpen(false)} />}
+    {newProjectOpen && <NewProjectDialog busy={busy} onClose={() => setNewProjectOpen(false)} onCreate={name => { setProjectName(name); openProject(true, name); }} />}
+    {renumberOpen && <RenumberPanel source={source} documentId={activeId} busy={busy} revision={() => editor.current?.getModel()?.getVersionId() ?? -1} onApply={renumber} onClose={() => setRenumberOpen(false)} />}
     {palette && <CommandPalette key={palette} title={palette === 'all' ? 'Commandes CPCéleste' : 'Ouvrir rapidement une source'} commands={palette === 'all' ? commands : commands.filter(command => command.id.startsWith('source:'))} onClose={() => setPalette(undefined)} />}
     {selectedSource && <CommandPalette title={`Actions de ${selectedSource.name}`} searchable={false} commands={sourceCommands} onClose={() => setContextSource(undefined)} />}
     {historyOpen && project && <HistoryPanel key={`history:${project.sessionId}:${active.id}`} sessionId={project.sessionId} sourceId={active.sourceId} path={active.name} source={source} busy={busy} onClose={() => setHistoryOpen(false)} onApply={(before, after) => {
