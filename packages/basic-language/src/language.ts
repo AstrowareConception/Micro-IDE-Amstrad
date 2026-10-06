@@ -56,11 +56,12 @@ export function tokenize(line: string, tokenLimit = Infinity): Token[] {
 
 function literalReferences(tokens: Token[], physicalLine: number): LineReference[] {
   const refs: LineReference[] = [];
+  let inOnList = false;
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i]!;
+    if (token.kind === 'keyword' && token.text.toUpperCase() === 'ON') inOnList = true;
     if (token.kind !== 'keyword' || !['GOTO', 'GOSUB', 'THEN', 'ELSE', 'RESTORE', 'RUN'].includes(token.text.toUpperCase())) continue;
-    const onError = tokens.slice(0, i).map(t => t.text.toUpperCase()).join(' ').endsWith('ON ERROR');
-    const inOnList = tokens.slice(0, i).some(t => t.kind === 'keyword' && t.text.toUpperCase() === 'ON');
+    const onError = tokens[i - 2]?.text.toUpperCase() === 'ON' && tokens[i - 1]?.text.toUpperCase() === 'ERROR';
     let j = i + 1;
     while (j < tokens.length) {
       const target = tokens[j]!;

@@ -79,11 +79,10 @@ export function analyzeEditor(source: string, lex: (line: string) => Token[] = t
   const inspectSequence = (items: Token[], nesting = 0, branch = false) => {
    if (nesting > 16) { if (items[0]) opaque(items[0], 'Imbrication de branches limitée.'); return; }
    for (let cursor = 0; cursor < items.length;) {
-    const remaining = items.slice(cursor);
-    if (upper(remaining[0]) === 'IF') { inspect(remaining, nesting, branch); return; }
-    const colon = remaining.findIndex(token => token.text === ':' && token.kind === 'operator');
-    inspect(colon < 0 ? remaining : remaining.slice(0, colon), nesting, branch);
-    if (colon < 0) return; cursor += colon + 1;
+    if (upper(items[cursor]) === 'IF') { inspect(items.slice(cursor), nesting, branch); return; }
+    let end = cursor;
+    while (end < items.length && !(items[end]!.text === ':' && items[end]!.kind === 'operator')) end++;
+    inspect(items.slice(cursor, end), nesting, branch); cursor = end + 1;
    }
   };
   const inspect = (raw: Token[], nesting: number, branch: boolean) => {
