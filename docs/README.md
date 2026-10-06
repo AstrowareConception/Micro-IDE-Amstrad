@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.24
+# CPCéleste — Dossier de conception et réalisation — version 0.25
+
+**Atelier 0.25** : outils et Git à gauche, assistant IA à droite, sorties en bas ; menus exclusifs, icônes, raccourcis et diagnostics syntaxiques pendant la saisie. [Guide](implementation/production-workbench-alpha.md).
 
 **Exécution CPC 0.24** : bouton Exécuter/F5, écran CPC 6128 intégré, buffers non enregistrés, lancement RUN par clavier, pause/arrêt/son et export du disque de session. Trois ROM locales sont nécessaires ; le jeu anglais identifié démarre automatiquement, les autres demandent confirmation de Ready. [Guide](implementation/emulator-run-alpha.md).
 

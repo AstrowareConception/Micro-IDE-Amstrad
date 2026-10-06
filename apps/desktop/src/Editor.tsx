@@ -21,25 +21,44 @@ export function Editor(props: Props) {
   const latest = useRef(props);
   const models = useRef(new Map<string, { model: monaco.editor.ITextModel; change: monaco.IDisposable; view: monaco.editor.ICodeEditorViewState | null }>());
   const active = useRef<string | undefined>(undefined);
+  const markerDecorations = useRef<monaco.editor.IEditorDecorationsCollection | undefined>(undefined);
   const appliedNavigation = useRef<SearchMatch | undefined>(undefined);
   latest.current = props;
   useEffect(() => {
     if (!host.current) return;
     const editor = monaco.editor.create(host.current, {
       model: null, theme: 'cpc-workbench', automaticLayout: true, fontSize: 16, fontFamily: 'Consolas, monospace',
-      lineNumbers: 'on', minimap: { enabled: false }, scrollBeyondLastLine: false,
+      lineNumbers: 'on', minimap: { enabled: false }, scrollBeyondLastLine: false, glyphMargin: true, renderValidationDecorations: 'on', mouseWheelZoom: true,
       tabSize: 2, wordWrap: 'on', ariaLabel: 'Listing Locomotive BASIC', editContext: false,
       quickSuggestions: { other: true, comments: false, strings: false },
       wordBasedSuggestions: 'off', renderWhitespace: 'selection',
     });
     instance.current = editor;
+    markerDecorations.current = editor.createDecorationsCollection();
     const cursor = editor.onDidChangeCursorPosition(({ position }) => {
       const model = editor.getModel(); if (!model) return;
       latest.current.onCommand(commandAt(model.getLineContent(position.lineNumber), position.column - 1));
       latest.current.onPosition(position.lineNumber, position.column);
     });
     const save = editor.addAction({ id: 'save-listing', label: 'Enregistrer le listing', contextMenuGroupId: '2_cpc', contextMenuOrder: 1, keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS], run: () => latest.current.onSave() });
+    const navigateProblem = (reverse: boolean) => {
+      const position = editor.getPosition(), diagnostics = latest.current.diagnostics; if (!position || !diagnostics.length) return;
+      const ordered = reverse ? [...diagnostics].reverse() : diagnostics;
+      const diagnostic = ordered.find(item => reverse ? item.line < position.lineNumber || (item.line === position.lineNumber && item.start + 1 < position.column) : item.line > position.lineNumber || (item.line === position.lineNumber && item.start + 1 > position.column)) ?? ordered[0]!;
+      editor.setPosition({ lineNumber: diagnostic.line, column: diagnostic.start + 1 }); editor.revealLineInCenter(diagnostic.line); editor.focus();
+    };
     const actions = [
+      editor.addAction({ id: 'basic-comment', label: 'Commenter / décommenter les lignes BASIC', keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Slash], run: () => {
+        const model = editor.getModel(), selection = editor.getSelection(); if (!model || !selection || latest.current.busy) return;
+        const last = selection.endColumn === 1 && selection.endLineNumber > selection.startLineNumber ? selection.endLineNumber - 1 : selection.endLineNumber;
+        const lines = Array.from({ length: last - selection.startLineNumber + 1 }, (_, offset) => selection.startLineNumber + offset);
+        const values = lines.map(line => model.getLineContent(line));
+        const remove = values.every(text => /^\s*\d+\s*'/.test(text));
+        const edits = lines.map((line, index) => ({ range: new monaco.Range(line, 1, line, model.getLineMaxColumn(line)), text: values[index]!.replace(/^(\s*\d+\s*)(.*)$/, (_, prefix: string, body: string) => prefix + (remove ? body.replace(/^' ?/, '') : "' " + body)) }));
+        editor.pushUndoStop(); editor.executeEdits('basic-comment', edits); editor.pushUndoStop();
+      } }),
+      editor.addAction({ id: 'cpc-next-problem', label: 'Problème suivant', keybindings: [monaco.KeyCode.F8], run: () => navigateProblem(false) }),
+      editor.addAction({ id: 'cpc-previous-problem', label: 'Problème précédent', keybindings: [monaco.KeyMod.Shift | monaco.KeyCode.F8], run: () => navigateProblem(true) }),
       editor.addAction({ id: 'cpc-renumber', label: 'Renuméroter le BASIC…', contextMenuGroupId: '2_cpc', contextMenuOrder: 2, run: () => { if (!latest.current.busy) latest.current.onRenumber(); } }),
       editor.addAction({ id: 'cpc-export', label: 'Exporter le projet en DSK…', contextMenuGroupId: '2_cpc', contextMenuOrder: 3, run: () => { if (!latest.current.busy) latest.current.onExport(); } }),
       editor.addAction({ id: 'cpc-commands', label: 'Commandes CPCéleste…', contextMenuGroupId: '2_cpc', contextMenuOrder: 4, run: () => latest.current.onPalette() }),
@@ -111,8 +130,9 @@ export function Editor(props: Props) {
     const model = instance.current?.getModel();
     if (model) monaco.editor.setModelMarkers(model, language, props.diagnostics.map(d => ({
       startLineNumber: d.line, endLineNumber: d.line, startColumn: d.start + 1, endColumn: d.end + 1,
-      message: d.message, code: d.code, severity: d.severity === 'error' ? monaco.MarkerSeverity.Error : monaco.MarkerSeverity.Warning, source: 'Analyse partielle / export ASCII',
+      message: d.message, code: d.code, severity: d.severity === 'error' ? monaco.MarkerSeverity.Error : monaco.MarkerSeverity.Warning, source: 'Syntaxe BASIC / analyse partielle',
     })));
+    markerDecorations.current?.set(props.diagnostics.map(d => ({ range: new monaco.Range(d.line, 1, d.line, 1), options: { glyphMarginClassName: d.severity === 'error' ? 'basic-error-glyph' : 'basic-warning-glyph', glyphMarginHoverMessage: { value: d.message }, overviewRuler: { color: d.severity === 'error' ? '#f48080' : '#ffbe76', position: monaco.editor.OverviewRulerLane.Right } } })));
   }, [props.diagnostics, props.activeId]);
   return <div className="editor-host" ref={host} />;
 }

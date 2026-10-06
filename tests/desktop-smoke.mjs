@@ -93,6 +93,18 @@ try {
   await page.getByRole('tab', { name: 'src/util.bas', exact: true }).waitFor();
   const utilityBaseline = await readFile(join(root, 'src/util.bas'), 'utf8');
   await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('30 REM UTIL DRAFT');
+  // Closing a dirty view preserves its buffer and undo model; both mouse and keyboard reopen it.
+  await page.getByRole('tab', { name: /src\/util.bas/ }).click({ button: 'middle' });
+  await expect(page.getByRole('tab', { name: /src\/util.bas/ })).toHaveCount(0);
+  await page.getByRole('navigation', { name: 'Explorateur de sources', exact: true }).getByRole('button', { name: /src\/util.bas/ }).click();
+  await expect(page.locator('.monaco-editor .view-lines')).toContainText('UTIL DRAFT');
+  await page.keyboard.press('Control+w');
+  await expect(page.getByRole('tab', { name: /src\/util.bas/ })).toHaveCount(0);
+  await page.keyboard.press('Control+p');
+  await page.getByRole('dialog', { name: 'Ouvrir rapidement une source', exact: true }).getByRole('textbox').fill('util.bas');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.monaco-editor .view-lines')).toContainText('UTIL DRAFT');
+  assert.equal(await readFile(join(root, 'src/util.bas'), 'utf8'), utilityBaseline);
   await page.getByRole('tab', { name: /src\/main.bas/ }).click();
   await input.focus(); await page.keyboard.press('Control+z');
   // Monaco groups typing into undo elements, not necessarily one whole insertText call.
@@ -157,12 +169,16 @@ try {
   const briefPath = join(temporary, 'Cahier-jeu.md');
   const brief = '# TITRE DU JEU\r\n<script>window.documentInjected=true</script>\r\nTitre en MODE 1\r\nPRIVATE UNREAD LAST LINE';
   await writeFile(briefPath, brief);
+  await showTool(page, 'Documents');
   const documentsPanel = page.getByRole('region', { name: 'Documents du projet' });
   await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, briefPath);
+  await showTool(page, 'Documents');
   await documentsPanel.getByRole('button', { name: 'Importer TXT / Markdown', exact: true }).click();
+  await showTool(page, 'Documents');
   await expect(documentsPanel).toContainText('Original copié et vérifié');
   await expect(page.getByRole('tab', { name: /src\/main.bas.*modifié/ })).toBeVisible();
   await expect(page.locator('.monaco-editor .view-lines')).toContainText('USER DRAFT');
+  await showTool(page, 'Documents');
   await documentsPanel.getByRole('button', { name: 'Cahier-jeu.md', exact: true }).click();
   await expect(documentsPanel.getByLabel('Texte du document', { exact: true })).toHaveValue(brief.replace(/\r\n/g, '\n'));
   assert.equal(await page.evaluate(() => window.documentInjected), undefined);
@@ -171,6 +187,7 @@ try {
   assert.equal(imported.sha256, createHash('sha256').update(brief).digest('hex'));
   assert.equal(await readFile(join(moved, imported.path), 'utf8'), brief);
   await writeFile(briefPath, 'EXTERNAL ORIGINAL CHANGED');
+  await showTool(page, 'Documents');
   await documentsPanel.getByRole('button', { name: 'Cahier-jeu.md', exact: true }).click();
   await expect(documentsPanel.getByLabel('Texte du document', { exact: true })).toHaveValue(brief.replace(/\r\n/g, '\n'));
   const forbiddenDocument = await page.evaluate(() => window.desktop.project.readDocument('stale-session', '../../secret'));
@@ -201,19 +218,28 @@ try {
   const brokenPath = join(temporary, 'Broken.png');
   await writeFile(brokenPath, Buffer.concat([imageBytes.subarray(0, 33), chunk('IDAT', Buffer.from('NOT ZLIB')), chunk('IEND', Buffer.alloc(0))]));
   await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, brokenPath);
+  await showTool(page, 'Documents');
   await documentsPanel.getByRole('button', { name: 'Importer image PNG / JPEG', exact: true }).click();
+  await showTool(page, 'Documents');
   await expect(documentsPanel).toContainText('Image non décodable');
   assert.deepEqual(JSON.parse(await readFile(join(moved, 'microide.project.json'), 'utf8')), importedManifest);
   const pdfBytes = pdfFixture(), pdfPath = join(temporary, 'Regles.pdf'); await writeFile(pdfPath, pdfBytes);
   await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, pdfPath);
+  await showTool(page, 'Documents');
   await documentsPanel.getByRole('button', { name: 'Importer PDF', exact: true }).click();
+  await showTool(page, 'Documents');
   await expect(documentsPanel).toContainText('Original copié et vérifié');
+  await showTool(page, 'Documents');
   await documentsPanel.getByRole('button', { name: 'Regles.pdf', exact: true }).click();
+  await showTool(page, 'Documents');
   await expect(documentsPanel).toContainText('Page 1 sur 2');
   await expect(documentsPanel.getByLabel('Texte du document', { exact: true })).toHaveValue('TITRE PDF\nRegles originales');
+  await showTool(page, 'Documents');
   await documentsPanel.getByRole('button', { name: 'Page suivante', exact: true }).click();
+  await showTool(page, 'Documents');
   await expect(documentsPanel).toContainText('Page 2 sur 2');
   await expect(documentsPanel.getByLabel('Texte du document', { exact: true })).toHaveValue('PRIVATE UNREAD PDF PAGE');
+  await showTool(page, 'Documents');
   await documentsPanel.getByRole('button', { name: 'Page précédente', exact: true }).click();
   await documentsPanel.locator('.document-preview').scrollIntoViewIfNeeded(); await page.screenshot({ path: 'out/pdf-alpha.png' });
   importedManifest = JSON.parse(await readFile(join(moved, 'microide.project.json'), 'utf8'));
@@ -221,7 +247,9 @@ try {
   assert.deepEqual(await readFile(join(moved, importedManifest.documents[3].path)), pdfBytes);
   const invalidPdf = join(temporary, 'Invalid.pdf'); await writeFile(invalidPdf, Buffer.from('%PDF-1.7\nINVALID'));
   await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, invalidPdf);
+  await showTool(page, 'Documents');
   await documentsPanel.getByRole('button', { name: 'Importer PDF', exact: true }).click();
+  await showTool(page, 'Documents');
   await expect(documentsPanel).toContainText('PDF invalide');
   assert.deepEqual(JSON.parse(await readFile(join(moved, 'microide.project.json'), 'utf8')), importedManifest);
   const consent = page.getByRole('checkbox', { name: /^Autoriser les documents du projet/ });
@@ -229,6 +257,7 @@ try {
   await desktop.evaluate(async () => {
     let step = 0;
     globalThis.fetch = async (url, init) => {
+      if (url === 'https://api.openai.com/v1/models') { globalThis.modelListReads = (globalThis.modelListReads ?? 0) + 1; return Response.json({ object: 'list', data: [{ id: 'gpt-5.4-2026-03-05', created: 1700000000, owned_by: 'openai' }, ...(globalThis.modelListReads > 1 ? [{ id: 'gpt-99-test-future', created: 1800000000, owned_by: 'openai' }] : [])] }); }
       if (url !== 'https://api.openai.com/v1/responses') throw new Error('Unexpected endpoint');
       const body = JSON.parse(init.body);
       if (body.store !== false || body.parallel_tool_calls !== false || !body.tools.every(tool => tool.strict)) throw new Error('Wrong request contract');
@@ -261,7 +290,13 @@ try {
   });
   await page.getByLabel('Clé API OpenAI', { exact: true }).fill('sk-test-fixture-not-real');
   await page.getByRole('button', { name: 'Configurer la clé', exact: true }).click();
+  await expect(page.getByLabel('Modèle OpenAI', { exact: true })).toBeEnabled();
   await expect(page.getByLabel('Clé API OpenAI', { exact: true })).toHaveValue('');
+  await expect(page.getByLabel('Modèle OpenAI', { exact: true })).toHaveValue('');
+  await page.getByLabel('Modèle OpenAI', { exact: true }).selectOption('gpt-5.4-2026-03-05');
+  await page.getByRole('button', { name: 'Actualiser les modèles', exact: true }).click();
+  await expect(page.getByLabel('Modèle OpenAI', { exact: true })).toContainText('gpt-99-test-future');
+  await expect(page.getByLabel('Modèle OpenAI', { exact: true })).toHaveValue('gpt-5.4-2026-03-05');
   await page.getByLabel('Mission de programmation', { exact: true }).fill('Crée un titre et un programme auxiliaire, puis construis le DSK.');
   await page.getByRole('button', { name: 'Lancer l’agent', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Arrêter l’agent', exact: true })).toBeEnabled();
@@ -304,18 +339,23 @@ try {
   assert.equal(await readFile(join(moved, 'src/main.bas'), 'utf8'), originalDraft);
   await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, moved);
   await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click();
+  await showTool(page, 'Documents');
   await documentsPanel.getByRole('button', { name: 'Cahier-jeu.md', exact: true }).click();
   await expect(documentsPanel.getByLabel('Texte du document', { exact: true })).toHaveValue(brief.replace(/\r\n/g, '\n'));
+  await showTool(page, 'Documents');
   await documentsPanel.getByRole('button', { name: 'Regles.pdf', exact: true }).click();
+  await showTool(page, 'Documents');
   await expect(documentsPanel).toContainText('Page 1 sur 2');
   await expect(documentsPanel.getByLabel('Texte du document', { exact: true })).toHaveValue('TITRE PDF\nRegles originales');
   await expect(consent).not.toBeChecked();
 
   // Cancel a pending generation. The controlled fetch rejects on AbortSignal.
-  await desktop.evaluate(() => { globalThis.fetch = async (_url, init) => new Promise((_resolve, reject) => init.signal.addEventListener('abort', () => reject(new Error('Aborted')), { once: true })); });
+  await desktop.evaluate(() => { globalThis.fetch = async (url, init) => url === 'https://api.openai.com/v1/models' ? Response.json({ data: [{ id: 'gpt-5.4-2026-03-05', created: 1700000000, owned_by: 'openai' }] }) : new Promise((_resolve, reject) => init.signal.addEventListener('abort', () => reject(new Error('Aborted')), { once: true })); });
   // Reconfigure so the adapter captures the new controlled transport.
   await page.getByLabel('Clé API OpenAI', { exact: true }).fill('sk-test-fixture-not-real');
   await page.getByRole('button', { name: 'Configurer la clé', exact: true }).click();
+  await expect(page.getByLabel('Modèle OpenAI', { exact: true })).toBeEnabled();
+  await page.getByLabel('Modèle OpenAI', { exact: true }).selectOption('gpt-5.4-2026-03-05');
   await page.getByRole('button', { name: 'Lancer l’agent', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Arrêter l’agent', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Arrêter l’agent', exact: true }).click();
@@ -323,8 +363,11 @@ try {
   await page.getByRole('button', { name: 'Oublier la clé', exact: true }).click();
   await page.locator('.agent-notice').filter({ hasText: 'Clé oubliée.' }).waitFor();
   // ROM configuration exercises native selectors and real storage, using original synthetic bytes.
+  await showTool(page, 'ROM CPC');
   const romPanel = page.getByRole('region', { name: 'Configuration ROM CPC' });
+  await showTool(page, 'ROM CPC');
   await romPanel.getByRole('button', { name: 'Retirer la sélection ROM', exact: true }).click();
+  await showTool(page, 'ROM CPC');
   await expect(romPanel).toContainText('Sélection retirée.');
   const firmwareRoot = join(await desktop.evaluate(({ app }) => app.getPath('userData')), 'firmware');
   let osHash;
@@ -337,6 +380,7 @@ try {
     await expect(romPanel.getByRole('button', { name: `Importer ${label}`, exact: true })).toBeEnabled();
     await expect(romPanel).toContainText(createHash('sha256').update(bytes).digest('hex'));
   }
+  await showTool(page, 'ROM CPC');
   await expect(romPanel).toContainText('Jeu complet · expérimental');
   const configuration = await readFile(join(firmwareRoot, 'configuration.json'), 'utf8');
   assert.ok(!configuration.includes(temporary));
@@ -344,21 +388,31 @@ try {
   const badRole = await page.evaluate(() => window.desktop.firmware.importRom('../../private'));
   assert.match(badRole.error, /Rôle ROM invalide/);
   await page.reload();
+  await showTool(page, 'ROM CPC');
   await expect(romPanel).toContainText('Jeu complet · expérimental');
   await romPanel.scrollIntoViewIfNeeded(); await page.screenshot({ path: 'out/firmware-alpha.png' });
   await writeFile(join(firmwareRoot, 'roms', osHash + '.rom'), Buffer.alloc(16384, 9));
+  await showTool(page, 'ROM CPC');
   await romPanel.getByRole('button', { name: 'Vérifier les ROM', exact: true }).click();
+  await showTool(page, 'ROM CPC');
   await expect(romPanel).toContainText('Fichier absent ou corrompu');
   const short = join(temporary, 'short.rom'); await writeFile(short, Buffer.alloc(16383));
   await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, short);
+  await showTool(page, 'ROM CPC');
   await romPanel.getByRole('button', { name: 'Importer OS CPC', exact: true }).click();
+  await showTool(page, 'ROM CPC');
   await expect(romPanel).toContainText('exactement 16 384 octets');
   assert.equal(await readFile(join(firmwareRoot, 'configuration.json'), 'utf8'), configuration);
   await desktop.evaluate(({ dialog }) => { dialog.showOpenDialog = async () => ({ canceled: true, filePaths: [] }); });
+  await showTool(page, 'ROM CPC');
   await romPanel.getByRole('button', { name: 'Importer OS CPC', exact: true }).click();
+  await showTool(page, 'ROM CPC');
   await expect(romPanel).toContainText('Import annulé');
+  await showTool(page, 'ROM CPC');
   await romPanel.getByRole('button', { name: 'Retirer la sélection ROM', exact: true }).click();
+  await showTool(page, 'ROM CPC');
   await expect(romPanel).toContainText('Sélection retirée.');
+  await showTool(page, 'ROM CPC');
   await expect(romPanel).toContainText('Jeu incomplet ou invalide');
   // Real native Git through the sandboxed renderer's narrow, read-only IPC.
   const git = (...args) => execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', ...args],
@@ -373,16 +427,23 @@ try {
   await writeFile(join(moved, 'src/main.bas'), gitIndexed + '300 REM GIT DISK\n');
   await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('\n310 REM BUFFER ONLY\n');
   const gitBefore = await Promise.all(['.git/HEAD', '.git/index', 'src/main.bas', 'microide.project.json'].map(path => readFile(join(moved, path))));
+  await showTool(page, 'Git');
   const gitPanel = page.getByRole('region', { name: 'Contrôle de version Git' });
+  await showTool(page, 'Git');
   await expect(gitPanel).toContainText('Brouillons non enregistrés');
+  await showTool(page, 'Git');
   await gitPanel.getByRole('button', { name: 'Actualiser Git', exact: true }).click();
+  await showTool(page, 'Git');
   await expect(gitPanel).toContainText('branche main');
+  await showTool(page, 'Git');
   await gitPanel.getByRole('button', { name: 'Historique Git', exact: true }).click();
   await expect(gitPanel.getByLabel('Historique des commits', { exact: true })).toContainText('Original native fixture');
   await expect(gitPanel.getByRole('button', { name: 'Indexer src/main.bas', exact: true })).toBeDisabled();
+  await showTool(page, 'Git');
   await gitPanel.getByRole('button', { name: 'Diff index src/main.bas', exact: true }).click();
   await expect(gitPanel.getByLabel('Diff Git', { exact: true })).toHaveValue(/\+290 REM GIT INDEX/);
   assert.ok(!(await gitPanel.getByLabel('Diff Git', { exact: true }).inputValue()).includes('GIT DISK'));
+  await showTool(page, 'Git');
   await gitPanel.getByRole('button', { name: 'Diff disque src/main.bas', exact: true }).click();
   await expect(gitPanel.getByLabel('Diff Git', { exact: true })).toHaveValue(/\+300 REM GIT DISK/);
   assert.ok(!(await gitPanel.getByLabel('Diff Git', { exact: true }).inputValue()).includes('BUFFER ONLY'));
@@ -408,20 +469,28 @@ try {
   await page.getByRole('heading', { name: 'Git local contrôlé', exact: true }).waitFor();
   // Regression: Git and document siblings must have distinct key namespaces.
   // Require the previous panel to be gone rather than selecting an arbitrary duplicate.
+  await showTool(page, 'Git');
   await expect(gitPanel).toHaveCount(1);
+  await showTool(page, 'Git');
   await gitPanel.getByRole('button', { name: 'Actualiser Git', exact: true }).click();
+  await showTool(page, 'Git');
   await expect(gitPanel).toContainText('Aucun dépôt à la racine');
+  await showTool(page, 'Git');
   await gitPanel.getByRole('button', { name: 'Préparer la création Git', exact: true }).click();
   await expect(gitPanel.getByLabel('Exclusions Git proposées', { exact: true })).toHaveValue(PROJECT_GIT_IGNORE);
   await assert.rejects(lstat(join(localRoot, '.git')), { code: 'ENOENT' });
   await desktop.evaluate(({ dialog }) => { dialog.showMessageBox = async () => ({ response: 0, checkboxChecked: false }); });
+  await showTool(page, 'Git');
   await gitPanel.getByRole('button', { name: 'Créer le dépôt Git local', exact: true }).click();
+  await showTool(page, 'Git');
   await expect(gitPanel).toContainText('Création annulée'); await assert.rejects(lstat(join(localRoot, '.git')), { code: 'ENOENT' });
   await desktop.evaluate(({ dialog }) => {
     globalThis.gitConfirmations = [];
     dialog.showMessageBox = async (_window, options) => { globalThis.gitConfirmations.push(options.message); return { response: 1, checkboxChecked: false }; };
   });
+  await showTool(page, 'Git');
   await gitPanel.getByRole('button', { name: 'Créer le dépôt Git local', exact: true }).click();
+  await showTool(page, 'Git');
   await expect(gitPanel).toContainText('Dépôt main créé avec exclusions');
   assert.equal(await readFile(join(localRoot, '.gitignore'), 'utf8'), PROJECT_GIT_IGNORE);
   assert.equal(await readFile(join(localRoot, '.git/HEAD'), 'utf8'), 'ref: refs/heads/main\n');
@@ -431,13 +500,18 @@ try {
   const localBefore = await Promise.all(['src/main.bas', 'microide.project.json', '.git/HEAD'].map(path => readFile(join(localRoot, path))));
   await mkdir(join(localRoot, '.git/hooks'));
   const localHook = join(localRoot, '.git/hooks/post-index-change'); await writeFile(localHook, '#!/bin/sh\nprintf EXECUTED > SENTINEL\n'); await chmod(localHook, 0o700);
+  await showTool(page, 'Git');
   await gitPanel.getByRole('button', { name: 'Indexer src/main.bas', exact: true }).click();
+  await showTool(page, 'Git');
   await expect(gitPanel).toContainText('Fichier sélectionné indexé');
   assert.equal(localGit('ls-files', '-z'), 'src/main.bas\0');
+  await showTool(page, 'Git');
   await gitPanel.getByRole('button', { name: 'Diff index src/main.bas', exact: true }).click();
   await expect(gitPanel.getByLabel('Diff Git', { exact: true })).toHaveValue(/\+10 REM LOCAL GIT/);
   await gitPanel.scrollIntoViewIfNeeded(); await page.screenshot({ path: 'out/git-local-index-alpha.png' });
+  await showTool(page, 'Git');
   await gitPanel.getByRole('button', { name: 'Retirer index src/main.bas', exact: true }).click();
+  await showTool(page, 'Git');
   await expect(gitPanel).toContainText('Fichier sélectionné retiré de l’index');
   assert.equal(localGit('ls-files', '-z'), '');
   assert.deepEqual(await Promise.all(['src/main.bas', 'microide.project.json', '.git/HEAD'].map(path => readFile(join(localRoot, path)))), localBefore);
@@ -447,17 +521,19 @@ try {
   await desktop.evaluate(({ dialog }) => { dialog.showMessageBox = () => new Promise(resolve => {
     globalThis.releaseGitConfirmation = () => resolve({ response: 1, checkboxChecked: false });
   }); });
+  await showTool(page, 'Git');
   await gitPanel.getByRole('button', { name: 'Indexer src/main.bas', exact: true }).click();
   await expect.poll(() => desktop.evaluate(() => typeof globalThis.releaseGitConfirmation)).toBe('function');
   await writeFile(join(localRoot, 'src/main.bas'), '10 REM EXTERNAL CONFIRM\n');
   await desktop.evaluate(() => { globalThis.releaseGitConfirmation(); delete globalThis.releaseGitConfirmation; });
+  await showTool(page, 'Git');
   await expect(gitPanel).toContainText('modifiés depuis le statut');
   assert.equal(localGit('ls-files', '-z'), ''); assert.equal(await readFile(join(localRoot, 'src/main.bas'), 'utf8'), '10 REM EXTERNAL CONFIRM\n');
   await writeFile(join(localRoot, 'src/main.bas'), localSource);
   // Human-operated terminal on the clean current project, after the Git checks.
   await desktop.evaluate(({ dialog }) => { dialog.showMessageBox = async () => ({ response: 1, checkboxChecked: false }); });
   await page.getByText('Affichage', { exact: true }).click();
-  await page.getByRole('button', { name: 'Afficher le terminal', exact: true }).click();
+  await page.getByRole('menuitem', { name: /Afficher le terminal/ }).click();
   const terminalPanel = page.getByRole('region', { name: 'Terminal du projet', exact: true });
   await terminalPanel.getByLabel('Commande système', { exact: true }).fill('printf CPC_TERMINAL_OK');
   await terminalPanel.getByRole('button', { name: 'Exécuter la commande', exact: true }).click();
@@ -480,6 +556,7 @@ try {
   // Refresh the host session directly only for this final IPC guard check, with no more UI Git mutations.
   const localSession = await page.evaluate(async () => (await window.desktop.project.open()).sessionId);
   await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('30 REM DIRTY GUARD\n');
+  await showTool(page, 'Git');
   await expect(gitPanel).toContainText('Brouillons non enregistrés');
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   const dirtyIndex = await page.evaluate(session => window.desktop.git.changeIndex(session, 'forged', 'forged', 'stage'), localSession);
@@ -693,6 +770,7 @@ try {
   await writeFile(join(draftRoot, 'src/main.bas'), draftBaseMain); await writeFile(join(draftRoot, 'src/util.bas'), draftBaseUtil);
   await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, draftRoot);
   await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click(); await page.getByRole('heading', { name: 'Reprise des brouillons', exact: true }).waitFor();
+  await showTool(page, 'Récupération');
   let draftsPanel = page.getByRole('region', { name: 'Brouillons récupérables', exact: true });
   await expect(draftsPanel.getByLabel('Copie automatique des brouillons')).not.toBeChecked();
   await assert.rejects(readFile(join(draftRoot, '.microide/drafts/current.json')), { code: 'ENOENT' });
@@ -702,6 +780,7 @@ try {
   await page.getByRole('tab', { name: 'src/util.bas', exact: true }).click();
   await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText(unsavedUtil);
   await expect.poll(async () => { try { return JSON.parse(await readFile(join(draftRoot, '.microide/drafts/current.json'), 'utf8')).files.length; } catch { return 0; } }, { timeout: 10000 }).toBe(2);
+  await showTool(page, 'Récupération');
   await expect(draftsPanel).toContainText('2 brouillon(s) copié(s)');
   await draftsPanel.getByLabel('Copie automatique des brouillons').uncheck();
   const draftCopy = await readFile(join(draftRoot, '.microide/drafts/current.json'));
@@ -715,10 +794,13 @@ try {
   await page.getByRole('heading', { name: 'CPCéleste', exact: true }).waitFor();
   await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, draftRoot);
   await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click(); await page.getByRole('heading', { name: 'Reprise des brouillons', exact: true }).waitFor();
+  await showTool(page, 'Récupération');
   draftsPanel = page.getByRole('region', { name: 'Brouillons récupérables', exact: true });
+  await showTool(page, 'Récupération');
   await expect(draftsPanel).toContainText('Copie d’une précédente ouverture conservée');
   await expect(draftsPanel.getByLabel('Copie automatique des brouillons')).not.toBeChecked(); await expect(draftsPanel.getByLabel('Copie automatique des brouillons')).toBeDisabled();
   assert.deepEqual(await readFile(join(draftRoot, '.microide/drafts/current.json')), draftCopy);
+  await showTool(page, 'Récupération');
   await draftsPanel.getByRole('button', { name: 'Comparer les brouillons récupérables', exact: true }).click();
   let draftDialog = page.getByRole('dialog', { name: 'Comparer les brouillons récupérables', exact: true });
   await expect(draftDialog.locator('.history-diff')).toContainText('UNSAVED MAIN'); await page.screenshot({ path: 'out/drafts-alpha.png' });
@@ -732,6 +814,7 @@ try {
   await expect(draftsPanel.getByLabel('Copie automatique des brouillons')).toBeDisabled();
   const recoveredInput = page.locator('.listing .monaco-editor textarea'); await recoveredInput.focus(); await page.keyboard.press('Control+z');
   await expect(page.locator('.listing .view-lines')).toContainText('BASE MAIN'); await page.keyboard.press('Control+Shift+z'); await expect(page.locator('.listing .view-lines')).toContainText('UNSAVED MAIN');
+  await showTool(page, 'Récupération');
   await draftsPanel.getByRole('button', { name: 'Comparer les brouillons récupérables', exact: true }).click();
   draftDialog = page.getByRole('dialog', { name: 'Comparer les brouillons récupérables', exact: true }); await expect(draftDialog.locator('.history-diff')).toContainText('UNSAVED UTIL');
   await draftDialog.getByRole('button', { name: 'Restaurer les brouillons sélectionnés dans les buffers', exact: true }).click(); await expect(draftDialog).not.toBeVisible();
@@ -739,6 +822,7 @@ try {
   assert.equal(await readFile(join(draftRoot, 'src/main.bas'), 'utf8'), draftBaseMain); assert.equal(await readFile(join(draftRoot, 'src/util.bas'), 'utf8'), draftBaseUtil);
   assert.deepEqual(await readFile(join(draftRoot, 'microide.project.json')), draftManifestBytes); assert.deepEqual(await readFile(join(draftRoot, '.microide/drafts/current.json')), draftCopy);
   await desktop.evaluate(({ dialog }) => { globalThis.draftForgetResponse = 0; globalThis.draftForgetOptions = []; dialog.showMessageBox = async (_window, options) => { globalThis.draftForgetOptions.push(options); return { response: globalThis.draftForgetResponse, checkboxChecked: false }; }; });
+  await showTool(page, 'Récupération');
   await draftsPanel.getByRole('button', { name: 'Effacer la copie de brouillons', exact: true }).click(); await expect(draftsPanel).toContainText('Effacement annulé'); assert.deepEqual(await readFile(join(draftRoot, '.microide/drafts/current.json')), draftCopy);
   await desktop.evaluate(() => { globalThis.draftForgetResponse = 1; }); await draftsPanel.getByRole('button', { name: 'Effacer la copie de brouillons', exact: true }).click(); await expect(draftsPanel).toContainText('Copie de récupération effacée');
   assert.equal(JSON.parse(await readFile(join(draftRoot, '.microide/drafts/current.json'), 'utf8')).files.length, 0);
@@ -748,13 +832,16 @@ try {
   assert.match((await page.evaluate(() => window.desktop.drafts.status('expired'))).error, /périmée/);
   console.log('Native draft recovery: optional automatic copy, real Electron SIGKILL/relaunch, pending-copy protection, comparison, external-conflict refusal, selected restoration, preserved unselected draft, dirty/undo/redo, cancel/default-discard guard and explicit save passed.');
   assert.deepEqual(errors, []);
+  await showTool(page, 'Récupération');
   const externalPanel = page.getByRole('region', { name: 'Modifications externes', exact: true });
   await page.getByRole('tab', { name: 'src/main.bas', exact: true }).click();
   const externalDisk = '10 REM EXTERNAL EDITOR\r\n20 END\r\n';
   await writeFile(join(draftRoot, 'src/main.bas'), externalDisk);
   // Automatic polling must detect an external edit without changing the model.
+  await showTool(page, 'Récupération');
   await expect(externalPanel).toContainText('src/main.bas · modifié sur disque', { timeout: 12000 });
   await expect(page.locator('.listing .view-lines')).toContainText('UNSAVED MAIN');
+  await showTool(page, 'Récupération');
   await externalPanel.getByRole('button', { name: 'Comparer src/main.bas', exact: true }).click();
   let externalDialog = page.getByRole('dialog', { name: 'Comparer la version disque · src/main.bas', exact: true });
   await expect(externalDialog.locator('.history-diff')).toContainText('EXTERNAL EDITOR');
@@ -775,7 +862,9 @@ try {
   // Dirty buffer is retained until a reviewed, explicit decision.
   await recoveredInput.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText('10 REM MY DIRTY BUFFER\n20 END\n');
   await writeFile(join(draftRoot, 'src/main.bas'), '10 REM SECOND EXTERNAL\n20 END\n');
+  await showTool(page, 'Récupération');
   await externalPanel.getByRole('button', { name: 'Vérifier les fichiers disque', exact: true }).click();
+  await showTool(page, 'Récupération');
   await externalPanel.getByRole('button', { name: 'Comparer src/main.bas', exact: true }).click();
   externalDialog = page.getByRole('dialog', { name: 'Comparer la version disque · src/main.bas', exact: true });
   await externalDialog.getByRole('button', { name: 'Conserver mon buffer après comparaison', exact: true }).click(); await expect(externalDialog).not.toBeVisible();
@@ -784,10 +873,12 @@ try {
   await page.getByRole('button', { name: 'Enregistrer tout', exact: true }).click(); await expect(page.locator('footer')).toContainText('Projet enregistré : 1 source(s) écrite(s)');
   assert.equal(await readFile(join(draftRoot, 'src/main.bas'), 'utf8'), '10 REM MY DIRTY BUFFER\n20 END\n');
   await rename(join(draftRoot, 'src/util.bas'), join(draftRoot, 'src/util-moved.bas'));
+  await showTool(page, 'Récupération');
   await externalPanel.getByRole('button', { name: 'Vérifier les fichiers disque', exact: true }).click(); await expect(externalPanel).toContainText('Source absente');
   await expect(page.getByRole('tab', { name: 'src/util.bas', exact: true })).toBeVisible();
   await rename(join(draftRoot, 'src/util-moved.bas'), join(draftRoot, 'src/util.bas'));
   await writeFile(join(draftRoot, 'microide.project.json'), Buffer.concat([draftManifestBytes, Buffer.from(' ')]));
+  await showTool(page, 'Récupération');
   await externalPanel.getByRole('button', { name: 'Vérifier les fichiers disque', exact: true }).click(); await expect(externalPanel).toContainText('manifeste a changé');
   assert.match((await page.evaluate(() => window.desktop.external.status('expired'))).error, /périmée/);
   await writeFile(join(draftRoot, 'microide.project.json'), draftManifestBytes);
@@ -842,30 +933,41 @@ try {
   const commitIndexBefore = await readFile(join(commitRoot, '.git/index')), commitConfigBefore = await readFile(join(commitRoot, '.git/config'));
   await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); globalThis.commitResponse = 0; globalThis.commitDialogs = []; dialog.showMessageBox = async (_window, options) => { globalThis.commitDialogs.push(options); return { response: globalThis.commitResponse, checkboxChecked: false }; }; }, commitRoot);
   await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click(); await page.getByRole('heading', { name: 'Commits locaux', exact: true }).waitFor();
+  await showTool(page, 'Git');
   const commitPanel = page.getByRole('region', { name: 'Contrôle de version Git', exact: true }); await commitPanel.getByRole('button', { name: 'Actualiser Git', exact: true }).click();
   await commitPanel.getByLabel('Nom de l’auteur Git', { exact: true }).fill('CPCéleste Test'); await commitPanel.getByLabel('Email de l’auteur Git', { exact: true }).fill('cpceleste@example.invalid');
   await commitPanel.getByLabel('Message du commit Git', { exact: true }).fill('Mon premier programme\n\nMessage de recette.');
+  await showTool(page, 'Git');
   await commitPanel.getByRole('button', { name: 'Préparer le commit de l’index', exact: true }).click();
   await expect(commitPanel.getByLabel('Diff du commit préparé', { exact: true })).toHaveValue(/STAGED COMMIT/);
   await expect(commitPanel.getByLabel('Diff du commit préparé', { exact: true })).not.toHaveValue(/WORKTREE REMAINS/);
   await page.screenshot({ path: 'out/git-commit-alpha.png' });
+  await showTool(page, 'Git');
   await commitPanel.getByRole('button', { name: 'Créer le commit local', exact: true }).click(); await expect(commitPanel).toContainText('Commit annulé'); assert.throws(() => commitGit('rev-parse', '--verify', 'HEAD'));
   await desktop.evaluate(() => { globalThis.commitResponse = 1; }); await commitPanel.getByRole('button', { name: 'Créer le commit local', exact: true }).click(); await expect(commitPanel).toContainText('Commit local créé');
   assert.equal(commitGit('show', 'HEAD:src/main.bas'), committedSource); assert.equal(await readFile(join(commitRoot, 'src/main.bas'), 'utf8'), unindexedSource);
   assert.equal(commitGit('show', '-s', '--format=%an <%ae>', 'HEAD').trim(), 'CPCéleste Test <cpceleste@example.invalid>');
   assert.deepEqual(await readFile(join(commitRoot, '.git/index')), commitIndexBefore); assert.deepEqual(await readFile(join(commitRoot, '.git/config')), commitConfigBefore);
   const commitOptions = await desktop.evaluate(() => globalThis.commitDialogs[0]); assert.equal(commitOptions.defaultId, 0); assert.equal(commitOptions.cancelId, 0); assert.match(commitOptions.detail, /Hooks|hooks/);
+  await showTool(page, 'Git');
   await commitPanel.getByRole('button', { name: 'Historique Git', exact: true }).click(); await expect(commitPanel.getByLabel('Historique des commits')).toContainText('Mon premier programme');
   // The old staged index is now committed; stage only the working source through the actual UI.
+  await showTool(page, 'Git');
   await commitPanel.getByRole('button', { name: 'Actualiser Git', exact: true }).click(); await commitPanel.getByRole('button', { name: 'Indexer src/main.bas', exact: true }).click();
+  await showTool(page, 'Git');
   await expect(commitPanel).toContainText('Fichier sélectionné indexé'); await commitPanel.getByLabel('Message du commit Git', { exact: true }).fill('Second programme');
+  await showTool(page, 'Git');
   await commitPanel.getByRole('button', { name: 'Préparer le commit de l’index', exact: true }).click();
   await desktop.evaluate(({ dialog }) => { dialog.showMessageBox = () => new Promise(resolve => { globalThis.releaseCommitChoice = () => resolve({ response: 1, checkboxChecked: false }); }); });
+  await showTool(page, 'Git');
   await commitPanel.getByRole('button', { name: 'Créer le commit local', exact: true }).click(); await expect.poll(() => desktop.evaluate(() => typeof globalThis.releaseCommitChoice)).toBe('function');
   await writeFile(join(commitRoot, 'src/main.bas'), '10 REM CHANGED DURING CONFIRMATION\n'); await desktop.evaluate(() => { globalThis.releaseCommitChoice(); delete globalThis.releaseCommitChoice; });
+  await showTool(page, 'Git');
   await expect(commitPanel).toContainText('modifiés depuis l’aperçu'); assert.equal(commitGit('rev-list', '--count', 'HEAD').trim(), '1');
   await writeFile(join(commitRoot, 'src/main.bas'), unindexedSource); await desktop.evaluate(({ dialog }) => { dialog.showMessageBox = async () => ({ response: 1, checkboxChecked: false }); });
+  await showTool(page, 'Git');
   await commitPanel.getByRole('button', { name: 'Actualiser Git', exact: true }).click(); await commitPanel.getByRole('button', { name: 'Préparer le commit de l’index', exact: true }).click(); await commitPanel.getByRole('button', { name: 'Créer le commit local', exact: true }).click();
+  await showTool(page, 'Git');
   await expect(commitPanel).toContainText('Commit local créé'); assert.equal(commitGit('rev-list', '--count', 'HEAD').trim(), '2'); assert.equal(commitGit('show', 'HEAD:src/main.bas'), unindexedSource);
   await page.locator('.listing .monaco-editor textarea').focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('30 REM UNSAVED\n');
   await expect(commitPanel.getByRole('button', { name: 'Préparer le commit de l’index', exact: true })).toBeDisabled();
@@ -876,17 +978,22 @@ try {
   const identityRoot = await desktop.evaluate(({ app }) => app.getPath('userData'));
   if (process.platform === 'linux') assert.ok(identityRoot.startsWith(join(temporary, 'config')));
   const identityPath = join(identityRoot, 'git-profile/identity.json');
+  await showTool(page, 'Git');
   await commitPanel.getByRole('button', { name: 'Mémoriser cette identité', exact: true }).click(); await expect(commitPanel).toContainText('Identité mémorisée dans le profil privé');
   const rememberedIdentity = await readFile(identityPath); const identityRecord = JSON.parse(rememberedIdentity.toString());
   assert.deepEqual(identityRecord.identity, { name: 'CPCéleste Test', email: 'cpceleste@example.invalid' }); assert.deepEqual(Object.keys(identityRecord).sort(), ['id', 'identity', 'version']);
   await commitPanel.getByLabel('Nom de l’auteur Git', { exact: true }).fill('Session temporaire'); await commitPanel.getByLabel('Message du commit Git', { exact: true }).fill('Message jamais mémorisé');
+  await showTool(page, 'Git');
   await commitPanel.getByRole('button', { name: 'Charger l’identité mémorisée', exact: true }).click(); await expect(commitPanel.getByLabel('Nom de l’auteur Git', { exact: true })).toHaveValue('CPCéleste Test');
   await expect(commitPanel.getByLabel('Message du commit Git', { exact: true })).toHaveValue('Message jamais mémorisé'); assert.deepEqual(await readFile(identityPath), rememberedIdentity);
   const externalIdentity = Buffer.from(JSON.stringify({ version: 1, id: randomUUID(), identity: { name: 'Profil externe', email: 'external@example.invalid' } }) + '\n'); await writeFile(identityPath, externalIdentity);
+  await showTool(page, 'Git');
   await commitPanel.getByRole('button', { name: 'Mémoriser cette identité', exact: true }).click(); await expect(commitPanel).toContainText('Profil Git modifié depuis sa lecture'); assert.deepEqual(await readFile(identityPath), externalIdentity);
   await expect(commitPanel.getByRole('button', { name: 'Mémoriser cette identité', exact: true })).toBeDisabled();
+  await showTool(page, 'Git');
   await commitPanel.getByRole('button', { name: 'Charger l’identité mémorisée', exact: true }).click(); await expect(commitPanel.getByLabel('Nom de l’auteur Git', { exact: true })).toHaveValue('Profil externe');
   await commitPanel.getByLabel('Nom de l’auteur Git', { exact: true }).fill('CPCéleste Test'); await commitPanel.getByLabel('Email de l’auteur Git', { exact: true }).fill('cpceleste@example.invalid');
+  await showTool(page, 'Git');
   await commitPanel.getByRole('button', { name: 'Mémoriser cette identité', exact: true }).click(); await expect(commitPanel).toContainText('Identité mémorisée dans le profil privé');
   const identityBeforeRestart = await readFile(identityPath);
   const profileChild = desktop.process(), profileExit = new Promise(resolve => profileChild.once('exit', resolve)); profileChild.kill('SIGKILL'); await profileExit; await desktop.close().catch(() => undefined);
@@ -894,11 +1001,14 @@ try {
   await page.getByRole('heading', { name: 'CPCéleste', exact: true }).waitFor();
   await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, commitRoot);
   await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click(); await page.getByRole('heading', { name: 'Commits locaux', exact: true }).waitFor();
+  await showTool(page, 'Git');
   const identityPanel = page.getByRole('region', { name: 'Contrôle de version Git', exact: true }); await identityPanel.getByRole('button', { name: 'Actualiser Git', exact: true }).click();
   await expect(identityPanel.getByLabel('Nom de l’auteur Git', { exact: true })).toHaveValue('CPCéleste Test'); await expect(identityPanel.getByLabel('Email de l’auteur Git', { exact: true })).toHaveValue('cpceleste@example.invalid');
   await expect(identityPanel.getByLabel('Message du commit Git', { exact: true })).toHaveValue(''); assert.deepEqual(await readFile(identityPath), identityBeforeRestart);
+  await showTool(page, 'Git');
   await identityPanel.getByRole('button', { name: 'Oublier l’identité mémorisée', exact: true }).scrollIntoViewIfNeeded(); await page.screenshot({ path: 'out/git-identity-alpha.png' });
   assert.match((await page.evaluate(() => window.desktop.git.rememberIdentity('expired', null, { name: 'Test', email: 'x@y' }))).error, /périmée/);
+  await showTool(page, 'Git');
   await identityPanel.getByRole('button', { name: 'Oublier l’identité mémorisée', exact: true }).click(); await expect(identityPanel).toContainText('Identité mémorisée oubliée');
   assert.equal(JSON.parse(await readFile(identityPath, 'utf8')).identity, null); await expect(identityPanel.getByLabel('Nom de l’auteur Git', { exact: true })).toHaveValue('CPCéleste Test');
   await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click(); await page.getByRole('heading', { name: 'Commits locaux', exact: true }).waitFor(); await identityPanel.getByRole('button', { name: 'Actualiser Git', exact: true }).click();
@@ -915,4 +1025,9 @@ try {
   // Only the test application is destroyed; fixture directory is intentionally retained for debugging.
   await desktop.evaluate(({ BrowserWindow }) => { for (const window of BrowserWindow.getAllWindows()) window.destroy(); }).catch(() => undefined);
   await desktop.close().catch(() => undefined);
+}
+
+async function showTool(page, label) {
+  const button = page.getByRole('button', { name: `Afficher ${label}`, exact: true });
+  if (await button.getAttribute('aria-pressed') !== 'true') await button.click();
 }

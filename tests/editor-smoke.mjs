@@ -24,6 +24,40 @@ try {
   await expect(page).toHaveTitle('CPCéleste — Atelier Amstrad CPC');
   await expect.poll(() => page.locator('.brand-mark').evaluate(image => image.complete && image.naturalWidth > 0)).toBe(true);
   await page.locator('.monaco-editor .view-line').first().waitFor();
+  // Menus are mutually exclusive and close on outside click, Escape and activation.
+  const menus = page.getByRole('navigation', { name: 'Menus de l’atelier', exact: true });
+  await menus.getByRole('button', { name: 'Fichier', exact: true }).click();
+  await expect(page.getByRole('menu')).toHaveCount(1);
+  await menus.getByRole('button', { name: 'Édition', exact: true }).hover();
+  await expect(page.getByRole('menu', { name: 'Édition', exact: true })).toBeVisible();
+  await expect(page.getByRole('menu')).toHaveCount(1);
+  await page.keyboard.press('Escape'); await expect(page.getByRole('menu')).toHaveCount(0);
+  await expect(menus.getByRole('button', { name: 'Édition', exact: true })).toBeFocused();
+  await menus.getByRole('button', { name: 'Git', exact: true }).click();
+  await page.getByRole('menuitem', { name: /Afficher Git/ }).click();
+  await expect(page.getByRole('menu')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Contrôle de version Git', exact: true })).toBeVisible();
+  await expect(page.getByRole('complementary', { name: 'Assistant IA', exact: true }).locator('.git-panel,.firmware-panel,.project-files')).toHaveCount(0);
+  await menus.getByRole('button', { name: 'Fichier', exact: true }).click();
+  await page.getByRole('heading', { name: 'CPCéleste', exact: true }).click();
+  await expect(page.getByRole('menu')).toHaveCount(0);
+  await menus.getByRole('button', { name: 'Affichage', exact: true }).focus();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.getByRole('menuitem').first()).toBeFocused();
+  await page.keyboard.press('ArrowDown'); await expect(page.getByRole('menuitem').nth(1)).toBeFocused();
+  await page.keyboard.press('Escape');
+  const left = page.getByRole('complementary', { name: 'Outils du projet', exact: true });
+  await page.keyboard.press('Control+b'); await expect(left).toBeHidden();
+  await page.keyboard.press('Control+Shift+e'); await expect(left).toBeVisible();
+  await page.keyboard.press('Control+Shift+f'); await expect(page.getByRole('region', { name: 'Recherche dans les sources', exact: true })).toBeVisible();
+  await page.keyboard.press('Control+Shift+g'); await expect(page.getByRole('heading', { name: 'Contrôle de version Git', exact: true })).toBeVisible();
+  await page.keyboard.press('Control+Shift+f'); await expect(page.getByRole('region', { name: 'Recherche dans les sources', exact: true })).toBeVisible();
+  await page.keyboard.press('Control+Shift+a'); await expect(page.getByRole('complementary', { name: 'Assistant IA', exact: true })).toBeHidden();
+  await page.keyboard.press('Control+Shift+a'); await expect(page.getByRole('complementary', { name: 'Assistant IA', exact: true })).toBeVisible();
+  await page.keyboard.press('Control+j'); await expect(page.getByRole('navigation', { name: 'Panneaux de sortie', exact: true })).toBeHidden();
+  await page.keyboard.press('Control+j'); await expect(page.getByRole('navigation', { name: 'Panneaux de sortie', exact: true })).toBeVisible();
+  assert.equal(await page.locator('.toolbar button:not(:has(svg))').count(), 0, 'Each toolbar action has an accessible SVG icon');
+  await page.keyboard.press('Control+Shift+e');
   await page.keyboard.press('Control+Shift+P');
   const palette = page.getByRole('dialog', { name: 'Commandes CPCéleste', exact: true });
   await palette.getByRole('textbox').fill('minimap'); await palette.getByRole('textbox').press('Enter');
@@ -46,8 +80,22 @@ try {
   await page.keyboard.press('Enter');
   await page.keyboard.insertText(' "OK"\n20 END\n');
   await page.getByText('Aucun problème détecté dans le sous-ensemble analysé.').waitFor();
+  await page.keyboard.press('F1');
   await page.getByRole('button', { name: 'PRINT', exact: true }).click();
   await page.getByRole('heading', { name: 'PRINT', exact: true }).waitFor();
+  await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText('10 MODE\n20 IF A>0\n30 PRINT (1+2');
+  await expect(page.locator('.basic-error-glyph')).toHaveCount(3);
+  await expect(page.locator('.squiggly-error').first()).toBeVisible();
+  await page.getByRole('button', { name: /L2 · Erreur · IF attend/ }).click();
+  await expect(page.getByRole('status').filter({ hasText: /L2 · C/ })).toBeVisible();
+  await page.keyboard.press('F8');
+  await expect(page.getByRole('status').filter({ hasText: /L3 · C/ })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText('10 PRINT "OK"\n20 END\n');
+  await expect(page.locator('.basic-error-glyph')).toHaveCount(0);
+  await page.keyboard.press('Control+Home'); await page.keyboard.press('Control+/');
+  await expect(page.locator('.view-lines')).toContainText("10 ' PRINT");
+  await page.keyboard.press('Control+/'); await expect(page.locator('.view-lines')).toContainText('10 PRINT');
   const diskEvent = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Exporter DSK', exact: true }).click();
   const disk = new Uint8Array(await readFile(await (await diskEvent).path()));
@@ -93,6 +141,7 @@ try {
   await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText(' Y'); await page.keyboard.press('Control+z');
   await renumber.getByRole('button', { name: 'Appliquer la renumérotation', exact: true }).click();
   await expectText(renumber, 'révision modifié depuis l’aperçu');
+  await renumber.getByRole('button', { name: 'Fermer la renumérotation', exact: true }).click();
   await page.keyboard.press('Control+Shift+f');
   const search = page.getByRole('region', { name: 'Recherche dans les sources', exact: true });
   await search.getByLabel('Texte à rechercher', { exact: true }).fill('TARGET');
@@ -113,6 +162,46 @@ try {
   await expect(search.getByRole('button', { name: 'Prévisualiser les remplacements', exact: true })).toBeDisabled();
   await mkdir('out', { recursive: true });
   await page.screenshot({ path: 'out/editor-alpha.png', fullPage: true });
+  await page.getByRole('button', { name: 'Exécuter F5', exact: true }).click();
+  const editorBounds = await page.locator('.editor-host').boundingBox();
+  assert.ok(editorBounds.height >= 140 && editorBounds.y + editorBounds.height < 940, 'Emulator leaves editor visible');
+  await page.getByRole('button', { name: 'Arrêter et fermer le CPC', exact: true }).click();
+  await mkdir('out', { recursive: true }); await page.screenshot({ path: 'out/workbench-alpha.png' });
+  // UI model catalogue recipe uses a deterministic IPC fixture, never a paid API call.
+  const modelsPage = await browser.newPage({ viewport: { width: 1440, height: 960 } });
+  modelsPage.on('pageerror', error => errors.push(error.message));
+  await modelsPage.addInitScript(() => {
+    let calls = 0, chosen = '';
+    window.desktop = { setDirty() {}, open: async () => null, save: async () => null, exportDisk: async () => null, agent: {
+      models: async key => {
+        calls++;
+        if (calls === 3) return { error: 'Connexion indisponible (recette)' };
+        if (key !== undefined) { if (key !== 'sk-ui-fixture-not-real') return { error: 'Clé refusée' }; chosen = ''; }
+        return { models: [{ id: 'gpt-99-ui', created: 100, owner: 'openai' }, ...(calls > 1 ? [{ id: 'gpt-100-ui-new', created: 200, owner: 'openai' }] : [])], fetchedAt: new Date().toISOString(), model: chosen };
+      },
+      selectModel: async model => { chosen = model; return { model }; },
+      configure: async key => { if (key !== '') throw new Error('UI must use official listing'); chosen = ''; return { configured: false, model: '' }; },
+    } };
+  });
+  await modelsPage.goto('http://127.0.0.1:5173');
+  const modelPicker = modelsPage.getByRole('combobox', { name: 'Modèle OpenAI', exact: true });
+  await expect(modelPicker).toBeDisabled();
+  await expect(modelsPage.getByRole('textbox', { name: 'Modèle OpenAI', exact: true })).toHaveCount(0);
+  await modelsPage.getByLabel('Clé API OpenAI', { exact: true }).fill('sk-ui-fixture-not-real');
+  await modelsPage.getByRole('button', { name: 'Configurer la clé', exact: true }).click();
+  await expect(modelPicker).toBeEnabled(); await expect(modelPicker).toHaveValue('');
+  await expect(modelsPage.getByLabel('Clé API OpenAI', { exact: true })).toHaveValue('');
+  await modelPicker.selectOption('gpt-99-ui'); await expect(modelPicker).toHaveValue('gpt-99-ui');
+  await modelsPage.getByRole('button', { name: 'Actualiser les modèles', exact: true }).click();
+  await expect(modelPicker).toContainText('gpt-100-ui-new'); await expect(modelPicker).toHaveValue('gpt-99-ui');
+  await modelPicker.selectOption('gpt-100-ui-new'); await expect(modelPicker).toHaveValue('gpt-100-ui-new');
+  await modelsPage.getByRole('button', { name: 'Actualiser les modèles', exact: true }).click();
+  await expect(modelsPage.locator('.agent-notice')).toContainText('Dernière liste conservée');
+  await expect(modelPicker).toHaveValue('gpt-100-ui-new');
+  await modelsPage.screenshot({ path: 'out/models-alpha.png' });
+  await modelsPage.getByRole('button', { name: 'Oublier la clé', exact: true }).click();
+  await expect(modelPicker).toBeDisabled(); await expect(modelPicker).toHaveValue('');
+  await modelsPage.close();
   assert.deepEqual(errors, [], 'No browser errors');
   console.log('Editor browser smoke: completion, coloration, help, diagnostics, F12, downloads, dirty protection plus renumber preview/apply/DSK/undo/redo/stale revision passed.');
 } catch (error) {

@@ -1,3 +1,4 @@
+import { Button } from './Icon.tsx';
 import { useState } from 'react';
 import type { GitDiff, RepositoryStatus, DiffSide, GitInitPlan, IndexAction, GitHistory, GitCommitPlan, GitIdentitySnapshot } from '../../../packages/version-control/src/inspection.ts';
 import { files } from './port.ts';
@@ -127,15 +128,15 @@ export function GitPanel(props: Props) {
     <h2>Git · dépôt et index locaux</h2>
     <p className="muted">Statut, diff, création main et staging par fichier avec confirmation native. Commits locaux non signés, hooks désactivés. Aucun accès réseau ni outil Git pour l’IA.</p>
     {props.dirty && <p className="git-dirty">Brouillons non enregistrés : ils ne figurent pas dans le diff Git. Mutations Git bloquées ; aucune sauvegarde automatique.</p>}
-    <button disabled={props.busy || !port} onClick={() => void refresh()}>Actualiser Git</button>
-    <button disabled={props.busy || !port} onClick={() => void readHistory()}>Historique Git</button>
-    {snapshot?.state === 'not-repository' && <button disabled={props.busy || props.dirty || !port} onClick={() => void prepare()}>Préparer la création Git</button>}
+    <Button disabled={props.busy || !port} onClick={() => void refresh()}>Actualiser Git</Button>
+    <Button disabled={props.busy || !port} onClick={() => void readHistory()}>Historique Git</Button>
+    {snapshot?.state === 'not-repository' && <Button disabled={props.busy || props.dirty || !port} onClick={() => void prepare()}>Préparer la création Git</Button>}
     <p aria-live="polite" className="git-notice">{notice}</p>
     {plan && <div className="git-init-preview"><h3>Créer dans {plan.rootName} · branche main</h3><p>{plan.version} · .gitignore créé sans écrasement</p>
       <textarea aria-label="Exclusions Git proposées" readOnly rows={8} value={plan.ignoreText} />
       <p>Aucun fichier ne sera indexé automatiquement. Vérifiez la racine dans la confirmation native.</p>
-      <button disabled={props.busy || props.dirty} onClick={() => void initialize()}>Créer le dépôt Git local</button>
-      <button disabled={props.busy} onClick={() => { setPlan(undefined); setNotice('Aperçu abandonné ; aucun fichier créé.'); }}>Abandonner l’aperçu Git</button>
+      <Button disabled={props.busy || props.dirty} onClick={() => void initialize()}>Créer le dépôt Git local</Button>
+      <Button disabled={props.busy} onClick={() => { setPlan(undefined); setNotice('Aperçu abandonné ; aucun fichier créé.'); }}>Abandonner l’aperçu Git</Button>
     </div>}
     {props.documentCount > 0 && <p className="muted">Les documents sont privés par défaut. Le manifeste les référence : un futur partage sans leurs originaux ne sera pas un projet complet.</p>}
     {snapshot?.state === 'repository' && <>
@@ -145,30 +146,30 @@ export function GitPanel(props: Props) {
         <p>Identité pour ce commit. Mémorisation facultative dans le profil privé CPCéleste, commune à tous les projets. Aucun changement de configuration Git globale/locale.</p>
         <label>Nom de l’auteur<input aria-label="Nom de l’auteur Git" maxLength={100} disabled={props.busy} value={name} onChange={event => { setName(event.target.value); setCommitPlan(undefined); }} /></label>
         <label>Email de l’auteur<input aria-label="Email de l’auteur Git" maxLength={254} disabled={props.busy} value={email} onChange={event => { setEmail(event.target.value); setCommitPlan(undefined); }} /></label>
-        <button disabled={props.busy || !identityProfile || !name.trim() || !email} onClick={() => void identityAction('remember')}>Mémoriser cette identité</button>
-        <button disabled={props.busy} onClick={() => void identityAction('load')}>Charger l’identité mémorisée</button>
-        <button disabled={props.busy || !identityProfile?.identity} onClick={() => void identityAction('forget')}>Oublier l’identité mémorisée</button>
+        <Button disabled={props.busy || !identityProfile || !name.trim() || !email} onClick={() => void identityAction('remember')}>Mémoriser cette identité</Button>
+        <Button disabled={props.busy} onClick={() => void identityAction('load')}>Charger l’identité mémorisée</Button>
+        <Button disabled={props.busy || !identityProfile?.identity} onClick={() => void identityAction('forget')}>Oublier l’identité mémorisée</Button>
         <p aria-live="polite" className="muted">{identityNotice}</p>
         <label>Message<textarea aria-label="Message du commit Git" rows={3} maxLength={8192} disabled={props.busy} value={message} onChange={event => { setMessage(event.target.value); setCommitPlan(undefined); }} /></label>
-        <button disabled={props.busy || props.dirty || !name.trim() || !email || !message.trim()} onClick={() => void prepareCommit()}>Préparer le commit de l’index</button>
+        <Button disabled={props.busy || props.dirty || !name.trim() || !email || !message.trim()} onClick={() => void prepareCommit()}>Préparer le commit de l’index</Button>
         {commitPlan && <div className="git-init-preview"><h3>Aperçu du commit · {commitPlan.branch}</h3>
           <p>{commitPlan.name} &lt;{commitPlan.email}&gt; · parent {commitPlan.head === '(initial)' ? 'premier commit' : commitPlan.head.slice(0, 12)}</p>
           <pre>{commitPlan.message}</pre><ul>{commitPlan.files.map(file => <li key={file.path}>{file.status} {file.path}</li>)}</ul>
           <textarea readOnly rows={12} aria-label="Diff du commit préparé" value={commitPlan.diff} />
           <p>Index examiné uniquement. Les changements hors index restent sur disque. Hooks désactivés, commit non signé, aucun push.</p>
-          <button disabled={props.busy || props.dirty} onClick={() => void commit()}>Créer le commit local</button>
-          <button disabled={props.busy} onClick={() => setCommitPlan(undefined)}>Abandonner l’aperçu du commit</button>
+          <Button disabled={props.busy || props.dirty} onClick={() => void commit()}>Créer le commit local</Button>
+          <Button disabled={props.busy} onClick={() => setCommitPlan(undefined)}>Abandonner l’aperçu du commit</Button>
         </div>}
       </div>
       {!snapshot.snapshotId && <p className="git-dirty">Indexation indisponible : certaines préconditions disque ne sont pas qualifiées. Statut en lecture seule.</p>}
       <ul className="git-changes">{snapshot.changes.map(change => <li key={change.id}>
         <code>{change.index}{change.worktree}</code> <span>{change.path}</span>
         {change.originalPath && <small> ← {change.originalPath}</small>}
-        <button disabled={props.busy || change.index === '.' || change.kind === 'untracked' || change.kind === 'conflict'} onClick={() => void compare(change.id, 'index')} aria-label={`Diff index ${change.path}`}>Index</button>
-        <button disabled={props.busy || change.worktree === '.' || change.kind === 'untracked' || change.kind === 'conflict'} onClick={() => void compare(change.id, 'worktree')} aria-label={`Diff disque ${change.path}`}>Disque</button>
+        <Button disabled={props.busy || change.index === '.' || change.kind === 'untracked' || change.kind === 'conflict'} onClick={() => void compare(change.id, 'index')} aria-label={`Diff index ${change.path}`}>Index</Button>
+        <Button disabled={props.busy || change.worktree === '.' || change.kind === 'untracked' || change.kind === 'conflict'} onClick={() => void compare(change.id, 'worktree')} aria-label={`Diff disque ${change.path}`}>Disque</Button>
         {change.indexable && <>
-          <button disabled={props.busy || props.dirty || change.worktree === '.'} onClick={() => void changeIndex(change.id, 'stage')} aria-label={`Indexer ${change.path}`}>Indexer</button>
-          <button disabled={props.busy || props.dirty || change.index === '.' || change.index === '?'} onClick={() => void changeIndex(change.id, 'unstage')} aria-label={`Retirer index ${change.path}`}>Retirer index</button>
+          <Button disabled={props.busy || props.dirty || change.worktree === '.'} onClick={() => void changeIndex(change.id, 'stage')} aria-label={`Indexer ${change.path}`}>Indexer</Button>
+          <Button disabled={props.busy || props.dirty || change.index === '.' || change.index === '?'} onClick={() => void changeIndex(change.id, 'unstage')} aria-label={`Retirer index ${change.path}`}>Retirer index</Button>
         </>}
       </li>)}</ul>
     </>}
@@ -176,7 +177,7 @@ export function GitPanel(props: Props) {
       <textarea aria-label="Diff Git" readOnly rows={12} value={diff.text || 'Aucune différence sur ce côté au moment de la lecture.'} /></>}
     {history && <div aria-label="Historique des commits"><h3>Historique Git</h3><p>{history.head === '(initial)' ? 'Aucun premier commit.' : `HEAD capturé : ${history.head.slice(0, 12)}`}</p>
       <ol className="git-history">{history.commits.map(commit => <li key={commit.oid}><code>{commit.oid.slice(0, 12)}</code><p>{commit.subject}</p><time dateTime={commit.date}>{commit.date}</time></li>)}</ol>
-      {history.nextCursor && <button disabled={props.busy} onClick={() => void readHistory(true)}>20 commits suivants</button>}
+      {history.nextCursor && <Button disabled={props.busy} onClick={() => void readHistory(true)}>20 commits suivants</Button>}
     </div>}
   </section>;
 }

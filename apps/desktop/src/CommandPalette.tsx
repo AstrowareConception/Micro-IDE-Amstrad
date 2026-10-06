@@ -1,3 +1,4 @@
+import { Button } from './Icon.tsx';
 import { useEffect, useRef, useState } from 'react';
 export interface WorkbenchCommand { id: string; label: string; detail?: string; disabled?: boolean; run(): void }
 interface Props { commands: WorkbenchCommand[]; title: string; searchable?: boolean; onClose(): void }
@@ -23,8 +24,8 @@ export function CommandPalette({ commands, title, searchable = true, onClose }: 
     {searchable && <input aria-label="Rechercher une action ou une source" autoFocus placeholder="Action, fichier…" value={query} onChange={event => setQuery(event.target.value)} onKeyDown={event => {
       if (event.key === 'Enter') { const first = filtered.find(command => !command.disabled); if (first) execute(first); }
     }} />}
-    <div className="command-results">{filtered.map(command => <button key={command.id} disabled={command.disabled} onClick={() => execute(command)}><strong>{command.label}</strong>{command.detail && <small>{command.detail}</small>}</button>)}</div>
+    <div className="command-results">{filtered.map(command => <Button key={command.id} disabled={command.disabled} onClick={() => execute(command)}><strong>{command.label}</strong>{command.detail && <small>{command.detail}</small>}</Button>)}</div>
     {!filtered.length && <p>Aucune commande correspondante.</p>}
-    <button onClick={() => dialog.current?.close()}>Fermer</button><p className="muted">Flèches, Entrée, Tab · Échap pour fermer</p>
+    <Button onClick={() => dialog.current?.close()}>Fermer</Button><p className="muted">Flèches, Entrée, Tab · Échap pour fermer</p>
   </dialog>;
 }

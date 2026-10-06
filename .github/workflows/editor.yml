@@ -38,6 +38,11 @@ jobs:
           npm run build:hello
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run test:wasm
+      - name: Windows browser workbench ergonomics
+        run: |
+          npx playwright install chromium
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run test:editor
       - name: Rebuild with cached engine
         run: npm run build:desktop
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -97,6 +102,7 @@ jobs:
             out/emulator-desktop-alpha.png
             out/emulator-failure.png
             out/firmware-runtime.json
+            out/models-alpha.png
             out/editor-alpha.png
             out/desktop-alpha.png
             out/project-alpha.png

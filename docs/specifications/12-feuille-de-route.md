@@ -3,6 +3,10 @@
 ## Mode de progression
 
 
+## Priorité ergonomie — alpha 0.25, 6 octobre 2026
+
+La demande utilisateur priorise l’[atelier 0.25](../implementation/production-workbench-alpha.md) : colonne IA dédiée, outils/Git à gauche, menus exclusifs, icônes, raccourcis et diagnostics avant exécution. [ADR 0030](../adr/0030-atelier-menus-diagnostics.md). IDE-014/026/027/028 restent partiels : le parser couvre des expressions et instructions courantes, sans validation exhaustive ; disposition/keymap persistants et Git branches/réseau restent ouverts.
+
 ## Priorité Exécuter — alpha 0.24, 5 octobre 2026
 
 À la demande utilisateur, [Exécuter/F5 dans le CPC intégré](../implementation/emulator-run-alpha.md) passe avant la suite Git. [ADR 0029](../adr/0029-executer-buffers-cpc-integre.md) : worker chips/WASM, DSK des buffers, trois ROM privées, écran/clavier/pause/arrêt/son/export session et RUN automatique pour le jeu anglais reconnu (Ready manuel sinon). Boot BASIC 1.1, RUN disque et POKE sont prouvés sur le jeu identifié ; pixels PRINT vérifiés par recette UI. 157 tests Node ; preuves Electron dans la PR. J0/J3 restent partiels, oracle indépendant/OPENOUT/audio audible/autres plateformes ouverts ; aucun CPC physique qualifié. Suite immédiate : renforcer les recettes CPC, avant branches Git et outils d’exécution IA.

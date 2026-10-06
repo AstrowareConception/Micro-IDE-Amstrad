@@ -45,6 +45,8 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
   }),
   agent: Object.freeze({
     configure: (key, model) => ipcRenderer.invoke('agent:configure', { key, model }),
+    models: key => ipcRenderer.invoke('agent:models', key === undefined ? undefined : { key }),
+    selectModel: model => ipcRenderer.invoke('agent:select-model', model),
     start: (sessionId, objective, buffers, includeDocuments = false) => ipcRenderer.invoke('agent:start', { sessionId, objective, buffers, includeDocuments }),
     status: taskId => ipcRenderer.invoke('agent:status', taskId),
     cancel: taskId => ipcRenderer.invoke('agent:cancel', taskId),

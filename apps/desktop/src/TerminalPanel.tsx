@@ -1,3 +1,4 @@
+import { Button } from './Icon.tsx';
 import { useEffect, useRef, useState } from 'react';
 import { files } from './port.ts';
 import type { TerminalResult } from '../../../packages/workspace/src/terminal.ts';
@@ -43,9 +44,9 @@ export function TerminalPanel(props: Props) {
     {props.dirty && <p>Enregistrez ou arbitrez les brouillons avant l’exécution.</p>}
     <form onSubmit={event => { event.preventDefault(); void run(); }}><label htmlFor="terminal-command">Commande système</label>
       <input id="terminal-command" value={command} maxLength={4096} disabled={props.busy} placeholder="git status --short" onChange={event => setCommand(event.target.value)} autoComplete="off" spellCheck={false} />
-      <button disabled={props.busy || props.dirty || !command.trim() || !files.terminal}>Exécuter la commande</button>
+      <Button disabled={props.busy || props.dirty || !command.trim() || !files.terminal}>Exécuter la commande</Button>
     </form>
-    <button disabled={result?.state !== 'running'} onClick={() => void stop()}>Arrêter la commande</button>
+    <Button disabled={result?.state !== 'running'} onClick={() => void stop()}>Arrêter la commande</Button>
     <p aria-live="polite">{notice}</p>{result && <><code>{result.command}</code><pre aria-label="Sortie du terminal">{result.output || 'Aucune sortie.'}</pre></>}
   </section>;
 }

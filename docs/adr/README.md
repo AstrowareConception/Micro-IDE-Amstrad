@@ -40,3 +40,7 @@ Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou
 - [0028 — Profil privé d’identité Git](0028-profil-prive-identite-git.md) : préférence facultative, révision, chargement/oubli et configuration Git conservée.
 
 - [0029 — Exécuter les buffers dans le CPC intégré](0029-executer-buffers-cpc-integre.md) : worker WASM, Exécuter/F5, prompt identifié et copie de disque de session.
+
+- [0030 — Atelier, menus et diagnostics](0030-atelier-menus-diagnostics.md) : outils séparés, commandes accessibles, parser d’expressions partiel et marqueurs immédiats.
+
+- [0031 — Catalogue OpenAI dynamique](0031-catalogue-modeles-openai-dynamique.md) : select actualisé via API officielle, permissions de clé et choix explicite.

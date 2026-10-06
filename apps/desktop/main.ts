@@ -342,6 +342,11 @@ function bufferRequest(value: unknown): { id: string; source: string }[] {
     return { id, source };
   });
 }
+route('agent:models', async payload => {
+  if (payload !== undefined && (!payload || typeof payload !== 'object' || Array.isArray(payload))) throw new Error('Demande de modèles invalide.');
+  return agent.models((payload as { key?: unknown } | undefined)?.key);
+});
+route('agent:select-model', async payload => agent.selectModel(payload));
 route('agent:configure', async payload => {
   if (!payload || typeof payload !== 'object') throw new Error('Configuration invalide.');
   const value = payload as Record<string, unknown>; return agent.configure(value.key, value.model);
