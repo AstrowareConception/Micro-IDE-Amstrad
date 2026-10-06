@@ -55,6 +55,6 @@ export async function verifyPanelLayout(page) {
   await page.getByRole('menuitem', { name: /Restaurer la disposition des panneaux/ }).click();
   await expect(output).toHaveAttribute('data-floating', 'false');
   await expect.poll(async () => Math.round((await output.boundingBox()).height)).toBe(230);
-  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('cpceleste.preferences.v1')).outputHeight)).toBe(230);
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('cpceleste.preferences.v2')).preferences.outputHeight)).toBe(230);
   await page.screenshot({ path: 'out/dock-layout-alpha.png' });
 }

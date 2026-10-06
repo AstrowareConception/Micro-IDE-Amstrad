@@ -30,7 +30,7 @@ export function Editor(props: Props) {
     if (!host.current) return;
     const editor = monaco.editor.create(host.current, {
       model: null, theme: 'cpc-workbench', automaticLayout: true, fontSize: 16, fontFamily: 'Consolas, monospace',
-      lineNumbers: 'on', minimap: { enabled: false }, scrollBeyondLastLine: false, glyphMargin: true, renderValidationDecorations: 'on', mouseWheelZoom: true,
+      lineNumbers: 'on', minimap: { enabled: false }, scrollBeyondLastLine: false, glyphMargin: true, renderValidationDecorations: 'on', mouseWheelZoom: false,
       tabSize: 2, wordWrap: 'on', ariaLabel: 'Listing Locomotive BASIC', editContext: false,
       quickSuggestions: { other: true, comments: false, strings: false },
       wordBasedSuggestions: 'off', renderWhitespace: 'selection',
@@ -42,7 +42,7 @@ export function Editor(props: Props) {
       latest.current.onCommand(commandAt(model.getLineContent(position.lineNumber), position.column - 1));
       latest.current.onPosition(position.lineNumber, position.column);
     });
-    const save = editor.addAction({ id: 'save-listing', label: 'Enregistrer le listing', contextMenuGroupId: '2_cpc', contextMenuOrder: 1, keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS], run: () => latest.current.onSave() });
+    const save = editor.addAction({ id: 'save-listing', label: 'Enregistrer le listing', contextMenuGroupId: '2_cpc', contextMenuOrder: 1, run: () => latest.current.onSave() });
     const navigateProblem = (reverse: boolean) => {
       const position = editor.getPosition(), diagnostics = latest.current.diagnostics; if (!position || !diagnostics.length) return;
       const ordered = reverse ? [...diagnostics].reverse() : diagnostics;
@@ -130,7 +130,7 @@ export function Editor(props: Props) {
   useEffect(() => { instance.current?.updateOptions({ readOnly: props.busy }); }, [props.busy]);
   useEffect(() => {
     const p = props.preferences;
-    instance.current?.updateOptions({ fontFamily: p.fontFamily, fontSize: p.fontSize, tabSize: p.tabSize, insertSpaces: p.insertSpaces, wordWrap: p.wordWrap ? 'on' : 'off', minimap: { enabled: p.minimap }, autoIndent: p.autoIndent ? 'advanced' : 'none', autoClosingBrackets: p.autoClosingBrackets ? 'languageDefined' : 'never' });
+    instance.current?.updateOptions({ fontFamily: p.fontFamily, fontSize: p.fontSize, tabSize: p.tabSize, insertSpaces: p.insertSpaces, wordWrap: p.wordWrap ? 'on' : 'off', minimap: { enabled: p.minimap }, autoIndent: p.autoIndent ? 'advanced' : 'none', autoClosingBrackets: p.autoClosingBrackets ? 'languageDefined' : 'never', lineHeight: p.lineHeight, lineNumbers: p.lineNumbers, renderWhitespace: p.whitespace, cursorStyle: p.cursorStyle, cursorBlinking: p.cursorBlinking, fontLigatures: p.fontLigatures, guides: { indentation: p.indentGuides }, bracketPairColorization: { enabled: p.bracketColors }, rulers: p.ruler ? [p.ruler] : [] });
     for (const item of models.current.values()) item.model.updateOptions({ tabSize: p.tabSize, insertSpaces: p.insertSpaces });
   }, [props.preferences, props.activeId]);
   useEffect(() => {

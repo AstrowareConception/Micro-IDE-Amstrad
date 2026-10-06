@@ -58,3 +58,5 @@ Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou
 - [0037 — Explorateur réel du projet et lectures seules](0037-explorateur-projet-lecture-seule.md).
 
 - [0038 — Organisation durable des sources humaines](0038-organisation-durable-des-sources.md).
+
+- [0039 — Personnalisation, profils et keymap](0039-personnalisation-profils-et-keymap.md)
