@@ -48,3 +48,5 @@ Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou
 - [0032 — Préférences persistantes et retours utilisateurs](0032-preferences-et-retours-utilisateurs.md).
 
 - [0033 — Panneaux flottants et écran CPC](0033-panneaux-flottants-et-ecran-cpc.md).
+
+- [0034 — Projets récents et placement des menus](0034-projets-recents-et-placement-menus.md).

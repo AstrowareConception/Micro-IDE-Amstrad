@@ -101,7 +101,7 @@ footer span{margin-left:auto}.basic-error-glyph:before,.basic-warning-glyph:befo
 @media(max-width:1100px){.workspace{grid-template-columns:40px 220px minmax(200px,1fr) 260px}.workspace.sidebar-closed{grid-template-columns:40px minmax(200px,1fr) 260px}.workspace.agent-closed{grid-template-columns:40px 220px minmax(200px,1fr)}.workspace.sidebar-closed.agent-closed{grid-template-columns:40px minmax(200px,1fr)}.toolbar button kbd{display:none}.toolbar{gap:3px}.toolbar button{font-size:11px;padding:5px}.menubar>button kbd{display:none}footer{font-size:10px}}
 @media(max-width:780px){.workspace,.workspace.sidebar-closed{grid-template-columns:40px minmax(160px,1fr) 240px}.workspace.agent-closed,.workspace.sidebar-closed.agent-closed{grid-template-columns:40px minmax(160px,1fr)}.tool-sidebar{position:absolute;z-index:20;left:40px;top:0;bottom:0;width:240px;box-shadow:8px 0 24px #0008}.workspace{position:relative}.menubar{overflow:visible}.workbench-menu>button{padding:7px 5px}.profile{display:none}footer span{display:none}}
 
-.agent-connection summary,.agent-data-notice summary{cursor:pointer;color:var(--label);font-size:12px;margin:8px 0}.agent-data-notice{margin:8px 0 14px}.workbench-menu:nth-child(n+5)>div{right:0}
+.agent-connection summary,.agent-data-notice summary{cursor:pointer;color:var(--label);font-size:12px;margin:8px 0}.agent-data-notice{margin:8px 0 14px}
 
 .tab-entry{display:flex;flex-shrink:0;border-right:1px solid var(--line)}.tab-entry .tab{border-right:0}.tab-close{border:0;border-radius:0;background:transparent;padding:5px;opacity:.5}.tab-entry:hover .tab-close,.tab-close:focus-visible{opacity:1}.tab-close .icon{width:14px;height:14px}
 
@@ -141,3 +141,9 @@ select{font:inherit;width:100%;margin:8px 0;background:var(--input);color:inheri
 @media(max-width:780px){.workspace,.workspace.sidebar-closed{grid-template-columns:40px 0 0 minmax(120px,1fr) 6px 240px}.workspace.agent-closed,.workspace.sidebar-closed.agent-closed{grid-template-columns:40px 0 0 minmax(120px,1fr) 0 0}.tool-sidebar:not(.floating-panel){position:absolute;z-index:20;left:40px;top:0;bottom:0;width:min(var(--sidebar-width,260px),calc(100vw - 55px))}.workspace>.resize-separator.tools-separator{display:none}.dock-title{font-size:11px}.output-tabs button{font-size:10px;padding:4px 3px}.output-tabs .icon{display:none}.output-dock .emulator-window{grid-template-columns:140px minmax(0,1fr);gap:6px}}
 /* Menus must remain accessible above floating tools. Native dialogs use the top layer. */
 .menubar{position:relative;z-index:120}.renumber-panel{z-index:130}
+
+/* Align menus to their trigger and clamp them to the viewport. */
+.workbench-menu [role=menu]{position:fixed;left:0;right:auto;top:0;min-width:min(240px,calc(100vw - 16px));max-width:calc(100vw - 16px)}
+.workbench-menu [role=menuitem]>span{min-width:0;flex:1;overflow-wrap:anywhere}.workbench-menu [role=menuitem] kbd{max-width:45%;white-space:normal;flex-shrink:0}
+
+.recent-projects-dialog{width:min(820px,94vw);overflow:auto}.recent-projects-dialog h2{display:flex;align-items:center;gap:8px}.recent-projects-list{list-style:none;padding:0;max-height:45vh;overflow:auto}.recent-projects-list li{display:flex;align-items:center;gap:6px;margin:6px 0}.recent-projects-list li>button:first-child{flex:1;min-width:0;text-align:left;padding:10px}.recent-projects-list span{min-width:0;overflow-wrap:anywhere}.recent-projects-list small{display:block;font-size:11px;color:var(--muted);margin-top:4px}.recent-projects-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.recent-projects-actions button:first-child{margin-right:auto}

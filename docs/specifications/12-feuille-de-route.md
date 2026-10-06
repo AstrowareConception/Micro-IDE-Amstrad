@@ -193,3 +193,7 @@ R3 commence avec [identité explicite et commits locaux](../implementation/git-c
 ## Avancement alpha 0.23 — 5 octobre 2026
 
 Le [profil privé d’identité Git](../implementation/git-identity-alpha.md), [ADR 0028](../adr/0028-profil-prive-identite-git.md), complète R3 avec mémorisation opt-in, chargement initial/explicite, oubli et protection des révisions. La préférence est commune aux projets CPCéleste et ne modifie pas la configuration Git ; le réglage par dépôt du document 16 reste ouvert. IDE-033 reste P, R3/JG-A/ACC-31 ne sont pas clos. 152 tests Node ; recette Electron de persistance après SIGKILL et capture attestées dans la PR. Suite prioritaire : liste/création de branches locales, puis bascule protégée avant réseau.
+
+## Avancement alpha 0.27 — 6 octobre 2026
+
+Projets récents livré : registre local des vingt dernières racines ouvertes/créées, filtre, réouverture protégée, retrait/oubli sans suppression et présence des dossiers périmés. Fichier/palette/Ctrl R ; menus recadrés dans le viewport au lieu de l’alignement à droite selon leur index. [Guide](../implementation/recent-projects-alpha.md), [ADR 0034](../adr/0034-projets-recents-et-placement-menus.md). IDE-005 passe de N à P : modèles de projet et assistant de démarrage restent ouverts.

@@ -1,13 +1,27 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { WorkbenchCommand } from './CommandPalette.tsx';
 import { Button, Icon, iconForLabel } from './Icon.tsx';
 export interface MenuGroup { label: string; commands: WorkbenchCommand[] }
 export function WorkbenchMenus({ groups }: { groups: MenuGroup[] }) {
  const [open, setOpen] = useState<number>();
  const root = useRef<HTMLElement>(null);
+ const popup = useRef<HTMLDivElement>(null);
  const triggers = useRef(new Map<number, HTMLButtonElement>());
  function close(focus = false) { if (focus && open !== undefined) triggers.current.get(open)?.focus(); setOpen(undefined); }
  function focusItem(last = false) { requestAnimationFrame(() => { const buttons = root.current?.querySelectorAll<HTMLButtonElement>('[role="menu"] button:not(:disabled)'); if (buttons?.length) buttons[last ? buttons.length - 1 : 0]?.focus(); }); }
+ useLayoutEffect(() => {
+  if (open === undefined) return;
+  function place() {
+   const menu = popup.current, trigger = triggers.current.get(open!); if (!menu || !trigger) return;
+   const bounds = trigger.getBoundingClientRect();
+   menu.style.left = `${Math.max(8, Math.min(bounds.left, window.innerWidth - menu.getBoundingClientRect().width - 8))}px`;
+   menu.style.top = `${bounds.bottom + 2}px`;
+   menu.style.maxHeight = `${Math.max(40, Math.min(window.innerHeight * .7, window.innerHeight - bounds.bottom - 10))}px`;
+  }
+  place(); const observer = new ResizeObserver(place); if (popup.current) observer.observe(popup.current);
+  window.addEventListener('resize', place); document.addEventListener('scroll', place, true);
+  return () => { observer.disconnect(); window.removeEventListener('resize', place); document.removeEventListener('scroll', place, true); };
+ }, [open]);
  useEffect(() => {
   if (open === undefined) return;
   const outside = (event: PointerEvent) => { if (!root.current?.contains(event.target as Node)) setOpen(undefined); };
@@ -26,7 +40,7 @@ export function WorkbenchMenus({ groups }: { groups: MenuGroup[] }) {
  }}>
  {groups.map((group, index) => <div className="workbench-menu" key={group.label}>
   <button ref={node => { if (node) triggers.current.set(index, node); else triggers.current.delete(index); }} aria-haspopup="menu" aria-expanded={open === index} aria-controls={`menu-${index}`} onClick={() => setOpen(open === index ? undefined : index)} onPointerEnter={() => { if (open !== undefined) setOpen(index); }} onKeyDown={event => { if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); setOpen(index); focusItem(event.key === 'ArrowUp'); } }}>{group.label}</button>
-  {open === index && <div id={`menu-${index}`} role="menu" aria-label={group.label} onKeyDown={event => {
+  {open === index && <div ref={popup} id={`menu-${index}`} role="menu" aria-label={group.label} onKeyDown={event => {
    const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'));
    if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key) && buttons.length) {
     event.preventDefault(); const current = buttons.indexOf(document.activeElement as HTMLButtonElement);

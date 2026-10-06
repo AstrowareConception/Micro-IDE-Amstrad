@@ -1,3 +1,4 @@
+import type { RecentProjectsPort } from '../../../packages/workspace/src/recent-projects.ts';
 import { feedbackReport, type FeedbackInput } from '../feedback.ts';
 import { buildListingDisk } from '../../../packages/basic-language/src/build.ts';
 import type { ProjectManifest, ProjectSnapshot, DocumentSnapshot } from '../../../packages/workspace/src/project.ts';
@@ -25,6 +26,7 @@ export interface DesktopPort {
   history?: HistoryPort;
   drafts?: DraftPort;
   external?: ExternalPort;
+  recentProjects?: RecentProjectsPort;
   project?: {
     open(): Promise<ProjectSnapshot | Failure | null>;
     create(name: string): Promise<ProjectSnapshot | Failure | null>;

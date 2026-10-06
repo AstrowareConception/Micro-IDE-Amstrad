@@ -19,6 +19,8 @@ La barre supérieure affiche le projet, la cible exacte, l'état d'enregistremen
 
 L'écran CPC est affiché à une échelle entière lorsque possible, avec correction optionnelle du rapport d'aspect. Le mode pixel net est le défaut ; un effet CRT est une option cosmétique ultérieure. Aucun effet ne doit changer les données de capture utilisées pour la recette.
 
+Fichier → Projets récents, la palette et Ctrl/Cmd R proposent les vingt derniers projets ouverts/créés, conservés dans le profil privé. Nom, dossier, date, filtre et retrait d’entrée sont disponibles. La réouverture conserve les confirmations de brouillons et les reprises interrompues ; un chemin périmé laisse le projet courant intact. [ADR 0034](../adr/0034-projets-recents-et-placement-menus.md).
+
 ## Première ouverture
 
 L'accueil propose **Créer un projet**, **Ouvrir un projet**, **Essayer le listing d'exemple**. La configuration ROM indique les trois composants 6128 nécessaires et permet d'importer un fichier combiné valide ou des fichiers de 16 Ko distincts. Elle explique leur rôle, montre les empreintes et signale un jeu non qualifié. Le produit ne fournit ni lien de téléchargement douteux ni promesse implicite de firmware inclus.
