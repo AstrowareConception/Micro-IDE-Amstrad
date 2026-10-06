@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.31
+# CPCéleste — Dossier de conception et réalisation — version 0.32
+
+**Personnalisation 0.32** : préférences versionnées, profils portables, keymap et dispositions. [Guide](implementation/personalization-alpha.md), [ADR 0039](adr/0039-personnalisation-profils-et-keymap.md). Lot 7 partiel.
 
 **Sources 0.31** : renommage/déplacement/suppression durables, aperçu, copie du brouillon supprimé et rétablissement de la dernière organisation. [Guide](implementation/source-operations-alpha.md), [ADR 0038](adr/0038-organisation-durable-des-sources.md). Le lot 1 reste partiel.
 

@@ -90,7 +90,7 @@ export function EmulatorPanel({ launch, onClose, onConfigure }: { launch: Emulat
     </select></label>
     <p role="status">{message}</p>
     <p>{seconds.toFixed(2)} s émulées · {paused ? 'En pause' : active ? 'Machine active' : 'Préparation'}</p>
-    <details><summary>Informations de session</summary><p className="muted">{provenance || 'Les buffers courants sont utilisés ; aucune sauvegarde automatique.'}</p><p className="muted">Relancez avec Exécuter/F5 pour une machine propre et les dernières modifications. Le programme d’entrée du projet est lancé ; les autres sources restent des fichiers séparés sur le disque. Firmware inconnu : confirmation manuelle de Ready. Compatibilité matérielle complète en cours de qualification.</p></details>
+    <details><summary>Informations de session</summary><p className="muted">{provenance || 'Les buffers courants sont utilisés ; aucune sauvegarde automatique.'}</p><p className="muted">Relancez avec Exécuter pour une machine propre et les dernières modifications. Le programme d’entrée du projet est lancé ; les autres sources restent des fichiers séparés sur le disque. Firmware inconnu : confirmation manuelle de Ready. Compatibilité matérielle complète en cours de qualification.</p></details>
     </div>
     <div className="emulator-screen-column"><div ref={viewport} className="emulator-viewport"><div className="emulator-screen-content" style={{ minWidth: scale * 768 + 16, minHeight: scale * 544 + 16 }}>
     <canvas ref={canvas} style={{ width: scale * 768, height: scale * 544 }} width={768} height={272} tabIndex={0} aria-label="Écran et clavier du CPC" onBlur={release} onKeyDown={event => {

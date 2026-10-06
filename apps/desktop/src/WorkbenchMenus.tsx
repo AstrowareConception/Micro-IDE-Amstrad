@@ -47,9 +47,9 @@ export function WorkbenchMenus({ groups }: { groups: MenuGroup[] }) {
     const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (current + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length; buttons[next]?.focus();
    }
   }}>
-   {group.commands.map(command => <button role="menuitem" key={command.id} disabled={command.disabled} title={command.detail} onClick={() => { setOpen(undefined); command.run(); }}><Icon name={iconForLabel(command.label)} /><span>{command.label}</span>{command.detail && <kbd>{command.detail}</kbd>}</button>)}
+   {group.commands.map(command => <button role="menuitem" aria-label={command.label} key={command.id} disabled={command.disabled} title={command.detail} onClick={() => { setOpen(undefined); command.run(); }}><Icon name={iconForLabel(command.label)} /><span>{command.label}</span>{command.detail && <kbd>{command.detail}</kbd>}</button>)}
   </div>}
  </div>)}
- <Button icon="menu" onClick={() => { close(); groups.flatMap(group => group.commands).find(command => command.id === 'palette')?.run(); }}>Commandes <kbd>Ctrl Maj P</kbd></Button>
+ <Button icon="menu" onClick={() => { close(); groups.flatMap(group => group.commands).find(command => command.id === 'palette')?.run(); }}>Commandes <kbd>{groups.flatMap(group => group.commands).find(command => command.id === 'palette')?.detail}</kbd></Button>
  </nav>;
 }

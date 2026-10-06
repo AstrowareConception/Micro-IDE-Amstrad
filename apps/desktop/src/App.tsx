@@ -1,10 +1,11 @@
+import { DEFAULT_KEYMAP, shortcutFromEvent, shortcutLabel, type Keymap } from './keymap.ts';
 import { SourceOperationDialog, SourceDraftDialog } from './SourceOperationDialog.tsx';
 import type { SourceOperation, SourceMutationResult, SourceDraft } from '../../../packages/workspace/src/source-operations.ts';
 import { GitHubDialog } from './GitHubDialog.tsx';
 import { RecentProjectsDialog } from './RecentProjectsDialog.tsx';
 import { DockPanel } from './DockPanel.tsx';
 import { ResizeHandle } from './ResizeHandle.tsx';
-import { defaultPanelLayouts, loadPanelLayouts, persistPanelLayouts, type PanelId, type PanelLayout } from './panel-layout.ts';
+import { defaultPanelLayouts, loadPanelLayouts, persistPanelLayouts, type PanelId, type PanelLayout, type PanelLayouts } from './panel-layout.ts';
 import { Button } from './Icon.tsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { analyzeEditor } from '../../../packages/basic-language/src/syntax.ts';
@@ -46,6 +47,9 @@ interface Document { id: string; sourceId: string; name: string; source: string;
 export function App() {
   const [preferences, setPreferences] = useState<Preferences>(loadPreferences);
   const [panels, setPanels] = useState(loadPanelLayouts);
+  const [focused, setFocused] = useState(false);
+  const focusReturn = useRef<{ panels: PanelLayouts; sidebar: boolean; agent: boolean; output: boolean }>(undefined);
+  const livePreferences = useRef(preferences); livePreferences.current = preferences;
   const workspaceElement = useRef<HTMLDivElement>(null);
   const [workspaceSize, setWorkspaceSize] = useState({ width: 1440, height: 700 });
   function updatePanel(id: PanelId, value: PanelLayout) { setPanels(previous => ({ ...previous, [id]: value })); }
@@ -86,10 +90,10 @@ export function App() {
   const [outputOpen, setOutputOpen] = useState(panels.output.visible);
   const [outputTab, setOutputTab] = useState('problems');
   useEffect(() => {
-    const save = () => { if (!persistPanelLayouts({ tools: { ...panels.tools, visible: sidebarOpen }, agent: { ...panels.agent, visible: agentOpen }, output: { ...panels.output, visible: outputOpen } })) setStatus('Disposition appliquée pour cette session ; conservation indisponible.'); };
+    const save = () => { const base = focused && focusReturn.current ? focusReturn.current : { panels, sidebar: sidebarOpen, agent: agentOpen, output: outputOpen }; if (!persistPanelLayouts({ tools: { ...base.panels.tools, visible: base.sidebar }, agent: { ...base.panels.agent, visible: base.agent }, output: { ...base.panels.output, visible: base.output } })) setStatus('Disposition appliquée pour cette session ; conservation indisponible.'); };
     const timer = setTimeout(save, 150); window.addEventListener('pagehide', save);
     return () => { clearTimeout(timer); window.removeEventListener('pagehide', save); };
-  }, [panels, sidebarOpen, agentOpen, outputOpen]);
+  }, [panels, sidebarOpen, agentOpen, outputOpen, focused]);
 
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [closedTabs, setClosedTabs] = useState(new Set<string>());
@@ -120,10 +124,11 @@ export function App() {
   }, [preferences]);
   useEffect(() => {
     const media = window.matchMedia('(prefers-color-scheme: light)');
+    document.documentElement.dataset.accent = preferences.accent; document.documentElement.dataset.density = preferences.density;
     const applyTheme = () => { const light = preferences.theme === 'light' || preferences.theme === 'system' && media.matches; document.documentElement.dataset.theme = light ? 'light' : 'dark'; monaco.editor.setTheme(light ? 'cpc-workbench-light' : 'cpc-workbench'); };
     applyTheme(); media.addEventListener('change', applyTheme);
     return () => media.removeEventListener('change', applyTheme);
-  }, [preferences.theme]);
+  }, [preferences.theme, preferences.accent, preferences.density]);
   useEffect(() => {
     if (!preferences.autoSave) { autoSaveAttempt.current = ''; return; }
     if (!project || !files.project || busy || sourceDialog || !dirty) return;
@@ -138,34 +143,22 @@ export function App() {
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
       if ((event.target as Element)?.closest?.('dialog[open]')) return;
-      const modifier = event.ctrlKey || event.metaKey, key = event.key.toLowerCase();
-      const id = modifier && event.altKey && key === 'k' ? 'git-push' : modifier && event.altKey && key === 'g' ? 'git-fetch' : modifier && event.altKey && key === 'b' ? 'git-branches' : modifier && key === ',' ? 'settings' : event.key === 'F5' ? 'run' : event.key === 'F1' ? 'reference'
-        : modifier && event.shiftKey && key === 'p' ? 'palette'
-        : modifier && !event.shiftKey && key === 'p' ? 'quick-sources'
-        : modifier && event.shiftKey && key === 'o' ? 'project'
-        : modifier && !event.shiftKey && key === 'o' ? 'open'
-        : modifier && event.shiftKey && key === 's' ? 'save-all'
-        : modifier && event.altKey && key === 's' ? 'save-as'
-        : modifier && !event.shiftKey && key === 's' ? 'save'
-        : modifier && event.shiftKey && key === 'f' ? 'search-sources'
-        : modifier && event.shiftKey && key === 'e' ? 'explorer'
-        : modifier && event.shiftKey && key === 'g' ? 'git'
-        : modifier && event.shiftKey && key === 'd' ? 'documents'
-        : modifier && event.shiftKey && key === 'a' ? 'agent'
-        : modifier && event.shiftKey && key === 'r' ? 'renumber'
-        : modifier && event.altKey && key === 'r' ? 'firmware'
-        : modifier && !event.shiftKey && !event.altKey && key === 'r' && !!files.recentProjects ? 'recent-projects'
-        : modifier && key === '`' ? 'terminal'
-        : modifier && !event.shiftKey && key === 'b' ? 'sidebar'
-        : modifier && !event.shiftKey && key === 'j' ? 'output'
-        : modifier && !event.shiftKey && key === 'w' ? 'close-tab'
-        : modifier && key === 'tab' ? (event.shiftKey ? 'previous-tab' : 'next-tab') : undefined;
-      if (!id) return;
+      if (event.repeat || event.isComposing || event.getModifierState('AltGraph')) return;
+      const combination = shortcutFromEvent(event); if (!combination) return;
+      const keymap = livePreferences.current.keymap;
+      const id = (Object.keys(keymap) as (keyof Keymap)[]).find(id => keymap[id] === combination);
+      // Consume retired workbench bindings as well, so changing Save does not
+      // fall through to a browser shortcut or a second Monaco binding.
+      if (!id) { if ((Object.values(DEFAULT_KEYMAP) as readonly string[]).includes(combination)) event.preventDefault(); return; }
       const command = workbenchActions.current.find(item => item.id === id);
       if (command) { event.preventDefault(); event.stopPropagation(); if (!command.disabled) command.run(); }
     };
     window.addEventListener('keydown', shortcut, true);
     return () => window.removeEventListener('keydown', shortcut, true);
+  }, []);
+  useEffect(() => {
+    const zoom = (event: WheelEvent) => { if (!(event.ctrlKey || event.metaKey) || !(event.target as Element)?.closest?.('.editor-host') || !event.deltaY) return; event.preventDefault(); setPreferences(previous => ({ ...previous, fontSize: Math.max(10, Math.min(32, previous.fontSize + (event.deltaY < 0 ? 1 : -1))) })); };
+    window.addEventListener('wheel', zoom, { capture: true, passive: false }); return () => window.removeEventListener('wheel', zoom, true);
   }, []);
   useEffect(() => { if (terminalOpen) document.getElementById('terminal-command')?.scrollIntoView({ block: 'center' }); }, [terminalOpen]);
   useEffect(() => {
@@ -329,6 +322,8 @@ export function App() {
     setStatus('Renumérotation du buffer appliquée ; non enregistrée. Ctrl Z pour annuler.');
   }
   const editorAction = (id: string) => { editor.current?.focus(); void editor.current?.getAction(id)?.run(); };
+  function layoutPreset(name: 'edit' | 'run' | 'agent') { focusReturn.current = undefined; setFocused(false); setPanels(defaultPanelLayouts()); setSidebarOpen(name === 'edit'); setAgentOpen(name === 'agent'); setOutputOpen(name === 'run'); if (name === 'run') setOutputTab('emulator'); editor.current?.focus(); }
+  function toggleFocus() { if (focusReturn.current) { const value = focusReturn.current; setPanels(value.panels); setSidebarOpen(value.sidebar); setAgentOpen(value.agent); setOutputOpen(value.output); focusReturn.current = undefined; setFocused(false); } else { focusReturn.current = { panels, sidebar: sidebarOpen, agent: agentOpen, output: outputOpen }; setSidebarOpen(false); setAgentOpen(false); setOutputOpen(false); setFocused(true); } editor.current?.focus(); }
   const commands: WorkbenchCommand[] = [
     { id: 'open', detail: 'Ctrl O', label: 'Ouvrir un listing', disabled: busy, run: () => void open() },
     { id: 'project', detail: 'Ctrl Maj O', label: 'Ouvrir un projet', disabled: busy || !files.project, run: () => openProject(false) },
@@ -347,8 +342,8 @@ export function App() {
     { id: 'renumber', detail: 'Ctrl Maj R', label: 'Renuméroter le BASIC', disabled: busy, run: () => setRenumberOpen(true) },
     { id: 'complete', label: 'Compléter le BASIC', detail: 'Ctrl Espace', disabled: busy, run: () => editorAction('editor.action.triggerSuggest') },
     { id: 'minimap', label: preferences.minimap ? 'Masquer la minimap' : 'Afficher la minimap', run: () => setPreferences(previous => ({ ...previous, minimap: !previous.minimap })) },
-    { id: 'zoom-in', label: 'Agrandir le texte du code', run: () => editor.current?.updateOptions({ fontSize: Math.min(28, (editor.current?.getOption(monaco.editor.EditorOption.fontSize) ?? 16) + 1) }) },
-    { id: 'zoom-out', label: 'Réduire le texte du code', run: () => editor.current?.updateOptions({ fontSize: Math.max(12, (editor.current?.getOption(monaco.editor.EditorOption.fontSize) ?? 16) - 1) }) },
+    { id: 'zoom-in', label: 'Agrandir le texte du code', run: () => setPreferences(previous => ({ ...previous, fontSize: Math.min(32, previous.fontSize + 1) })) },
+    { id: 'zoom-out', label: 'Réduire le texte du code', run: () => setPreferences(previous => ({ ...previous, fontSize: Math.max(10, previous.fontSize - 1) })) },
     ...[
       ['editor.action.marker.next', 'Problème suivant', 'F8'], ['editor.action.marker.prev', 'Problème précédent', 'Maj F8'],
       ['basic-comment', 'Commenter / décommenter les lignes', 'Ctrl /'],
@@ -378,7 +373,11 @@ export function App() {
     { id: 'firmware', label: 'Configurer les ROM du CPC', detail: 'Ctrl Alt R', run: () => showTool('firmware') },
     { id: 'recovery', label: 'Brouillons et modifications externes', run: () => showTool('recovery') },
     { id: 'agent', label: 'Afficher / masquer l’agent IA', detail: 'Ctrl Maj A', run: () => setAgentOpen(value => !value) },
-    { id: 'reset-layout', label: 'Restaurer la disposition des panneaux', run: () => { setPanels(defaultPanelLayouts()); setSidebarOpen(true); setAgentOpen(true); setOutputOpen(true); setPreferences(previous => ({ ...previous, sidebarWidth: 260, agentWidth: 310, outputHeight: 230 })); } },
+    { id: 'reset-layout', label: 'Restaurer la disposition des panneaux', run: () => { focusReturn.current = undefined; setFocused(false); setPanels(defaultPanelLayouts()); setSidebarOpen(true); setAgentOpen(true); setOutputOpen(true); setPreferences(previous => ({ ...previous, sidebarWidth: 260, agentWidth: 310, outputHeight: 230 })); } },
+    { id: 'layout-edit', label: 'Disposition Édition', run: () => layoutPreset('edit') },
+    { id: 'layout-run', label: 'Disposition Exécution', run: () => layoutPreset('run') },
+    { id: 'layout-agent', label: 'Disposition Agent', run: () => layoutPreset('agent') },
+    { id: 'focus-mode', label: focused ? 'Quitter le mode Concentration' : 'Activer le mode Concentration', run: toggleFocus },
     { id: 'problems', label: 'Afficher les problèmes', run: () => showOutput('problems') },
     { id: 'sidebar', label: 'Afficher / masquer les outils', detail: 'Ctrl B', run: () => setSidebarOpen(value => !value) },
     { id: 'output', label: 'Afficher / masquer les sorties', detail: 'Ctrl J', run: () => setOutputOpen(value => !value) },
@@ -391,7 +390,7 @@ export function App() {
     { id: 'next-tab', label: 'Source suivante', detail: 'Ctrl Tab', disabled: busy, run: () => setActiveId(documents[(documents.findIndex(item => item.id === activeId) + 1) % documents.length]!.id) },
     { id: 'previous-tab', label: 'Source précédente', detail: 'Ctrl Maj Tab', disabled: busy, run: () => setActiveId(documents[(documents.findIndex(item => item.id === activeId) + documents.length - 1) % documents.length]!.id) },
     ...documents.map(document => ({ id: `source:${document.id}`, label: `Ouvrir la source ${document.name}`, disabled: busy, run: () => { setActiveId(document.id); editor.current?.focus(); } })),
-  ];
+  ].map(command => { if (!Object.hasOwn(DEFAULT_KEYMAP, command.id)) return command; const { detail: _detail, ...value } = command; const binding = preferences.keymap[command.id as keyof Keymap]; return binding ? { ...value, detail: shortcutLabel(binding) } : value; });
   workbenchActions.current = commands;
   const selectedSource = documents.find(document => document.id === contextSource);
   const sourceCommands: WorkbenchCommand[] = selectedSource ? [
@@ -411,7 +410,7 @@ export function App() {
   ] : [];
   return <main className="workbench" style={{ '--sidebar-width': `${preferences.sidebarWidth}px`, '--agent-width': `${preferences.agentWidth}px`, '--output-height': `${preferences.outputHeight}px` } as CSSProperties}>
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.31 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.32 · AstroWare Conception</p></div></div>
       <span className="profile">CPC 6128 · BASIC 1.1</span>
     </header>
     <WorkbenchMenus groups={[
@@ -420,7 +419,7 @@ export function App() {
       ['BASIC', ['run', 'renumber', 'complete', 'editor.action.revealDefinition', 'editor.action.marker.next', 'editor.action.marker.prev', 'reference']],
       ['Git', ['git', 'git-refresh', 'git-init', 'git-commit', 'git-ai-message', 'git-history', 'git-branches', 'git-create-branch', 'git-remotes', 'git-fetch', 'git-pull', 'git-push', 'clone', 'github', 'git-prs']],
       ['Projet', ['explorer', 'source-rename', 'source-move', 'source-delete', 'source-restore', 'source-archive', 'documents', 'recovery']],
-      ['Affichage', ['sidebar', 'agent', 'output', 'problems', 'terminal', 'git-history', 'reset-layout', 'minimap', 'zoom-in', 'zoom-out', 'palette', 'quick-sources']],
+      ['Affichage', ['sidebar', 'agent', 'output', 'problems', 'terminal', 'git-history', 'reset-layout', 'layout-edit', 'layout-run', 'layout-agent', 'focus-mode', 'minimap', 'zoom-in', 'zoom-out', 'palette', 'quick-sources']],
       ['Outils', ['firmware', 'settings', 'shortcuts']],
       ['Aide', ['reference', 'shortcuts', 'feedback']],
     ].map(([label, ids]) => ({ label: label as string, commands: (ids as string[]).map(id => commands.find(command => command.id === id)!) }))} />
@@ -436,11 +435,11 @@ export function App() {
     <nav className="toolbar" aria-label="Actions du listing">
       <Button disabled={busy} onClick={() => void open()}>Ouvrir</Button>
       <Button disabled={busy || !files.project} title="Disponible dans l’application desktop" onClick={() => openProject(false)}>Ouvrir projet</Button>
-      <Button disabled={busy} onClick={() => void save()}>Enregistrer <kbd>Ctrl S</kbd></Button>
+      <Button disabled={busy} onClick={() => void save()}>Enregistrer <kbd>{shortcutLabel(preferences.keymap.save)}</kbd></Button>
       <Button disabled={busy || !project || !files.project} onClick={() => void saveAll()}>Enregistrer tout</Button>
       <Button disabled={busy || !project || !files.history} onClick={() => setHistoryOpen(true)}>Historique local</Button>
       <Button disabled={busy || !!project} onClick={() => void perform(() => files.save(source, true), 'Listing enregistré', true)}>Enregistrer sous</Button>
-      <Button className="primary" disabled={busy} onClick={() => runCurrent.current()}>Exécuter <kbd>F5</kbd></Button>
+      <Button className="primary" disabled={busy} onClick={() => runCurrent.current()}>Exécuter <kbd>{shortcutLabel(preferences.keymap.run)}</kbd></Button>
       <Button className="primary" disabled={busy} onClick={() => void exportDisk()}>Exporter DSK</Button>
       <Button onClick={() => { editor.current?.focus(); void editor.current?.getAction('editor.action.triggerSuggest')?.run(); }}>Compléter <kbd>Ctrl Espace</kbd></Button>
       <Button disabled={busy} onClick={() => setRenumberOpen(true)}>Renuméroter</Button>
@@ -448,7 +447,7 @@ export function App() {
     <div ref={workspaceElement} className={`workspace ${sidebarOpen && !panels.tools.floating ? '' : 'sidebar-closed'} ${agentOpen && !panels.agent.floating ? '' : 'agent-closed'}`}>
       <nav className="activitybar" aria-label="Outils de l’IDE">{[
         ['project', 'Explorateur', 'folder'], ['search', 'Recherche', 'search'], ['git', 'Git', 'git'], ['documents', 'Documents', 'file'], ['reference', 'Référence BASIC', 'book'], ['recovery', 'Récupération', 'history'], ['firmware', 'ROM CPC', 'chip'],
-      ].map(([id, label, icon]) => <Button key={id} icon={icon as import('./Icon.tsx').IconName} aria-label={`Afficher ${label}`} aria-pressed={sidebarOpen && tool === id} title={label} onClick={() => { if (sidebarOpen && tool === id) setSidebarOpen(false); else showTool(id!); }} />)}<Button icon="spark" aria-label="Afficher l’agent IA" aria-pressed={agentOpen} title="Agent IA · Ctrl Maj A" onClick={() => setAgentOpen(value => !value)} /></nav>
+      ].map(([id, label, icon]) => <Button key={id} icon={icon as import('./Icon.tsx').IconName} aria-label={`Afficher ${label}`} aria-pressed={sidebarOpen && tool === id} title={label} onClick={() => { if (sidebarOpen && tool === id) setSidebarOpen(false); else showTool(id!); }} />)}<Button icon="spark" aria-label="Afficher l’agent IA" aria-pressed={agentOpen} title={`Agent IA · ${shortcutLabel(preferences.keymap.agent)}`} onClick={() => setAgentOpen(value => !value)} /></nav>
       <DockPanel as="aside" className="tool-sidebar" label="Outils du projet" name="les outils" hidden={!sidebarOpen} layout={panels.tools} onLayout={value => updatePanel('tools', value)} onHide={() => setSidebarOpen(false)}>
         <div className="tool-content" hidden={tool !== 'recovery'}>{!project && <div className="empty-tool">Ouvrez un projet pour retrouver ses brouillons et suivre les modifications externes.</div>}
         {project && files.external && <ExternalPanel key={`external:${project.sessionId}`} sessionId={project.sessionId} documents={documents} busy={busy} onAccept={(version, before, reload) => {
@@ -506,7 +505,7 @@ export function App() {
       <ResizeHandle className="tools-separator" label="Largeur des outils" orientation="vertical" value={Math.min(preferences.sidebarWidth, workspaceSize.width * .3)} min={180} max={Math.min(800, workspaceSize.width * .3)} hidden={!sidebarOpen || panels.tools.floating} onChange={sidebarWidth => setPreferences(previous => ({ ...previous, sidebarWidth }))} />
 
       <section className="listing" aria-label="Éditeur">
-        <div className="tabs" role="tablist" aria-label="Sources ouvertes">{documents.filter(document => !closedTabs.has(document.id)).map(document => <div className="tab-entry" key={document.id}><Button role="tab" aria-selected={document.id === activeId} className="tab" disabled={busy} onClick={() => setActiveId(document.id)} onMouseDown={event => { if (event.button === 1) { event.preventDefault(); event.currentTarget.focus(); } }} onAuxClick={event => { if (event.button === 1) { event.preventDefault(); event.stopPropagation(); requestAnimationFrame(() => closeTab(document.id)); } }} onContextMenu={event => { event.preventDefault(); setContextSource(document.id); }} onKeyDown={event => { if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) { event.preventDefault(); setContextSource(document.id); } }}>{document.name}{document.source !== document.saved ? ' • modifié' : ''}</Button><Button icon="close" className="tab-close" aria-label={`Fermer l’onglet ${document.name}`} title="Fermer la vue · buffer conservé · Ctrl W" disabled={busy || documents.filter(item => !closedTabs.has(item.id)).length < 2} onClick={() => closeTab(document.id)} /></div>)}</div>
+        <div className="tabs" role="tablist" aria-label="Sources ouvertes">{documents.filter(document => !closedTabs.has(document.id)).map(document => <div className="tab-entry" key={document.id}><Button role="tab" aria-selected={document.id === activeId} className="tab" disabled={busy} onClick={() => setActiveId(document.id)} onMouseDown={event => { if (event.button === 1) { event.preventDefault(); event.currentTarget.focus(); } }} onAuxClick={event => { if (event.button === 1) { event.preventDefault(); event.stopPropagation(); requestAnimationFrame(() => closeTab(document.id)); } }} onContextMenu={event => { event.preventDefault(); setContextSource(document.id); }} onKeyDown={event => { if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) { event.preventDefault(); setContextSource(document.id); } }}>{document.name}{document.source !== document.saved ? ' • modifié' : ''}</Button><Button icon="close" className="tab-close" aria-label={`Fermer l’onglet ${document.name}`} title={`Fermer la vue · buffer conservé · ${shortcutLabel(preferences.keymap['close-tab'])}`} disabled={busy || documents.filter(item => !closedTabs.has(item.id)).length < 2} onClick={() => closeTab(document.id)} /></div>)}</div>
         <Editor preferences={preferences} documents={documents} activeId={activeId} diagnostics={analysis.diagnostics} busy={busy} onChange={(id, value) => setDocuments(items => items.map(item => item.id === id ? { ...item, source: value } : item))} onCommand={setCard}
           navigation={navigation} onWorkspaceReady={value => { editorWorkspace.current = value; }}
           onPosition={(line, column) => setPosition({ line, column })}
@@ -518,7 +517,7 @@ export function App() {
             editor.current?.revealLineInCenter(d.line); editor.current?.setPosition({ lineNumber: d.line, column: d.start + 1 }); editor.current?.focus();
           }}>L{d.line} · {d.severity === 'error' ? 'Erreur' : 'Avertissement'} · {d.message}</Button></li>)}</ul> : <p className="success">Aucun problème détecté dans le sous-ensemble analysé.</p>}
         </div>
-        <div className="emulator-output" hidden={outputTab !== 'emulator'}>{emulatorLaunch ? <EmulatorPanel key={emulatorLaunch.id} launch={emulatorLaunch} onClose={() => setEmulatorLaunch(undefined)} onConfigure={() => showTool('firmware')} /> : <div className="empty-tool"><Icon name="chip" /><p>Exécutez le listing avec F5 pour ouvrir le CPC.</p></div>}</div>
+        <div className="emulator-output" hidden={outputTab !== 'emulator'}>{emulatorLaunch ? <EmulatorPanel key={emulatorLaunch.id} launch={emulatorLaunch} onClose={() => setEmulatorLaunch(undefined)} onConfigure={() => showTool('firmware')} /> : <div className="empty-tool"><Icon name="chip" /><p>Exécutez le listing avec le bouton Exécuter pour ouvrir le CPC.</p></div>}</div>
         {project ? <GitLogPanel key={`git-log:${project.sessionId}`} sessionId={project.sessionId} busy={busy} visible={outputTab === 'git-log'} /> : outputTab === 'git-log' && <div className="empty-tool">Ouvrez un projet pour consulter son journal Git.</div>}
         {project ? <TerminalPanel key={`terminal:${project.sessionId}`} sessionId={project.sessionId} busy={busy} dirty={dirty} visible={terminalOpen && outputTab === 'terminal'} onBusy={setBusy} /> : outputTab === 'terminal' && <div className="empty-tool">Ouvrez un projet pour exécuter des commandes dans son dossier.</div>}
         </DockPanel>
@@ -531,7 +530,7 @@ export function App() {
     {githubOpen && <GitHubDialog busy={busy} onClone={cloneProject} {...(project ? { onRemote: associateRemote } : {})} onClose={() => setGithubOpen(false)} />}
     {recentProjectsOpen && <RecentProjectsDialog busy={busy} onOpen={openRecentProject} onChoose={() => openProject(false)} onClose={() => setRecentProjectsOpen(false)} />}
     {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
-    {settingsOpen && <SettingsDialog preferences={preferences} onApply={setPreferences} onClose={() => setSettingsOpen(false)} />}
+    {settingsOpen && <SettingsDialog preferences={preferences} commands={commands} onApply={setPreferences} onClose={() => { setSettingsOpen(false); requestAnimationFrame(() => editor.current?.focus()); }} />}
     {shortcutsOpen && <ShortcutsDialog commands={commands} onClose={() => setShortcutsOpen(false)} />}
     {sourceDialog && project && (() => {
       const selected = documents.find(document => document.sourceId === sourceDialog.sourceId), source = project.manifest.sources.find(source => source.id === sourceDialog.sourceId);

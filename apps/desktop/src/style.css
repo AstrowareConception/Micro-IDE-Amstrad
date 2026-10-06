@@ -200,3 +200,31 @@ select{font:inherit;width:100%;margin:8px 0;background:var(--input);color:inheri
 .source-operation-dialog table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 1rem 0; }
 .source-operation-dialog th, .source-operation-dialog td { padding: .6rem .5rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
 .source-operation-dialog th:first-child { width: 22%; }
+
+/* Personalization affects the workbench, never the CPC palette or pixels. */
+:root[data-accent=amber]{--accent:#ffd080;--action:#66420d}
+:root[data-accent=violet]{--accent:#c7b0ff;--action:#594391}
+:root[data-accent=green]{--accent:#83dfb1;--action:#225d46}
+:root[data-accent=rose]{--accent:#ffadc5;--action:#7f3852}
+:root[data-theme=light][data-accent=amber]{--accent:#895700;--action:#895700}
+:root[data-theme=light][data-accent=violet]{--accent:#7044b5;--action:#7044b5}
+:root[data-theme=light][data-accent=green]{--accent:#18734e;--action:#18734e}
+:root[data-theme=light][data-accent=rose]{--accent:#ac365e;--action:#ac365e}
+:root:not([data-accent=cyan]) .primary{background:var(--action);border-color:var(--accent);color:#fff}
+:root[data-density=compact] .topbar{min-height:52px;padding-block:4px}
+:root[data-density=compact] .topbar .brand-mark{width:32px;height:32px}
+:root[data-density=compact] .toolbar{padding-block:4px}
+:root[data-density=compact] .toolbar button,:root[data-density=compact] .tabs .tab{padding:5px 8px}
+:root[data-density=compact] .panel{padding:10px}
+:root[data-density=compact] .project-explorer button{padding-block:3px}
+.settings-categories{display:flex;gap:5px;flex-wrap:wrap;margin:12px 0}
+.settings-categories button{padding:6px 9px;font-size:12px}
+.settings-categories [aria-pressed=true]{background:var(--selected);border-color:var(--accent)}
+.advanced-settings{width:min(880px,94vw);max-height:88vh}
+.advanced-settings select{width:100%;background:var(--input);color:var(--fg);border:1px solid var(--line-strong);border-radius:4px;font:inherit}
+.advanced-settings .settings-actions{position:sticky;bottom:-24px;background:var(--panel);padding:16px 0 8px;border-top:1px solid var(--line);z-index:1}
+.settings-wide,.settings-profile-actions{grid-column:1/-1}
+.settings-profile-actions{display:flex;flex-wrap:wrap;gap:6px}
+.settings-profile-actions button{font-size:12px}
+.advanced-settings [role=alert]{border:1px solid var(--accent);padding:12px;overflow-wrap:anywhere}
+.advanced-settings input[readonly]{font-family:Consolas,monospace;cursor:pointer}
