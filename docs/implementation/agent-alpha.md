@@ -58,3 +58,7 @@ Local : typecheck, **43 tests**, construction desktop, contrôle documentation/s
 Le parcours Electron étendu utilise un transport contrôlé en remplaçant `fetch` seulement dans le processus de test : il exerce le vrai adaptateur Responses, le main/preload/renderer, les outils et fichiers réels, les drafts, checkpoint, comparaison, conflit de restauration et arrêt. Aucun endpoint alternatif ni mode de simulation n'est exposé par le produit. Consulter le résultat réel du workflow `Desktop editor` dans la PR ; sa seule configuration ne vaut pas réussite. Aucun appel OpenAI facturé ou programme CPC réel n'a été exécuté par ces tests.
 
 Contribution partielle à J5-01/02/03/04/05, REQ-AI et ACC-15/18/22/27/28/29/30 selon les capacités ci-dessus ; aucun de ces scénarios globaux n'est clôturé. Suite : recette volontaire avec clé réelle, crash recovery transactionnel, persistance clé via stockage OS sûr, pause/reprise, continuation de budget, modes Revue/Explication, documents/images/PDF et outils de machine qualifiée. [Intégration de l'émulateur](emulator-integration.md).
+
+## Évolution 0.29
+
+Les budgets/durée de sortie ci-dessus décrivent la tranche historique 0.6. Le [guide 0.29](agent-missions-alpha.md) remplace son interface, passe au défaut 20 tours paramétrable et 8 192 tokens de sortie, affiche résultats/usage/coût et ajoute reprise en mémoire. Les outils/checkpoints précédents restent conservés.

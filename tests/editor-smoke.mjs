@@ -1,3 +1,4 @@
+import { verifyAgentWorkbench } from './agent-workbench-smoke.mjs';
 import assert from 'node:assert/strict';
 import { verifyGitWorkbench } from './git-workbench-smoke.mjs';
 import { verifyRecentProjects } from './recent-projects-smoke.mjs';
@@ -260,6 +261,7 @@ try {
     } };
   });
   await modelsPage.goto('http://127.0.0.1:5173');
+  await modelsPage.getByRole('button', { name: 'Réglages IA', exact: true }).click();
   const modelPicker = modelsPage.getByRole('combobox', { name: 'Modèle OpenAI', exact: true });
   await expect(modelPicker).toBeDisabled();
   await expect(modelsPage.getByRole('textbox', { name: 'Modèle OpenAI', exact: true })).toHaveCount(0);
@@ -268,9 +270,13 @@ try {
   await expect(modelPicker).toBeEnabled(); await expect(modelPicker).toHaveValue('');
   await expect(modelsPage.getByLabel('Clé API OpenAI', { exact: true })).toHaveValue('');
   await modelPicker.selectOption('gpt-99-ui'); await expect(modelPicker).toHaveValue('gpt-99-ui');
+  await modelsPage.getByRole('button', { name: 'Fermer les réglages IA', exact: true }).click();
   await modelsPage.getByRole('button', { name: 'Détacher l’agent IA', exact: true }).click();
+  await modelsPage.getByRole('button', { name: 'Réglages IA', exact: true }).click();
   await expect(modelPicker).toHaveValue('gpt-99-ui');
+  await modelsPage.getByRole('button', { name: 'Fermer les réglages IA', exact: true }).click();
   await modelsPage.getByRole('button', { name: 'Réancrer l’agent IA', exact: true }).click();
+  await modelsPage.getByRole('button', { name: 'Réglages IA', exact: true }).click();
   await expect(modelPicker).toHaveValue('gpt-99-ui');
   await modelsPage.getByRole('button', { name: 'Actualiser les modèles', exact: true }).click();
   await expect(modelPicker).toContainText('gpt-100-ui-new'); await expect(modelPicker).toHaveValue('gpt-99-ui');
@@ -288,6 +294,7 @@ try {
   await modelsPage.screenshot({ path: 'out/models-alpha.png' });
   await modelsPage.getByRole('button', { name: 'Oublier la clé', exact: true }).click();
   await expect(modelPicker).toBeDisabled(); await expect(modelPicker).toHaveValue('');
+  await modelsPage.getByRole('button', { name: 'Fermer les réglages IA', exact: true }).click();
   await modelsPage.getByRole('button', { name: 'Ouvrir projet', exact: true }).click();
   await modelsPage.bringToFront();
   const modelInput = modelsPage.locator('.listing .monaco-editor textarea');
@@ -326,6 +333,7 @@ try {
   await modelsPage.close();
   await verifyRecentProjects(browser, errors);
   await verifyGitWorkbench(browser, errors);
+  await verifyAgentWorkbench(browser, errors);
   assert.deepEqual(errors, [], 'No browser errors');
   console.log('Editor browser smoke: completion, coloration, help, diagnostics, F12, downloads, dirty protection plus renumber preview/apply/DSK/undo/redo/stale revision passed.');
 } catch (error) {

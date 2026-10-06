@@ -103,6 +103,10 @@ jobs:
             out/emulator-failure.png
             out/firmware-runtime.json
             out/models-alpha.png
+            out/agent-settings-alpha.png
+            out/agent-pause-alpha.png
+            out/agent-missions-alpha.png
+            out/agent-missions-desktop-alpha.png
             out/dock-layout-alpha.png
             out/recent-projects-alpha.png
             out/menu-placement-alpha.png

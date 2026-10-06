@@ -496,6 +496,7 @@ route('agent:models', async payload => {
   return agent.models((payload as { key?: unknown } | undefined)?.key);
 });
 route('agent:select-model', async payload => agent.selectModel(payload));
+route('agent:pricing', async payload => agent.pricing(payload));
 route('agent:configure', async payload => {
   if (!payload || typeof payload !== 'object') throw new Error('Configuration invalide.');
   const value = payload as Record<string, unknown>; return agent.configure(value.key, value.model);
@@ -503,7 +504,11 @@ route('agent:configure', async payload => {
 route('agent:start', async payload => {
   const { store, value } = projectRequest(payload);
   if (value.includeDocuments !== undefined && typeof value.includeDocuments !== 'boolean') throw new Error('Scope documentaire invalide.');
-  return agent.start(store, value.objective, bufferRequest(value.buffers), value.includeDocuments === true);
+  return agent.start(store, value.objective, bufferRequest(value.buffers), value.includeDocuments === true, value.budget);
+});
+route('agent:resume', async payload => {
+  const { store, value } = projectRequest(payload);
+  return agent.resume(value.taskId, store, bufferRequest(value.buffers));
 });
 route('agent:status', async payload => agent.status(payload));
 route('agent:cancel', async payload => agent.cancel(payload));

@@ -76,6 +76,8 @@ La tranche [dépôt/index Git 0.13](implementation/git-local-index-alpha.md) ajo
 | [15 — Corpus Locomotive BASIC](specifications/15-corpus-locomotive-basic.md) | Comment les références du langage guident-elles et vérifient-elles le travail ? |
 | [16 — Git intégré](specifications/16-integration-git.md) | Comment versionner, gérer les branches et synchroniser sans perdre ni publier implicitement le travail ? |
 | [17 — Roadmap IDE complet](specifications/17-roadmap-ide-complet.md) | Quelles 75 fonctionnalités réaliser, dans quel ordre et avec quelles preuves ? |
+| [18 — Incréments IDE de production](specifications/18-increments-ide-production.md) | Quels parcours, dépendances et recettes pour les huit lots ? |
+| [19 — Expérience et consommation agent](specifications/19-agent-experience-consommation.md) | Comment comprendre une mission, reprendre et suivre son coût ? |
 | [Glossaire](reference/glossaire.md) | Quel vocabulaire partager ? |
 | [Sources](reference/sources.md) | Sur quelles références reposent les décisions ? |
 | [ADR](adr/README.md) | Pourquoi les options principales ont-elles été retenues ? |
@@ -97,3 +99,5 @@ Le périmètre du **MVP produit** inclut l'éditeur, l'émulation, le DSK, les p
 En cas de contradiction : contrat métier et exigence spécifique priment sur illustration ; une ADR remplace un choix précédent seulement lorsqu'elle le dit. Tout changement incompatible exige une mise à jour coordonnée des schémas, exemples, scénarios et ADR concernés. Aucun texte ne doit présenter un objectif de performance ou un essai prévu comme une mesure effectuée.
 
 Les [préférences et retours utilisateurs 0.25](adr/0032-preferences-et-retours-utilisateurs.md) ajoutent thèmes/police/édition/disposition persistés, auto-save de projet opt-in, journal Git dans le dock et tickets préparés depuis Aide.
+
+L’[agent 0.29](implementation/agent-missions-alpha.md) sépare réglages et mission, affiche résultats/erreurs et consommations, et reprend les limites avec contexte conservé dans la session ([ADR 0036](adr/0036-agent-reprise-resultats-et-consommation.md)). Spécifications des huit lots au document 18 et parcours agent au document 19 ; aucune qualification globale J5/J6 annoncée.
