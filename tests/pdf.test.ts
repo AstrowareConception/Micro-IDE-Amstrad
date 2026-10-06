@@ -24,7 +24,8 @@ test('real PDF.js worker extracts numbered pages, ignores actions, preserves bla
   await assert.rejects(extractPdf(pdfFixture([['SECRET']], true)), /chiffré/);
   await assert.rejects(extractPdf(pdfFixture(Array.from({ length: 21 }, () => ['page']))), /quota-exceeded/);
   await assert.rejects(extractPdf(pdfFixture([['X'.repeat(66000)]], false, 0.001)), /quota-exceeded/);
-  await assert.rejects(extractPdf(pdfFixture(Array.from({ length: 5 }, () => ['X'.repeat(60000)]), false, 0.001)), /quota-exceeded/);
+  const aggregateQuota = pdfFixture(Array.from({ length: 5 }, () => ['X'.repeat(60000)]), false, 0.001);
+  await Promise.all(Array.from({ length: 4 }, () => assert.rejects(extractPdf(aggregateQuota), /quota-exceeded/)));
 });
 
 test('PDF worker cancellation and timeout reject promptly and terminate; decoder result validates page, UTF-8 budgets and controls', async () => {

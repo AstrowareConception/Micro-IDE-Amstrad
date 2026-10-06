@@ -20,6 +20,8 @@ Un dossier retourne au maximum 500 entrées après examen de 2 000 éléments. S
 
 La recette Electron ajoutée dans `desktop-smoke.mjs` et la recette Windows s’exécutent dans les workflows CI de la [PR #32](https://github.com/AstrowareConception/Micro-IDE-Amstrad/pull/32). Electron/Xvfb n’est pas disponible dans l’environnement local. La description de PR consigne les résultats et liens vers les preuves finales ; un scénario préparé ne vaut pas une recette réussie. Les contrôles CI de la PR #31 concernent son propre commit 0.29.
 
+Les recettes couvrent aussi les dossiers `constructor`/`__proto__` et attendent la fin des opérations natives avant leurs assertions de session/ROM. La CI a révélé deux régressions antérieures : attente du checkpoint limitée à une seconde, et annulation du flux texte PDF en concurrence avec sa fermeture par PDF.js. Le test attend désormais l’état final avec une borne de dix secondes ; le décodeur libère le lecteur, puis détruit le document et termine le thread selon le contrat existant. Les limites PDF restent identiques et leur refus est vérifié avec quatre extractions parallèles.
+
 ## Suite
 
 Lot 1 et IDE-002/003/004 restent partiels. Ajouter ensuite les mutations humaines durables et les onglets de prévisualisation, édition des fichiers ordinaires, badges Git, exclusions configurables et restauration des vues. Le parser BASIC reste le lot 2. Aucun succès d’exploration ne qualifie une mission créative réelle, l’émulation globale ou la distribution 1.0.

@@ -131,7 +131,12 @@ test('controller resumes the same task/checkpoint but refuses edited buffers, ex
   const initial = snapshot.files[0]!.source;
   controller.configure('sk-test-fixture-not-real', 'gpt-5.6-luna');
   const { taskId } = await controller.start(store, objective, [{ id: 'main', source: initial }], false, { maxTurns: 1, maxCalls: 60, maxTokens: 60000 });
-  const settle = async () => { for (let i = 0; i < 200 && controller.running; i++) await new Promise(resolve => setTimeout(resolve, 5)); assert.equal(controller.running, false); return controller.status(taskId); };
+  const settle = async (id = taskId) => {
+    const deadline = Date.now() + 10000;
+    while (controller.running && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 10));
+    assert.equal(controller.running, false, 'The controlled mission must finish before inspecting its checkpoint.');
+    return controller.status(id);
+  };
   assert.equal((await settle()).resumable, true);
   await assert.rejects(controller.resume(taskId, store, [{ id: 'main', source: initial + '30 REM USER\n' }]), /stale-read/);
   await writeFile(join(store.root, 'src/main.bas'), initial + '30 REM EXTERNAL\n');
@@ -146,8 +151,7 @@ test('controller resumes the same task/checkpoint but refuses edited buffers, ex
   for (const key of ['', 'sk-replacement-fixture-key']) {
     step = 0;
     const next = await controller.start(store, objective, [{ id: 'main', source: initial }], false, { maxTurns: 1, maxCalls: 60, maxTokens: 60000 });
-    for (let i = 0; i < 200 && controller.running; i++) await new Promise(resolve => setTimeout(resolve, 5));
-    assert.equal(controller.status(next.taskId).resumable, true);
+    assert.equal((await settle(next.taskId)).resumable, true);
     controller.configure(key, 'gpt-5.6-luna');
     assert.equal(controller.status(next.taskId).resumable, false);
     await assert.rejects(controller.resume(next.taskId, store, [{ id: 'main', source: initial }]), /ne peut pas être reprise/);

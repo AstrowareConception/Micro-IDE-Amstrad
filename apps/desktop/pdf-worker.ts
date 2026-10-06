@@ -25,7 +25,11 @@ try {
           text += part;
         }
       }
-    } finally { await reader.cancel().catch(() => undefined); documentPage.cleanup(); }
+    } finally {
+      // Cancelling here races PDF.js closing its text stream and can lose our quota
+      // result to ERR_INVALID_STATE. The outer destroy/host termination stops it.
+      reader.releaseLock(); documentPage.cleanup();
+    }
     total += size; pages.push({ page, text: text.trimEnd() });
   }
   parentPort?.postMessage({ pageCount: pdf.numPages, pages, extraction: 'pdfjs-text-v1' });
