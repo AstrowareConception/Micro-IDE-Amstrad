@@ -10,7 +10,7 @@ Nom de produit du projet historiquement appelé « Micro IDE Amstrad ». [Identi
 
 Un atelier de programmation pour écrire du **Locomotive BASIC**, le tester dans un **Amstrad CPC émulé**, travailler avec une **IA et ses propres documents**, puis partager une **disquette DSK utilisable hors de l'IDE**.
 
-**État au 5 octobre 2026 : alpha desktop, version 0.24.** Electron/Monaco propose édition BASIC, menus/palette/contextes, ouverture rapide, renumérotation conservatrice, projets multifichiers et export DSK, ainsi qu'un agent OpenAI à outils : exploration, références du corpus fourni, documents TXT/MD/PDF texte et aperçus PNG/JPEG autorisés, création/remplacement de sources, renumérotation, analyse et construction, journal, avant/après et restauration de la mission courante. Clé API en mémoire côté main. L'import local des ROM OS/BASIC/AMSDOS et leur vérification sont disponibles ; Git natif ajoute statut/diff, création de dépôt, indexation sélective locale, commits examinés et historique paginé. Le terminal humain exécute des commandes hôte sans PTY, avec confirmation et limites ; aucun accès shell accordé à l’IA. Ce n'est pas encore le MVP : crash recovery complet, WebP/rendu PDF, synchronisation Git intégrée, conversion écran et émulation intégrée qualifiée restent à construire. Boot BASIC 1.1 et RUN depuis DSK sont vérifiés avec un jeu 6128 anglais identifié ; la relecture indépendante et la qualification matérielle globale restent ouvertes.
+**État au 6 octobre 2026 : alpha desktop, version 0.24.1.** Electron/Monaco propose édition BASIC, menus/palette/contextes, ouverture rapide, renumérotation conservatrice, projets multifichiers et export DSK, ainsi qu'un agent OpenAI à outils : exploration, références du corpus fourni, documents TXT/MD/PDF texte et aperçus PNG/JPEG autorisés, création/remplacement de sources, renumérotation, analyse et construction, journal, avant/après et restauration de la mission courante. Clé API en mémoire côté main. L'import local des ROM OS/BASIC/AMSDOS et leur vérification sont disponibles ; Git natif ajoute statut/diff, création de dépôt, indexation sélective locale, commits examinés et historique paginé. Le terminal humain exécute des commandes hôte sans PTY, avec confirmation et limites ; aucun accès shell accordé à l’IA. Ce n'est pas encore le MVP : crash recovery complet, WebP/rendu PDF, synchronisation Git intégrée, conversion écran et émulation intégrée qualifiée restent à construire. Boot BASIC 1.1 et RUN depuis DSK sont vérifiés avec un jeu 6128 anglais identifié ; la relecture indépendante et la qualification matérielle globale restent ouvertes.
 
 ## Lancer l'éditeur
 
@@ -34,17 +34,16 @@ Un atelier de programmation pour écrire du **Locomotive BASIC**, le tester dans
 
 **Outils d’atelier 0.14** : `Ctrl/Cmd Maj P` ouvre la palette, `Ctrl/Cmd P` les sources. Menus Fichier/Édition/BASIC/Affichage, clic droit éditeur/onglet et bouton ⋯ d’une source. Historique Git en lecture seule et terminal local à commandes avec arrêt ; [guide complet et limites](docs/implementation/workbench-alpha.md).
 
-Avec Node 24.12+ dans la branche 24 :
+Avec Node 24.12+ dans la branche 24, Python 3.12+ et Git installés (Windows/PowerShell, Linux et macOS) :
 
 ```bash
 npm ci --ignore-scripts
 node node_modules/electron/install.js
-npm run chips:fetch
-# Installer/activer emsdk 4.0.15, voir le guide Exécuter.
-EMCC=/chemin/emsdk/upstream/emscripten/emcc npm run build:wasm
 npm run build:desktop
 npm start
 ```
+
+Depuis 0.24.1, `npm run build:desktop` prépare automatiquement le moteur CPC manquant : headers vérifiés, SDK Emscripten 4.0.15 verrouillé dans `.cache/emsdk`, puis compilation WASM. Le premier build télécharge le SDK (volumineux) et nécessite Internet ; aucun firmware n’est téléchargé. Les builds suivants réutilisent le moteur local. `npm run emulator:prepare` le reconstruit explicitement après un changement du wrapper C ou du lock. Un compilateur externe peut être fourni avec `EMCC` ; voir le [guide](docs/implementation/emulator-run-alpha.md).
 
 L'application s'ouvre sur un exemple BASIC. `Ctrl Espace` complète, `Ctrl S` enregistre et `F12` rejoint une cible littérale. Aucune ROM ou clé IA n'est nécessaire pour éditer et construire un DSK. [Guide, sécurité et limites de cette alpha](docs/implementation/editor-alpha.md).
 

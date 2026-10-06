@@ -1,7 +1,15 @@
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, cpSync, existsSync, mkdirSync } from 'node:fs';
+import { copyFileSync, cpSync, mkdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { engineAvailable, prepareEngine } from './emulator-build.mjs';
+process.chdir(fileURLToPath(new URL('../', import.meta.url)));
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-if (!existsSync('out/cpc.mjs') || !existsSync('out/cpc.wasm')) throw new Error('Moteur CPC absent : npm run chips:fetch puis EMCC=<emsdk>/upstream/emscripten/emcc npm run build:wasm.');
+try {
+  if (!engineAvailable()) prepareEngine();
+} catch (error) {
+  console.error(error.message);
+  process.exit(1);
+}
 mkdirSync('apps/desktop/public/emulator', { recursive: true });
 for (const name of ['cpc.mjs', 'cpc.wasm']) copyFileSync('out/' + name, 'apps/desktop/public/emulator/' + name);
 copyFileSync('licenses/chips.txt', 'apps/desktop/public/emulator/chips.txt');
