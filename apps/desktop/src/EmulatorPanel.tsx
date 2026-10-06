@@ -1,10 +1,12 @@
+import type { Notify } from './notifications.ts';
 import { Button } from './Icon.tsx';
 import { useEffect, useRef, useState } from 'react';
 import type { RunRequest } from '../../../packages/emulator/src/run.ts';
 import { files } from './port.ts';
 export interface EmulatorLaunch { id: string; request: RunRequest }
 const specials: Record<string, number> = { Enter: 13, Escape: 3, Backspace: 1, Delete: 12, ArrowLeft: 8, ArrowRight: 9, ArrowDown: 10, ArrowUp: 11 };
-export function EmulatorPanel({ launch, onClose, onConfigure }: { launch: EmulatorLaunch; onClose(): void; onConfigure(): void }) {
+export function EmulatorPanel({ launch, onClose, onConfigure, onNotify }: { launch: EmulatorLaunch; onClose(): void; onConfigure(): void; onNotify?: Notify }) {
+  const latestNotify = useRef(onNotify); latestNotify.current = onNotify;
   const viewport = useRef<HTMLDivElement>(null);
   const [screenSize, setScreenSize] = useState({ width: 400, height: 200 });
   const [zoom, setZoom] = useState('fit');
@@ -25,7 +27,7 @@ export function EmulatorPanel({ launch, onClose, onConfigure }: { launch: Emulat
   useEffect(() => {
     let cancelled = false, timer: ReturnType<typeof setTimeout> | undefined;
     const currentNodes = nodes.current;
-    const fail = (message: string) => { if (!cancelled) { setMessage(message); setPhase('error'); worker.current?.terminate(); worker.current = undefined; } };
+    const fail = (message: string) => { if (!cancelled) { setMessage(message); setPhase('error'); latestNotify.current?.({ source: 'emulator', target: 'emulator', sessionId: launch.request.sessionId, level: 'error', message: 'Exécution CPC interrompue. Consultez les détails et vérifiez les ROM.' }); worker.current?.terminate(); worker.current = undefined; } };
     void (async () => {
       if (!files.emulator) { fail('Exécution disponible dans l’application desktop.'); return; }
       const result = await files.emulator.prepare(launch.request);
@@ -38,7 +40,7 @@ export function EmulatorPanel({ launch, onClose, onConfigure }: { launch: Emulat
       current.onmessage = event => {
         if (cancelled || worker.current !== current || event.data.id !== launch.id) return;
         const value = event.data;
-        if (value.type === 'state') { clearTimeout(timer); setPhase(value.phase); setMessage(value.message); }
+        if (value.type === 'state') { clearTimeout(timer); setPhase(value.phase); setMessage(value.message); latestNotify.current?.({ source: 'emulator', target: 'emulator', sessionId: launch.request.sessionId, level: 'info', message: value.phase === 'running' ? 'Commande RUN envoyée au CPC. Résultat visible à l’écran.' : 'CPC démarré. Vérifiez Ready à l’écran.' }); }
         else if (value.type === 'error') fail(value.message);
         else if (value.type === 'frame' && value.pixels instanceof Uint8ClampedArray && value.width <= 1024 && value.height <= 1024 && value.pixels.length === value.width * value.height * 4) {
           const screen = canvas.current;

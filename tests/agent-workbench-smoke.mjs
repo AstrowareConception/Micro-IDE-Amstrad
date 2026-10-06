@@ -74,6 +74,12 @@ export async function verifyAgentWorkbench(browser, errors) {
     await panel.getByRole('button', { name: 'Restaurer le checkpoint initial', exact: true }).click();
     await expect(page.locator('.view-lines')).toContainText('ORIGINAL');
     await expect(panel).toContainText('Checkpoint initial restauré');
+    await page.keyboard.press('Control+Alt+n'); const notifications = page.getByRole('dialog', { name: 'Centre de notifications', exact: true });
+    await notifications.getByLabel('Origine des notifications', { exact: true }).selectOption('agent');
+    await expect(notifications).toContainText('Mission terminée · 1 fichier(s) modifié(s) · 6000 tokens.');
+    await expect(notifications).toContainText('Mission en pause — limite atteinte');
+    await expect(notifications).not.toContainText('Je prépare un titre'); await expect(notifications).not.toContainText('sk-ui-fixture'); await expect(notifications).not.toContainText('reference-required');
+    await page.keyboard.press('Escape');
     console.log('Agent UI: settings separated, key cleared, official rate, optional steering, pause/error/live counters/cost/resume/diff/restore passed with controlled fixtures.');
   } finally { await page.close(); }
 }

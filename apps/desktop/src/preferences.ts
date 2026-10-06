@@ -9,6 +9,7 @@ export interface Preferences {
   lineHeight: number; lineNumbers: 'on' | 'relative' | 'off'; whitespace: 'none' | 'selection' | 'all';
   cursorStyle: 'line' | 'block' | 'underline'; cursorBlinking: 'blink' | 'solid';
   fontLigatures: boolean; indentGuides: boolean; bracketColors: boolean; ruler: number;
+  notificationPopups: 'all' | 'errors' | 'off';
   keymap: Keymap;
 }
 export const PREFERENCES_KEY = 'cpceleste.preferences.v2';
@@ -20,7 +21,7 @@ export const DEFAULT_PREFERENCES: Readonly<Preferences> = Object.freeze({
   renumberStart: 10, renumberStep: 10, sidebarWidth: 260, agentWidth: 310, outputHeight: 230,
   accent: 'cyan', density: 'comfortable', lineHeight: 0, lineNumbers: 'on', whitespace: 'selection',
   cursorStyle: 'line', cursorBlinking: 'blink', fontLigatures: false, indentGuides: true, bracketColors: false, ruler: 0,
-  keymap: DEFAULT_KEYMAP,
+  notificationPopups: 'all', keymap: DEFAULT_KEYMAP,
 });
 export function parsePreferences(value: unknown): Preferences {
   const result: Preferences = { ...DEFAULT_PREFERENCES, keymap: { ...DEFAULT_KEYMAP } };
@@ -40,7 +41,7 @@ export function parsePreferences(value: unknown): Preferences {
     const number = input[key];
     if (typeof number === 'number' && Number.isInteger(number) && number >= min && number <= max) result[key] = number;
   }
-  for (const [key, choices] of [['accent', ['cyan', 'amber', 'violet', 'green', 'rose']], ['density', ['comfortable', 'compact']], ['lineNumbers', ['on', 'relative', 'off']], ['whitespace', ['none', 'selection', 'all']], ['cursorStyle', ['line', 'block', 'underline']], ['cursorBlinking', ['blink', 'solid']]] as const) {
+  for (const [key, choices] of [['notificationPopups', ['all', 'errors', 'off']], ['accent', ['cyan', 'amber', 'violet', 'green', 'rose']], ['density', ['comfortable', 'compact']], ['lineNumbers', ['on', 'relative', 'off']], ['whitespace', ['none', 'selection', 'all']], ['cursorStyle', ['line', 'block', 'underline']], ['cursorBlinking', ['blink', 'solid']]] as const) {
     if ((choices as readonly unknown[]).includes(input[key])) Object.assign(result, { [key]: input[key] });
   }
   result.keymap = parseKeymap(input.keymap);

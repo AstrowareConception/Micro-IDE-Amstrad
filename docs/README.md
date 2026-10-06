@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.32
+# CPCéleste — Dossier de conception et réalisation — version 0.33
+
+**Notifications 0.33** : registre de session borné, filtres/niveaux/origines/non lus, détails et aperçus personnalisables. [Guide](implementation/notifications-alpha.md), [ADR 0040](adr/0040-centre-notifications-session.md). IDE-029 et lot 7 partiels.
 
 **Personnalisation 0.32** : préférences versionnées, profils portables, keymap et dispositions. [Guide](implementation/personalization-alpha.md), [ADR 0039](adr/0039-personnalisation-profils-et-keymap.md). Lot 7 partiel.
 

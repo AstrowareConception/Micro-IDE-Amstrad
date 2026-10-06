@@ -62,7 +62,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-026 | Menus, palette, ouverture rapide, contextes CPC | L | P1 | 0.14 | Clavier, source ciblée, états désactivés et tests navigateur/Electron |
 | IDE-027 | Panneaux redimensionnables, masquables et disposition persistée | P | P1 | IDE-026 | 0.32 : séparateurs/flottants persistés, dispositions Édition/Exécution/Agent et concentration réversible ; fenêtres système, profils de géométrie et autres côtés restent ouverts |
 | IDE-028 | Préférences police, thèmes clair/sombre, keymap | P | P1 | IDE-026 | 0.32 : recherche des réglages, préférences migrées, accents/densité, options du code/zoom persisté, keymap et profils portables ; overrides projet, keymap du code et audit contraste/plateformes ouverts |
-| IDE-029 | Centre de notifications, journal de tâches et annulation | P | P1 | J1/J5 | Opérations identifiées, erreurs actionnables, aucun secret dans logs |
+| IDE-029 | Centre de notifications, journal de tâches et annulation | P | P1 | J1/J5 | 0.33 : résumés de session bornés, filtres/non lus, détails liés au projet, aperçus réglables ; sans réponses IA ni sorties shell. Journal de tâches durable, progression unifiée, annulation et couverture exhaustive ouverts |
 | IDE-030 | Accessibilité, focus, lecteur écran et français/anglais | P | P0 | J6 | Parcours complet au clavier ; audits contraste/annonces/focus ; UI française livrée |
 
 ## 6. Git, versions et GitHub

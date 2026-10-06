@@ -4,7 +4,7 @@ export const DEFAULT_KEYMAP = Object.freeze({
   'search-sources': 'Mod+Shift+F', explorer: 'Mod+Shift+E', git: 'Mod+Shift+G', documents: 'Mod+Shift+D', agent: 'Mod+Shift+A',
   renumber: 'Mod+Shift+R', firmware: 'Mod+Alt+R', terminal: 'Mod+`', sidebar: 'Mod+B', output: 'Mod+J',
   'close-tab': 'Mod+W', 'next-tab': 'Mod+Tab', 'previous-tab': 'Mod+Shift+Tab',
-  'git-push': 'Mod+Alt+K', 'git-fetch': 'Mod+Alt+G', 'git-branches': 'Mod+Alt+B', 'focus-mode': 'Mod+Shift+F11',
+  'git-push': 'Mod+Alt+K', 'git-fetch': 'Mod+Alt+G', 'git-branches': 'Mod+Alt+B', 'focus-mode': 'Mod+Shift+F11', notifications: 'Mod+Alt+N',
 });
 export type Keymap = Record<keyof typeof DEFAULT_KEYMAP, string>;
 export type ShortcutEvent = Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey' | 'shiftKey' | 'isComposing'>;
@@ -32,6 +32,9 @@ export function parseKeymap(value: unknown): Keymap {
   const result: Keymap = { ...DEFAULT_KEYMAP };
   if (!value || typeof value !== 'object' || Array.isArray(value)) return result;
   for (const id of Object.keys(result) as (keyof Keymap)[]) if (typeof (value as Keymap)[id] === 'string') result[id] = (value as Keymap)[id];
+  // The 0.33 command must not invalidate an older, valid custom keymap.
+  // Keep its default only when the legacy map leaves that combination free.
+  if (!Object.hasOwn(value, 'notifications') && Object.entries(result).some(([id, binding]) => id !== 'notifications' && binding === result.notifications)) result.notifications = '';
   return keymapErrors(result).length ? { ...DEFAULT_KEYMAP } : result;
 }
 export function keymapPreset(name: string): Keymap {
