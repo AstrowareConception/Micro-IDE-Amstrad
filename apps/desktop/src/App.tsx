@@ -93,7 +93,8 @@ export function App() {
     return () => media.removeEventListener('change', applyTheme);
   }, [preferences]);
   useEffect(() => {
-    if (!preferences.autoSave || !project || !files.project || busy || !dirty) return;
+    if (!preferences.autoSave) { autoSaveAttempt.current = ''; return; }
+    if (!project || !files.project || busy || !dirty) return;
     const revision = JSON.stringify([project.sessionId, preferences.autoSaveDelay, documents.map(item => [item.id, item.source, item.saved])]);
     if (autoSaveAttempt.current === revision) return;
     const timer = setTimeout(() => { autoSaveAttempt.current = revision; void saveAll(); }, preferences.autoSaveDelay);

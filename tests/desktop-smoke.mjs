@@ -701,6 +701,7 @@ try {
     dialog.showMessageBox = async (_window, options) => { globalThis.recoveryDialogs.push(options); return { response: globalThis.recoveryChoice, checkboxChecked: false }; };
   }, recoveryRoot);
   await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click();
+  await showTool(page, 'Explorateur');
   await expect(page.getByRole('heading', { name: 'Recherche contrôlée', exact: true })).toBeVisible();
   await expect.poll(() => desktop.evaluate(() => globalThis.recoveryDialogs.length)).toBe(1);
   assert.deepEqual(await readFile(join(recoveryRoot, '.microide/save/pending.json')), pendingBytes);
@@ -933,6 +934,7 @@ try {
     dialog.showMessageBox = async (_window, options) => { globalThis.agentRecoveryDialogs.push(options); return { response: globalThis.agentRecoveryResponse, checkboxChecked: false }; };
   }, agentRecoveryRoot);
   await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click();
+  await showTool(page, 'Explorateur');
   await expect(page.getByRole('heading', { name: 'Reprise des brouillons', exact: true })).toBeVisible();
   assert.deepEqual(await readFile(join(agentRecoveryRoot, '.microide/agent-journal/current.json')), agentPendingBytes);
   const agentRecoveryOptions = await desktop.evaluate(() => globalThis.agentRecoveryDialogs[0]); assert.equal(agentRecoveryOptions.defaultId, 0); assert.equal(agentRecoveryOptions.cancelId, 0);
@@ -1045,7 +1047,7 @@ try {
   await showTool(page, 'Git');
   await identityPanel.getByRole('button', { name: 'Oublier l’identité mémorisée', exact: true }).click(); await expect(identityPanel).toContainText('Identité mémorisée oubliée');
   assert.equal(JSON.parse(await readFile(identityPath, 'utf8')).identity, null); await expect(identityPanel.getByLabel('Nom de l’auteur Git', { exact: true })).toHaveValue('CPCéleste Test');
-  await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click(); await page.getByRole('heading', { name: 'Commits locaux', exact: true }).waitFor(); await identityPanel.getByRole('button', { name: 'Actualiser Git', exact: true }).click();
+  await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click(); await page.getByRole('heading', { name: 'Commits locaux', exact: true }).waitFor(); await showTool(page, 'Git'); await identityPanel.getByRole('button', { name: 'Actualiser Git', exact: true }).click();
   await expect(identityPanel.getByLabel('Nom de l’auteur Git', { exact: true })).toHaveValue(''); await expect(identityPanel.getByLabel('Email de l’auteur Git', { exact: true })).toHaveValue('');
   assert.deepEqual(await readFile(join(commitRoot, '.git/index')), identityIndex); assert.deepEqual(await readFile(join(commitRoot, '.git/config')), commitConfigBefore); assert.deepEqual(await readFile(join(commitRoot, 'src/main.bas')), identitySource); assert.equal(commitGit('rev-list', '--count', 'HEAD').trim(), '2');
   console.log('Native Git identity: opt-in private profile, dirty-safe preference update, explicit reload preserves message, external revision conflict, SIGKILL/restart reload, forget/reopen, expired IPC and unchanged repository bytes/history passed.');
