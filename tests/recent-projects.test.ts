@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile, rename, symlink } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, rename, symlink, realpath } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
@@ -16,7 +16,7 @@ test('recent projects persist, deduplicate canonical folders and promote the lat
   const { root, profile, store } = await fixture(), a = await folder(root, 'A'), b = await folder(root, 'B');
   assert.deepEqual(await store.list(), []);
   const projectId = randomUUID(); await store.remember(a, projectId, 'Même nom'); await store.remember(b, randomUUID(), 'Même nom');
-  const first = await store.list(); assert.deepEqual(first.map(entry => entry.path), [b, a]);
+  const first = await store.list(); assert.deepEqual(first.map(entry => entry.path), [await realpath(b), await realpath(a)]);
   await store.remember(join(a, '.'), projectId, 'A renommé');
   const next = await new RecentProjectsStore(profile).list(); assert.equal(next.length, 2); assert.equal(next[0]?.id, first[1]?.id); assert.equal(next[0]?.name, 'A renommé');
   assert.ok(next.every(entry => entry.available)); assert.equal((await store.get(next[0]!.id)).projectId, projectId);
