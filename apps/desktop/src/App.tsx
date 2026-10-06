@@ -457,7 +457,7 @@ export function App() {
   ] : [];
   return <main className="workbench" style={{ '--sidebar-width': `${preferences.sidebarWidth}px`, '--agent-width': `${preferences.agentWidth}px`, '--output-height': `${preferences.outputHeight}px` } as CSSProperties}>
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.34 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.35 · AstroWare Conception</p></div></div>
       <div className="topbar-actions"><Button icon="bell" aria-label={`Centre de notifications · ${unreadNotifications} non lue(s)`} onClick={() => setNotificationsOpen(true)}><span className="notification-badge">{unreadNotifications}</span></Button><span className="profile">CPC 6128 · BASIC 1.1</span></div>
     </header>
     <WorkbenchMenus groups={[

@@ -24,6 +24,26 @@ static float audio_ring[AUDIO_CAPACITY];
 static int audio_start, audio_count;
 static bool live, paused, keys[256];
 static uint64_t elapsed_ticks;
+static bool debug_stopped;
+static int debug_address, debug_rom, debug_budget, debug_reason;
+static uint64_t debug_ticks;
+
+static void debug_callback(void* unused, uint64_t pins) {
+    (void)unused;
+    debug_ticks++;
+    const bool mapping = debug_rom == -1 ||
+        (!(machine.ga.regs.config & AM40010_CONFIG_HROMEN) && machine.ga.rom_select == debug_rom);
+    if (mapping && z80_opdone(&machine.cpu) && Z80_GET_ADDR(pins) == debug_address) {
+        debug_reason = 1; debug_stopped = true;
+    } else if (--debug_budget == 0) {
+        debug_reason = 2; debug_stopped = true;
+    }
+}
+
+static void clear_debug(void) {
+    machine.debug = (chips_debug_t){0};
+    debug_stopped = false; debug_reason = 0; debug_ticks = 0;
+}
 
 /* Strict whitelist before the upstream parser: standard DATA only in J0. */
 static bool valid_disk(const uint8_t* bytes, int size) {
@@ -67,6 +87,7 @@ void cpc_bridge_release_keys(void) {
 void cpc_bridge_dispose(void) {
     if (live) { cpc_bridge_release_keys(); cpc_discard(&machine); }
     live = false; paused = false; audio_start = audio_count = 0; elapsed_ticks = 0;
+    clear_debug();
     memset(disk_template, 0, sizeof(disk_template));
 }
 
@@ -115,18 +136,31 @@ int cpc_bridge_export(uint8_t* output, int capacity) {
 int cpc_bridge_step(int microseconds) {
     if (!live) return CPC_ERR_STATE;
     if (microseconds < 1 || microseconds > 20000) return CPC_ERR_INPUT;
-    if (!paused) elapsed_ticks += cpc_exec(&machine, (uint32_t)microseconds);
+    if (!paused) {
+        /* Upstream cpc_exec returns requested ticks even when its hook stops early. */
+        const bool hooked = machine.debug.callback.func != NULL;
+        const uint64_t before = debug_ticks;
+        const uint64_t keyboard_time = machine.kbd.cur_time;
+        const uint32_t requested = cpc_exec(&machine, (uint32_t)microseconds);
+        elapsed_ticks += hooked ? debug_ticks - before : requested;
+        /* The pinned upstream also advances its keyboard clock by the request. */
+        if (hooked) machine.kbd.cur_time = keyboard_time + (debug_ticks - before) / 4;
+        if (debug_stopped) {
+            paused = true; cpc_bridge_release_keys(); audio_start = audio_count = 0;
+        }
+    }
     return CPC_OK;
 }
 int cpc_bridge_pause(int state) {
     if (!live) return CPC_ERR_STATE;
     if (state != 0 && state != 1) return CPC_ERR_INPUT;
     paused = state != 0; cpc_bridge_release_keys(); audio_start = audio_count = 0;
+    if (!paused) clear_debug();
     return CPC_OK;
 }
 int cpc_bridge_reset(void) {
     if (!live) return CPC_ERR_STATE;
-    cpc_bridge_release_keys(); cpc_reset(&machine); audio_start = audio_count = 0; elapsed_ticks = 0;
+    cpc_bridge_release_keys(); clear_debug(); cpc_reset(&machine); audio_start = audio_count = 0; elapsed_ticks = 0;
     return CPC_OK;
 }
 int cpc_bridge_key(int key, int down) {
@@ -161,3 +195,39 @@ int cpc_bridge_peek(int address) {
     if (address < 0 || address > 65535) return CPC_ERR_INPUT;
     return machine.ram[address >> 14][address & 0x3fff];
 }
+
+int cpc_bridge_register(int index) {
+    if (!live || !paused) return CPC_ERR_STATE;
+    const int values[] = { machine.cpu.pc, machine.cpu.sp, machine.cpu.af, machine.cpu.bc,
+        machine.cpu.de, machine.cpu.hl, machine.cpu.ix, machine.cpu.iy, machine.cpu.af2,
+        machine.cpu.bc2, machine.cpu.de2, machine.cpu.hl2, machine.ga.ram_config,
+        machine.ga.rom_select, machine.ga.regs.config };
+    if (index < 0 || index >= (int)(sizeof(values) / sizeof(values[0]))) return CPC_ERR_INPUT;
+    return values[index];
+}
+
+int cpc_bridge_read_ram(int address, uint8_t* output, int length) {
+    if (!live || !paused) return CPC_ERR_STATE;
+    if (!output || address < 0 || address > 65535 || length < 1 || length > 256 ||
+        length > 65536 - address) return CPC_ERR_INPUT;
+    const int* banks = _cpc_ram_config[machine.ga.ram_config & 7];
+    for (int i = 0; i < length; i++) {
+        const int logical = address + i;
+        output[i] = machine.ram[banks[logical >> 14]][logical & 0x3fff];
+    }
+    return length;
+}
+
+int cpc_bridge_debug_arm(int address, int upper_rom, int tick_budget) {
+    if (!live) return CPC_ERR_STATE;
+    if (address < 0 || address > 65535 || (upper_rom != -1 && upper_rom != 0 && upper_rom != 7) ||
+        (upper_rom != -1 && address < 0xc000) || tick_budget < 1 || tick_budget > 40000000) return CPC_ERR_INPUT;
+    clear_debug(); debug_address = address; debug_rom = upper_rom; debug_budget = tick_budget;
+    machine.debug = (chips_debug_t){ .callback.func = debug_callback, .stopped = &debug_stopped };
+    return CPC_OK;
+}
+int cpc_bridge_debug_cancel(void) {
+    if (!live) return CPC_ERR_STATE;
+    clear_debug(); return CPC_OK;
+}
+int cpc_bridge_debug_reason(void) { return live ? debug_reason : CPC_ERR_STATE; }

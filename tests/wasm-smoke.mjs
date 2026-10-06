@@ -25,6 +25,23 @@ try {
   assert.equal(cpc._cpc_bridge_pause(1), 0);
   assert.equal(cpc._cpc_bridge_step(20000), 0);
   assert.equal(cpc._cpc_bridge_ticks(), ticks);
+  assert.ok(cpc._cpc_bridge_register(0) >= 0);
+  assert.equal(cpc._cpc_bridge_read_ram(65535, output, 1), 1);
+  assert.equal(cpc._cpc_bridge_read_ram(65535, output, 2), -1);
+  assert.equal(cpc._cpc_bridge_register(15), -1);
+  assert.equal(cpc._cpc_bridge_pause(0), 0);
+  assert.equal(cpc._cpc_bridge_register(0), -2);
+  assert.equal(cpc._cpc_bridge_debug_arm(0, -1, 400000), 0);
+  assert.equal(cpc._cpc_bridge_step(20000), 0);
+  assert.equal(cpc._cpc_bridge_debug_reason(), 1);
+  assert.ok(cpc._cpc_bridge_ticks() > ticks && cpc._cpc_bridge_ticks() - ticks < 80000);
+  const stopped = cpc._cpc_bridge_ticks();
+  assert.equal(cpc._cpc_bridge_pause(0), 0);
+  assert.equal(cpc._cpc_bridge_debug_arm(1, -1, 23), 0);
+  assert.equal(cpc._cpc_bridge_step(20000), 0);
+  assert.equal(cpc._cpc_bridge_debug_reason(), 2);
+  assert.equal(cpc._cpc_bridge_ticks() - stopped, 23);
+  assert.equal(cpc._cpc_bridge_debug_cancel(), 0);
   assert.equal(cpc._cpc_bridge_reset(), 0);
   assert.equal(cpc._cpc_bridge_export(output, diskBytes.length), diskBytes.length);
   console.log(JSON.stringify({ status: 'passed', runtime: 'wasm-node', syntheticRom: 'JP 0',

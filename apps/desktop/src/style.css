@@ -247,3 +247,13 @@ select{font:inherit;width:100%;margin:8px 0;background:var(--input);color:inheri
 .performance-table { overflow: auto; }
 .performance-table table { border-collapse: collapse; width: 100%; font-size: .85rem; }
 .performance-table th, .performance-table td { padding: .5rem; text-align: left; border-bottom: 1px solid var(--line); }
+.cpc-inspection { margin: .4rem 0; flex-shrink: 0; max-height: 55%; overflow: auto; font-size: .75rem; }
+.cpc-inspection summary { cursor: pointer; }
+.cpc-inspection label { display: grid; gap: .3rem; margin: .6rem 0; }
+.cpc-inspection dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; }
+.cpc-inspection dl div { border: 1px solid var(--line); padding: .3rem; }
+.cpc-inspection dd { margin: .2rem 0 0; font-family: Consolas, monospace; }
+.cpc-inspection dt { font-weight: 600; }
+.cpc-inspection [role=region] { overflow: auto; }
+.cpc-inspection table { border-collapse: collapse; white-space: nowrap; font-size: .75rem; }
+.cpc-inspection th, .cpc-inspection td { padding: .4rem; text-align: left; border-bottom: 1px solid var(--line); }

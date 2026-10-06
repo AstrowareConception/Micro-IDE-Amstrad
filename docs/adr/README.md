@@ -64,3 +64,5 @@ Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou
 - [0040 — Centre de notifications de session](0040-centre-notifications-session.md).
 
 - [0041 — Analyse BASIC en worker et monitoring](0041-analyse-basic-worker-monitoring.md).
+
+- [0042 — Inspection CPC en pause et qualification du débogage](0042-inspection-cpc-et-qualification-debug.md).

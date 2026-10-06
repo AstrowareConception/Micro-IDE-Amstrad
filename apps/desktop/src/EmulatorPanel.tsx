@@ -3,6 +3,8 @@ import { Button } from './Icon.tsx';
 import { useEffect, useRef, useState } from 'react';
 import type { RunRequest } from '../../../packages/emulator/src/run.ts';
 import { files } from './port.ts';
+import { CpcInspectionPanel } from './CpcInspectionPanel.tsx';
+import { validInspection, type CpcInspection } from '../../../packages/emulator/src/inspection.ts';
 export interface EmulatorLaunch { id: string; request: RunRequest }
 const specials: Record<string, number> = { Enter: 13, Escape: 3, Backspace: 1, Delete: 12, ArrowLeft: 8, ArrowRight: 9, ArrowDown: 10, ArrowUp: 11 };
 export function EmulatorPanel({ launch, onClose, onConfigure, onNotify }: { launch: EmulatorLaunch; onClose(): void; onConfigure(): void; onNotify?: Notify }) {
@@ -21,11 +23,14 @@ export function EmulatorPanel({ launch, onClose, onConfigure, onNotify }: { laun
   const [seconds, setSeconds] = useState(0), [provenance, setProvenance] = useState(''), [sound, setSound] = useState(false);
   const soundEnabled = useRef(false), audio = useRef<AudioContext | undefined>(undefined), nodes = useRef(new Set<AudioBufferSourceNode>()), nextAudio = useRef(0);
   const physical = useRef(new Map<string, number>());
+  const inspectionSequence = useRef(0);
+  const [inspection, setInspection] = useState<CpcInspection>();
   const send = (value: Record<string, unknown>) => worker.current?.postMessage({ ...value, id: launch.id });
   function clearAudio() { for (const node of nodes.current) { try { node.stop(); node.disconnect(); } catch { /* Already ended. */ } } nodes.current.clear(); nextAudio.current = 0; }
   function release() { physical.current.clear(); send({ type: 'release' }); }
   useEffect(() => {
     let cancelled = false, timer: ReturnType<typeof setTimeout> | undefined;
+    inspectionSequence.current++; setInspection(undefined); setPaused(false);
     const currentNodes = nodes.current;
     const fail = (message: string) => { if (!cancelled) { setMessage(message); setPhase('error'); latestNotify.current?.({ source: 'emulator', target: 'emulator', sessionId: launch.request.sessionId, level: 'error', message: 'Exécution CPC interrompue. Consultez les détails et vérifiez les ROM.' }); worker.current?.terminate(); worker.current = undefined; } };
     void (async () => {
@@ -45,7 +50,9 @@ export function EmulatorPanel({ launch, onClose, onConfigure, onNotify }: { laun
         else if (value.type === 'frame' && value.pixels instanceof Uint8ClampedArray && value.width <= 1024 && value.height <= 1024 && value.pixels.length === value.width * value.height * 4) {
           const screen = canvas.current;
           if (screen) { screen.width = value.width; screen.height = value.height; screen.getContext('2d')?.putImageData(new ImageData(value.pixels, value.width, value.height), 0, 0); }
-          setSeconds(value.seconds); setPaused(value.paused); current.postMessage({ type: 'frame-ack', id: launch.id });
+          setSeconds(value.seconds); setPaused(value.paused); if (!value.paused) setInspection(undefined); current.postMessage({ type: 'frame-ack', id: launch.id });
+        } else if (value.type === 'inspection' && value.sequence === inspectionSequence.current && validInspection(value.snapshot)) {
+          setInspection(value.snapshot);
         } else if (value.type === 'audio' && value.samples instanceof Float32Array && value.samples.length <= 4096 && soundEnabled.current && audio.current?.state === 'running' && currentNodes.size < 16) {
           const context = audio.current; if (nextAudio.current > context.currentTime + .2) return;
           const buffer = context.createBuffer(1, value.samples.length, 44100); buffer.copyToChannel(value.samples, 0);
@@ -81,7 +88,7 @@ export function EmulatorPanel({ launch, onClose, onConfigure, onNotify }: { laun
     <div className="emulator-controls">
       <Button icon="stop" onClick={onClose}>Arrêter et fermer le CPC</Button>
       {phase === 'manual' && <Button disabled={paused} onClick={() => send({ type: 'ready' })}>Ready est visible : lancer le programme</Button>}
-      <Button disabled={!active} onClick={() => { release(); clearAudio(); send({ type: 'pause', paused: !paused }); }}>{paused ? 'Reprendre le CPC' : 'Pause CPC'}</Button>
+      <Button disabled={!active} onClick={() => { inspectionSequence.current++; setInspection(undefined); release(); clearAudio(); send({ type: 'pause', paused: !paused }); }}>{paused ? 'Reprendre le CPC' : 'Pause CPC'}</Button>
       <Button disabled={!active || paused} onClick={() => send({ type: 'break' })}>Interrompre BASIC (ESC)</Button>
       <Button disabled={!active} onClick={() => void toggleSound()}>{sound ? 'Couper le son CPC' : 'Activer le son CPC'}</Button>
       <Button disabled={!active} onClick={() => send({ type: 'export' })}>Exporter la disquette de session</Button>
@@ -100,6 +107,8 @@ export function EmulatorPanel({ launch, onClose, onConfigure, onNotify }: { laun
       const key = specials[event.key] ?? (event.key.length === 1 && /^[\x20-\x7d]$/.test(event.key) ? event.key.charCodeAt(0) : undefined);
       if (key !== undefined) { event.preventDefault(); physical.current.set(event.code, key); send({ type: 'key', key, down: true }); }
     }} onKeyUp={event => { const key = physical.current.get(event.code); if (key !== undefined) { event.preventDefault(); physical.current.delete(event.code); send({ type: 'key', key, down: false }); } }} />
-    </div></div><p className="emulator-keyboard-hint">Cliquez dans l’écran pour utiliser le clavier CPC.</p></div>
+    </div></div><p className="emulator-keyboard-hint">Cliquez dans l’écran pour utiliser le clavier CPC.</p>
+    <CpcInspectionPanel paused={active && paused} snapshot={inspection} onRead={address => { setInspection(undefined); send({ type: 'inspect', address, sequence: ++inspectionSequence.current }); }} />
+    </div>
   </section>;
 }
