@@ -75,10 +75,10 @@ export class OpenAIProvider implements ModelPort {
     if (!usage || !Number.isSafeInteger(usage.total_tokens) || (usage.total_tokens as number) < 0) throw new Error('Usage OpenAI absent ou invalide.');
     // Never reflect credentials in public errors or model/tool transcripts.
     if (JSON.stringify(data.output).includes(this.key)) throw new Error('Réponse contenant le secret refusée.');
-    const family = /^gpt-(\d+)(?:\.(\d+))?/.exec(this.model);
+    const family = /^gpt-(\d+)(?:\.(\d+))?/.exec(typeof data.model === 'string' ? data.model : this.model);
     const cacheWritesRequired = !family || Number(family[1]) > 5 || Number(family[1]) === 5 && Number(family[2] ?? 0) >= 6;
     return { output: data.output as Record<string, unknown>[], tokens: usage.total_tokens as number,
-      usage: readUsage(usage, cacheWritesRequired), model: typeof data.model === 'string' ? data.model : this.model,
+      usage: readUsage(usage, cacheWritesRequired), model: typeof data.model === 'string' ? data.model : undefined,
       serviceTier: typeof data.service_tier === 'string' ? data.service_tier : undefined, incomplete: data.status === 'incomplete' };
   }
 }

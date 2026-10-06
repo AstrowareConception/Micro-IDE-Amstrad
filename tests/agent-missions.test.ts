@@ -160,3 +160,13 @@ test('budget defaults and IPC values have finite integer bounds', () => {
   assert.equal(parseBudget(undefined).maxTurns, 20);
   for (const value of [{ maxTurns: 0, maxCalls: 60, maxTokens: 60000 }, { maxTurns: 101, maxCalls: 60, maxTokens: 60000 }, { maxTurns: 20, maxCalls: 60, maxTokens: Infinity }, { maxTurns: 20, maxCalls: 60, maxTokens: 60000, extra: true }]) assert.throws(() => parseBudget(value));
 });
+
+test('provider failures expose partial usage and missing effective model never produces an estimate', async () => {
+  const tools = new WorkspaceTools(state(), async () => undefined, hash, []);
+  const failed = await runAgent({ model: { respond: async () => { throw new Error('Quota OpenAI (429).'); } }, tools, objective, context: {}, signal: new AbortController().signal, emit: () => undefined, takeSteering: () => [] });
+  assert.equal(failed.status, 'failed'); assert.equal(failed.usage!.complete, false); assert.equal(failed.costComplete, false);
+  const provider = new OpenAIProvider('sk-test-fixture-not-real', 'gpt-5.6-luna', async () => Response.json({ status: 'completed', output: [message], usage: rawUsage, service_tier: 'default' }));
+  const turn = await provider.respond([], [], new AbortController().signal);
+  assert.equal(turn.model, undefined);
+  assert.equal(estimateTurn(turn.usage, pricing(), turn.model, turn.serviceTier), undefined);
+});

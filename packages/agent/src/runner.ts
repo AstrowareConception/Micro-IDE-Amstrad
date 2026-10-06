@@ -112,6 +112,7 @@ export async function runAgent(options: {
     }
   } catch (error) {
     state.costComplete = false;
+    state.usage.complete = false;
     const summary = signal.aborted ? 'Mission arrêtée ; étapes terminées conservées.' : error instanceof Error ? error.message : 'Échec fournisseur.';
     emit({ kind: 'error', text: summary }); return result(signal.aborted ? 'cancelled' : 'failed', summary);
   }

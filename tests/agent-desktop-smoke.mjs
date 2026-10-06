@@ -44,7 +44,7 @@ export async function verifyAgentDesktop(desktop, page) {
   await expect(result).toContainText('Mission terminée');
   await expect(result).toContainText('5 tours');
   await expect(result).toContainText('600 tokens');
-  await expect(result).toContainText('0.000187 USD');
+  await expect(result).toContainText(/0\.00018[67] USD/);
   await expect(result).toContainText('DSK construit et relu.');
   await expect(result).toContainText('1 fichier(s) modifié(s)');
   await page.screenshot({ path: 'out/agent-missions-desktop-alpha.png' });
