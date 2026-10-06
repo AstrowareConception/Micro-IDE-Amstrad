@@ -92,6 +92,14 @@ async function crash(root: string, stop: string, action = 'move') {
     const exited = new Promise<void>(resolve => child.once('exit', () => resolve())); child.kill('SIGKILL'); await exited;
   } finally { if (child.exitCode === null) child.kill('SIGKILL'); }
 }
+test('crash instrumentation follows the canonical project root through a launcher alias', async t => {
+  const { root, source } = await fixture(t);
+  const parent = await mkdtemp(join(tmpdir(), 'cpceleste-source-alias-')); t.after(() => rm(parent, { recursive: true, force: true }));
+  const alias = join(parent, 'project'); await symlink(root, alias, process.platform === 'win32' ? 'junction' : 'dir');
+  await crash(alias, 'removed');
+  const summary = (await ProjectStore.sourceRecoveryStatus(root))!; await ProjectStore.recoverSources(root, summary.id, 'restore', summary.revision!);
+  assert.equal(await readFile(join(root, 'src/main.bas'), 'utf8'), source);
+});
 test('SIGKILL after journal, removal, destination and manifest supports finish/restore with exact bytes after relocation', async t => {
   for (const stop of ['prepared', 'removed', 'destination', 'manifest']) for (const choice of ['finish', 'restore'] as const) {
     const { root, source } = await fixture(t); await crash(root, stop);

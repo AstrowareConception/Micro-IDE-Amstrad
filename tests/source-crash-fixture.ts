@@ -2,7 +2,9 @@ import fs from 'node:fs';
 import { syncBuiltinESMExports } from 'node:module';
 import { join } from 'node:path';
 import { SourceJournal } from '../apps/desktop/source-journal.ts';
-const root = process.argv[2]!, stop = process.argv[3]!, action = process.argv[4]!;
+// ProjectStore canonicalizes the project root; match its actual I/O paths on
+// Windows (drive/directory casing) and when the launcher uses a root alias.
+const root = await fs.promises.realpath(process.argv[2]!), stop = process.argv[3]!, action = process.argv[4]!;
 const pause = async () => { process.on('message', () => {}); process.send?.({ ready: true }); await new Promise(() => {}); };
 const prepare = SourceJournal.prototype.prepare;
 SourceJournal.prototype.prepare = async function(...args) { const result = await prepare.apply(this, args); if (stop === 'prepared') await pause(); return result; };
