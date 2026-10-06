@@ -9,6 +9,8 @@ import { saveBatch, SaveBatchFailure } from '../../packages/workspace/src/save-b
 import { SaveJournal, durableReplace, type RecoveryChoice, type RecoverySummary } from './save-journal.ts';
 import { LocalHistory } from './local-history.ts';
 import type { HistorySnapshot, HistoryVersion } from '../../packages/workspace/src/history.ts';
+import { SourceJournal, type SourceJournalFile } from './source-journal.ts';
+import { planSourceOperation, type SourcePlan, type SourceMutationResult } from '../../packages/workspace/src/source-operations.ts';
 import { AgentJournal, type AgentJournalSource } from './agent-journal.ts';
 import { DraftStore } from './draft-store.ts';
 import type { DraftSummary, DraftRecovery } from '../../packages/workspace/src/drafts.ts';
@@ -43,6 +45,7 @@ export class ProjectStore {
   private manifestHash: string;
   private hashes = new Map<string, string>();
   private faulted = false;
+  private sourcePlan: { view: SourcePlan; request: unknown; before: Buffer; after: Buffer; files: SourceJournalFile[] } | undefined;
   private readonly imageDecoder: ImageDecoder | undefined;
   private readonly pdfExtractor: PdfExtractor | undefined;
   private readonly pdfCache = new Map<string, PdfTextPreview>();
@@ -50,6 +53,7 @@ export class ProjectStore {
   static async open(folder: string, imageDecoder?: ImageDecoder, pdfExtractor?: PdfExtractor): Promise<{ store: ProjectStore; snapshot: ProjectSnapshot }> {
     const root = await realpath(folder);
     if (!(await lstat(root)).isDirectory()) throw new Error('Dossier de projet requis.');
+    await new SourceJournal(root).assertResolved();
     await new AgentJournal(root).assertResolved();
     const content = await bytes(join(root, MANIFEST));
     const manifest = parseProject(JSON.parse(text(content)));
@@ -65,6 +69,8 @@ export class ProjectStore {
     await store.agentDocuments();
     return { store, snapshot: { sessionId: store.sessionId, manifest, files } };
   }
+  static async sourceRecoveryStatus(folder: string): Promise<RecoverySummary | undefined> { return new SourceJournal(await realpath(folder)).status(); }
+  static async recoverSources(folder: string, id: string, choice: RecoveryChoice, revision: string): Promise<void> { await new SourceJournal(await realpath(folder)).recover(id, choice, revision); }
   static async agentRecoveryStatus(folder: string): Promise<RecoverySummary | undefined> { return new AgentJournal(await realpath(folder)).status(); }
   static async recoverAgent(folder: string, id: string, choice: RecoveryChoice, revision: string): Promise<void> { await new AgentJournal(await realpath(folder)).recover(id, choice, revision); }
   private static async journal(folder: string): Promise<SaveJournal> {
@@ -98,6 +104,7 @@ export class ProjectStore {
     return canonical;
   }
   private async checkManifest(): Promise<void> {
+    await new SourceJournal(this.root).assertResolved();
     await new AgentJournal(this.root).assertResolved();
     if (this.faulted) throw new Error('Projet bloqué après échec de restauration ; conserver les versions locales et rouvrir après examen.');
     if (hash(await bytes(join(this.root, MANIFEST))) !== this.manifestHash) throw new Error('Le manifeste a changé sur disque. Rouvrez le projet ; aucune modification écrasée.');
@@ -354,6 +361,66 @@ export class ProjectStore {
     }
     for (const entry of entries) this.hashes.set(entry.id, hash(entry.after));
     return { name: this.manifest.name, savedIds: entries.map(item => item.id), changedCount: changed.length };
+  }
+  async prepareSourceOperation(request: unknown): Promise<SourcePlan> {
+    this.sourcePlan = undefined;
+    await this.checkManifest(); await new SaveJournal(this.root, this.manifest, this.manifestHash).assertResolved();
+    const planned = planSourceOperation(this.manifest, request), before = await bytes(join(this.root, MANIFEST));
+    if (hash(before) !== this.manifestHash) throw new Error('Manifeste périmé avant organisation des sources.');
+    const contents = new Map<string, Buffer>(); let total = 0;
+    for (const source of this.manifest.sources) {
+      const content = await bytes(await this.path(source.path)); text(content); total += content.length;
+      if (total > 8 * LIMIT || hash(content) !== this.hashes.get(source.id)) throw new Error('Conflit externe ou budget de sources dépassé.');
+      contents.set(source.id, content);
+    }
+    const files: SourceJournalFile[] = this.manifest.sources.map(source => ({ id: source.id, path: source.path, before: contents.get(source.id)!, after: planned.manifest.sources.some(next => next.id === source.id && next.path === source.path) ? contents.get(source.id)! : null }));
+    for (const source of planned.manifest.sources) if (!this.manifest.sources.some(old => old.id === source.id && old.path === source.path)) files.push({ id: source.id, path: source.path, before: null, after: contents.get(source.id)! });
+    const after = Buffer.from(JSON.stringify(planned.manifest, null, 2) + '\n');
+    await new SourceJournal(this.root).inspect(before, after, files);
+    const view: SourcePlan = { id: randomUUID(), action: planned.action, source: planned.source, entryPoint: planned.manifest.entryPoint, ...(planned.destination ? { destination: planned.destination } : {}) };
+    this.sourcePlan = { view, request: structuredClone(request), before, after, files }; return structuredClone(view);
+  }
+  sourceOperationPlan(id: unknown): SourcePlan {
+    if (!this.sourcePlan || this.sourcePlan.view.id !== id) throw new Error('Aperçu de source périmé ; préparez de nouveau.');
+    return structuredClone(this.sourcePlan.view);
+  }
+  sourceOperationDirty(id: unknown, source: string): boolean {
+    const view = this.sourceOperationPlan(id);
+    const file = this.sourcePlan!.files.find(file => file.id === view.source.id && file.before !== null)!;
+    return text(file.before!) !== source.replace(/\r\n?/g, '\n');
+  }
+  async applySourceOperation(id: unknown, source: string, disposition: 'keep' | 'save' = 'keep'): Promise<SourceMutationResult> {
+    this.sourceOperationPlan(id); let plan = this.sourcePlan!;
+    await this.checkManifest(); await new SaveJournal(this.root, this.manifest, this.manifestHash).assertResolved();
+    if (hash(plan.before) !== this.manifestHash) throw new Error('Manifeste modifié depuis l’aperçu.');
+    if (typeof source !== 'string' || source.includes('\0') || source.charCodeAt(0) === 0xfeff || Buffer.byteLength(source) > LIMIT || !['keep', 'save'].includes(disposition)) throw new Error('Brouillon UTF-8 de 1 Mio maximum requis.');
+    source = source.replace(/\r\n?/g, '\n');
+    await new SourceJournal(this.root).inspect(plan.before, plan.after, plan.files);
+    const selected = plan.files.find(file => file.id === plan.view.source.id && file.before !== null)!;
+    const changed = text(selected.before!) !== source;
+    if (plan.view.action === 'delete' && disposition === 'save' && changed) {
+      await this.save(plan.view.source.id, source);
+      await this.prepareSourceOperation(plan.request); plan = this.sourcePlan!;
+    }
+    const draft = plan.view.action === 'delete' && disposition === 'keep' && changed ? { id: plan.view.source.id, path: plan.view.source.path, source } : undefined;
+    const journal = new SourceJournal(this.root);
+    const transaction = await journal.prepare(plan.before, plan.after, plan.files, draft); this.sourcePlan = undefined;
+    try { await journal.recover(transaction.id, 'finish', transaction.revision!); }
+    catch (error) { this.faulted = true; throw new Error(`Organisation des sources interrompue ; rouvrez le projet pour récupérer. ${String(error)}`); }
+    const manifest = parseProject(JSON.parse(plan.after.toString('utf8')));
+    const versions = manifest.sources.map(source => ({ source, content: plan.files.find(file => file.id === source.id && file.path === source.path)!.after! }));
+    this.manifest = manifest; this.manifestHash = hash(plan.after); this.hashes.clear();
+    for (const { source, content } of versions) this.hashes.set(source.id, hash(content));
+    return { manifest: structuredClone(manifest), files: versions.map(({ source, content }) => ({ ...source, source: text(content) })) };
+  }
+  async lastSourceOperation() { await this.checkManifest(); return new SourceJournal(this.root).last(); }
+  async sourceDraft() { await this.checkManifest(); return new SourceJournal(this.root).draft(this.manifest.projectId); }
+  async restoreSourceOperation(revision: string): Promise<SourceMutationResult> {
+    await this.checkManifest(); await new SaveJournal(this.root, this.manifest, this.manifestHash).assertResolved();
+    const restored = await new SourceJournal(this.root).restoreLast(revision);
+    this.sourcePlan = undefined; this.manifest = restored.result.manifest; this.manifestHash = restored.manifestHash; this.hashes.clear();
+    for (const file of restored.hashes) this.hashes.set(file.id, file.hash);
+    return restored.result;
   }
   async add(name: string): Promise<ProjectSnapshot> {
     await this.checkManifest();

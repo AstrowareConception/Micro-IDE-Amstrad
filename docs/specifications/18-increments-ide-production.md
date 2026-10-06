@@ -24,7 +24,7 @@ Le lot 0 puis l’explorateur et le parser peuvent être découpés en PR indép
 
 Couverture : IDE-001 à 006, IDE-007 à 012, IDE-022 à 025.
 
-**Première tranche 0.30** : [arborescence et lectures seules](../implementation/project-explorer-alpha.md) livrées avec bornes et refus des chemins périmés. Le filtre porte sur les dossiers déjà chargés ; les fichiers ordinaires restent en lecture seule. La recette LOT-1 complète et les mutations décrites ci-dessous restent ouvertes.
+**Première tranche 0.30** : [arborescence et lectures seules](../implementation/project-explorer-alpha.md) livrées avec bornes et refus des chemins périmés. Le filtre porte sur les dossiers déjà chargés ; les fichiers ordinaires restent en lecture seule. La [tranche 0.31](../implementation/source-operations-alpha.md) ajoute renommage/déplacement/suppression des sources avec aperçu, journal de reprise, choix pour les brouillons et rétablissement de la dernière organisation. Création de dossiers, ajout durable/import/duplication, édition ordinaire et recette LOT-1 complète restent ouverts.
 
 L’explorateur gauche DOIT afficher l’arborescence réelle du dossier projet : sources, documents, ressources, manifeste et fichiers ordinaires, avec filtre et exclusions configurables. Distinguer un fichier du dossier d’une source exportée sur le DSK. Les fichiers privés et générés sont masqués par défaut, accessibles par une option locale. Les liens symboliques sont identifiés, jamais parcourus implicitement hors du projet.
 

@@ -167,6 +167,14 @@ async function openProjectFolder(folder: string, expectedId?: string) {
     const manifest = parseProject(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(await regularBytes(join(folder, 'microide.project.json')))));
     if (manifest.projectId !== expectedId) throw new Error('Un autre projet occupe ce dossier ; choisissez-le explicitement avec Ouvrir projet.');
   }
+  const sourceRecovery = await ProjectStore.sourceRecoveryStatus(folder);
+  if (sourceRecovery) {
+    const choice = await dialog.showMessageBox(window, { type: 'warning', buttons: ['Annuler', 'Terminer l’organisation des sources', 'Rétablir les sources précédentes'], defaultId: 0, cancelId: 0,
+      message: 'Une organisation des sources a été interrompue.',
+      detail: `${sourceRecovery.createdAt}\n${sourceRecovery.files.join('\n')}\n\nTerminer applique les chemins et le manifeste préparés. Rétablir retrouve les octets précédents. Tout conflit externe bloque la reprise. Les brouillons conservés lors d’une suppression restent dans le journal et l’historique local.` });
+    if (choice.response !== 1 && choice.response !== 2) return null;
+    await ProjectStore.recoverSources(folder, sourceRecovery.id, choice.response === 1 ? 'finish' : 'restore', sourceRecovery.revision!);
+  }
   const agentRecovery = await ProjectStore.agentRecoveryStatus(folder);
   if (agentRecovery) {
     const choice = await dialog.showMessageBox(window, { type: 'warning', buttons: ['Annuler', 'Terminer la mutation agent', 'Rétablir les versions avant mutation'], defaultId: 0, cancelId: 0,
@@ -394,6 +402,30 @@ route('git:index', async payload => {
 });
 route('explorer:list', async payload => { const { store, value } = projectRequest(payload); return new ProjectExplorer(store).list(value.directory, value.showHidden); }, true);
 route('explorer:preview', async payload => { const { store, value } = projectRequest(payload); return new ProjectExplorer(store).preview(value.path, value.revision); });
+route('sources:prepare', async payload => { const { store, value } = projectRequest(payload); return store.prepareSourceOperation(value.request); });
+route('sources:last', async payload => { const { store } = projectRequest(payload); return store.lastSourceOperation(); }, true);
+route('sources:draft', async payload => { const { store } = projectRequest(payload); return store.sourceDraft(); });
+route('sources:apply', async payload => {
+  const { store, value } = projectRequest(payload), source = sourceFrom(value).source;
+  const plan = store.sourceOperationPlan(value.planId);
+  const dirtyDeletion = plan.action === 'delete' && store.sourceOperationDirty(value.planId, source);
+  const choice = await dialog.showMessageBox(window, { type: plan.action === 'delete' ? 'warning' : 'question', defaultId: 0, cancelId: 0,
+    buttons: dirtyDeletion ? ['Annuler', 'Conserver le brouillon et supprimer', 'Enregistrer puis supprimer'] : ['Annuler', 'Appliquer'],
+    message: `${plan.action === 'delete' ? 'Supprimer' : plan.action === 'rename' ? 'Renommer' : 'Déplacer'} ${plan.source.path} ?`,
+    detail: `${plan.destination ? `${plan.destination.path}\nNom CPC : ${plan.source.cpcName} → ${plan.destination.cpcName}` : 'Retrait du fichier et de sa déclaration dans le projet.'}\nEntrée : ${plan.entryPoint}\n\nLes autres brouillons restent ouverts. Le journal permet de rétablir la dernière organisation tant que les versions disque correspondent. Les noms de fichiers écrits dans le BASIC ne sont pas réécrits.${dirtyDeletion ? '\nConserver archive le brouillon sans l’enregistrer ; Enregistrer le sauvegarde explicitement avant le retrait.' : ''}` });
+  if (choice.response !== 1 && !(dirtyDeletion && choice.response === 2)) return null;
+  return store.applySourceOperation(value.planId, source, dirtyDeletion && choice.response === 2 ? 'save' : 'keep');
+});
+route('sources:restore', async payload => {
+  const { store, value } = projectRequest(payload);
+  if (typeof value.revision !== 'string') throw new Error('Révision de la dernière organisation requise.');
+  const last = await store.lastSourceOperation();
+  if (!last || last.revision !== value.revision) throw new Error('Dernière organisation périmée ; actualisez.');
+  const choice = await dialog.showMessageBox(window, { type: 'question', buttons: ['Annuler', 'Rétablir'], defaultId: 0, cancelId: 0,
+    message: 'Rétablir la dernière organisation des sources ?', detail: `${last.files.join('\n')}\n\nLe manifeste et les fichiers retrouvent leur état précédent. Les brouillons existants sont conservés ; un brouillon archivé avant suppression revient dans son onglet sans être enregistré.` });
+  if (choice.response !== 1) return null;
+  return store.restoreSourceOperation(value.revision);
+});
 route('project:save', async payload => {
   const { store, value } = projectRequest(payload);
   if (typeof value.id !== 'string') throw new Error('Identifiant de source requis.');

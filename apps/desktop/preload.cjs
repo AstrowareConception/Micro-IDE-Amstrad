@@ -86,6 +86,13 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
     list: (sessionId, directory, showHidden) => ipcRenderer.invoke('explorer:list', { sessionId, directory, showHidden }),
     preview: (sessionId, path, revision) => ipcRenderer.invoke('explorer:preview', { sessionId, path, revision }),
   }),
+  sourceOperations: Object.freeze({
+    prepare: (sessionId, request) => ipcRenderer.invoke('sources:prepare', { sessionId, request }),
+    apply: (sessionId, planId, source) => ipcRenderer.invoke('sources:apply', { sessionId, planId, source }),
+    last: sessionId => ipcRenderer.invoke('sources:last', { sessionId }),
+    restore: (sessionId, revision) => ipcRenderer.invoke('sources:restore', { sessionId, revision }),
+    draft: sessionId => ipcRenderer.invoke('sources:draft', { sessionId }),
+  }),
   project: Object.freeze({
     open: () => ipcRenderer.invoke('project:open'),
     create: name => ipcRenderer.invoke('project:create', name),

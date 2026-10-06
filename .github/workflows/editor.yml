@@ -33,7 +33,7 @@ jobs:
         run: |
           npm run typecheck
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          node --test tests/build-toolchain.test.mjs tests/recent-projects.test.ts tests/git-operations.test.ts tests/github-session.test.ts tests/project-explorer.test.ts
+          node --test tests/build-toolchain.test.mjs tests/recent-projects.test.ts tests/git-operations.test.ts tests/github-session.test.ts tests/project-explorer.test.ts tests/source-operations.test.ts
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run build:hello
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -89,6 +89,8 @@ jobs:
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node tests/firmware-runtime.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms CPC_UI_MODE=browser node tests/emulator-ui-smoke.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms xvfb-run -a node tests/emulator-ui-smoke.mjs
+      - name: Native source organization and draft restoration
+        run: xvfb-run -a npm run test:sources-desktop
       - name: Native Electron paths and isolation
         run: xvfb-run -a npm run test:desktop
         env:
@@ -109,6 +111,10 @@ jobs:
             out/agent-missions-desktop-alpha.png
             out/dock-layout-alpha.png
             out/recent-projects-alpha.png
+            out/source-operations-alpha.png
+            out/source-operations-failure.png
+            out/source-operations-desktop-alpha.png
+            out/source-operations-desktop-failure.png
             out/project-explorer-alpha.png
             out/project-explorer-desktop-alpha.png
             out/menu-placement-alpha.png

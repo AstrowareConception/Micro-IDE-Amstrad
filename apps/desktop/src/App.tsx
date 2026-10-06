@@ -1,3 +1,5 @@
+import { SourceOperationDialog, SourceDraftDialog } from './SourceOperationDialog.tsx';
+import type { SourceOperation, SourceMutationResult, SourceDraft } from '../../../packages/workspace/src/source-operations.ts';
 import { GitHubDialog } from './GitHubDialog.tsx';
 import { RecentProjectsDialog } from './RecentProjectsDialog.tsx';
 import { DockPanel } from './DockPanel.tsx';
@@ -63,6 +65,8 @@ export function App() {
   const [projectName, setProjectName] = useState('Mon projet CPC');
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [sourceName, setSourceName] = useState('');
+  const [sourceDraft, setSourceDraft] = useState<SourceDraft>();
+  const [sourceDialog, setSourceDialog] = useState<{ sourceId: string; action: SourceOperation['action'] }>();
   const [documentRequest, setDocumentRequest] = useState<{ id: string; nonce: string }>();
   const active = documents.find(document => document.id === activeId)!;
   const { source } = active;
@@ -122,12 +126,12 @@ export function App() {
   }, [preferences.theme]);
   useEffect(() => {
     if (!preferences.autoSave) { autoSaveAttempt.current = ''; return; }
-    if (!project || !files.project || busy || !dirty) return;
+    if (!project || !files.project || busy || sourceDialog || !dirty) return;
     const revision = JSON.stringify([project.sessionId, preferences.autoSaveDelay, documents.map(item => [item.id, item.source, item.saved])]);
     if (autoSaveAttempt.current === revision) return;
     const timer = setTimeout(() => { autoSaveAttempt.current = revision; void saveAll(); }, preferences.autoSaveDelay);
     return () => clearTimeout(timer);
-  }, [preferences.autoSave, preferences.autoSaveDelay, project?.sessionId, busy, dirty, documents]);
+  }, [preferences.autoSave, preferences.autoSaveDelay, project?.sessionId, busy, dirty, documents, sourceDialog]);
   useEffect(() => { files.setDirty(dirty); }, [dirty]);
   useEffect(() => { if (searchOpen) showTool('search'); }, [searchOpen]);
   useEffect(() => { setClosedTabs(previous => { if (!previous.has(activeId)) return previous; const next = new Set(previous); next.delete(activeId); return next; }); }, [activeId]);
@@ -203,6 +207,46 @@ export function App() {
     if (!append) setClosedTabs(new Set());
     showTool('project');
     setActiveId(added[0]!.id); setProject({ sessionId: snapshot.sessionId, manifest: snapshot.manifest });
+  }
+  function acceptSourceMutation(result: SourceMutationResult) {
+    if (!project) return;
+    const next = result.files.map(file => {
+      const existing = documents.find(document => document.sourceId === file.id);
+      const item = existing ? { ...existing, name: file.path } : { id: `${project.sessionId}:${file.id}`, sourceId: file.id, name: file.path, source: file.source, saved: file.source };
+      return result.restoredDraft?.id === file.id ? { ...item, source: result.restoredDraft.source } : item;
+    });
+    setDocuments(next); setProject({ ...project, manifest: result.manifest });
+    setClosedTabs(previous => new Set([...previous].filter(id => next.some(document => document.id === id))));
+    if (!next.some(document => document.id === activeId)) setActiveId(next[0]!.id);
+    setStatus('Organisation des sources mise à jour. Les autres brouillons sont conservés.');
+  }
+  async function showSourceDraft() {
+    if (!project || !files.sourceOperations || busy) return;
+    setBusy(true);
+    try {
+      const draft = await files.sourceOperations.draft(project.sessionId);
+      if (!draft) { setStatus('Aucun brouillon conservé dans la dernière organisation.'); return; }
+      if ('error' in draft) { setStatus(draft.error); return; }
+      setSourceDraft(draft);
+    } catch { setStatus('Lecture de la copie impossible.'); }
+    finally { setBusy(false); }
+  }
+  async function restoreSourceMutation() {
+    if (!project || !files.sourceOperations || busy) return;
+    setBusy(true);
+    try {
+      const last = await files.sourceOperations.last(project.sessionId);
+      if (!last) { setStatus('Aucune organisation récente rétablissable sur les versions disque actuelles.'); return; }
+      if ('error' in last) { setStatus(last.error); return; }
+      const result = await files.sourceOperations.restore(project.sessionId, last.revision);
+      if (!result) { setStatus('Restauration annulée.'); return; }
+      if ('error' in result) { setStatus(result.error); return; }
+      acceptSourceMutation(result);
+    } catch { setStatus('Restauration impossible ; rouvrez le projet si une reprise est nécessaire.'); }
+    finally { setBusy(false); }
+  }
+  function sourceOperationCommands(sourceId: string): WorkbenchCommand[] {
+    return (['rename', 'move', 'delete'] as const).map(action => ({ id: `source-${action}`, label: `${action === 'rename' ? 'Renommer' : action === 'move' ? 'Déplacer' : 'Supprimer'} cette source…`, disabled: busy || !project || !files.sourceOperations || action === 'delete' && project.manifest.sources.length === 1, run: () => setSourceDialog({ sourceId, action }) }));
   }
   function acceptAgent(state: AgentWorkspaceState) {
     if (state.sessionId !== project?.sessionId) return;
@@ -318,6 +362,9 @@ export function App() {
     { id: 'terminal', label: 'Afficher le terminal', detail: 'Ctrl `', run: () => showOutput('terminal') },
     { id: 'save-as', label: 'Enregistrer sous', detail: 'Ctrl Alt S', disabled: busy || !!project, run: () => void perform(() => files.save(source, true), 'Listing enregistré', true) },
     { id: 'create-project', label: 'Créer un projet', disabled: busy || !files.project, run: () => setNewProjectOpen(true) },
+    ...sourceOperationCommands(active.sourceId),
+    { id: 'source-archive', label: 'Consulter le brouillon conservé…', disabled: busy || !project || !files.sourceOperations?.draft, run: () => void showSourceDraft() },
+    { id: 'source-restore', label: 'Rétablir la dernière organisation des sources…', disabled: busy || !project || !files.sourceOperations, run: () => void restoreSourceMutation() },
     { id: 'explorer', label: 'Afficher l’explorateur', detail: 'Ctrl Maj E', run: () => showTool('project') },
     { id: 'git', label: 'Afficher Git', detail: 'Ctrl Maj G', run: () => showTool('git') },
     { id: 'github', label: 'Compte GitHub et dépôts privés…', disabled: busy || !files.github, run: () => setGithubOpen(true) },
@@ -348,6 +395,7 @@ export function App() {
   workbenchActions.current = commands;
   const selectedSource = documents.find(document => document.id === contextSource);
   const sourceCommands: WorkbenchCommand[] = selectedSource ? [
+    ...sourceOperationCommands(selectedSource.sourceId),
     { id: 'select', label: 'Ouvrir cette source', disabled: busy, run: () => setActiveId(selectedSource.id) },
     { id: 'source-history', label: 'Historique local de cette source', disabled: busy || !project || !files.history, run: () => { setActiveId(selectedSource.id); setHistoryOpen(true); } },
     { id: 'source-save', label: 'Enregistrer cette source', disabled: busy || !project || !files.project, run: () => {
@@ -363,7 +411,7 @@ export function App() {
   ] : [];
   return <main className="workbench" style={{ '--sidebar-width': `${preferences.sidebarWidth}px`, '--agent-width': `${preferences.agentWidth}px`, '--output-height': `${preferences.outputHeight}px` } as CSSProperties}>
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.30 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.31 · AstroWare Conception</p></div></div>
       <span className="profile">CPC 6128 · BASIC 1.1</span>
     </header>
     <WorkbenchMenus groups={[
@@ -371,7 +419,7 @@ export function App() {
       ['Édition', ['undo', 'redo', 'find', 'replace', 'search-sources', 'line', 'basic-comment', 'editor.action.copyLinesDownAction', 'editor.action.moveLinesUpAction', 'editor.action.moveLinesDownAction', 'editor.action.deleteLines', 'editor.action.addSelectionToNextFindMatch', 'next-tab', 'previous-tab', 'close-tab']],
       ['BASIC', ['run', 'renumber', 'complete', 'editor.action.revealDefinition', 'editor.action.marker.next', 'editor.action.marker.prev', 'reference']],
       ['Git', ['git', 'git-refresh', 'git-init', 'git-commit', 'git-ai-message', 'git-history', 'git-branches', 'git-create-branch', 'git-remotes', 'git-fetch', 'git-pull', 'git-push', 'clone', 'github', 'git-prs']],
-      ['Projet', ['explorer', 'documents', 'recovery']],
+      ['Projet', ['explorer', 'source-rename', 'source-move', 'source-delete', 'source-restore', 'source-archive', 'documents', 'recovery']],
       ['Affichage', ['sidebar', 'agent', 'output', 'problems', 'terminal', 'git-history', 'reset-layout', 'minimap', 'zoom-in', 'zoom-out', 'palette', 'quick-sources']],
       ['Outils', ['firmware', 'settings', 'shortcuts']],
       ['Aide', ['reference', 'shortcuts', 'feedback']],
@@ -430,6 +478,8 @@ export function App() {
         {project && <DocumentsPanel key={`documents:${project.sessionId}`} sessionId={project.sessionId} manifest={project.manifest} busy={busy} requested={documentRequest} onBusy={setBusy} onManifest={manifest => setProject(previous => previous ? { ...previous, manifest } : previous)} />}
         </div><div className="tool-content" hidden={tool !== 'project'}><section className="panel"><h2>{project?.manifest.name ?? 'Projets BASIC'}</h2>
           {project ? <>
+            <Button disabled={busy || !files.sourceOperations} onClick={() => void restoreSourceMutation()}>Rétablir la dernière organisation</Button>
+            <Button disabled={busy || !files.sourceOperations?.draft} onClick={() => void showSourceDraft()}>Consulter le brouillon conservé</Button>
             <p>Entrée : {project.manifest.sources.find(item => item.id === project.manifest.entryPoint)?.cpcName}</p>
             <ProjectExplorerPanel key={`explorer:${project.sessionId}`} sessionId={project.sessionId} manifest={project.manifest} busy={busy} activeSourceId={active.sourceId} dirtyIds={documents.filter(item => item.source !== item.saved).map(item => item.sourceId)}
               onSource={id => { const item = documents.find(item => item.sourceId === id); if (item) setActiveId(item.id); }}
@@ -483,6 +533,11 @@ export function App() {
     {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
     {settingsOpen && <SettingsDialog preferences={preferences} onApply={setPreferences} onClose={() => setSettingsOpen(false)} />}
     {shortcutsOpen && <ShortcutsDialog commands={commands} onClose={() => setShortcutsOpen(false)} />}
+    {sourceDialog && project && (() => {
+      const selected = documents.find(document => document.sourceId === sourceDialog.sourceId), source = project.manifest.sources.find(source => source.id === sourceDialog.sourceId);
+      return selected && source ? <SourceOperationDialog key={`${project.sessionId}:${source.id}:${sourceDialog.action}`} sessionId={project.sessionId} manifest={project.manifest} source={source} buffer={selected.source} dirty={selected.source !== selected.saved} action={sourceDialog.action} onBusy={setBusy} onResult={acceptSourceMutation} onClose={() => { setSourceDialog(undefined); requestAnimationFrame(() => editor.current?.focus()); }} /> : null;
+    })()}
+    {sourceDraft && <SourceDraftDialog path={sourceDraft.path} source={sourceDraft.source} onClose={() => { setSourceDraft(undefined); requestAnimationFrame(() => editor.current?.focus()); }} />}
     <footer role="status"><Button icon="warning" title="Afficher les diagnostics" onClick={() => showOutput('problems')}>{analysis.diagnostics.filter(item => item.severity === 'error').length} erreur(s)</Button>{busy ? 'Opération en cours…' : status}{preferences.autoSave && <span>Auto-save</span>}<span>L{position.line} · C{position.column} · {window.desktop ? 'Bureau local' : 'Aperçu navigateur · enregistrement par téléchargement'}</span></footer>
   </main>;
 }
