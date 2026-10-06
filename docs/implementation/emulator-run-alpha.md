@@ -20,16 +20,33 @@ L’export desktop utilise le dialogue natif puis une écriture atomique : annul
 
 ## Préparer le build desktop
 
-Node 24.12+ et dépendances npm figées. Le moteur est compilé depuis les headers verrouillés ; aucun binaire téléchargé à l’insu du build :
+Node 24.12+ dans la branche 24, Python 3.12+ et Git dans le PATH. Les commandes suivantes sont identiques dans PowerShell et dans un shell Linux/macOS :
 
-```bash
-npm ci
-npm run chips:fetch
-# Installer et activer emsdk 4.0.15 (commit 389a68bc35dcff7ebae4614e1615099dafda00d1).
-EMCC=/chemin/emsdk/upstream/emscripten/emcc npm run build:wasm
+```powershell
+npm ci --ignore-scripts
+node node_modules/electron/install.js
 npm run build:desktop
 npm start
 ```
+
+**Correctif 0.24.1** : si `out/cpc.mjs` ou `out/cpc.wasm` manque ou est tronqué, le build prépare le moteur avant de construire Electron. Il vérifie les headers chips, installe Emscripten 4.0.15 dans `.cache/emsdk` au commit verrouillé, l’active et compile le wrapper. Le premier build nécessite Internet et un téléchargement SDK volumineux ; les builds suivants réutilisent le moteur. Python et Git absents, SDK local d’un autre commit ou compilateur d’une autre version : échec explicite sans suppression du cache existant. Aucune ROM n’est téléchargée. Le lanceur Python emcc évite les scripts `.bat` et les problèmes d’arguments/espaces Windows ; aucun chargement manuel de `emsdk_env.bat` n’est nécessaire.
+
+`npm run emulator:prepare` reconstruit explicitement le moteur après modification du wrapper ou du lock. Pour utiliser une installation Emscripten 4.0.15 externe, définir `EMCC` avant la préparation ; les chemins avec espaces sont acceptés. Dans PowerShell :
+
+```powershell
+$env:EMCC = "C:\outils\emsdk\upstream\emscripten\emcc.bat"
+npm run emulator:prepare
+npm run build:desktop
+```
+
+Dans un shell Linux/macOS :
+
+```bash
+EMCC=/chemin/emsdk/upstream/emscripten/emcc npm run emulator:prepare
+npm run build:desktop
+```
+
+`CPC_BUILD_PYTHON` permet de désigner l’exécutable Python ; sinon le build détecte `py -3`, `python` ou `python3` et exige 3.12+. Les commandes avancées `chips:fetch` et `build:wasm` restent disponibles pour le banc J0. L’environnement emsdk n’est pas injecté dans l’IDE : Node 24 reste celui des commandes npm/Electron.
 
 Le build copie cpc.mjs/cpc.wasm et leurs notices dans le renderer. Une absence de moteur échoue explicitement. Les artefacts CI `cpceleste-desktop-alpha` contiennent dist/package/lock/licenses : après extraction, `npm ci` puis `npm start` permettent de lancer le build sans recompiler WASM. C’est une alpha Node/Electron, pas encore un installateur autonome signé.
 
@@ -56,3 +73,7 @@ CPC_TEST_ROM_DIR=/chemin/roms xvfb-run -a npm run test:emulator
 157 tests Node, tests natifs ASan/UBSan, transport WASM et navigateur ; recette Electron/captures attestées dans la PR. Linux natif et navigateur ont effectivement affiché BASIC 1.1 puis exécuté RUN depuis DSK avec le jeu ci-dessus. La qualification globale demeure ouverte : OPENOUT/export/relecture indépendante dans Caprice32, son audible, timings, mapping complet, modes/firmwares/langues supplémentaires, Windows/macOS et matériel. Aucun résultat de ces essais non exécutés n’est inféré du succès de PRINT/POKE.
 
 Source des ROM de référence pour essais : [chips-test](https://github.com/floooh/chips-test/tree/3785836e76c43922f78a50e1f8adfed259ab9672/examples/roms). Le [texte historique de Cliff Lawson](https://www.freetimeweb.nl/home/computer/alt/lawsons-amstrad-computer_site/web.ukonline.co.uk/cliff.lawson/cpchomec.htm) distingue les copyrights Amstrad/Locomotive ; aucune licence générale de ROM n’est déduite de celle du moteur. Le produit conserve les imports locaux. [ADR 0029](../adr/0029-executer-buffers-cpc-integre.md).
+
+## Recette de build 0.24.1
+
+Le workflow Desktop editor ajoute un job Windows 2025/PowerShell, Node 24.13, Python 3.12, dans un chemin contenant des espaces : checkout propre sans moteur, installation Electron, `build:desktop` avec préparation automatique, typecheck, régressions de lancement, transport WASM, puis second build avec cache. Les résultats réellement exécutés sont consignés dans la PR du correctif ; ce job ne qualifie pas à lui seul les interactions de l’application sous Windows. Les recettes Linux Electron/firmware existantes restent exécutées.

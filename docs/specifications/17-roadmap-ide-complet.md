@@ -207,3 +207,7 @@ Le [profil privé d’identité Git](../implementation/git-identity-alpha.md), [
 ## Priorité Exécuter — alpha 0.24, 5 octobre 2026
 
 À la demande utilisateur, [Exécuter/F5 dans le CPC intégré](../implementation/emulator-run-alpha.md) passe avant la suite Git. [ADR 0029](../adr/0029-executer-buffers-cpc-integre.md) : worker chips/WASM, DSK des buffers, trois ROM privées, écran/clavier/pause/arrêt/son/export session et RUN automatique pour le jeu anglais reconnu (Ready manuel sinon). Boot BASIC 1.1, RUN disque et POKE sont prouvés sur le jeu identifié ; pixels PRINT vérifiés par recette UI. 157 tests Node ; preuves Electron dans la PR. J0/J3 restent partiels, oracle indépendant/OPENOUT/audio audible/autres plateformes ouverts ; aucun CPC physique qualifié. Suite immédiate : renforcer les recettes CPC, avant branches Git et outils d’exécution IA.
+
+## Correctif build — alpha 0.24.1, 6 octobre 2026
+
+Le [guide Exécuter](../implementation/emulator-run-alpha.md) décrit désormais un build desktop qui prépare automatiquement le moteur manquant avec le SDK verrouillé. Régression PowerShell sur checkout propre avec chemin contenant des espaces et transport WASM ; builds suivants réutilisables. La recette Windows concerne la chaîne de construction, sans clore la qualification fonctionnelle WIN/J6 ni installer les ROM. Suite produit inchangée : recettes CPC avant branches Git.

@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+from emcc_command import emcc_command
 
 ROOT = Path(__file__).resolve().parents[1]
 lock = json.loads((ROOT / 'packages/emulator/chips.lock.json').read_text())
@@ -21,12 +22,12 @@ out = ROOT / 'out'
 out.mkdir(exist_ok=True)
 common = ['-std=c11', '-Wall', '-Wextra', '-Werror', '-I' + str(ROOT / '.cache/chips')]
 if args.target == 'wasm':
-    compiler = os.environ.get('EMCC', 'emcc')
-    version = subprocess.check_output([compiler, '--version'], text=True)
+    compiler = emcc_command(os.environ.get('EMCC', 'emcc'))
+    version = subprocess.check_output([*compiler, '--version'], text=True)
     if not re.search(r'\b' + re.escape(lock['emscripten']) + r'\b', version.splitlines()[0]):
         raise SystemExit('Expected Emscripten ' + lock['emscripten'])
     exports = re.findall(r'\b(cpc_bridge_\w+)\s*\(', (ROOT / 'packages/emulator/src/cpc_bridge.h').read_text())
-    command = [compiler, *common, '-O2', str(ROOT / 'packages/emulator/src/cpc_bridge.c'),
+    command = [*compiler, *common, '-O2', str(ROOT / 'packages/emulator/src/cpc_bridge.c'),
         '-sMODULARIZE=1', '-sEXPORT_ES6=1', '-sENVIRONMENT=web,worker,node', '-sFILESYSTEM=0',
         '-sALLOW_MEMORY_GROWTH=0', '-sINITIAL_MEMORY=16777216', '-sSTACK_SIZE=1048576',
         '-sASSERTIONS=1', '-sABORTING_MALLOC=0', '-sEXPORTED_RUNTIME_METHODS=["HEAPU8","HEAPF32"]',
