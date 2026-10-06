@@ -92,3 +92,10 @@ R3 commence avec [identité explicite et commits locaux](../implementation/git-c
 ## Avancement alpha 0.23 — 5 octobre 2026
 
 Le [profil privé d’identité Git](../implementation/git-identity-alpha.md), [ADR 0028](../adr/0028-profil-prive-identite-git.md), complète R3 avec mémorisation opt-in, chargement initial/explicite, oubli et protection des révisions. La préférence est commune aux projets CPCéleste et ne modifie pas la configuration Git ; le réglage par dépôt du document 16 reste ouvert. IDE-033 reste P, R3/JG-A/ACC-31 ne sont pas clos. 152 tests Node ; recette Electron de persistance après SIGKILL et capture attestées dans la PR. Suite prioritaire : liste/création de branches locales, puis bascule protégée avant réseau.
+
+
+## Avancement alpha 0.28 — 6 octobre 2026
+
+La demande utilisateur priorise [Git et GitHub intégrés](../implementation/git-network-alpha.md), [ADR 0035](../adr/0035-atelier-git-reseau-et-github.md). Menu Git, branches locales/distantes, remotes, upstream, clone dans un nouveau dossier, fetch, pull avec fetch préparatoire/fast-forward et push examinés ; buffers propres, cible projet vérifiée puis session rechargée. Init préserve un ignore existant avec exclusions locales. Compte GitHub privé par jeton en mémoire ou CLI, listing/association, dépôt personnel privé par défaut et PR brouillon, liens PR/CI. Suggestion IA du message depuis le seul diff indexé, sans outils ni commit automatique.
+
+192 tests Node ; transport HTTPS/TLS réel avec deux clones, rejets et arrêt, API privées contrôlées, recettes navigateur/Electron et build Windows consignés dans la PR. IDE-035/036/039 restent P : tags/stash, merge/rebase/conflits, OAuth/coffre système, qualification SSH/macOS et comptes/fournisseurs réels restent ouverts. Aucun jalon JG/R3/R4 global clos.

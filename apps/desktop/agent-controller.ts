@@ -20,6 +20,11 @@ export class AgentController {
   private readonly transport: typeof fetch | undefined;
   constructor(storage: string, corpusRoot: string, transport?: typeof fetch) { this.storage = storage; this.corpusRoot = corpusRoot; this.transport = transport; }
   get running(): boolean { return this.job?.running ?? false; }
+  async suggestCommit(diff: string): Promise<{ message: string; model: string }> {
+    if (this.running || this.selectionRequired || !this.provider) throw new Error('Configurez la clé et choisissez un modèle OpenAI dans le panneau IA avant cette suggestion.');
+    const provider = this.provider;
+    return { message: await provider.suggestCommit(diff), model: provider.model };
+  }
   configure(key: unknown, model: unknown): { configured: boolean; model: string } {
     if (this.running) throw new Error('Arrêtez la mission avant de changer la configuration.');
     if (key === '') { this.provider = undefined; this.catalog = undefined; this.selectionRequired = false; this.configurationRevision++; return { configured: false, model: DEFAULT_MODEL }; }

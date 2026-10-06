@@ -147,3 +147,24 @@ select{font:inherit;width:100%;margin:8px 0;background:var(--input);color:inheri
 .workbench-menu [role=menuitem]>span{min-width:0;flex:1;overflow-wrap:anywhere}.workbench-menu [role=menuitem] kbd{max-width:45%;white-space:normal;flex-shrink:0}
 
 .recent-projects-dialog{width:min(820px,94vw);overflow:auto}.recent-projects-dialog h2{display:flex;align-items:center;gap:8px}.recent-projects-list{list-style:none;padding:0;max-height:45vh;overflow:auto}.recent-projects-list li{display:flex;align-items:center;gap:6px;margin:6px 0}.recent-projects-list li>button:first-child{flex:1;min-width:0;text-align:left;padding:10px}.recent-projects-list span{min-width:0;overflow-wrap:anywhere}.recent-projects-list small{display:block;font-size:11px;color:var(--muted);margin-top:4px}.recent-projects-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.recent-projects-actions button:first-child{margin-right:auto}
+
+/* Git operations share the IDE panel geometry and remain readable in narrow docks. */
+.git-remote-panel{border-top:1px solid var(--line);margin-top:16px;padding-top:10px}
+.git-remote-panel label,.github-dialog label{display:flex;flex-direction:column;gap:5px;margin:10px 0}
+.git-remote-panel label:has(input[type=checkbox]),.github-dialog label:has(input[type=checkbox]){flex-direction:row;align-items:center}
+.git-remote-panel input,.git-remote-panel select,.git-remote-panel textarea,.github-dialog input{width:100%;min-width:0;box-sizing:border-box}
+.git-remote-panel input[type=checkbox],.github-dialog input[type=checkbox]{width:auto}
+.git-remote-panel details,.github-dialog details{padding:10px 0;border-top:1px solid var(--line)}
+.git-remote-panel summary,.github-dialog summary{cursor:pointer;font-weight:600}
+.git-actions{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.git-actions button{margin:0;min-width:0}
+.git-url,.git-operation-preview code,.git-branches span{white-space:normal;overflow-wrap:anywhere}
+.git-branches,.github-repositories{list-style:none;padding:0;max-height:280px;overflow:auto}
+.git-branches li{display:flex;align-items:center;flex-wrap:wrap;gap:5px;padding:6px 0;border-bottom:1px solid var(--line)}
+.git-branches span{flex:1;min-width:100px}.git-branches small,.git-remote-panel li>small{display:block}
+.git-operation-preview{border:1px solid var(--line);border-radius:8px;padding:10px;margin-top:12px}
+.git-operation-preview p{overflow-wrap:anywhere}.git-operation-preview ul{max-height:180px;overflow:auto}
+.github-dialog{width:min(780px,calc(100vw - 40px));max-height:85vh;overflow:auto}
+.github-repositories button{width:100%;text-align:left;overflow-wrap:anywhere;margin:3px 0}
+
+.git-network-tools>summary{cursor:pointer;font-weight:600;padding:10px 0;color:var(--accent)}

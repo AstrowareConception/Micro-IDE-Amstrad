@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { verifyGitDesktop } from './git-desktop-smoke.mjs';
 import { _electron as electron, expect } from '@playwright/test';
 import { mkdtemp, readFile, writeFile, mkdir, rename, readdir, lstat, chmod, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -1078,6 +1079,7 @@ try {
   assert.deepEqual(await readFile(join(commitRoot, '.git/index')), identityIndex); assert.deepEqual(await readFile(join(commitRoot, '.git/config')), commitConfigBefore); assert.deepEqual(await readFile(join(commitRoot, 'src/main.bas')), identitySource); assert.equal(commitGit('rev-list', '--count', 'HEAD').trim(), '2');
   console.log('Native Git identity: opt-in private profile, dirty-safe preference update, explicit reload preserves message, external revision conflict, SIGKILL/restart reload, forget/reopen, expired IPC and unchanged repository bytes/history passed.');
 
+  await verifyGitDesktop(page, desktop, temporary);
   console.log('Electron smoke: native Git init/status/diffs/stage/unstage, TXT/MD, real PNG/JPEG decode and PDF.js worker import/pagination/reopen/corrupt-file rejection, scoped PDF page excerpts and progressive multimodal agent outputs, projects and firmware checks passed. No live API, real vision or CPC execution claimed.');
 } catch (error) {
   await mkdir('out', { recursive: true });

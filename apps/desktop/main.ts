@@ -1,5 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, protocol, net, shell } from 'electron';
-import { readFile, writeFile, rename, unlink, lstat } from 'node:fs/promises';
+import { readFile, writeFile, rename, unlink, lstat, mkdir } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
 import { join, dirname, relative, isAbsolute } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -15,6 +15,9 @@ import { FirmwareStore } from './firmware-store.ts';
 import { runDisk } from '../../packages/emulator/src/run.ts';
 import { realpath } from 'node:fs/promises';
 import { GitInspection } from './git-inspection.ts';
+import { GitOperations } from './git-operations.ts';
+import { GitHubSession } from './github-session.ts';
+import { GIT_ACTION_LABELS, remoteUrl, remoteName, githubRepository, branchName } from '../../packages/version-control/src/operations.ts';
 import { GitIdentityStore } from './git-identity-store.ts';
 import { ProjectTerminal } from './terminal.ts';
 import { romRole } from '../../packages/emulator/src/firmware.ts';
@@ -30,7 +33,13 @@ let dirty = false;
 let project: ProjectStore | undefined;
 let inFlight = false;
 let agent: AgentController;
-let gitSession: { id: string; inspector: GitInspection } | undefined;
+let gitSession: { id: string; inspector: GitInspection; operations: GitOperations } | undefined;
+let gitTransfer: GitOperations | undefined;
+async function gitWork<T>(operations: GitOperations, work: () => Promise<T>): Promise<T> {
+  gitTransfer = operations;
+  try { return await work(); } finally { gitTransfer = undefined; }
+}
+const github = new GitHubSession();
 const terminal = new ProjectTerminal();
 const hash = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
 
@@ -72,6 +81,7 @@ function route(channel: string, handler: (payload: unknown) => Promise<unknown>,
 
 // Do not hold the ESM entry point open while waiting for Electron's ready lifecycle.
 void app.whenReady().then(async () => {
+ipcMain.handle('git:cancel', event => { trusted(event); return gitTransfer?.cancel() ?? { stopped: false }; });
 ipcMain.handle('feedback:open', async (event, payload: unknown) => {
   trusted(event);
   try { const report = feedbackReport(payload); await shell.openExternal(report.url); return { url: report.url, prefilled: report.prefilled }; }
@@ -207,10 +217,115 @@ function projectRequest(payload: unknown): { store: ProjectStore; value: Record<
   return { store: project, value };
 }
 function gitInspector(store: ProjectStore): GitInspection {
-  if (gitSession?.id !== store.sessionId) gitSession = { id: store.sessionId,
-    inspector: new GitInspection(store.root, () => store.manifest.sources.map(source => source.path)) };
+  if (gitSession?.id !== store.sessionId) {
+    const inspector = new GitInspection(store.root, () => store.manifest.sources.map(source => source.path));
+    gitSession = { id: store.sessionId, inspector, operations: new GitOperations(store.root, inspector, {
+      authorization: url => github.authorization(url), validateProject: folder => ProjectStore.open(folder, decodeImage, extractPdf),
+    }) };
+  }
   return gitSession.inspector;
 }
+function gitOperations(store: ProjectStore): GitOperations { gitInspector(store); return gitSession!.operations; }
+route('git:overview', async payload => { const { store } = projectRequest(payload); await store.assertCurrent(); return gitOperations(store).overview(); });
+route('git:prepare-operation', async payload => {
+  const { store, value } = projectRequest(payload); gitMutation(); await store.assertCurrent();
+  const operations = gitOperations(store);
+  return gitWork(operations, () => operations.prepare(value.revision, value.request));
+});
+route('git:apply-operation', async payload => {
+  const { store, value } = projectRequest(payload); gitMutation(); await store.assertCurrent();
+  const operations = gitOperations(store), plan = operations.selection(value.planId);
+  const choice = await dialog.showMessageBox(window, { type: plan.action === 'push' ? 'warning' : 'question', buttons: ['Annuler', 'Confirmer'], defaultId: 0, cancelId: 0,
+    message: GIT_ACTION_LABELS[plan.action] + ' dans ' + store.root,
+    detail: 'Branche locale : ' + plan.localBranch + '\nBranche cible : ' + plan.branch + '\nRemote : ' + plan.remote + '\nDestination : ' + plan.url + '\nHEAD : ' + plan.head + '\nCible : ' + (plan.target || 'aucune') +
+      '\n' + plan.commits + ' commit(s) à publier\n' + plan.files.join('\n') + (plan.action === 'pull' ? '\nLe fetch préparatoire a déjà actualisé les références distantes ; annuler conserve ce fetch sans changer les sources.' : '') +
+      '\n\nPas de sauvegarde, stash, fusion de divergence ou push forcé automatique. Une opération interrompue exige de vérifier son résultat.' });
+  if (choice.response !== 1) return null;
+  gitMutation(); await store.assertCurrent();
+  let result;
+  try { result = await gitWork(operations, () => operations.apply(value.planId)); }
+  catch (error) {
+    try { await store.assertCurrent(); } catch { project = undefined; gitSession = undefined; }
+    throw error;
+  }
+  if (!result.changesFiles) return result;
+  try {
+    const opened = await ProjectStore.open(store.root, decodeImage, extractPdf);
+    project = opened.store; current = undefined; await rememberProject(opened.store);
+    return { ...result, project: opened.snapshot };
+  } catch {
+    project = undefined; gitSession = undefined;
+    throw new Error('Git a modifié les fichiers, mais le projet n’est plus valide. Les buffers restent visibles ; réouvrez explicitement un projet valide avant toute écriture.');
+  }
+});
+route('git:clone', async payload => {
+  if (!payload || typeof payload !== 'object') throw new Error('URL et nom du dossier requis.');
+  const value = payload as Record<string, unknown>, url = remoteUrl(value.url);
+  if (typeof value.name !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$/.test(value.name) || value.name.endsWith('.')) throw new Error('Nom du nouveau dossier invalide.');
+  const selected = await dialog.showOpenDialog(window, { title: 'Choisissez le dossier parent du nouveau clone', properties: ['openDirectory'] });
+  if (selected.canceled || !selected.filePaths[0]) return null;
+  const folder = join(await realpath(selected.filePaths[0]), value.name);
+  const choice = await dialog.showMessageBox(window, { type: 'question', buttons: ['Annuler', 'Cloner'], defaultId: 0, cancelId: 0, message: 'Cloner ' + url, detail: 'Nouveau dossier : ' + folder + '\nAucun dossier existant ne sera écrasé. Un projet CPCéleste valide est requis pour l’ouverture automatique.' });
+  if (choice.response !== 1) return null;
+  await mkdir(folder); const root = await realpath(folder);
+  const inspector = new GitInspection(root, () => []);
+  try {
+    const operations = new GitOperations(root, inspector, { authorization: url => github.authorization(url), validateProject: folder => ProjectStore.open(folder, decodeImage, extractPdf) });
+    await gitWork(operations, () => operations.clone(url));
+    return await openProjectFolder(root);
+  } catch { throw new Error('Clone non confirmé ou projet cible invalide. Dossier ' + folder + ' conservé pour inspection ; projet courant inchangé.'); }
+});
+route('git:suggest-message', async payload => {
+  const { store, value } = projectRequest(payload); gitMutation(); await store.assertCurrent();
+  const inspector = gitInspector(store), identity = value.identity;
+  if (!identity || typeof identity !== 'object') throw new Error('Identité du commit requise.');
+  const fields = identity as Record<string, unknown>, plan = await inspector.prepareCommit({ name: fields.name, email: fields.email, message: 'Préparation de la suggestion IA' });
+  if (Buffer.byteLength(plan.diff) > 128 * 1024) throw new Error('Diff supérieur à 128 Kio : rédigez le message manuellement.');
+  const revision = await inspector.operationRevision();
+  const choice = await dialog.showMessageBox(window, { type: 'question', buttons: ['Annuler', 'Générer le message'], defaultId: 0, cancelId: 0,
+    message: 'Envoyer le diff de l’index à OpenAI pour proposer un message ?',
+    detail: plan.files.map(file => file.path).join('\n') + '\n\nClé et modèle du panneau IA. Appel facturable, 128 Kio maximum, sans documents ni historique. Le texte proposé restera modifiable, sans commit ou push automatique.' });
+  if (choice.response !== 1) return null;
+  gitMutation(); await store.assertCurrent();
+  if (revision !== await inspector.operationRevision()) throw new Error('Index modifié pendant la confirmation ; suggestion annulée.');
+  const result = await agent.suggestCommit(plan.diff);
+  await store.assertCurrent(); if (revision !== await inspector.operationRevision()) throw new Error('Index modifié pendant la génération ; suggestion périmée.');
+  return result;
+});
+route('github:account', async () => github.account());
+route('github:connect', async payload => github.connect(payload));
+route('github:connect-cli', async () => github.connectCLI(project?.root ?? base));
+route('github:disconnect', async () => github.disconnect());
+route('github:token-page', async () => { await shell.openExternal('https://github.com/settings/personal-access-tokens/new'); return { ok: true }; });
+route('github:repositories', async payload => github.repositories(payload === undefined ? 1 : payload));
+route('github:create-repository', async payload => {
+  if (!payload || typeof payload !== 'object') throw new Error('Nom et visibilité requis.');
+  const value = payload as Record<string, unknown>;
+  if (typeof value.name !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$/.test(value.name) || typeof value.isPrivate !== 'boolean') throw new Error('Nom et visibilité invalides.');
+  const account = github.account(); if (!account.connected) throw new Error('Connectez GitHub avant de créer un dépôt.');
+  const choice = await dialog.showMessageBox(window, { type: 'warning', buttons: ['Annuler', 'Créer sur GitHub'], defaultId: 0, cancelId: 0,
+    message: 'Créer ' + account.login + '/' + value.name + ' sur GitHub ?', detail: value.isPrivate ? 'Dépôt PRIVÉ vide, sans publication des fichiers du projet.' : 'Dépôt PUBLIC vide, sans publication des fichiers du projet. Son nom et sa visibilité seront publics.' });
+  if (choice.response !== 1) return null; return github.createRepository(value.name, value.isPrivate);
+});
+async function githubDestination(store: ProjectStore, remote: unknown) {
+  const overview = await gitOperations(store).overview(), entry = overview.remotes.find(entry => entry.name === remoteName(remote));
+  if (!entry) throw new Error('Remote inconnu.'); return { overview, repository: githubRepository(entry.url) };
+}
+route('github:pull-requests', async payload => { const { store, value } = projectRequest(payload); await store.assertCurrent(); return github.pullRequests((await githubDestination(store, value.remote)).repository); });
+route('github:create-pull-request', async payload => {
+  const { store, value } = projectRequest(payload); gitMutation(); await store.assertCurrent();
+  const { overview, repository } = await githubDestination(store, value.remote), head = branchName(overview.branch), target = branchName(value.base);
+  if (typeof value.title !== 'string' || !value.title.trim() || value.title.length > 256 || typeof value.body !== 'string' || value.body.length > 20_000 || typeof value.draft !== 'boolean') throw new Error('Titre, description et état de PR invalides.');
+  const choice = await dialog.showMessageBox(window, { type: 'question', buttons: ['Annuler', 'Créer la PR'], defaultId: 0, cancelId: 0,
+    message: 'Créer une PR sur ' + repository + ' : ' + head + ' → ' + target + ' ?', detail: value.title + '\n\n' + value.body + '\n\n' + (value.draft ? 'Brouillon.' : 'Prête pour revue.') + ' La branche doit déjà être publiée. Aucun push ou merge automatique.' });
+  if (choice.response !== 1) return null;
+  gitMutation(); await store.assertCurrent(); if (overview.revision !== (await gitOperations(store).overview()).revision) throw new Error('Branche modifiée pendant la confirmation.');
+  return github.createPullRequest(repository, head, target, value.title, value.body, value.draft);
+});
+route('github:open', async payload => {
+  if (typeof payload !== 'string' || !/^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+(?:\/(?:pull\/\d+|actions))?\/?$/.test(payload)) throw new Error('Lien GitHub non qualifié.');
+  await shell.openExternal(payload); return { ok: true };
+});
 route('git:identity', async payload => { projectRequest(payload); return gitIdentity.status(); });
 route('git:remember-identity', async payload => { const { value } = projectRequest(payload); return gitIdentity.remember(value.revision, value.identity); });
 route('git:forget-identity', async payload => { const { value } = projectRequest(payload); return gitIdentity.forget(value.revision); });
@@ -263,7 +378,7 @@ route('git:init', async payload => {
   const { store, value } = projectRequest(payload); gitMutation(); await store.assertCurrent();
   if (typeof value.planId !== 'string') throw new Error('Plan de création Git requis.');
   const choice = await dialog.showMessageBox(window, { type: 'question', buttons: ['Annuler', 'Créer le dépôt'], defaultId: 0, cancelId: 0,
-    message: `Créer un dépôt Git local dans ${store.root} ?`, detail: 'Branche main, exclusions des documents/ROM/secrets/artefacts. Aucun fichier indexé, aucun commit, aucun accès réseau. Un .gitignore existant est conservé et bloque cette première version.' });
+    message: `Créer un dépôt Git local dans ${store.root} ?`, detail: 'Branche main, exclusions des documents/ROM/secrets/artefacts. Aucun fichier indexé, aucun commit, aucun accès réseau. Le .gitignore existant est conservé ; les exclusions proposées seront alors locales au dépôt.' });
   if (choice.response !== 1) return null;
   gitMutation(); await store.assertCurrent(); return gitInspector(store).init(value.planId);
 });

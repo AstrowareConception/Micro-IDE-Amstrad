@@ -1,0 +1,104 @@
+import assert from 'node:assert/strict';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
+import { expect } from '@playwright/test';
+import { ProjectStore } from '../apps/desktop/project-store.ts';
+import { GitOperations } from '../apps/desktop/git-operations.ts';
+import { GitInspection, GIT_NULL } from '../apps/desktop/git-inspection.ts';
+import { gitHttpsFixture } from './git-https-fixture.ts';
+const git = (root, ...args) => execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', ...args], { cwd: root, encoding: 'utf8', env: { ...process.env, GIT_CONFIG_GLOBAL: GIT_NULL, GIT_CONFIG_NOSYSTEM: '1' }, stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+export async function verifyGitDesktop(page, desktop, temporary) {
+  const server = await gitHttpsFixture({ allowAnonymous: true }), root = join(temporary, 'git-remote-project');
+  try {
+    await mkdir(root); await ProjectStore.create(root, 'Git réseau'); await writeFile(join(root, '.gitignore'), '# USER ORIGINAL\n');
+    await desktop.evaluate(({ dialog, shell }, { root, certificate }) => {
+      globalThis.gitFixtureOriginalFetch = globalThis.fetch; globalThis.gitFixturePreviousCA = process.env.GIT_SSL_CAINFO; process.env.GIT_SSL_CAINFO = certificate;
+      globalThis.githubFixtureRequests = []; globalThis.githubFixtureURLs = []; globalThis.gitFixtureConfirmations = [];
+      globalThis.fetch = async (input, options) => {
+        const url = String(input), body = options?.body ? JSON.parse(String(options.body)) : undefined;
+        globalThis.githubFixtureRequests.push({ url, body });
+        if (url === 'https://api.github.com/user') return Response.json({ login: 'Fixture' });
+        const repository = { full_name: 'Fixture/jeu-prive', clone_url: 'https://github.com/Fixture/jeu-prive.git', private: true, default_branch: 'main' };
+        if (url.includes('https://api.github.com/user/repos?')) return Response.json([repository]);
+        if (url === 'https://api.github.com/user/repos') return Response.json({ ...repository, full_name: 'Fixture/' + body.name, clone_url: 'https://github.com/Fixture/' + body.name + '.git', private: body.private });
+        if (url.includes('/pulls')) return Response.json(options?.method === 'POST' ? { number: 4, title: body.title, html_url: 'https://github.com/Fixture/jeu-prive/pull/4', head: { ref: body.head }, base: { ref: body.base }, draft: body.draft } :
+          [{ number: 3, title: 'PR de fixture', html_url: 'https://github.com/Fixture/jeu-prive/pull/3', head: { ref: 'feature/network' }, base: { ref: 'main' }, draft: true }]);
+        if (url === 'https://api.openai.com/v1/responses') return Response.json({ status: 'completed', usage: { total_tokens: 42 }, output: [{ type: 'message', content: [{ type: 'output_text', text: 'Prépare le projet Git réseau' }] }] });
+        throw new Error('Unexpected fixture API request');
+      };
+      dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [root] });
+      dialog.showMessageBox = async options => { globalThis.gitFixtureConfirmations.push({ message: options.message, detail: options.detail }); const response = globalThis.gitFixtureNextResponse ?? 1; globalThis.gitFixtureNextResponse = undefined; return { response }; };
+      shell.openExternal = async url => { globalThis.githubFixtureURLs.push(url); };
+    }, { root, certificate: server.certificate });
+    await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click(); await page.getByRole('heading', { name: 'Git réseau', exact: true }).waitFor();
+    const menus = page.getByRole('navigation', { name: 'Menus de l’atelier', exact: true });
+    async function command(name) { await expect(page.getByRole('button', { name: 'Ouvrir', exact: true })).toBeEnabled(); await menus.getByRole('button', { name: 'Git', exact: true }).click(); await page.getByRole('menuitem', { name }).click(); }
+    const panel = page.getByRole('region', { name: 'Contrôle de version Git', exact: true }), sync = page.getByLabel('Branches et synchronisation Git', { exact: true });
+    await command('Créer un dépôt Git local…'); await expect(panel).toContainText('exclusions locales, .gitignore existant conservé');
+    await panel.getByRole('button', { name: 'Créer le dépôt Git local', exact: true }).click(); await expect(panel).toContainText('branche main');
+    assert.equal(await readFile(join(root, '.gitignore'), 'utf8'), '# USER ORIGINAL\n');
+    for (const path of ['.gitignore', 'microide.project.json', 'src/main.bas']) await panel.getByRole('button', { name: 'Indexer ' + path, exact: true }).click();
+    await panel.getByLabel('Nom de l’auteur Git', { exact: true }).fill('Recette CPCéleste'); await panel.getByLabel('Email de l’auteur Git', { exact: true }).fill('fixture@example.invalid');
+    const configured = await page.evaluate(() => window.desktop.agent.configure('sk-' + 'fixture'.repeat(9), 'gpt-fixture')); assert.equal(configured.configured, true);
+    await panel.getByRole('button', { name: 'Proposer le message par IA…', exact: true }).click(); await expect(panel.getByLabel('Message du commit Git', { exact: true })).toHaveValue('Prépare le projet Git réseau');
+    await panel.getByLabel('Message du commit Git', { exact: true }).fill('Message relu dans Electron');
+    await panel.getByRole('button', { name: 'Préparer le commit de l’index', exact: true }).click(); await panel.getByRole('button', { name: 'Créer le commit local', exact: true }).click();
+    await expect(panel).toContainText('Commit local créé'); assert.match(git(root, 'log', '-1', '--format=%B'), /Message relu/);
+    await command('Configurer les remotes…'); await sync.getByLabel('URL du remote Git', { exact: true }).fill(server.url); await sync.getByRole('button', { name: 'Ajouter le remote', exact: true }).click();
+    await desktop.evaluate(() => { globalThis.gitFixtureNextResponse = 0; });
+    await sync.getByRole('button', { name: 'Confirmer l’opération Git…', exact: true }).click(); await expect(sync).toContainText('Opération annulée'); assert.equal(git(root, 'remote'), '');
+    await sync.getByRole('button', { name: 'Ajouter le remote', exact: true }).click(); await sync.getByRole('button', { name: 'Confirmer l’opération Git…', exact: true }).click();
+    await expect(sync).toContainText('Ajouter un remote : terminé');
+    assert.equal(git(root, 'remote', 'get-url', 'origin'), server.url);
+    await page.keyboard.press('Control+Alt+k'); await expect(sync.getByLabel('Aperçu de l’opération Git', { exact: true })).toContainText('1 commit');
+    await sync.getByRole('button', { name: 'Confirmer l’opération Git…', exact: true }).click(); await expect(sync).toContainText('terminé');
+    assert.equal(git(server.repository, 'rev-parse', 'main'), git(root, 'rev-parse', 'HEAD'));
+    const beforeStop = git(root, 'rev-parse', 'HEAD'), requestCount = server.requests.length;
+    server.stall(true);
+    await sync.getByRole('button', { name: 'Fetch', exact: true }).click();
+    await sync.getByRole('button', { name: 'Confirmer l’opération Git…', exact: true }).click();
+    await expect.poll(() => server.requests.length).toBeGreaterThan(requestCount);
+    await sync.getByRole('button', { name: 'Arrêter l’opération Git', exact: true }).click();
+    await expect(sync).toContainText('Opération Git interrompue'); server.stall(false);
+    assert.equal(git(root, 'rev-parse', 'HEAD'), beforeStop);
+    await command('Créer une branche…'); await sync.getByLabel('Nouvelle branche Git', { exact: true }).fill('feature/network');
+    await sync.getByRole('button', { name: 'Créer la branche', exact: true }).click(); await sync.getByRole('button', { name: 'Confirmer l’opération Git…', exact: true }).click();
+    await sync.getByRole('button', { name: 'Basculer sur feature/network', exact: true }).click(); await sync.getByRole('button', { name: 'Confirmer l’opération Git…', exact: true }).click();
+    await expect.poll(() => git(root, 'branch', '--show-current')).toBe('feature/network'); await command('Branches locales et distantes');
+    const other = join(server.root, 'other'); await mkdir(other); const peer = new GitOperations(other, new GitInspection(other, () => ['src/main.bas']), { certificateAuthority: server.certificate });
+    await peer.clone(server.url); await writeFile(join(other, 'src/main.bas'), '10 REM REMOTE THROUGH HTTPS\n20 END\n'); git(other, 'commit', '-am', 'HTTPS remote advance');
+    const otherState = await peer.overview(), otherPlan = await peer.prepare(otherState.revision, { action: 'push', remote: 'origin', branch: 'main' }); await peer.apply(otherPlan.id);
+    await sync.getByLabel('Branche distante Git', { exact: true }).fill('main');
+    await sync.getByRole('button', { name: 'Pull · fast-forward', exact: true }).click(); await expect(sync.getByLabel('Aperçu de l’opération Git', { exact: true })).toContainText('Le fetch a déjà');
+    await sync.getByRole('button', { name: 'Confirmer l’opération Git…', exact: true }).click(); await expect(page.locator('.view-lines')).toContainText('REMOTE THROUGH HTTPS');
+    assert.equal(git(root, 'rev-parse', 'HEAD'), git(other, 'rev-parse', 'HEAD')); await command('Branches locales et distantes');
+    await sync.getByRole('button', { name: 'Push…', exact: true }).click(); await sync.getByRole('button', { name: 'Confirmer l’opération Git…', exact: true }).click(); await expect(sync).toContainText('terminé');
+    await page.screenshot({ path: 'out/git-network-desktop-alpha.png' });
+    await command('Compte GitHub et dépôts privés…'); const connection = page.getByRole('dialog', { name: 'GitHub et clone', exact: true });
+    await connection.getByLabel('Jeton GitHub', { exact: true }).fill('github_pat_' + 'fixture'.repeat(9)); await connection.getByRole('button', { name: 'Connecter le compte', exact: true }).click(); await expect(connection).toContainText('Compte : Fixture');
+    await expect(connection.getByLabel('Jeton GitHub', { exact: true })).toHaveValue(''); await connection.getByRole('button', { name: 'Charger mes dépôts GitHub', exact: true }).click();
+    await connection.getByRole('button', { name: 'Fixture/jeu-prive · privé', exact: true }).click(); await connection.getByRole('button', { name: 'Associer au projet courant…', exact: true }).click(); await expect(connection).toContainText('Remote associé');
+    await connection.getByText('Créer un dépôt GitHub', { exact: true }).click(); await connection.getByLabel('Nom du dépôt GitHub', { exact: true }).fill('nouveau-jeu');
+    await connection.getByRole('button', { name: 'Créer le dépôt distant…', exact: true }).click(); await expect(connection).toContainText('Dépôt créé sans fichiers publiés');
+    await page.screenshot({ path: 'out/github-private-desktop-alpha.png' }); await connection.getByRole('button', { name: 'Fermer', exact: true }).click(); await expect(page.locator('.github-dialog')).toHaveCount(0);
+    await command('Pull requests GitHub…'); await expect(sync).toContainText('#3 PR de fixture'); await sync.getByLabel('Titre de la PR', { exact: true }).fill('Nouveau jeu CPC');
+    await sync.getByLabel('Description de la PR', { exact: true }).fill('Description relue dans l’IDE'); await sync.getByRole('button', { name: 'Créer la PR de la branche courante…', exact: true }).click(); await expect(sync).toContainText('#4 Nouveau jeu CPC');
+    await sync.getByRole('button', { name: /#4 Nouveau jeu CPC/ }).click(); assert.ok((await desktop.evaluate(() => globalThis.githubFixtureURLs)).includes('https://github.com/Fixture/jeu-prive/pull/4'));
+    assert.match((await page.evaluate(() => window.desktop.gitOperations.overview('expired'))).error, /périmée/);
+    const requests = await desktop.evaluate(() => globalThis.githubFixtureRequests); const suggestion = requests.find(entry => entry.url.includes('/responses'));
+    assert.deepEqual(suggestion.body.tools, []); assert.equal(suggestion.body.store, false);
+    assert.equal(requests.find(entry => entry.url === 'https://api.github.com/user/repos').body.private, true);
+    assert.equal(requests.find(entry => entry.body?.head).body.head, 'feature/network');
+    await command('Cloner un dépôt Git…'); await connection.getByLabel('URL du dépôt à cloner', { exact: true }).fill(server.url); await connection.getByLabel('Dossier du clone Git', { exact: true }).fill('native-clone');
+    await desktop.evaluate(({ dialog }, parent) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [parent] }); }, temporary);
+    await connection.getByRole('button', { name: 'Cloner le projet…', exact: true }).click(); await expect(page.locator('.github-dialog')).toHaveCount(0);
+    await expect(page.locator('.view-lines')).toContainText('REMOTE THROUGH HTTPS'); assert.match(await readFile(join(temporary, 'native-clone/src/main.bas'), 'utf8'), /REMOTE THROUGH HTTPS/);
+    assert.ok(server.requests.every(entry => !entry.hasAuthorization), 'GitHub token is never forwarded to the unrelated HTTPS fixture host');
+    assert.doesNotMatch(await readFile(join(root, '.git/config'), 'utf8'), /github_pat_|Authorization/);
+    console.log('Native Git network: preserved ignore/init, staged AI message reviewed, commit, canceled/confirmed remote, real HTTPS push/pull/clone, branch reload, controlled GitHub private repository/create/PR APIs and credential host isolation passed.');
+  } finally {
+    await desktop.evaluate(() => { if (globalThis.gitFixtureOriginalFetch) globalThis.fetch = globalThis.gitFixtureOriginalFetch; if (globalThis.gitFixturePreviousCA === undefined) delete process.env.GIT_SSL_CAINFO; else process.env.GIT_SSL_CAINFO = globalThis.gitFixturePreviousCA; }).catch(() => undefined);
+    await server.close();
+  }
+}

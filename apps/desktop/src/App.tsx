@@ -1,3 +1,4 @@
+import { GitHubDialog } from './GitHubDialog.tsx';
 import { RecentProjectsDialog } from './RecentProjectsDialog.tsx';
 import { DockPanel } from './DockPanel.tsx';
 import { ResizeHandle } from './ResizeHandle.tsx';
@@ -51,6 +52,7 @@ export function App() {
     observer.observe(element); return () => observer.disconnect();
   }, []);
   const [recentProjectsOpen, setRecentProjectsOpen] = useState(false);
+  const [githubOpen, setGithubOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const autoSaveAttempt = useRef('');
@@ -131,7 +133,7 @@ export function App() {
     const shortcut = (event: KeyboardEvent) => {
       if ((event.target as Element)?.closest?.('dialog[open]')) return;
       const modifier = event.ctrlKey || event.metaKey, key = event.key.toLowerCase();
-      const id = modifier && key === ',' ? 'settings' : event.key === 'F5' ? 'run' : event.key === 'F1' ? 'reference'
+      const id = modifier && event.altKey && key === 'k' ? 'git-push' : modifier && event.altKey && key === 'g' ? 'git-fetch' : modifier && event.altKey && key === 'b' ? 'git-branches' : modifier && key === ',' ? 'settings' : event.key === 'F5' ? 'run' : event.key === 'F1' ? 'reference'
         : modifier && event.shiftKey && key === 'p' ? 'palette'
         : modifier && !event.shiftKey && key === 'p' ? 'quick-sources'
         : modifier && event.shiftKey && key === 'o' ? 'project'
@@ -228,6 +230,31 @@ export function App() {
     if (!files.recentProjects || busy || (dirty && !window.confirm('Abandonner les modifications non enregistrées ?'))) return false;
     return await projectOperation(() => files.recentProjects!.open(id)) ?? false;
   }
+  async function cloneProject(url: string, name: string) {
+    if (!files.gitOperations || busy || dirty && !window.confirm('Abandonner les modifications non enregistrées ?')) return false;
+    return await projectOperation(() => files.gitOperations!.clone(url, name));
+  }
+  async function associateRemote(url: string, remote: string) {
+    if (!files.gitOperations || !project || busy || dirty) return false; setBusy(true);
+    try {
+      const overview = await files.gitOperations.overview(project.sessionId); if ('error' in overview) return overview.error;
+      const plan = await files.gitOperations.prepare(project.sessionId, overview.revision, { action: overview.remotes.some(entry => entry.name === remote) ? 'set-remote' : 'add-remote', remote, url });
+      if ('error' in plan) return plan.error;
+      const result = await files.gitOperations.apply(project.sessionId, plan.id); if (!result) return false; if ('error' in result) return result.error;
+      setStatus(result.summary); return true;
+    } catch { return 'Association non confirmée ; actualisez Git avant de reprendre.'; }
+    finally { setBusy(false); }
+  }
+  function gitAction(action: string) {
+    showTool('git'); requestAnimationFrame(() => {
+      const button = document.querySelector<HTMLButtonElement>('[data-git-action="' + action + '"]');
+      let details = button?.closest('details'); while (details) { details.open = true; details = details.parentElement?.closest('details'); }
+      button?.scrollIntoView({ block: 'nearest' });
+      if (action === 'remote' || action === 'create-branch') button?.closest('details')?.querySelector<HTMLInputElement>('input')?.focus();
+      else if (action === 'suggest-message') document.querySelector<HTMLInputElement>('.git-commit-form input')?.focus();
+      else button?.click();
+    });
+  }
   const save = () => perform(() => project && files.project ? files.project.save(project.sessionId, active.sourceId, source) : files.save(source), 'Listing enregistré', true);
   async function saveAll() {
     if (busy || !project || !files.project) return;
@@ -291,6 +318,9 @@ export function App() {
     { id: 'create-project', label: 'Créer un projet', disabled: busy || !files.project, run: () => setNewProjectOpen(true) },
     { id: 'explorer', label: 'Afficher l’explorateur', detail: 'Ctrl Maj E', run: () => showTool('project') },
     { id: 'git', label: 'Afficher Git', detail: 'Ctrl Maj G', run: () => showTool('git') },
+    { id: 'github', label: 'Compte GitHub et dépôts privés…', disabled: busy || !files.github, run: () => setGithubOpen(true) },
+    { id: 'clone', label: 'Cloner un dépôt Git…', disabled: busy || !files.gitOperations, run: () => setGithubOpen(true) },
+    ...([['git-init', 'Créer un dépôt Git local…', 'init'], ['git-remotes', 'Configurer les remotes…', 'remote'], ['git-branches', 'Branches locales et distantes', 'branches'], ['git-create-branch', 'Créer une branche…', 'create-branch'], ['git-fetch', 'Fetch · références distantes', 'fetch'], ['git-pull', 'Pull · fast-forward', 'pull'], ['git-push', 'Push · publier la branche…', 'push'], ['git-prs', 'Pull requests GitHub…', 'prs'], ['git-ai-message', 'Message de commit par IA…', 'suggest-message']] as const).map(([id, label, action]) => ({ id, label, ...(action === 'push' ? { detail: 'Ctrl Alt K' } : action === 'fetch' ? { detail: 'Ctrl Alt G' } : action === 'branches' ? { detail: 'Ctrl Alt B' } : {}), disabled: busy || dirty || !project || !files.gitOperations, run: () => gitAction(action) })),
     { id: 'git-refresh', label: 'Actualiser Git', disabled: busy || !project || !files.git, run: () => { showTool('git'); requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('.git-panel button')?.click()); } },
     { id: 'git-history', label: 'Historique des commits Git', disabled: busy || !project || !files.git, run: () => showOutput('git-log') },
     { id: 'git-commit', label: 'Préparer un commit Git', disabled: busy || !project || !files.git, run: () => { showTool('git'); requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>('.git-commit-form textarea')?.focus()); } },
@@ -331,14 +361,14 @@ export function App() {
   ] : [];
   return <main className="workbench" style={{ '--sidebar-width': `${preferences.sidebarWidth}px`, '--agent-width': `${preferences.agentWidth}px`, '--output-height': `${preferences.outputHeight}px` } as CSSProperties}>
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.27 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.28 · AstroWare Conception</p></div></div>
       <span className="profile">CPC 6128 · BASIC 1.1</span>
     </header>
     <WorkbenchMenus groups={[
-      ['Fichier', ['open', 'project', 'recent-projects', 'create-project', 'save', 'save-all', 'save-as', 'local-history', 'export']],
+      ['Fichier', ['open', 'project', 'recent-projects', 'clone', 'create-project', 'save', 'save-all', 'save-as', 'local-history', 'export']],
       ['Édition', ['undo', 'redo', 'find', 'replace', 'search-sources', 'line', 'basic-comment', 'editor.action.copyLinesDownAction', 'editor.action.moveLinesUpAction', 'editor.action.moveLinesDownAction', 'editor.action.deleteLines', 'editor.action.addSelectionToNextFindMatch', 'next-tab', 'previous-tab', 'close-tab']],
       ['BASIC', ['run', 'renumber', 'complete', 'editor.action.revealDefinition', 'editor.action.marker.next', 'editor.action.marker.prev', 'reference']],
-      ['Git', ['git', 'git-refresh', 'git-history', 'git-commit']],
+      ['Git', ['git', 'git-refresh', 'git-init', 'git-commit', 'git-ai-message', 'git-history', 'git-branches', 'git-create-branch', 'git-remotes', 'git-fetch', 'git-pull', 'git-push', 'clone', 'github', 'git-prs']],
       ['Projet', ['explorer', 'documents', 'recovery']],
       ['Affichage', ['sidebar', 'agent', 'output', 'problems', 'terminal', 'git-history', 'reset-layout', 'minimap', 'zoom-in', 'zoom-out', 'palette', 'quick-sources']],
       ['Outils', ['firmware', 'settings', 'shortcuts']],
@@ -390,7 +420,7 @@ export function App() {
         <SearchPanel key={`search:${project?.sessionId ?? documents[0]?.id}`} documents={documents} busy={busy} onClose={() => { setSearchOpen(false); showTool('project'); }} onNavigate={match => { setActiveId(match.documentId); setNavigation({ ...match }); }} onApply={changes => { if (!editorWorkspace.current || busy) throw new Error('Éditeur indisponible.'); editorWorkspace.current.apply(changes); }} />
         </div>
         <div className="tool-content" hidden={tool !== 'git'}>{!project && <section className="panel"><h2>Contrôle de version Git</h2><p>Ouvrez ou créez un projet pour afficher son statut, index, commits et historique Git.</p><Button disabled={busy || !files.project} onClick={() => openProject(false)}>Choisir un projet pour Git</Button></section>}
-        {project && <GitPanel key={`git:${project.sessionId}`} sessionId={project.sessionId} busy={busy} dirty={dirty} documentCount={project.manifest.documents.length} onBusy={setBusy} />}
+        {project && <GitPanel key={`git:${project.sessionId}`} sessionId={project.sessionId} busy={busy} dirty={dirty} documentCount={project.manifest.documents.length} onBusy={setBusy} onProject={snapshot => { acceptProject(snapshot); showTool('git'); }} />}
         </div>
 
 
@@ -443,6 +473,7 @@ export function App() {
         <AgentPanel sessionId={project?.sessionId} documentCount={project?.manifest.documents.length ?? 0} buffers={documents.map(document => ({ id: document.sourceId, source: document.source }))} busy={busy} onRunning={setAgentBusy} onState={acceptAgent} />
       </DockPanel>
     </div>
+    {githubOpen && <GitHubDialog busy={busy} onClone={cloneProject} {...(project ? { onRemote: associateRemote } : {})} onClose={() => setGithubOpen(false)} />}
     {recentProjectsOpen && <RecentProjectsDialog busy={busy} onOpen={openRecentProject} onChoose={() => openProject(false)} onClose={() => setRecentProjectsOpen(false)} />}
     {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
     {settingsOpen && <SettingsDialog preferences={preferences} onApply={setPreferences} onClose={() => setSettingsOpen(false)} />}
