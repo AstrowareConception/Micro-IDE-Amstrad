@@ -4,7 +4,7 @@ export const DEFAULT_KEYMAP = Object.freeze({
   'search-sources': 'Mod+Shift+F', explorer: 'Mod+Shift+E', git: 'Mod+Shift+G', documents: 'Mod+Shift+D', agent: 'Mod+Shift+A',
   renumber: 'Mod+Shift+R', firmware: 'Mod+Alt+R', terminal: 'Mod+`', sidebar: 'Mod+B', output: 'Mod+J',
   'close-tab': 'Mod+W', 'next-tab': 'Mod+Tab', 'previous-tab': 'Mod+Shift+Tab',
-  'git-push': 'Mod+Alt+K', 'git-fetch': 'Mod+Alt+G', 'git-branches': 'Mod+Alt+B', 'focus-mode': 'Mod+Shift+F11',
+  'git-push': 'Mod+Alt+K', 'git-fetch': 'Mod+Alt+G', 'git-branches': 'Mod+Alt+B', 'focus-mode': 'Mod+Shift+F11', notifications: 'Mod+Alt+N',
 });
 export type Keymap = Record<keyof typeof DEFAULT_KEYMAP, string>;
 export type ShortcutEvent = Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey' | 'shiftKey' | 'isComposing'>;

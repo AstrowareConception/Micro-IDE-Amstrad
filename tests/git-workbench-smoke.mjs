@@ -81,6 +81,11 @@ export async function verifyGitWorkbench(browser, errors) {
     await expect(page.locator('.view-lines')).toContainText('UNSAVED');
     await page.evaluate(() => { window.confirm = () => true; }); await dialog.getByRole('button', { name: 'Cloner le projet…', exact: true }).click();
     await expect(page.locator('.github-dialog')).toHaveCount(0); await expect(page.locator('.view-lines')).toContainText('GIT CLONE');
+    await page.keyboard.press('Control+Alt+n'); const notifications = page.getByRole('dialog', { name: 'Centre de notifications', exact: true });
+    await notifications.getByLabel('Origine des notifications', { exact: true }).selectOption('git'); await expect(notifications.getByRole('listitem')).not.toHaveCount(0);
+    await expect(notifications).not.toContainText('github_pat_'); await expect(notifications).not.toContainText('Message relu et modifié');
+    await expect(notifications.getByRole('button', { name: 'Voir les détails', exact: true }).first()).toBeDisabled(); await expect(notifications).toContainText('Le projet associé n’est plus ouvert.');
+    await page.keyboard.press('Escape');
     console.log('Git workbench browser: private account/repository selection, direct remote association, branches/reload, fetch shortcut, reviewed AI message, draft PR and dirty clone guards passed.');
   } finally { await page.close(); }
 }

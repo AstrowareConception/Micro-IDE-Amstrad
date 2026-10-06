@@ -650,6 +650,9 @@ try {
   await expect(terminalPanel).toContainText('Arrêt demandé.');
   await expect(terminalPanel.getByLabel('Commande système', { exact: true })).toBeEnabled();
   await page.screenshot({ path: 'out/workbench-alpha.png' });
+  await page.keyboard.press('Control+Alt+n'); const notifications = page.getByRole('dialog', { name: 'Centre de notifications', exact: true });
+  await notifications.getByLabel('Origine des notifications', { exact: true }).selectOption('terminal'); await expect(notifications).toContainText('Commande système terminée · code 0.'); await expect(notifications).toContainText('Commande système arrêtée ou limite atteinte.');
+  await expect(notifications).not.toContainText('CPC_TERMINAL_OK'); await expect(notifications).not.toContainText('sleep 20'); await page.keyboard.press('Escape');
   console.log('Native workbench: Git history, real project shell output, explicit stop and disk/agent isolation passed.');
   // Refresh the host session directly only for this final IPC guard check, with no more UI Git mutations.
   const localSession = await page.evaluate(async () => (await window.desktop.project.open()).sessionId);

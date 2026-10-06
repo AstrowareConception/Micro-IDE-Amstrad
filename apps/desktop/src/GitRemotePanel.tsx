@@ -1,26 +1,30 @@
+import type { Notify, NotificationLevel } from './notifications.ts';
 import { useState } from 'react';
 import type { ProjectSnapshot } from '../../../packages/workspace/src/project.ts';
 import type { GitOverview, GitOperationPlan, GitRequest, GitHubPullRequest } from '../../../packages/version-control/src/operations.ts';
 import { GIT_ACTION_LABELS } from '../../../packages/version-control/src/operations.ts';
 import { files } from './port.ts';
 import { Button } from './Icon.tsx';
-export function GitRemotePanel({ sessionId, busy, dirty, onBusy, onProject }: {
-  sessionId: string; busy: boolean; dirty: boolean; onBusy(value: boolean): void; onProject(project: ProjectSnapshot): void;
+export function GitRemotePanel({ sessionId, busy, dirty, onBusy, onProject, onNotify }: {
+  sessionId: string; busy: boolean; dirty: boolean; onBusy(value: boolean): void; onProject(project: ProjectSnapshot): void; onNotify?: Notify;
 }) {
   const [overview, setOverview] = useState<GitOverview>(), [plan, setPlan] = useState<GitOperationPlan>();
-  const [notice, setNotice] = useState('Chargez les branches et remotes pour commencer.');
+  const [notice, setNoticeText] = useState('Chargez les branches et remotes pour commencer.');
   const [remote, setRemote] = useState('origin'), [url, setUrl] = useState(''), [branch, setBranch] = useState(''), [newBranch, setNewBranch] = useState('');
   const [pullRequests, setPullRequests] = useState<GitHubPullRequest[]>([]);
   const [base, setBase] = useState('main'), [title, setTitle] = useState(''), [body, setBody] = useState(''), [draft, setDraft] = useState(true);
+  function setNotice(message: string, level: NotificationLevel = 'info') {
+    setNoticeText(message); onNotify?.({ source: 'git', target: 'git', sessionId: sessionId, level, message: level === 'error' ? 'Opération Git non confirmée. Consultez le panneau Git avant de reprendre.' : message });
+  }
   const port = files.gitOperations;
   const [cancellable, setCancellable] = useState(false);
   async function stop() {
     const result = await port!.cancel();
-    setNotice('error' in result ? result.error : result.stopped ? 'Arrêt demandé ; attente du résultat Git.' : 'Aucun transfert Git actif.');
+    setNotice('error' in result ? result.error : result.stopped ? 'Arrêt demandé ; attente du résultat Git.' : 'Aucun transfert Git actif.', 'error' in result ? 'error' : 'info');
   }
   async function action(work: () => Promise<void>, canCancel = false) {
     if (busy || !port) return; onBusy(true); setCancellable(canCancel); setNotice('Opération en cours…');
-    try { await work(); } catch (error) { setPlan(undefined); setNotice(error instanceof Error ? error.message : 'Opération Git non confirmée ; actualisez avant de reprendre.'); }
+    try { await work(); } catch (error) { setPlan(undefined); setNotice(error instanceof Error ? error.message : 'Opération Git non confirmée ; actualisez avant de reprendre.', 'error'); }
     finally { setCancellable(false); onBusy(false); }
   }
   async function load() {

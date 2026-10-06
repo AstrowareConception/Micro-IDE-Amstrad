@@ -88,7 +88,9 @@ Mode Explication interdit les mutations ; Revue prépare une proposition compar�
 
 ## Lot 7 — Personnalisation, ergonomie et accessibilité
 
-Tranche alpha 0.32 : centre de réglages recherchables, accents/densité/options du code, migration des préférences, keymap configurable/bases, profils locaux portables, dispositions Édition/Exécution/Agent et concentration réversible. [Guide](../implementation/personalization-alpha.md), [ADR 0039](../adr/0039-personnalisation-profils-et-keymap.md). Overrides projet, notifications, fenêtres système, keymap complète et audit accessibilité restent ouverts ; lot partiel.
+Tranche alpha 0.32 : centre de réglages recherchables, accents/densité/options du code, migration des préférences, keymap configurable/bases, profils locaux portables, dispositions Édition/Exécution/Agent et concentration réversible. [Guide](../implementation/personalization-alpha.md), [ADR 0039](../adr/0039-personnalisation-profils-et-keymap.md). Overrides projet, fenêtres système, keymap complète et audit accessibilité restent ouverts ; lot partiel.
+
+Tranche alpha 0.33 : [centre de notifications](../implementation/notifications-alpha.md) de session borné, filtres/niveaux/origines/non lus, navigation vers les panneaux et préférences d’aperçus ([ADR 0040](../adr/0040-centre-notifications-session.md)). Journal de tâches durable, progression unifiée, annulation centrale et couverture exhaustive des dialogues restent ouverts.
 
 Couverture : IDE-026 à 030, IDE-073/074. Préférences existantes à prolonger : thèmes clair/sombre/système, police/zoom, autosave, indentation et renumérotation ; overrides par projet distingués des réglages globaux.
 

@@ -33,7 +33,7 @@ jobs:
         run: |
           npm run typecheck
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          node --test tests/build-toolchain.test.mjs tests/recent-projects.test.ts tests/git-operations.test.ts tests/github-session.test.ts tests/project-explorer.test.ts tests/source-operations.test.ts tests/personalization.test.ts
+          node --test tests/build-toolchain.test.mjs tests/recent-projects.test.ts tests/git-operations.test.ts tests/github-session.test.ts tests/project-explorer.test.ts tests/source-operations.test.ts tests/personalization.test.ts tests/notifications.test.ts
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run build:hello
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -91,7 +91,7 @@ jobs:
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms xvfb-run -a node tests/emulator-ui-smoke.mjs
       - name: Native source organization and draft restoration
         run: xvfb-run -a npm run test:sources-desktop
-      - name: Native personalization and restart
+      - name: Native personalization, notifications and restart
         run: xvfb-run -a npm run test:personalization-desktop
       - name: Native Electron paths and isolation
         run: xvfb-run -a npm run test:desktop
@@ -117,6 +117,9 @@ jobs:
             out/source-operations-failure.png
             out/source-operations-desktop-alpha.png
             out/source-operations-desktop-failure.png
+            out/notifications-alpha.png
+            out/notifications-failure.png
+            out/notifications-desktop-alpha.png
             out/personalization-alpha.png
             out/personalization-failure.png
             out/personalization-desktop-alpha.png

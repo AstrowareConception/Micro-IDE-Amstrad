@@ -1,5 +1,7 @@
 # 12 — Feuille de route et backlog de réalisation
 
+La [tranche notifications 0.33](../implementation/notifications-alpha.md) prolonge le lot 7 après intégration des PR 26–34 : registre local de session, filtres, lecture, détails et aperçus réglables ([ADR 0040](../adr/0040-centre-notifications-session.md)). Journal de tâches durable, progression unifiée et annulation depuis le centre restent ouverts ; IDE-029 partiel.
+
 La [personnalisation 0.32](../implementation/personalization-alpha.md) avance le lot 7 : réglages recherchables, options du code, accents/densité, keymap cohérente avec menus/aide, profils portables, dispositions et concentration ([ADR 0039](../adr/0039-personnalisation-profils-et-keymap.md)). Overrides projet, fenêtres OS, keymap exhaustive et audit accessibilité restent ouverts.
 
 Demande du 6 octobre : explorer l’intégralité du projet, retrouver les sorties en bas et adapter l’IDE aux habitudes de chacun. La tranche 0.25 ajoute préférences persistantes, auto-save opt-in, journal des commits en bas et formulaire de retour utilisateur (issues GitHub). La tranche 0.26 ajoute séparateurs et panneaux flottants persistants dans l’IDE, ainsi que commandes CPC en colonne et zoom. Suite explicite : arbre complet avec fichiers non BASIC et vues adaptées, fenêtres système indépendantes, ancrage sur un autre côté, PTY, journaux d’opérations et keymap. Une réorganisation d’interface ne suffit pas à qualifier la production.

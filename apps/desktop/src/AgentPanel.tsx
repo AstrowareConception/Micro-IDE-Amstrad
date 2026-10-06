@@ -1,3 +1,4 @@
+import type { Notify } from './notifications.ts';
 import { AgentSettingsDialog } from './AgentSettingsDialog.tsx';
 import { DEFAULT_BUDGET } from '../../../packages/agent/src/consumption.ts';
 import { Button } from './Icon.tsx';
@@ -9,7 +10,7 @@ const TOOL_LABELS: Record<string, string> = { project_list_files: 'Exploration d
 
 interface Props {
   sessionId: string | undefined; buffers: { id: string; source: string }[]; busy: boolean;
-  documentCount: number;
+  documentCount: number; onNotify?: Notify;
   onRunning(running: boolean): void; onState(state: AgentWorkspaceState): void;
 }
 export function AgentPanel(props: Props) {
@@ -27,7 +28,12 @@ export function AgentPanel(props: Props) {
   const includeDocuments = !!props.sessionId && documentConsentSession === props.sessionId && props.documentCount > 0;
   const latest = useRef(props); latest.current = props;
   const adopted = useRef('');
+  const announced = useRef('');
   const port = files.agent;
+  function reportError(message: string) {
+    setMessage(message);
+    latest.current.onNotify?.({ source: 'agent', target: 'agent', sessionId: latest.current.sessionId, level: 'error', message: 'Action IA non confirmée. Consultez le panneau Agent IA.' });
+  }
   useEffect(() => {
     if (!taskId || !port) return;
     let disposed = false; let timer: ReturnType<typeof setTimeout> | undefined;
@@ -35,8 +41,14 @@ export function AgentPanel(props: Props) {
       try {
         const result = await port!.status(taskId!);
         if (disposed) return;
-        if ('error' in result) { setMessage(result.error); timer = setTimeout(() => void poll(), 1000); return; }
+        if ('error' in result) { reportError(result.error); timer = setTimeout(() => void poll(), 1000); return; }
         setView(result);
+        const transition = `${taskId}:${result.running}:${result.status}`;
+        if (announced.current !== transition) {
+          announced.current = transition;
+          const labels = { completed: 'Mission terminée', blocked: 'Validation non obtenue', failed: 'Mission interrompue par une erreur', cancelled: 'Mission arrêtée', 'paused-limit': 'Mission en pause — limite atteinte' };
+          latest.current.onNotify?.({ source: 'agent', target: 'agent', sessionId: result.workspace.sessionId, level: result.running ? 'info' : result.status === 'completed' ? 'success' : result.status === 'failed' ? 'error' : 'warning', message: result.running ? 'Mission IA en cours.' : `${labels[result.status]} · ${result.changed.length} fichier(s) modifié(s) · ${result.tokens} tokens.` });
+        }
         if (result.workspace.sessionId === latest.current.sessionId) {
           const state = JSON.stringify(result.workspace);
           if (state !== adopted.current) {
@@ -47,7 +59,7 @@ export function AgentPanel(props: Props) {
           latest.current.onRunning(result.running);
         }
         if (result.running) timer = setTimeout(() => void poll(), 400);
-      } catch { if (!disposed) { setMessage('Lecture du journal interrompue. Réessayez ou arrêtez la mission.'); timer = setTimeout(() => void poll(), 1000); } }
+      } catch { if (!disposed) { reportError('Lecture du journal interrompue. Réessayez ou arrêtez la mission.'); timer = setTimeout(() => void poll(), 1000); } }
     }
     void poll();
     return () => { disposed = true; if (timer) clearTimeout(timer); };
@@ -73,21 +85,21 @@ export function AgentPanel(props: Props) {
     try {
       if (forget) {
         const result = await port.configure('', '');
-        if ('error' in result) setMessage(result.error);
+        if ('error' in result) { reportError(result.error); }
         else { setConfigured(false); setView(previous => previous ? { ...previous, resumable: false } : previous); setCatalog(undefined); setModel(''); setPricing(undefined); setMessage('Clé oubliée.'); }
       } else {
         const result = await port.models(key);
-        if ('error' in result) setMessage(result.error);
+        if ('error' in result) { reportError(result.error); }
         else { setConfigured(true); setView(previous => previous ? { ...previous, resumable: false } : previous); setCatalog(result); setModel(result.model); setPricing(undefined); setMessage('Clé vérifiée, conservée en mémoire. Choisissez un modèle dans la liste OpenAI.'); }
       }
-    } catch { setMessage('Configuration impossible.'); }
+    } catch { reportError('Configuration impossible.'); }
     finally { setKey(''); modelRequest.current = false; setRequesting(false); }
   }
   async function selectModel(value: string) {
     if (!port || props.busy || modelRequest.current || !value) return;
     modelRequest.current = true; setRequesting(true);
-    try { const result = await port.selectModel(value); if ('error' in result) setMessage(result.error); else { setModel(result.model); setPricing(undefined); setMessage(`Modèle sélectionné : ${result.model}.`); await loadPricing(result.model); } }
-    catch { setMessage('Changement de modèle impossible.'); }
+    try { const result = await port.selectModel(value); if ('error' in result) { reportError(result.error); } else { setModel(result.model); setPricing(undefined); setMessage(`Modèle sélectionné : ${result.model}.`); await loadPricing(result.model); } }
+    catch { reportError('Changement de modèle impossible.'); }
     finally { modelRequest.current = false; setRequesting(false); }
   }
   async function loadPricing(value = model) {
@@ -99,8 +111,8 @@ export function AgentPanel(props: Props) {
   async function resume() {
     if (!port?.resume || !taskId || !props.sessionId) return;
     setRequesting(true); props.onRunning(true);
-    try { const result = await port.resume(taskId, props.buffers, props.sessionId); if ('error' in result) { setMessage(result.error); props.onRunning(false); } else { setMessage(''); setView(previous => previous ? { ...previous, running: true } : previous); setPollRevision(previous => previous + 1); } }
-    catch { setMessage('Reprise impossible ; fichiers conservés.'); props.onRunning(false); }
+    try { const result = await port.resume(taskId, props.buffers, props.sessionId); if ('error' in result) { reportError(result.error); props.onRunning(false); } else { setMessage(''); setView(previous => previous ? { ...previous, running: true } : previous); setPollRevision(previous => previous + 1); } }
+    catch { reportError('Reprise impossible ; fichiers conservés.'); props.onRunning(false); }
     finally { setRequesting(false); }
   }
   async function start() {
@@ -108,18 +120,18 @@ export function AgentPanel(props: Props) {
     try {
       if (!pricing || Date.now() - Date.parse(pricing.fetchedAt) >= 60 * 60 * 1000) await loadPricing();
       const result = await port.start(props.sessionId, objective, props.buffers, includeDocuments, budget);
-      if ('error' in result) { setMessage(result.error); props.onRunning(false); }
-      else { adopted.current = ''; setTaskId(result.taskId); setView(undefined); setMessage(''); }
-    } catch { setMessage('Démarrage impossible.'); props.onRunning(false); }
+      if ('error' in result) { reportError(result.error); props.onRunning(false); }
+      else { announced.current = ''; adopted.current = ''; setTaskId(result.taskId); setView(undefined); setMessage(''); }
+    } catch { reportError('Démarrage impossible.'); props.onRunning(false); }
     finally { setRequesting(false); }
   }
   async function restore() {
     if (!port || !taskId || !props.sessionId) return; setRequesting(true); props.onRunning(true);
     try {
       const result = await port.restore(taskId, props.buffers, props.sessionId);
-      if ('error' in result) setMessage(result.error);
+      if ('error' in result) { reportError(result.error); }
       else { props.onState(result); adopted.current = JSON.stringify(result); setMessage('Checkpoint initial restauré. Les brouillons initiaux sont conservés.'); setView(undefined); setTaskId(undefined); }
-    } catch { setMessage('Restauration impossible ; conserver le checkpoint.'); }
+    } catch { reportError('Restauration impossible ; conserver le checkpoint.'); }
     finally { setRequesting(false); props.onRunning(false); }
   }
   return <section className="panel agent-panel" aria-label="Agent OpenAI">

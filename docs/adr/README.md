@@ -60,3 +60,5 @@ Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou
 - [0038 — Organisation durable des sources humaines](0038-organisation-durable-des-sources.md).
 
 - [0039 — Personnalisation, profils et keymap](0039-personnalisation-profils-et-keymap.md)
+
+- [0040 — Centre de notifications de session](0040-centre-notifications-session.md).

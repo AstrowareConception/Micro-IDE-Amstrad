@@ -7,7 +7,9 @@ import { DockPanel } from './DockPanel.tsx';
 import { ResizeHandle } from './ResizeHandle.tsx';
 import { defaultPanelLayouts, loadPanelLayouts, persistPanelLayouts, type PanelId, type PanelLayout, type PanelLayouts } from './panel-layout.ts';
 import { Button } from './Icon.tsx';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { NotificationCenter } from './NotificationCenter.tsx';
+import { appendNotification, canRevealNotification, LEVEL_LABELS, SOURCE_LABELS, type Notify, type NotificationLevel, type WorkbenchNotification } from './notifications.ts';
 import { analyzeEditor } from '../../../packages/basic-language/src/syntax.ts';
 import { WorkbenchMenus } from './WorkbenchMenus.tsx';
 import { ShortcutsDialog } from './ShortcutsDialog.tsx';
@@ -74,7 +76,29 @@ export function App() {
   const [documentRequest, setDocumentRequest] = useState<{ id: string; nonce: string }>();
   const active = documents.find(document => document.id === activeId)!;
   const { source } = active;
-  const [status, setStatus] = useState('Prêt. Écrivez du BASIC, sans ROM ni connexion.');
+  const [status, setStatusText] = useState('Prêt. Écrivez du BASIC, sans ROM ni connexion.');
+  const [notifications, setNotifications] = useState<WorkbenchNotification[]>([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false), [dismissedPreview, setDismissedPreview] = useState('');
+  const notificationScope = useRef(project?.sessionId); notificationScope.current = project?.sessionId;
+  const notify = useCallback<Notify>(input => {
+    const id = crypto.randomUUID(), now = Date.now();
+    setNotifications(previous => appendNotification(previous, input, id, now));
+  }, []);
+  const setStatus = useCallback((message: string, level: NotificationLevel = 'info') => {
+    setStatusText(message); notify({ message, level, source: 'workspace', target: 'project', sessionId: notificationScope.current });
+  }, [notify]);
+  const unreadNotifications = notifications.filter(item => !item.read).length;
+  const previewNotification = notifications[0];
+  const previewKey = previewNotification ? `${previewNotification.id}:${previewNotification.count}` : '';
+  function readNotification(id?: string) { setNotifications(items => items.map(item => !id || item.id === id ? { ...item, read: true } : item)); }
+  function revealNotification(item: WorkbenchNotification) {
+    if (!canRevealNotification(item, project?.sessionId)) return;
+    if (focused) toggleFocus();
+    if (item.target === 'settings') setSettingsOpen(true);
+    else if (item.target === 'agent') setAgentOpen(true);
+    else if (item.target === 'terminal' || item.target === 'emulator' || item.target === 'problems') showOutput(item.target);
+    else if (item.target) showTool(item.target);
+  }
   const [emulatorLaunch, setEmulatorLaunch] = useState<EmulatorLaunch>();
   const runCurrent = useRef<() => void>(() => undefined);
   runCurrent.current = () => { if (!busy) { showOutput('emulator'); setEmulatorLaunch({ id: crypto.randomUUID(), request: project ? { sessionId: project.sessionId, sources: documents.map(document => ({ id: document.sourceId, source: document.source })) } : { source } }); } };
@@ -90,7 +114,7 @@ export function App() {
   const [outputOpen, setOutputOpen] = useState(panels.output.visible);
   const [outputTab, setOutputTab] = useState('problems');
   useEffect(() => {
-    const save = () => { const base = focused && focusReturn.current ? focusReturn.current : { panels, sidebar: sidebarOpen, agent: agentOpen, output: outputOpen }; if (!persistPanelLayouts({ tools: { ...base.panels.tools, visible: base.sidebar }, agent: { ...base.panels.agent, visible: base.agent }, output: { ...base.panels.output, visible: base.output } })) setStatus('Disposition appliquée pour cette session ; conservation indisponible.'); };
+    const save = () => { const base = focused && focusReturn.current ? focusReturn.current : { panels, sidebar: sidebarOpen, agent: agentOpen, output: outputOpen }; if (!persistPanelLayouts({ tools: { ...base.panels.tools, visible: base.sidebar }, agent: { ...base.panels.agent, visible: base.agent }, output: { ...base.panels.output, visible: base.output } })) notify({ source: 'settings', target: 'settings', level: 'warning', message: 'Disposition appliquée pour cette session ; conservation indisponible.' }); };
     const timer = setTimeout(save, 150); window.addEventListener('pagehide', save);
     return () => { clearTimeout(timer); window.removeEventListener('pagehide', save); };
   }, [panels, sidebarOpen, agentOpen, outputOpen, focused]);
@@ -118,7 +142,7 @@ export function App() {
   const analysis = useMemo(() => analyzeEditor(source), [source]);
   const dirty = documents.some(document => document.source !== document.saved);
   useEffect(() => {
-    const save = () => { if (!persistPreferences(preferences)) setStatus('Paramètres appliqués pour cette session ; conservation indisponible.'); };
+    const save = () => { if (!persistPreferences(preferences)) notify({ source: 'settings', target: 'settings', level: 'warning', message: 'Paramètres appliqués pour cette session ; conservation indisponible.' }); };
     const timer = setTimeout(save, 150); window.addEventListener('pagehide', save);
     return () => { clearTimeout(timer); window.removeEventListener('pagehide', save); };
   }, [preferences]);
@@ -174,10 +198,10 @@ export function App() {
     try {
       const result = await action();
       if (!result) { setStatus('Opération annulée.'); return; }
-      if ('error' in result) { setStatus(result.error); return; }
+      if ('error' in result) { setStatus(result.error, 'error'); return; }
       if (commit) setDocuments(items => items.map(item => item.id === activeId ? { ...item, saved: snapshot, name: project ? item.name : result.name } : item));
       setStatus(`${message} : ${result.name}`);
-    } catch (error) { setStatus(error instanceof Error ? error.message : 'Échec de l’opération.'); }
+    } catch (error) { setStatus(error instanceof Error ? error.message : 'Échec de l’opération.', 'error'); }
     finally { setBusy(false); }
   }
   async function open() {
@@ -186,15 +210,16 @@ export function App() {
     try {
       const result = await files.open();
       if (!result) return;
-      if ('error' in result) { setStatus(result.error); return; }
+      if ('error' in result) { setStatus(result.error, 'error'); return; }
       if (result.source !== undefined) {
         const id = crypto.randomUUID(); setDocuments([{ id, sourceId: 'main', name: result.name, source: result.source, saved: result.source }]);
-        setActiveId(id); setProject(undefined); setStatus(`Listing ouvert : ${result.name}`);
+        notificationScope.current = undefined; setActiveId(id); setProject(undefined); setStatus(`Listing ouvert : ${result.name}`);
       }
-    } catch (error) { setStatus(String(error)); }
+    } catch (error) { setStatus(String(error), 'error'); }
     finally { setBusy(false); }
   }
   function acceptProject(snapshot: ProjectSnapshot, append = false) {
+    notificationScope.current = snapshot.sessionId;
     const added = snapshot.files.map(file => ({ id: `${snapshot.sessionId}:${file.id}`, sourceId: file.id, name: file.path, source: file.source, saved: file.source }));
     setDocuments(items => append ? [...items, ...added] : added);
     if (!append) setClosedTabs(new Set());
@@ -219,9 +244,9 @@ export function App() {
     try {
       const draft = await files.sourceOperations.draft(project.sessionId);
       if (!draft) { setStatus('Aucun brouillon conservé dans la dernière organisation.'); return; }
-      if ('error' in draft) { setStatus(draft.error); return; }
+      if ('error' in draft) { setStatus(draft.error, 'error'); return; }
       setSourceDraft(draft);
-    } catch { setStatus('Lecture de la copie impossible.'); }
+    } catch { setStatus('Lecture de la copie impossible.', 'error'); }
     finally { setBusy(false); }
   }
   async function restoreSourceMutation() {
@@ -230,12 +255,12 @@ export function App() {
     try {
       const last = await files.sourceOperations.last(project.sessionId);
       if (!last) { setStatus('Aucune organisation récente rétablissable sur les versions disque actuelles.'); return; }
-      if ('error' in last) { setStatus(last.error); return; }
+      if ('error' in last) { setStatus(last.error, 'error'); return; }
       const result = await files.sourceOperations.restore(project.sessionId, last.revision);
       if (!result) { setStatus('Restauration annulée.'); return; }
-      if ('error' in result) { setStatus(result.error); return; }
+      if ('error' in result) { setStatus(result.error, 'error'); return; }
       acceptSourceMutation(result);
-    } catch { setStatus('Restauration impossible ; rouvrez le projet si une reprise est nécessaire.'); }
+    } catch { setStatus('Restauration impossible ; rouvrez le projet si une reprise est nécessaire.', 'error'); }
     finally { setBusy(false); }
   }
   function sourceOperationCommands(sourceId: string): WorkbenchCommand[] {
@@ -252,12 +277,12 @@ export function App() {
     try {
       const result = await action();
       if (!result) { setStatus('Opération annulée.'); return false; }
-      if ('error' in result) { setStatus(result.error); return result.error; }
+      if ('error' in result) { setStatus(result.error, 'error'); return result.error; }
       if ('files' in result) acceptProject(result, append);
       else setProject(previous => previous ? { ...previous, manifest: result } : previous);
       setStatus('recentProjectsNotice' in result && typeof result.recentProjectsNotice === 'string' && result.recentProjectsNotice ? result.recentProjectsNotice : 'Projet mis à jour. Les buffers existants sont conservés lors d’un ajout.');
       return true;
-    } catch (error) { setStatus(String(error)); return String(error); }
+    } catch (error) { setStatus(String(error), 'error'); return String(error); }
     finally { setBusy(false); }
   }
   function openProject(create: boolean, name = projectName) {
@@ -301,13 +326,13 @@ export function App() {
     setBusy(true);
     try {
       const result = await files.project.saveAll(project.sessionId, snapshot.map(item => ({ id: item.sourceId, source: item.source })));
-      if ('error' in result) { setStatus(result.error); return; }
+      if ('error' in result) { setStatus(result.error, 'error'); return; }
       setDocuments(items => items.map(item => {
         const saved = snapshot.find(previous => previous.id === item.id && result.savedIds.includes(previous.sourceId));
         return saved ? { ...item, saved: saved.source } : item;
       }));
       setStatus(`Projet enregistré : ${result.changedCount} source(s) écrite(s).`);
-    } catch (error) { setStatus(error instanceof Error ? error.message : 'Enregistrement global impossible.'); }
+    } catch (error) { setStatus(error instanceof Error ? error.message : 'Enregistrement global impossible.', 'error'); }
     finally { setBusy(false); }
   }
   const exportDisk = () => perform(() => project && files.project ? files.project.exportDisk(project.sessionId, documents.map(item => ({ id: item.sourceId, source: item.source }))) : files.exportDisk(source), 'DSK DATA construit — validation structurelle uniquement');
@@ -379,6 +404,7 @@ export function App() {
     { id: 'layout-agent', label: 'Disposition Agent', run: () => layoutPreset('agent') },
     { id: 'focus-mode', label: focused ? 'Quitter le mode Concentration' : 'Activer le mode Concentration', run: toggleFocus },
     { id: 'problems', label: 'Afficher les problèmes', run: () => showOutput('problems') },
+    { id: 'notifications', label: 'Centre de notifications', run: () => setNotificationsOpen(true) },
     { id: 'sidebar', label: 'Afficher / masquer les outils', detail: 'Ctrl B', run: () => setSidebarOpen(value => !value) },
     { id: 'output', label: 'Afficher / masquer les sorties', detail: 'Ctrl J', run: () => setOutputOpen(value => !value) },
     { id: 'palette', label: 'Palette des commandes', detail: 'Ctrl Maj P', run: () => setPalette('all') },
@@ -402,16 +428,16 @@ export function App() {
       setBusy(true); const selected = selectedSource;
       void files.project.save(project.sessionId, selected.sourceId, selected.source).then(result => {
         if (!result) setStatus('Enregistrement annulé.');
-        else if ('error' in result) setStatus(result.error);
+        else if ('error' in result) setStatus(result.error, 'error');
         else { setDocuments(items => items.map(item => item.id === selected.id ? { ...item, saved: selected.source } : item)); setStatus(`Source enregistrée : ${selected.name}`); }
-      }).catch(() => setStatus('Enregistrement impossible.')).finally(() => setBusy(false));
+      }).catch(() => setStatus('Enregistrement impossible.', 'error')).finally(() => setBusy(false));
     } },
     { id: 'entry', label: 'Définir cette source comme entrée', disabled: busy || !project || selectedSource.sourceId === project.manifest.entryPoint, run: () => { if (project && files.project) void projectOperation(() => files.project!.setEntry(project.sessionId, selectedSource.sourceId)); } },
   ] : [];
   return <main className="workbench" style={{ '--sidebar-width': `${preferences.sidebarWidth}px`, '--agent-width': `${preferences.agentWidth}px`, '--output-height': `${preferences.outputHeight}px` } as CSSProperties}>
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.32 · AstroWare Conception</p></div></div>
-      <span className="profile">CPC 6128 · BASIC 1.1</span>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.33 · AstroWare Conception</p></div></div>
+      <div className="topbar-actions"><Button icon="bell" aria-label={`Centre de notifications · ${unreadNotifications} non lue(s)`} onClick={() => setNotificationsOpen(true)}><span className="notification-badge">{unreadNotifications}</span></Button><span className="profile">CPC 6128 · BASIC 1.1</span></div>
     </header>
     <WorkbenchMenus groups={[
       ['Fichier', ['open', 'project', 'recent-projects', 'clone', 'create-project', 'save', 'save-all', 'save-as', 'local-history', 'export']],
@@ -419,7 +445,7 @@ export function App() {
       ['BASIC', ['run', 'renumber', 'complete', 'editor.action.revealDefinition', 'editor.action.marker.next', 'editor.action.marker.prev', 'reference']],
       ['Git', ['git', 'git-refresh', 'git-init', 'git-commit', 'git-ai-message', 'git-history', 'git-branches', 'git-create-branch', 'git-remotes', 'git-fetch', 'git-pull', 'git-push', 'clone', 'github', 'git-prs']],
       ['Projet', ['explorer', 'source-rename', 'source-move', 'source-delete', 'source-restore', 'source-archive', 'documents', 'recovery']],
-      ['Affichage', ['sidebar', 'agent', 'output', 'problems', 'terminal', 'git-history', 'reset-layout', 'layout-edit', 'layout-run', 'layout-agent', 'focus-mode', 'minimap', 'zoom-in', 'zoom-out', 'palette', 'quick-sources']],
+      ['Affichage', ['sidebar', 'agent', 'output', 'problems', 'notifications', 'terminal', 'git-history', 'reset-layout', 'layout-edit', 'layout-run', 'layout-agent', 'focus-mode', 'minimap', 'zoom-in', 'zoom-out', 'palette', 'quick-sources']],
       ['Outils', ['firmware', 'settings', 'shortcuts']],
       ['Aide', ['reference', 'shortcuts', 'feedback']],
     ].map(([label, ids]) => ({ label: label as string, commands: (ids as string[]).map(id => commands.find(command => command.id === id)!) }))} />
@@ -469,7 +495,7 @@ export function App() {
         <SearchPanel key={`search:${project?.sessionId ?? documents[0]?.id}`} documents={documents} busy={busy} onClose={() => { setSearchOpen(false); showTool('project'); }} onNavigate={match => { setActiveId(match.documentId); setNavigation({ ...match }); }} onApply={changes => { if (!editorWorkspace.current || busy) throw new Error('Éditeur indisponible.'); editorWorkspace.current.apply(changes); }} />
         </div>
         <div className="tool-content" hidden={tool !== 'git'}>{!project && <section className="panel"><h2>Contrôle de version Git</h2><p>Ouvrez ou créez un projet pour afficher son statut, index, commits et historique Git.</p><Button disabled={busy || !files.project} onClick={() => openProject(false)}>Choisir un projet pour Git</Button></section>}
-        {project && <GitPanel key={`git:${project.sessionId}`} sessionId={project.sessionId} busy={busy} dirty={dirty} documentCount={project.manifest.documents.length} onBusy={setBusy} onProject={snapshot => { acceptProject(snapshot); showTool('git'); }} />}
+        {project && <GitPanel key={`git:${project.sessionId}`} sessionId={project.sessionId} busy={busy} dirty={dirty} documentCount={project.manifest.documents.length} onBusy={setBusy} onNotify={notify} onProject={snapshot => { acceptProject(snapshot); showTool('git'); }} />}
         </div>
 
 
@@ -517,20 +543,22 @@ export function App() {
             editor.current?.revealLineInCenter(d.line); editor.current?.setPosition({ lineNumber: d.line, column: d.start + 1 }); editor.current?.focus();
           }}>L{d.line} · {d.severity === 'error' ? 'Erreur' : 'Avertissement'} · {d.message}</Button></li>)}</ul> : <p className="success">Aucun problème détecté dans le sous-ensemble analysé.</p>}
         </div>
-        <div className="emulator-output" hidden={outputTab !== 'emulator'}>{emulatorLaunch ? <EmulatorPanel key={emulatorLaunch.id} launch={emulatorLaunch} onClose={() => setEmulatorLaunch(undefined)} onConfigure={() => showTool('firmware')} /> : <div className="empty-tool"><Icon name="chip" /><p>Exécutez le listing avec le bouton Exécuter pour ouvrir le CPC.</p></div>}</div>
+        <div className="emulator-output" hidden={outputTab !== 'emulator'}>{emulatorLaunch ? <EmulatorPanel key={emulatorLaunch.id} launch={emulatorLaunch} onNotify={notify} onClose={() => setEmulatorLaunch(undefined)} onConfigure={() => showTool('firmware')} /> : <div className="empty-tool"><Icon name="chip" /><p>Exécutez le listing avec le bouton Exécuter pour ouvrir le CPC.</p></div>}</div>
         {project ? <GitLogPanel key={`git-log:${project.sessionId}`} sessionId={project.sessionId} busy={busy} visible={outputTab === 'git-log'} /> : outputTab === 'git-log' && <div className="empty-tool">Ouvrez un projet pour consulter son journal Git.</div>}
-        {project ? <TerminalPanel key={`terminal:${project.sessionId}`} sessionId={project.sessionId} busy={busy} dirty={dirty} visible={terminalOpen && outputTab === 'terminal'} onBusy={setBusy} /> : outputTab === 'terminal' && <div className="empty-tool">Ouvrez un projet pour exécuter des commandes dans son dossier.</div>}
+        {project ? <TerminalPanel key={`terminal:${project.sessionId}`} sessionId={project.sessionId} busy={busy} dirty={dirty} visible={terminalOpen && outputTab === 'terminal'} onBusy={setBusy} onNotify={notify} /> : outputTab === 'terminal' && <div className="empty-tool">Ouvrez un projet pour exécuter des commandes dans son dossier.</div>}
         </DockPanel>
       </section>
       <ResizeHandle label="Largeur de l’assistant" orientation="vertical" reverse value={Math.min(preferences.agentWidth, Math.max(240, workspaceSize.width * .35))} min={240} max={Math.min(800, Math.max(240, workspaceSize.width * .35))} hidden={!agentOpen || panels.agent.floating} onChange={agentWidth => setPreferences(previous => ({ ...previous, agentWidth }))} />
       <DockPanel as="aside" className="ai-sidebar" label="Assistant IA" name="l’agent IA" hidden={!agentOpen} layout={panels.agent} onLayout={value => updatePanel('agent', value)} onHide={() => setAgentOpen(false)}>
-        <AgentPanel sessionId={project?.sessionId} documentCount={project?.manifest.documents.length ?? 0} buffers={documents.map(document => ({ id: document.sourceId, source: document.source }))} busy={busy} onRunning={setAgentBusy} onState={acceptAgent} />
+        <AgentPanel sessionId={project?.sessionId} documentCount={project?.manifest.documents.length ?? 0} buffers={documents.map(document => ({ id: document.sourceId, source: document.source }))} busy={busy} onRunning={setAgentBusy} onState={acceptAgent} onNotify={notify} />
       </DockPanel>
     </div>
     {githubOpen && <GitHubDialog busy={busy} onClone={cloneProject} {...(project ? { onRemote: associateRemote } : {})} onClose={() => setGithubOpen(false)} />}
     {recentProjectsOpen && <RecentProjectsDialog busy={busy} onOpen={openRecentProject} onChoose={() => openProject(false)} onClose={() => setRecentProjectsOpen(false)} />}
     {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
-    {settingsOpen && <SettingsDialog preferences={preferences} commands={commands} onApply={setPreferences} onClose={() => { setSettingsOpen(false); requestAnimationFrame(() => editor.current?.focus()); }} />}
+    {settingsOpen && <SettingsDialog preferences={preferences} commands={commands} onApply={value => { setPreferences(value); notify({ source: 'settings', target: 'settings', level: 'success', message: 'Paramètres appliqués.' }); }} onClose={() => { setSettingsOpen(false); requestAnimationFrame(() => editor.current?.focus()); }} />}
+    {notificationsOpen && <NotificationCenter items={notifications} sessionId={project?.sessionId} onRead={readNotification} onRemove={id => setNotifications(items => items.filter(item => item.id !== id))} onClear={() => setNotifications([])} onReveal={revealNotification} onClose={() => { setNotificationsOpen(false); requestAnimationFrame(() => editor.current?.focus()); }} />}
+    {!notificationsOpen && previewNotification && !previewNotification.read && dismissedPreview !== previewKey && preferences.notificationPopups !== 'off' && (preferences.notificationPopups === 'all' || previewNotification.level === 'error') && <aside className="notification-preview" data-level={previewNotification.level} aria-label="Dernière notification"><div><strong>{LEVEL_LABELS[previewNotification.level]} · {SOURCE_LABELS[previewNotification.source]}</strong><p>{previewNotification.message}</p></div><Button icon="bell" onClick={() => setNotificationsOpen(true)}>Consulter</Button><Button icon="close" aria-label="Masquer l’aperçu de notification" onClick={() => setDismissedPreview(previewKey)} /></aside>}
     {shortcutsOpen && <ShortcutsDialog commands={commands} onClose={() => setShortcutsOpen(false)} />}
     {sourceDialog && project && (() => {
       const selected = documents.find(document => document.sourceId === sourceDialog.sourceId), source = project.manifest.sources.find(source => source.id === sourceDialog.sourceId);

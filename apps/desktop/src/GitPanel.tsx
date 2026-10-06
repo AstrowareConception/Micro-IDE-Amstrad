@@ -1,3 +1,4 @@
+import type { Notify, NotificationLevel } from './notifications.ts';
 import { Button } from './Icon.tsx';
 import { useState } from 'react';
 import type { GitDiff, RepositoryStatus, DiffSide, GitInitPlan, IndexAction, GitHistory, GitCommitPlan, GitIdentitySnapshot } from '../../../packages/version-control/src/inspection.ts';
@@ -5,17 +6,20 @@ import { files } from './port.ts';
 import { GitRemotePanel } from './GitRemotePanel.tsx';
 import type { ProjectSnapshot } from '../../../packages/workspace/src/project.ts';
 
-interface Props { sessionId: string; busy: boolean; dirty: boolean; documentCount: number; onBusy(value: boolean): void; onProject(project: ProjectSnapshot): void }
+interface Props { sessionId: string; busy: boolean; dirty: boolean; documentCount: number; onBusy(value: boolean): void; onProject(project: ProjectSnapshot): void; onNotify?: Notify }
 export function GitPanel(props: Props) {
   const [snapshot, setSnapshot] = useState<RepositoryStatus>();
   const [diff, setDiff] = useState<GitDiff>();
-  const [notice, setNotice] = useState('Actualisez pour consulter le dépôt local.');
+  const [notice, setNoticeText] = useState('Actualisez pour consulter le dépôt local.');
   const [plan, setPlan] = useState<GitInitPlan>();
   const [history, setHistory] = useState<GitHistory>();
   const [commitPlan, setCommitPlan] = useState<GitCommitPlan>();
   const [name, setName] = useState(''), [email, setEmail] = useState(''), [message, setMessage] = useState('');
   const [identityProfile, setIdentityProfile] = useState<GitIdentitySnapshot>();
   const [identityNotice, setIdentityNotice] = useState('Aucune identité mémorisée sans votre demande.');
+  function setNotice(message: string, level: NotificationLevel = 'info') {
+    setNoticeText(message); props.onNotify?.({ source: 'git', target: 'git', sessionId: props.sessionId, level, message: level === 'error' ? 'Opération Git non confirmée. Consultez le panneau Git avant de reprendre.' : message });
+  }
   const port = files.git;
   async function suggestMessage() {
     if (!files.gitOperations || props.busy || props.dirty) return;
@@ -23,9 +27,9 @@ export function GitPanel(props: Props) {
     try {
       const result = await files.gitOperations.suggestMessage(props.sessionId, { name, email });
       if (!result) setNotice('Suggestion IA annulée ; message conservé.');
-      else if ('error' in result) setNotice(result.error);
+      else if ('error' in result) setNotice(result.error, 'error');
       else { setMessage(result.message); setNotice('Message proposé par ' + result.model + '. Relisez et modifiez-le avant de préparer le commit.'); }
-    } catch { setNotice('Suggestion IA non confirmée ; message conservé.'); }
+    } catch { setNotice('Suggestion IA non confirmée ; message conservé.', 'error'); }
     finally { props.onBusy(false); }
   }
   async function loadIdentity() {
@@ -54,9 +58,9 @@ export function GitPanel(props: Props) {
     props.onBusy(true); setCommitPlan(undefined);
     try {
       const result = await port.prepareCommit(props.sessionId, { name, email, message });
-      if ('error' in result) setNotice(result.error);
+      if ('error' in result) setNotice(result.error, 'error');
       else { setCommitPlan(result); setNotice('Aperçu du commit : vérifiez auteur, message et diff de l’index.'); }
-    } catch { setNotice('Préparation du commit impossible.'); }
+    } catch { setNotice('Préparation du commit impossible.', 'error'); }
     finally { props.onBusy(false); }
   }
   async function commit() {
@@ -65,9 +69,9 @@ export function GitPanel(props: Props) {
     try {
       const result = await port.commit(props.sessionId, commitPlan.id);
       if (!result) setNotice('Commit annulé ; branche et index inchangés.');
-      else if ('error' in result) { setCommitPlan(undefined); setSnapshot(undefined); setNotice(result.error); }
+      else if ('error' in result) { setCommitPlan(undefined); setSnapshot(undefined); setNotice(result.error, 'error'); }
       else { setCommitPlan(undefined); setSnapshot(result.status); setHistory(undefined); setDiff(undefined); setMessage(''); setNotice(`Commit local créé : ${result.oid.slice(0, 12)} · ${result.branch}.`); }
-    } catch { setCommitPlan(undefined); setNotice('Résultat du commit non confirmé ; consultez l’historique avant de reprendre.'); }
+    } catch { setCommitPlan(undefined); setNotice('Résultat du commit non confirmé ; consultez l’historique avant de reprendre.', 'error'); }
     finally { props.onBusy(false); }
   }
   async function readHistory(next = false) {
@@ -75,9 +79,9 @@ export function GitPanel(props: Props) {
     props.onBusy(true);
     try {
       const result = await port.history(props.sessionId, next ? history?.nextCursor : undefined);
-      if ('error' in result) { setNotice(result.error); setHistory(undefined); }
+      if ('error' in result) { setNotice(result.error, 'error'); setHistory(undefined); }
       else { setHistory(previous => next && previous?.head === result.head ? { ...result, commits: [...previous.commits, ...result.commits] } : result); setNotice('Historique du HEAD capturé, en lecture seule.'); }
-    } catch { setNotice('Historique indisponible ; recommencez la lecture.'); setHistory(undefined); }
+    } catch { setNotice('Historique indisponible ; recommencez la lecture.', 'error'); setHistory(undefined); }
     finally { props.onBusy(false); }
   }
   async function refresh() {
@@ -89,10 +93,10 @@ export function GitPanel(props: Props) {
         catch { setIdentityNotice('Profil indisponible ; saisissez librement une identité pour ce commit.'); }
       }
       const result = await port.status(props.sessionId);
-      if ('error' in result) setNotice(result.error);
+      if ('error' in result) setNotice(result.error, 'error');
       else { setSnapshot(result); setNotice(result.state === 'parent-repository' ? 'Dépôt parent détecté : ouvrez une racine de projet égale à celle du dépôt. Aucun périmètre élargi.' :
         result.state === 'not-repository' ? 'Aucun dépôt à la racine du projet. Préparez la création pour consulter les exclusions.' : 'Statut sur disque actualisé ; aucun fichier modifié.'); }
-    } catch { setNotice('Lecture du dépôt impossible.'); }
+    } catch { setNotice('Lecture du dépôt impossible.', 'error'); }
     finally { props.onBusy(false); }
   }
   async function compare(id: string, side: DiffSide) {
@@ -100,9 +104,9 @@ export function GitPanel(props: Props) {
     props.onBusy(true); setCommitPlan(undefined); setDiff(undefined);
     try {
       const result = await port.diff(props.sessionId, id, side);
-      if ('error' in result) setNotice(result.error);
+      if ('error' in result) setNotice(result.error, 'error');
       else { setDiff(result); setNotice('Diff des octets enregistrés, lu à la demande ; pas des brouillons Monaco.'); }
-    } catch { setNotice('Lecture du diff impossible.'); }
+    } catch { setNotice('Lecture du diff impossible.', 'error'); }
     finally { props.onBusy(false); }
   }
   async function prepare() {
@@ -110,9 +114,9 @@ export function GitPanel(props: Props) {
     props.onBusy(true); setCommitPlan(undefined); setDiff(undefined); setPlan(undefined);
     try {
       const result = await port.prepareInit(props.sessionId);
-      if ('error' in result) setNotice(result.error);
+      if ('error' in result) setNotice(result.error, 'error');
       else { setPlan(result); setNotice('Aperçu uniquement ; aucun dépôt créé. La confirmation native montrera la racine exacte.'); }
-    } catch { setNotice('Préparation impossible.'); }
+    } catch { setNotice('Préparation impossible.', 'error'); }
     finally { props.onBusy(false); }
   }
   async function initialize() {
@@ -121,9 +125,9 @@ export function GitPanel(props: Props) {
     try {
       const result = await port.init(props.sessionId, plan.id);
       if (!result) setNotice('Création annulée ; aucun dépôt créé.');
-      else if ('error' in result) { setPlan(undefined); setSnapshot(undefined); setNotice(result.error); }
+      else if ('error' in result) { setPlan(undefined); setSnapshot(undefined); setNotice(result.error, 'error'); }
       else { setPlan(undefined); setSnapshot(result); setNotice('Dépôt main créé avec exclusions ; aucun fichier indexé et aucun commit.'); }
-    } catch { setNotice('Création non confirmée ; actualisez Git avant de reprendre.'); setPlan(undefined); }
+    } catch { setNotice('Création non confirmée ; actualisez Git avant de reprendre.', 'error'); setPlan(undefined); }
     finally { props.onBusy(false); }
   }
   async function changeIndex(id: string, action: IndexAction) {
@@ -132,9 +136,9 @@ export function GitPanel(props: Props) {
     try {
       const result = await port.changeIndex(props.sessionId, snapshot.snapshotId, id, action);
       if (!result) setNotice('Opération annulée ; index inchangé.');
-      else if ('error' in result) { setNotice(result.error); setSnapshot(undefined); }
+      else if ('error' in result) { setNotice(result.error, 'error'); setSnapshot(undefined); }
       else { setSnapshot(result); setNotice(action === 'stage' ? 'Fichier sélectionné indexé ; aucun commit, sources inchangées.' : 'Fichier sélectionné retiré de l’index ; sources inchangées.'); }
-    } catch { setNotice('Résultat non confirmé ; actualisez Git avant de reprendre.'); setSnapshot(undefined); }
+    } catch { setNotice('Résultat non confirmé ; actualisez Git avant de reprendre.', 'error'); setSnapshot(undefined); }
     finally { props.onBusy(false); }
   }
   return <section className="panel git-panel" aria-label="Contrôle de version Git">
@@ -146,7 +150,7 @@ export function GitPanel(props: Props) {
     {snapshot?.state !== 'repository' && <Button data-git-action="init" disabled={props.busy || props.dirty || !port} onClick={() => void prepare()}>Préparer la création Git</Button>}
     <p aria-live="polite" className="git-notice">{notice}</p>
     <details className="git-network-tools"><summary>Branches, remotes et GitHub</summary>
-    <GitRemotePanel sessionId={props.sessionId} busy={props.busy} dirty={props.dirty} onBusy={props.onBusy} onProject={props.onProject} />
+    <GitRemotePanel sessionId={props.sessionId} busy={props.busy} dirty={props.dirty} onBusy={props.onBusy} onProject={props.onProject} {...(props.onNotify ? { onNotify: props.onNotify } : {})} />
     </details>
     {plan && <div className="git-init-preview"><h3>Créer dans {plan.rootName} · branche main</h3><p>{plan.version} · {plan.preserveIgnore ? 'exclusions locales, .gitignore existant conservé' : '.gitignore créé sans écrasement'}</p>
       <textarea aria-label="Exclusions Git proposées" readOnly rows={8} value={plan.ignoreText} />

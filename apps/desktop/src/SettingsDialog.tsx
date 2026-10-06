@@ -4,7 +4,7 @@ import { DEFAULT_PREFERENCES, parsePreferences, type Preferences } from './prefe
 import { DEFAULT_KEYMAP, keymapErrors, keymapPreset, shortcutFromEvent, shortcutLabel, type Keymap } from './keymap.ts';
 import { PersonalizationProfiles } from './PersonalizationProfiles.tsx';
 import type { WorkbenchCommand } from './CommandPalette.tsx';
-const categories = [['all', 'Tous les réglages'], ['appearance', 'Apparence'], ['editor', 'Éditeur'], ['save', 'Enregistrement et BASIC'], ['keymap', 'Raccourcis'], ['profiles', 'Profils']] as const;
+const categories = [['all', 'Tous les réglages'], ['appearance', 'Apparence'], ['editor', 'Éditeur'], ['save', 'Enregistrement et BASIC'], ['keymap', 'Raccourcis'], ['profiles', 'Profils'], ['notifications', 'Notifications']] as const;
 export function SettingsDialog({ preferences, commands, onApply, onClose }: { preferences: Preferences; commands: WorkbenchCommand[]; onApply(value: Preferences): void; onClose(): void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [draft, setDraft] = useState(() => parsePreferences(preferences)), [query, setQuery] = useState(''), [category, setCategory] = useState('all');
@@ -19,6 +19,7 @@ export function SettingsDialog({ preferences, commands, onApply, onClose }: { pr
     editor: visible('editor', 'éditeur édition indentation espaces parenthèses retour ligne minimap interligne numéros relatifs caractères invisibles curseur clignotement ligatures guides couleurs parenthèses règle colonne'),
     save: visible('save', 'enregistrement sauvegarde auto-save automatique délai BASIC renumérotation premier numéro pas'),
     keymap: visible('keymap', 'raccourcis clavier keymap JetBrains VS Code ' + commands.filter(command => Object.hasOwn(DEFAULT_KEYMAP, command.id)).map(command => command.label).join(' ')),
+    notifications: visible('notifications', 'notifications messages aperçus erreurs historique silence'),
     profiles: visible('profiles', 'profils personnels importer exporter enregistrer charger supprimer atelier JSON'),
   };
   return <dialog ref={dialog} className="command-dialog settings-dialog advanced-settings" aria-label="Paramètres de CPCéleste" onClose={onClose} onClick={event => { if (event.target === dialog.current) dialog.current.close(); }}>
@@ -56,6 +57,7 @@ export function SettingsDialog({ preferences, commands, onApply, onClose }: { pr
         {commands.filter(command => Object.hasOwn(DEFAULT_KEYMAP, command.id)).map(command => <label key={command.id}>{command.label}<input aria-label={`Raccourci : ${command.label}`} readOnly value={shortcutLabel(draft.keymap[command.id as keyof Keymap])} placeholder="Non attribué" onKeyDown={event => { if (event.key === 'Tab') return; event.preventDefault(); event.stopPropagation(); if (event.nativeEvent.getModifierState('AltGraph')) return; const value = ['Backspace', 'Delete'].includes(event.key) ? '' : shortcutFromEvent(event.nativeEvent); if (value !== undefined) setDraft(previous => ({ ...previous, keymap: { ...previous.keymap, [command.id]: value } })); }} /></label>)}
         {errors.length > 0 && <div className="settings-wide" role="alert"><p>Corrigez les raccourcis avant application.</p><ul>{errors.map(error => <li key={error}>{error}</li>)}</ul></div>}
       </fieldset></div>
+      <div hidden={!sections.notifications}><fieldset><legend>Notifications de session</legend>{select('notificationPopups', 'Aperçus des notifications', [['all', 'Tous les messages'], ['errors', 'Erreurs seulement'], ['off', 'Aucun aperçu']])}<p className="muted">Le centre reste consultable depuis Affichage, la cloche et la palette. Les messages ne sont pas conservés au redémarrage.</p></fieldset></div>
       <div hidden={!sections.profiles}>{!errors.length ? <PersonalizationProfiles draft={draft} onLoad={value => setDraft(parsePreferences(value))} /> : <p>Corrigez les raccourcis avant de gérer les profils.</p>}</div>
       {!Object.values(sections).some(Boolean) && <p role="status">Aucun groupe de réglages ne correspond à cette recherche.</p>}
       <div className="settings-actions"><Button type="button" icon="undo" onClick={() => setDraft(parsePreferences(DEFAULT_PREFERENCES))}>Valeurs par défaut</Button><Button type="button" icon="close" onClick={() => dialog.current?.close()}>Annuler</Button><Button type="submit" icon="save" className="primary" disabled={errors.length > 0}>Appliquer les paramètres</Button></div>
