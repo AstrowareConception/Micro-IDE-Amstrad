@@ -8,6 +8,8 @@ La mission Mahjong interrompue priorise la restitution, les références groupé
 
 ## Mode de progression
 
+La [tranche explorateur 0.30](../implementation/project-explorer-alpha.md) commence le lot 1 après la correction agent : arborescence réelle à la demande, filtre, brouillons et lectures seules bornées ([ADR 0037](../adr/0037-explorateur-projet-lecture-seule.md)). La navigation rejoint les buffers et aperçus existants. Renommer/déplacer/supprimer avec durabilité, onglets de prévisualisation et parser restent la suite ; aucun jalon global clos.
+
 
 ## Priorité ergonomie — alpha 0.25, 6 octobre 2026
 

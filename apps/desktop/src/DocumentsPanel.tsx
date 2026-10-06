@@ -1,9 +1,9 @@
 import { Button } from './Icon.tsx';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { DocumentSnapshot, ProjectManifest } from '../../../packages/workspace/src/project.ts';
 import { files } from './port.ts';
 
-interface Props { sessionId: string; manifest: ProjectManifest; busy: boolean; onBusy(value: boolean): void; onManifest(manifest: ProjectManifest): void }
+interface Props { sessionId: string; manifest: ProjectManifest; busy: boolean; requested?: { id: string; nonce: string } | undefined; onBusy(value: boolean): void; onManifest(manifest: ProjectManifest): void }
 export function DocumentsPanel(props: Props) {
   const [preview, setPreview] = useState<DocumentSnapshot>(), [offset, setOffset] = useState(0), [notice, setNotice] = useState(''), [page, setPage] = useState(0);
   const port = files.project;
@@ -26,6 +26,7 @@ export function DocumentsPanel(props: Props) {
     } catch { setNotice('Lecture impossible.'); }
     finally { props.onBusy(false); }
   }
+  useEffect(() => { if (props.requested && props.manifest.documents.some(item => item.id === props.requested!.id)) void read(props.requested.id); }, [props.requested]);
   const pdf = preview && 'pages' in preview ? preview : undefined;
   const previewText = preview && 'text' in preview ? preview.text : pdf?.pages[page]?.text;
   const lines = useMemo(() => previewText?.split('\n') ?? [], [previewText]);

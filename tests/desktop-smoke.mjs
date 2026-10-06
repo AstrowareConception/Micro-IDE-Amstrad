@@ -138,6 +138,33 @@ try {
   await autoPreferences.getByLabel('Enregistrement automatique des sources du projet', { exact: true }).uncheck();
   await autoPreferences.getByRole('button', { name: 'Appliquer les paramètres', exact: true }).click();
   const baseline = await readFile(join(root, 'src/main.bas'), 'utf8');
+  // Real renderer -> preload -> main -> filesystem explorer, with inert ordinary text.
+  await writeFile(join(root, 'notes.md'), '<script>throw new Error("inert")</script>\nRecherche');
+  await writeFile(join(root, '.explorer-private'), 'LOCAL');
+  await writeFile(join(root, 'large-explorer.txt'), Buffer.alloc(65537, 65));
+  const nativeExplorer = page.getByRole('region', { name: 'Explorateur du projet', exact: true });
+  await nativeExplorer.getByRole('button', { name: 'Actualiser les fichiers', exact: true }).click();
+  await expect(nativeExplorer).toContainText('masqué');
+  await nativeExplorer.getByRole('button', { name: /notes.md/ }).click();
+  const nativePreview = page.getByRole('dialog', { name: 'Aperçu de notes.md', exact: true });
+  await expect(nativePreview.getByRole('textbox')).toHaveValue(/<script>/);
+  await expect(nativePreview.getByRole('textbox')).toHaveAttribute('readonly', '');
+  await page.screenshot({ path: 'out/project-explorer-desktop-alpha.png' });
+  await page.keyboard.press('Escape'); await expect(nativePreview).toHaveCount(0);
+  await nativeExplorer.getByRole('button', { name: /large-explorer.txt/ }).click();
+  const largePreview = page.getByRole('dialog', { name: 'Aperçu de large-explorer.txt', exact: true });
+  await expect(largePreview).toContainText('64 Kio'); await expect(largePreview.getByRole('textbox')).toHaveCount(0);
+  await largePreview.getByRole('button', { name: 'Fermer l’aperçu', exact: true }).click();
+  await nativeExplorer.getByRole('checkbox', { name: 'Privés et générés', exact: true }).check();
+  await expect(nativeExplorer.getByRole('button', { name: /.explorer-private/ })).toBeVisible();
+  await nativeExplorer.getByRole('checkbox', { name: 'Privés et générés', exact: true }).uncheck();
+  await expect(nativeExplorer).toContainText('masqué');
+  await expect(nativeExplorer.getByRole('button', { name: 'Actualiser les fichiers', exact: true })).toBeEnabled();
+  assert.match((await page.evaluate(id => window.desktop.explorer.list(id, '', false), sessionId)).error, /périmée/);
+  assert.equal(await readFile(join(root, 'src/main.bas'), 'utf8'), baseline);
+  assert.equal(JSON.parse(await readFile(join(root, 'microide.project.json'), 'utf8')).sources.length, 1);
+  await unlink(join(root, 'notes.md')); await unlink(join(root, '.explorer-private')); await unlink(join(root, 'large-explorer.txt'));
+  await nativeExplorer.getByRole('button', { name: 'Actualiser les fichiers', exact: true }).click();
   await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('30 REM MAIN DRAFT');
   await page.getByLabel('Nouvelle source (1–8 caractères)', { exact: true }).fill('UTIL');
   await page.getByRole('button', { name: 'Ajouter source', exact: true }).click();
@@ -147,7 +174,10 @@ try {
   // Closing a dirty view preserves its buffer and undo model; both mouse and keyboard reopen it.
   await page.getByRole('tab', { name: /src\/util.bas/ }).click({ button: 'middle' });
   await expect(page.getByRole('tab', { name: /src\/util.bas/ })).toHaveCount(0);
-  await page.getByRole('navigation', { name: 'Explorateur de sources', exact: true }).getByRole('button', { name: /^src\/util\.bas/ }).click();
+  const explorer = page.getByRole('region', { name: 'Explorateur du projet', exact: true });
+  const sourceFolder = explorer.getByRole('button', { name: 'Dossier src', exact: true });
+  if (await sourceFolder.getAttribute('aria-expanded') !== 'true') await sourceFolder.click();
+  await explorer.getByRole('button', { name: /^src\/util\.bas/ }).click();
   await expect(page.locator('.monaco-editor .view-lines')).toContainText('UTIL DRAFT');
   await page.keyboard.press('Control+w');
   await expect(page.getByRole('tab', { name: /src\/util.bas/ })).toHaveCount(0);

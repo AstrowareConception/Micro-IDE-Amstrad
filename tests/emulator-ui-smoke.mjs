@@ -37,9 +37,13 @@ try {
   else {
     for (const [role, label] of [['os', 'OS CPC'], ['basic', 'BASIC 1.1'], ['amsdos', 'AMSDOS']]) {
       await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, join(romRoot, `cpc6128_${role}.bin`));
-      await page.getByRole('button', { name: `Importer ${label}`, exact: true }).click(); await expect(page.locator('.firmware-notice')).toContainText('ROM importée');
+      const importButton = page.getByRole('button', { name: `Importer ${label}`, exact: true });
+      await importButton.click(); await expect(page.locator('.firmware-notice')).toContainText('ROM importée');
+      await expect(importButton).toBeEnabled();
+      await expect(importButton.locator('..')).toContainText('Disponible');
     }
-    assert.ok((await page.evaluate(() => window.desktop.emulator.prepare({ source: '10 END', path: '/tmp/forbidden' }))).error);
+    await expect(page.getByRole('region', { name: 'Configuration ROM CPC', exact: true })).toContainText('Jeu complet');
+    assert.match((await page.evaluate(() => window.desktop.emulator.prepare({ source: '10 END', path: '/tmp/forbidden' }))).error, /Listing d’exécution UTF-8/);
   }
   const editor = page.locator('.listing .monaco-editor textarea'); await editor.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText(source);
   await page.keyboard.press('F5'); await expect(machine).toContainText('Commande RUN"MAIN.BAS" envoyée', { timeout: 30000 });

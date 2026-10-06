@@ -54,3 +54,5 @@ Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou
 - [0035 — Atelier Git réseau et GitHub](0035-atelier-git-reseau-et-github.md).
 
 - [0036 — Reprise, résultats d’outils et consommation agent](0036-agent-reprise-resultats-et-consommation.md).
+
+- [0037 — Explorateur réel du projet et lectures seules](0037-explorateur-projet-lecture-seule.md).
