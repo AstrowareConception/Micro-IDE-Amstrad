@@ -6,7 +6,7 @@ Date : 6 octobre 2026. Périmètre : REQ-EDT-008 / ACC-36, IDE-076 partiel. [ADR
 
 **BASIC → Rapport de qualité BASIC…**, palette ou onglet **Qualité** dans les sorties. Choisir **Source active** ou **Sources chargées**, puis **Générer le rapport**. Les buffers, y compris brouillons et onglets fermés conservés, sont analysés sans écriture. Les fichiers non chargés ne sont pas recherchés sur disque. Le rapport ne se lance ni à l’ouverture de l’onglet ni pendant la frappe.
 
-Le tableau décrit chaque listing indépendamment. Cliquer une remarque ou une autre occurrence rejoint le fichier, la ligne physique et la plage ; le numéro BASIC est aussi affiché. Une modification, suppression ou un renommage rend le rapport obsolète et bloque ses liens jusqu’à un nouveau calcul. Un changement de projet retire le rapport et annule la tâche. Les exports **Markdown** et **JSON** portent la date du snapshot et son état à l’export ; ils contiennent métriques, remarques et couverture, jamais le listing ni des extraits de code.
+Le tableau décrit chaque listing indépendamment. Cliquer une remarque ou une autre occurrence rejoint le fichier, la ligne physique et la plage ; le numéro BASIC est aussi affiché. Un onglet fermé dont le buffer est conservé est rouvert lors du saut (garde partagée avec Problèmes). Une modification, suppression ou un renommage rend le rapport obsolète et bloque ses liens jusqu’à un nouveau calcul. Un changement de projet retire le rapport et annule la tâche. Les exports **Markdown** et **JSON** portent la date du snapshot et son état à l’export ; ils contiennent métriques, remarques et couverture, jamais le listing ni des extraits de code.
 
 ## Métriques et complexité
 

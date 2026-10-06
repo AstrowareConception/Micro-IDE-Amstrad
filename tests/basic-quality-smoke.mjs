@@ -40,6 +40,7 @@ export async function verifyBasicQuality(browser, errors) {
   await mkdir('out', { recursive: true }); await page.getByRole('button', { name: 'Agrandir les sorties', exact: true }).click();
   await panel.getByRole('heading', { name: 'Qualité du code BASIC', exact: true }).scrollIntoViewIfNeeded();
   await page.screenshot({ path: 'out/basic-quality-browser.png' }); await page.getByRole('button', { name: 'Restaurer les sorties', exact: true }).click();
+  await page.getByRole('button', { name: 'Fermer l’onglet src/util.bas', exact: true }).click(); await expect(page.getByRole('tab', { name: /src\/util.bas/ })).toHaveCount(0);
   await panel.getByRole('button', { name: 'Autre occurrence · L4 · BASIC 40', exact: true }).click();
   await expect(page.getByRole('tab', { name: /src\/util.bas/ })).toHaveAttribute('aria-selected', 'true'); await expect(page.locator('footer')).toContainText('L4 · C');
   const input = page.locator('.listing .monaco-editor textarea'); await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('\n80 PRINT "CHANGED"');

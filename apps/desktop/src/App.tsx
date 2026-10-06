@@ -150,6 +150,7 @@ export function App() {
   const [problemNavigation, setProblemNavigation] = useState<{ id: string; source: string; diagnostic: Diagnostic }>();
   const revealProblem = useCallback((id: string, diagnostic: Diagnostic) => {
     const doc = documents.find(item => item.id === id); if (!doc) return;
+    setClosedTabs(previous => { if (!previous.has(id)) return previous; const next = new Set(previous); next.delete(id); return next; });
     setActiveId(id); setProblemNavigation({ id, source: doc.source, diagnostic });
   }, [documents]);
   const revealQuality = useCallback((id: string, finding: QualityFinding) => revealProblem(id, { ...finding, severity: 'warning' }), [revealProblem]);
