@@ -158,6 +158,8 @@ try {
   await nativeExplorer.getByRole('checkbox', { name: 'Privés et générés', exact: true }).check();
   await expect(nativeExplorer.getByRole('button', { name: /.explorer-private/ })).toBeVisible();
   await nativeExplorer.getByRole('checkbox', { name: 'Privés et générés', exact: true }).uncheck();
+  await expect(nativeExplorer).toContainText('masqué');
+  await expect(nativeExplorer.getByRole('button', { name: 'Actualiser les fichiers', exact: true })).toBeEnabled();
   assert.match((await page.evaluate(id => window.desktop.explorer.list(id, '', false), sessionId)).error, /périmée/);
   assert.equal(await readFile(join(root, 'src/main.bas'), 'utf8'), baseline);
   assert.equal(JSON.parse(await readFile(join(root, 'microide.project.json'), 'utf8')).sources.length, 1);

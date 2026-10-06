@@ -15,8 +15,8 @@ export async function verifyProjectExplorer(browser, errors) {
       explorer: {
         list: async (sessionId, directory, showHidden) => {
           window.explorerCalls.push({ sessionId, directory, showHidden });
-          const entries = directory === '' ? [entry('documents', 'directory'), entry('src', 'directory'), entry('notes.md'), entry('binary.dat'), entry('large.txt'), entry('outside', 'link'), entry('microide.project.json', 'file', 'manifest'), ...(showHidden ? [entry('.env')] : [])]
-            : directory === 'src' ? sources.map(source => entry(source.path, 'file', 'source', { sourceId: source.id })) : [entry(documents[0].path, 'file', 'document', { documentId: 'doc' })];
+          const entries = directory === '' ? [entry('documents', 'directory'), entry('src', 'directory'), entry('constructor', 'directory'), entry('__proto__', 'directory'), entry('notes.md'), entry('binary.dat'), entry('large.txt'), entry('outside', 'link'), entry('microide.project.json', 'file', 'manifest'), ...(showHidden ? [entry('.env')] : [])]
+            : directory === 'src' ? sources.map(source => entry(source.path, 'file', 'source', { sourceId: source.id })) : directory === 'constructor' || directory === '__proto__' ? [entry(`${directory}/readme.txt`)] : [entry(documents[0].path, 'file', 'document', { documentId: 'doc' })];
           return { directory, entries, complete: true, hiddenCount: directory === '' && !showHidden ? 1 : 0 };
         },
         preview: async (sessionId, path) => { window.previewCalls.push(path); return path === 'large.txt' ? { path, bytes: 65537, notice: 'Aperçu texte limité à 64 Kio' } : path === 'binary.dat' ? { path, bytes: 10, notice: 'Format binaire' } : { path, bytes: 20, text: '<script>throw new Error("inert")</script>\nRecherche', notice: 'Lecture seule' }; },
@@ -28,6 +28,11 @@ export async function verifyProjectExplorer(browser, errors) {
     await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click();
     const panel = page.getByRole('region', { name: 'Explorateur du projet', exact: true });
     await expect(panel).toContainText('masqué');
+    for (const directory of ['constructor', '__proto__']) {
+      const folder = panel.getByRole('button', { name: `Dossier ${directory}`, exact: true });
+      await folder.click(); await expect(panel.getByRole('list', { name: directory, exact: true })).toContainText('readme.txt');
+      await folder.click();
+    }
     await panel.getByRole('button', { name: 'Dossier src', exact: true }).click();
     const main = panel.getByRole('button', { name: /^src\/main.bas/ });
     const util = panel.getByRole('button', { name: /^src\/util.bas/ });

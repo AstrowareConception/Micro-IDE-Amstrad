@@ -22,7 +22,7 @@ export function ProjectExplorerPanel(props: Props) {
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; generation.current++; }; }, []);
   async function load(directory: string, epoch = generation.current) {
     if (!port || props.busy || requests.current.has(directory)) return;
-    if (!listings[directory] && Object.keys(listings).length >= 32) { setNotice('32 dossiers chargés au maximum ; actualisez pour explorer une autre branche.'); return; }
+    if (!Object.hasOwn(listings, directory) && Object.keys(listings).length >= 32) { setNotice('32 dossiers chargés au maximum ; actualisez pour explorer une autre branche.'); return; }
     requests.current.add(directory); setPending(previous => new Set(previous).add(directory));
     try {
       const result = await port.list(props.sessionId, directory, showHidden);
@@ -44,7 +44,7 @@ export function ProjectExplorerPanel(props: Props) {
   async function openEntry(entry: ExplorerEntry) {
     if (props.busy || previewBusy) return;
     if (entry.kind === 'directory') {
-      const next = new Set(expanded); if (next.has(entry.path)) next.delete(entry.path); else { next.add(entry.path); if (!listings[entry.path] && !pending.has(entry.path)) void load(entry.path); } setExpanded(next); return;
+      const next = new Set(expanded); if (next.has(entry.path)) next.delete(entry.path); else { next.add(entry.path); if (!Object.hasOwn(listings, entry.path) && !pending.has(entry.path)) void load(entry.path); } setExpanded(next); return;
     }
     if (entry.kind !== 'file') { setNotice('Lien symbolique ou fichier spécial : contenu non parcouru.'); return; }
     if (entry.sourceId) { props.onSource(entry.sourceId); return; }
@@ -59,7 +59,7 @@ export function ProjectExplorerPanel(props: Props) {
     finally { if (mounted.current) setPreviewBusy(false); }
   }
   function rows(directory: string, depth = 0): React.ReactNode {
-    const listing = listings[directory];
+    const listing = Object.hasOwn(listings, directory) ? listings[directory] : undefined;
     if (!listing) return <li className="muted">{pending.has(directory) ? 'Chargement…' : <Button disabled={props.busy} onClick={() => void load(directory)}>Réessayer ce dossier</Button>}</li>;
     const query = filter.trim().toLocaleLowerCase('fr');
     const entries = listing.entries.filter(entry => entry.kind === 'directory' || !query || `${entry.path} ${props.manifest.documents.find(item => item.id === entry.documentId)?.originalName ?? ''}`.toLocaleLowerCase('fr').includes(query));
