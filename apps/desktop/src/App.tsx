@@ -1,3 +1,4 @@
+import { RecentProjectsDialog } from './RecentProjectsDialog.tsx';
 import { DockPanel } from './DockPanel.tsx';
 import { ResizeHandle } from './ResizeHandle.tsx';
 import { defaultPanelLayouts, loadPanelLayouts, persistPanelLayouts, type PanelId, type PanelLayout } from './panel-layout.ts';
@@ -49,6 +50,7 @@ export function App() {
     const observer = new ResizeObserver(([entry]) => { if (entry) setWorkspaceSize({ width: entry.contentRect.width, height: entry.contentRect.height }); });
     observer.observe(element); return () => observer.disconnect();
   }, []);
+  const [recentProjectsOpen, setRecentProjectsOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const autoSaveAttempt = useRef('');
@@ -144,6 +146,7 @@ export function App() {
         : modifier && event.shiftKey && key === 'a' ? 'agent'
         : modifier && event.shiftKey && key === 'r' ? 'renumber'
         : modifier && event.altKey && key === 'r' ? 'firmware'
+        : modifier && !event.shiftKey && !event.altKey && key === 'r' && !!files.recentProjects ? 'recent-projects'
         : modifier && key === '`' ? 'terminal'
         : modifier && !event.shiftKey && key === 'b' ? 'sidebar'
         : modifier && !event.shiftKey && key === 'j' ? 'output'
@@ -204,21 +207,26 @@ export function App() {
     if (!next.some(file => file.id === activeId)) setActiveId(next[0]!.id);
   }
   async function projectOperation(action: () => Promise<ProjectSnapshot | ProjectManifest | Failure | null>, append = false) {
-    if (busy) return; setBusy(true);
+    if (busy) return false; setBusy(true);
     try {
       const result = await action();
-      if (!result) { setStatus('Opération annulée.'); return; }
-      if ('error' in result) { setStatus(result.error); return; }
+      if (!result) { setStatus('Opération annulée.'); return false; }
+      if ('error' in result) { setStatus(result.error); return result.error; }
       if ('files' in result) acceptProject(result, append);
       else setProject(previous => previous ? { ...previous, manifest: result } : previous);
-      setStatus('Projet mis à jour. Les buffers existants sont conservés lors d’un ajout.');
-    } catch (error) { setStatus(String(error)); }
+      setStatus('recentProjectsNotice' in result && typeof result.recentProjectsNotice === 'string' && result.recentProjectsNotice ? result.recentProjectsNotice : 'Projet mis à jour. Les buffers existants sont conservés lors d’un ajout.');
+      return true;
+    } catch (error) { setStatus(String(error)); return String(error); }
     finally { setBusy(false); }
   }
   function openProject(create: boolean, name = projectName) {
     const port = files.project;
     if (!port || busy || (dirty && !window.confirm('Abandonner les modifications non enregistrées ?'))) return;
     void projectOperation(() => create ? port.create(name) : port.open());
+  }
+  async function openRecentProject(id: string) {
+    if (!files.recentProjects || busy || (dirty && !window.confirm('Abandonner les modifications non enregistrées ?'))) return false;
+    return await projectOperation(() => files.recentProjects!.open(id)) ?? false;
   }
   const save = () => perform(() => project && files.project ? files.project.save(project.sessionId, active.sourceId, source) : files.save(source), 'Listing enregistré', true);
   async function saveAll() {
@@ -251,6 +259,7 @@ export function App() {
   const commands: WorkbenchCommand[] = [
     { id: 'open', detail: 'Ctrl O', label: 'Ouvrir un listing', disabled: busy, run: () => void open() },
     { id: 'project', detail: 'Ctrl Maj O', label: 'Ouvrir un projet', disabled: busy || !files.project, run: () => openProject(false) },
+    { id: 'recent-projects', label: 'Projets récents…', detail: 'Ctrl R', disabled: busy || !files.recentProjects, run: () => setRecentProjectsOpen(true) },
     { id: 'save', label: 'Enregistrer le listing actif', detail: 'Ctrl S', disabled: busy, run: () => void save() },
     { id: 'save-all', detail: 'Ctrl Maj S', label: 'Enregistrer tout le projet', disabled: busy || !project || !files.project, run: () => void saveAll() },
     { id: 'local-history', label: 'Historique local de la source', disabled: busy || !project || !files.history, run: () => setHistoryOpen(true) },
@@ -322,11 +331,11 @@ export function App() {
   ] : [];
   return <main className="workbench" style={{ '--sidebar-width': `${preferences.sidebarWidth}px`, '--agent-width': `${preferences.agentWidth}px`, '--output-height': `${preferences.outputHeight}px` } as CSSProperties}>
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.26 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.27 · AstroWare Conception</p></div></div>
       <span className="profile">CPC 6128 · BASIC 1.1</span>
     </header>
     <WorkbenchMenus groups={[
-      ['Fichier', ['open', 'project', 'create-project', 'save', 'save-all', 'save-as', 'local-history', 'export']],
+      ['Fichier', ['open', 'project', 'recent-projects', 'create-project', 'save', 'save-all', 'save-as', 'local-history', 'export']],
       ['Édition', ['undo', 'redo', 'find', 'replace', 'search-sources', 'line', 'basic-comment', 'editor.action.copyLinesDownAction', 'editor.action.moveLinesUpAction', 'editor.action.moveLinesDownAction', 'editor.action.deleteLines', 'editor.action.addSelectionToNextFindMatch', 'next-tab', 'previous-tab', 'close-tab']],
       ['BASIC', ['run', 'renumber', 'complete', 'editor.action.revealDefinition', 'editor.action.marker.next', 'editor.action.marker.prev', 'reference']],
       ['Git', ['git', 'git-refresh', 'git-history', 'git-commit']],
@@ -434,6 +443,7 @@ export function App() {
         <AgentPanel sessionId={project?.sessionId} documentCount={project?.manifest.documents.length ?? 0} buffers={documents.map(document => ({ id: document.sourceId, source: document.source }))} busy={busy} onRunning={setAgentBusy} onState={acceptAgent} />
       </DockPanel>
     </div>
+    {recentProjectsOpen && <RecentProjectsDialog busy={busy} onOpen={openRecentProject} onChoose={() => openProject(false)} onClose={() => setRecentProjectsOpen(false)} />}
     {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
     {settingsOpen && <SettingsDialog preferences={preferences} onApply={setPreferences} onClose={() => setSettingsOpen(false)} />}
     {shortcutsOpen && <ShortcutsDialog commands={commands} onClose={() => setShortcutsOpen(false)} />}

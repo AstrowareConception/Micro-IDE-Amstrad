@@ -1,6 +1,8 @@
-# Atelier CPCéleste — alpha 0.26
+# Atelier CPCéleste — alpha 0.27
 
 L’atelier sépare outils du projet à gauche, code au centre, assistant IA à droite et sorties en bas. La barre d’activité donne accès à l’explorateur, la recherche, Git, les documents, la référence BASIC, la récupération et les ROM. Les menus reprennent ces fonctions ; Git propose accès au panneau, actualisation, historique et préparation du formulaire de commit. Le panneau conserve aperçu/confirmation pour les mutations Git.
+
+Les menus se placent sous leur bouton et sont recadrés dans la fenêtre ; ils ne sont plus alignés à droite selon leur position dans la barre. Fichier → Projets récents (Ctrl/Cmd R) ouvre la liste persistée des vingt derniers projets ; voir le [guide 0.27](recent-projects-alpha.md).
 
 Un seul menu reste ouvert. Clic extérieur, Échap, Tab, perte de focus et activation d’une commande le ferment. Les flèches naviguent parmi les actions et les menus. Les actions comportent des icônes SVG et des noms accessibles.
 
@@ -19,7 +21,7 @@ Le CPC affiche les commandes **en colonne à gauche**, l’écran à droite. Le 
 | Action | Clavier / souris |
 | --- | --- |
 | Palette / ouverture rapide | Ctrl Maj P / Ctrl P |
-| Listing / projet | Ctrl O / Ctrl Maj O |
+| Listing / projet / projets récents | Ctrl O / Ctrl Maj O / Ctrl R |
 | Enregistrer actif / tout / sous | Ctrl S / Ctrl Maj S / Ctrl Alt S |
 | Explorateur / recherche projet / Git | Ctrl Maj E / Ctrl Maj F / Ctrl Maj G |
 | Documents / IA / ROM | Ctrl Maj D / Ctrl Maj A / Ctrl Alt R |

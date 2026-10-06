@@ -54,6 +54,12 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
     steer: (taskId, instruction) => ipcRenderer.invoke('agent:steer', { taskId, instruction }),
     restore: (taskId, buffers, sessionId) => ipcRenderer.invoke('agent:restore', { taskId, buffers, sessionId }),
   }),
+  recentProjects: Object.freeze({
+    list: () => ipcRenderer.invoke('recent-projects:list'),
+    open: id => ipcRenderer.invoke('recent-projects:open', id),
+    remove: id => ipcRenderer.invoke('recent-projects:remove', id),
+    clear: () => ipcRenderer.invoke('recent-projects:clear'),
+  }),
   project: Object.freeze({
     open: () => ipcRenderer.invoke('project:open'),
     create: name => ipcRenderer.invoke('project:create', name),

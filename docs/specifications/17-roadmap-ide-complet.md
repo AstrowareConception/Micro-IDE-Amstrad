@@ -18,7 +18,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-002 | Explorateur sources/documents/ressources, filtre et états dirty/Git | P | P1 | IDE-001 | Sélection exacte ; aucune confusion entre original/document/artefact |
 | IDE-003 | Ajouter, renommer, déplacer, supprimer des sources proprement | P | P1 | DUR | Manifeste cohérent ; collision/lien/annulation sans perte ; ajout seul livré |
 | IDE-004 | Onglets, fermeture individuelle/tout/autres et fichiers épinglés | P | P1 | DUR | Brouillon arbitrable ; ordre et vue conservés ; onglets chargés déjà livrés |
-| IDE-005 | Projets récents, modèles hello/graphismes/jeu et assistant de démarrage | N | P1 | IDE-001 | Chemins périmés gérés ; exemples fonctionnels sous profil qualifié |
+| IDE-005 | Projets récents, modèles hello/graphismes/jeu et assistant de démarrage | P | P1 | IDE-001 | 0.27 : vingt projets récents privés, filtre/réouverture/retrait, dossiers périmés et projet remplacé contrôlés ; modèles et assistant de démarrage à construire |
 | IDE-006 | Import listings ASCII/tokenisés et projets anciens | N | P2 | Codecs | Roundtrip et encodages CPC ; original jamais écrasé |
 
 ## 2. Sauvegarde, récupération et historique local
@@ -215,3 +215,7 @@ Le [guide Exécuter](../implementation/emulator-run-alpha.md) décrit désormais
 ## Incrément 0.26 — Panneaux et écran CPC
 
 IDE-027 progresse : séparateurs souris/clavier pour largeurs et hauteur des sorties, trois groupes détachables/réancrables et agrandissables dans l’IDE, positions/taille/visibilité conservées, recadrage après réduction de fenêtre et restauration par menu/palette. Les sessions restent montées pendant ces transitions. Le CPC utilise une colonne de commandes à gauche et un écran ajustable avec zoom jusqu’à 300 %. [Guide](../implementation/production-workbench-alpha.md), [ADR 0033](../adr/0033-panneaux-flottants-et-ecran-cpc.md). IDE-027 reste P : fenêtres système indépendantes, réancrage sur un autre côté et sorties flottantes séparément restent ouverts.
+
+## Incrément 0.27 — Projets récents et menus
+
+IDE-005 avance avec la liste privée des vingt derniers projets, réouverture avec les contrôles existants, recherche nom/dossier, retrait/oubli et détection de présence des chemins. La clé opaque choisie par le renderer est résolue côté main ; aucune racine arbitraire reçue par l’IPC de réouverture. Un projet différent remplaçant celui mémorisé demande une ouverture explicite. Les menus sont mesurés et bornés à la fenêtre, avec recette de tous les groupes à 1440, 729 et 420 px. [Guide](../implementation/recent-projects-alpha.md), [ADR 0034](../adr/0034-projets-recents-et-placement-menus.md). Les modèles/assistant de démarrage restent ouverts.

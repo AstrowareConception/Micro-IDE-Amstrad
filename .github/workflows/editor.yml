@@ -33,7 +33,7 @@ jobs:
         run: |
           npm run typecheck
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          node --test tests/build-toolchain.test.mjs
+          node --test tests/build-toolchain.test.mjs tests/recent-projects.test.ts
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run build:hello
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -104,6 +104,8 @@ jobs:
             out/firmware-runtime.json
             out/models-alpha.png
             out/dock-layout-alpha.png
+            out/recent-projects-alpha.png
+            out/menu-placement-alpha.png
             out/workbench-light.png
             out/editor-alpha.png
             out/desktop-alpha.png

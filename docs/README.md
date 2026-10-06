@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.26
+# CPCéleste — Dossier de conception et réalisation — version 0.27
+
+**Projets récents 0.27** : réouverture par registre privé, noms/dossiers/date/filtre, retrait et chemins indisponibles ; menus bornés au viewport. [Guide](implementation/recent-projects-alpha.md), [ADR 0034](adr/0034-projets-recents-et-placement-menus.md).
 
 **Disposition 0.26** : panneaux flottants dans l’IDE, séparateurs, hauteur du terminal, écran CPC ajustable et zoom. [Guide](implementation/production-workbench-alpha.md), [ADR 0033](adr/0033-panneaux-flottants-et-ecran-cpc.md).
 

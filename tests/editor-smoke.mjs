@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { verifyRecentProjects } from './recent-projects-smoke.mjs';
 import { verifyPanelLayout } from './panel-layout-smoke.mjs';
 import { chromium, expect } from '@playwright/test';
 import { spawn } from 'node:child_process';
@@ -30,6 +31,19 @@ try {
   const menus = page.getByRole('navigation', { name: 'Menus de l’atelier', exact: true });
   await menus.getByRole('button', { name: 'Fichier', exact: true }).click();
   await expect(page.getByRole('menu')).toHaveCount(1);
+  await page.keyboard.press('Escape');
+  for (const viewport of [{ width: 1440, height: 960 }, { width: 729, height: 720 }, { width: 420, height: 650 }]) {
+    await page.setViewportSize(viewport);
+    for (const label of ['Fichier', 'Édition', 'BASIC', 'Git', 'Projet', 'Affichage', 'Outils', 'Aide']) {
+      await menus.getByRole('button', { name: label, exact: true }).click();
+      const popup = page.getByRole('menu', { name: label, exact: true });
+      await expect.poll(async () => { const bounds = await popup.boundingBox(); return bounds.x >= 0 && bounds.x + bounds.width <= viewport.width && bounds.y + bounds.height <= viewport.height; }).toBe(true);
+      if (viewport.width === 729 && label === 'Projet') await page.screenshot({ path: 'out/menu-placement-alpha.png' });
+      await page.keyboard.press('Escape');
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await menus.getByRole('button', { name: 'Fichier', exact: true }).click();
   await menus.getByRole('button', { name: 'Édition', exact: true }).hover();
   await expect(page.getByRole('menu', { name: 'Édition', exact: true })).toBeVisible();
   await expect(page.getByRole('menu')).toHaveCount(1);
@@ -309,6 +323,7 @@ try {
   assert.ok(automaticBatch.sources.every(source => source.source.includes('DRAFT')));
   await expect(modelsPage.getByRole('tab', { name: /modifié/ })).toHaveCount(0);
   await modelsPage.close();
+  await verifyRecentProjects(browser, errors);
   assert.deepEqual(errors, [], 'No browser errors');
   console.log('Editor browser smoke: completion, coloration, help, diagnostics, F12, downloads, dirty protection plus renumber preview/apply/DSK/undo/redo/stale revision passed.');
 } catch (error) {

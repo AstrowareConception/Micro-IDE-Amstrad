@@ -4,8 +4,9 @@ import { createHash, randomUUID } from 'node:crypto';
 import { join, dirname, relative, isAbsolute } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { buildListingDisk } from '../../packages/basic-language/src/build.ts';
-import { buildProjectDisk } from '../../packages/workspace/src/project.ts';
+import { parseProject, buildProjectDisk } from '../../packages/workspace/src/project.ts';
 import { feedbackReport } from './feedback.ts';
+import { RecentProjectsStore } from './recent-projects-store.ts';
 import { ProjectStore } from './project-store.ts';
 import { decodeImage } from './image-document.ts';
 import { extractPdf } from './pdf-document.ts';
@@ -87,6 +88,11 @@ protocol.handle('cpceleste', async request => {
   } catch { return new Response('Ressource absente', { status: 404 }); }
 });
 agent = new AgentController(join(app.getPath('userData'), 'agent-checkpoints'), join(base, '../../knowledge/locomotive-basic'));
+const recents = new RecentProjectsStore(app.getPath('userData'));
+async function rememberProject(store: ProjectStore) {
+  try { await recents.remember(store.root, store.manifest.projectId, store.manifest.name); return ''; }
+  catch { return 'Projet ouvert ; la liste des projets récents n’a pas pu être enregistrée.'; }
+}
 const gitIdentity = new GitIdentityStore(app.getPath('userData'));
 const firmware = new FirmwareStore(join(app.getPath('userData'), 'firmware'));
 window = new BrowserWindow({ width: 1440, height: 960, minWidth: 900, minHeight: 650,
@@ -145,34 +151,55 @@ route('listing:export', async payload => {
   await atomicWrite(selection.filePath, bytes);
   return { name: selection.filePath.split(/[\\/]/).at(-1) };
 });
-route('project:open', async () => {
-  const selection = await dialog.showOpenDialog(window, { properties: ['openDirectory'] });
-  if (selection.canceled || !selection.filePaths[0]) return null;
-  const agentRecovery = await ProjectStore.agentRecoveryStatus(selection.filePaths[0]);
+async function openProjectFolder(folder: string, expectedId?: string) {
+  if (expectedId !== undefined) {
+    const manifest = parseProject(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(await regularBytes(join(folder, 'microide.project.json')))));
+    if (manifest.projectId !== expectedId) throw new Error('Un autre projet occupe ce dossier ; choisissez-le explicitement avec Ouvrir projet.');
+  }
+  const agentRecovery = await ProjectStore.agentRecoveryStatus(folder);
   if (agentRecovery) {
     const choice = await dialog.showMessageBox(window, { type: 'warning', buttons: ['Annuler', 'Terminer la mutation agent', 'Rétablir les versions avant mutation'], defaultId: 0, cancelId: 0,
       message: 'Une mutation de l’agent a été interrompue.',
       detail: `${agentRecovery.createdAt}\n${agentRecovery.files.join('\n')}\n\nTerminer applique les sources et le manifeste préparés. Rétablir revient aux octets précédents et retire les sources créées par cette mutation. Tout conflit externe bloque la reprise. Les prompts et la mission distante ne sont pas relancés ; les brouillons non enregistrés restent distincts.` });
     if (choice.response !== 1 && choice.response !== 2) return null;
-    await ProjectStore.recoverAgent(selection.filePaths[0], agentRecovery.id, choice.response === 1 ? 'finish' : 'restore', agentRecovery.revision!);
+    await ProjectStore.recoverAgent(folder, agentRecovery.id, choice.response === 1 ? 'finish' : 'restore', agentRecovery.revision!);
   }
-  const recovery = await ProjectStore.recoveryStatus(selection.filePaths[0]);
+  const recovery = await ProjectStore.recoveryStatus(folder);
   if (recovery) {
     const choice = await dialog.showMessageBox(window, { type: 'warning', buttons: ['Annuler', 'Terminer la sauvegarde', 'Rétablir les anciennes versions'], defaultId: 0, cancelId: 0,
       message: 'Une sauvegarde globale a été interrompue.',
       detail: `${recovery.createdAt}\n${recovery.files.join('\n')}\n\nTerminer applique les versions du snapshot enregistré. Rétablir remet les octets précédant cette sauvegarde. Toute modification externe inconnue bloque la récupération. Les brouillons hors sauvegarde ne sont pas récupérés.` });
     if (choice.response !== 1 && choice.response !== 2) return null;
-    await ProjectStore.recoverSave(selection.filePaths[0], recovery.id, choice.response === 1 ? 'finish' : 'restore', recovery.revision);
+    await ProjectStore.recoverSave(folder, recovery.id, choice.response === 1 ? 'finish' : 'restore', recovery.revision);
   }
-  const opened = await ProjectStore.open(selection.filePaths[0], decodeImage, extractPdf);
-  project = opened.store; current = undefined; return opened.snapshot;
+  const opened = await ProjectStore.open(folder, decodeImage, extractPdf);
+  project = opened.store; current = undefined;
+  return { ...opened.snapshot, recentProjectsNotice: await rememberProject(opened.store) };
+}
+route('project:open', async () => {
+  const selection = await dialog.showOpenDialog(window, { properties: ['openDirectory'] });
+  if (selection.canceled || !selection.filePaths[0]) return null;
+  return openProjectFolder(selection.filePaths[0]);
 });
+route('recent-projects:list', async () => recents.list(), true);
+route('recent-projects:open', async id => {
+  const entry = await recents.get(id);
+  try { return await openProjectFolder(entry.path, entry.projectId); }
+  catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT' || code === 'ENOTDIR' || code === 'EACCES') throw new Error('Projet récent indisponible : dossier déplacé, supprimé ou inaccessible. Choisissez son dossier avec Ouvrir projet.');
+    throw error;
+  }
+});
+route('recent-projects:remove', async id => recents.remove(id));
+route('recent-projects:clear', async () => recents.clear());
+
 route('project:create', async payload => {
   if (typeof payload !== 'string') throw new Error('Nom de projet requis.');
   const selection = await dialog.showOpenDialog(window, { properties: ['openDirectory', 'createDirectory'] });
   if (selection.canceled || !selection.filePaths[0]) return null;
   const created = await ProjectStore.create(selection.filePaths[0], payload, decodeImage, extractPdf);
-  project = created.store; current = undefined; return created.snapshot;
+  project = created.store; current = undefined; return { ...created.snapshot, recentProjectsNotice: await rememberProject(created.store) };
 });
 function projectRequest(payload: unknown): { store: ProjectStore; value: Record<string, unknown> } {
   if (!project || !payload || typeof payload !== 'object') throw new Error('Aucun projet ouvert.');
