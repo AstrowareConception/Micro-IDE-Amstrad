@@ -1,5 +1,7 @@
 # 12 — Feuille de route et backlog de réalisation
 
+**Qualité BASIC 0.36** : rapport local à la demande sur la source active ou les buffers chargés ; longueurs, segments, complexité estimée et cinq pistes de revue localisées. Exports Markdown/JSON, annulation et sources modifiées signalées. [Guide et limites](../implementation/basic-quality-alpha.md).
+
 **Inspection CPC 0.35** : registres Z80 et RAM logique en pause, lecture à la demande ; première preuve ciblée de frontières BASIC en natif/WASM, sans débogueur BASIC public. [Guide et limites](../implementation/cpc-inspection-alpha.md).
 
 **Diagnostics et performance 0.34** : analyse BASIC en worker temporisé, révisions protégées, contrôles structurels étendus, diagnostics multifichiers et monitoring à la demande. [Guide](../implementation/basic-diagnostics-alpha.md). Débogueur BASIC : [faisabilité et étapes](../implementation/basic-debugger-plan.md), mapping source et événements encore à qualifier.

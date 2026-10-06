@@ -257,3 +257,15 @@ select{font:inherit;width:100%;margin:8px 0;background:var(--input);color:inheri
 .cpc-inspection [role=region] { overflow: auto; }
 .cpc-inspection table { border-collapse: collapse; white-space: nowrap; font-size: .75rem; }
 .cpc-inspection th, .cpc-inspection td { padding: .4rem; text-align: left; border-bottom: 1px solid var(--line); }
+
+.quality-panel { padding: 12px; }
+.quality-actions { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin-bottom: 10px; }
+.quality-actions label { display: grid; gap: 4px; }
+.quality-metrics { overflow-x: auto; margin: 12px 0; }
+.quality-metrics table { width: 100%; border-collapse: collapse; text-align: left; }
+.quality-metrics th, .quality-metrics td { padding: 8px; border-bottom: 1px solid var(--line); }
+.quality-metrics small, .quality-findings small { display: block; color: var(--muted); }
+.quality-findings { padding-left: 20px; }
+.quality-findings li { margin: 10px 0; }
+.quality-findings button { text-align: left; white-space: normal; overflow-wrap: anywhere; }
+.quality-findings p { margin: 4px 0; }

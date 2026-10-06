@@ -56,3 +56,7 @@ Les chaînes CPC ont leurs limites en octets ; la taille d'une chaîne JavaScrip
 La structure comporte longueur little endian, numéro, tokens et fin de ligne, puis fin de programme. Le codec doit gérer tokens préfixés, nombres, variables, références et formes mises en cache par l'interpréteur, sans encoder seulement les mots-clés. Les valeurs réelles ne sont pas des flottants IEEE copiables directement. Des tests différencient conservation sémantique et conservation textuelle : la ROM peut normaliser un listing.
 
 CPCBasicTS est une référence d'implémentation MIT potentiellement réutilisable pour lexer, parser et codecs. Ses extensions « Unchained » et son exécution JavaScript ne deviennent pas des capacités CPC natives. Une intégration doit désactiver les extensions et comparer `LOAD`, `LIST`, `SAVE`, `RUN` sur ROM. Le codec ne sera retenu qu'après cette preuve, documentée dans une ADR.
+
+## Rapport de qualité à la demande — alpha 0.36
+
+REQ-EDT-008 / ACC-36 : le [guide](../implementation/basic-quality-alpha.md) décrit les métriques, repères et limites. Le rapport travaille sur un snapshot et ne se recalcule pas pendant la frappe. La formule lexicale `1 + IF + FOR + WHILE + cibles des ON sélecteurs` n’est pas une mesure exacte du graphe de contrôle. Les branches d’événements, RSX/CALL, erreurs et sauts calculés restent non modélisés. Une accumulation de GOTO ou un listing compact n’est pas automatiquement un défaut sur CPC. Aucun renommage, extraction GOSUB ni changement de contrôle automatique.

@@ -38,9 +38,11 @@ Les onglets offrent fermer, fermer autres, fermer tous, épingler et scinder l�
 
 ## Lot 2 — Compréhension de Locomotive BASIC
 
-Couverture : IDE-013 à 020, IDE-024.
+Couverture : IDE-013 à 020, IDE-024, IDE-076.
 
 **Tranche 0.34** : [worker, diagnostics et performance](../implementation/basic-diagnostics-alpha.md) livrés avec révisions et couverture partielle explicites. La qualification complète LOT-2 reste ouverte ; [plan de débogueur](../implementation/basic-debugger-plan.md) distinct du parser.
+
+**Tranche 0.36** : [rapport de qualité à la demande](../implementation/basic-quality-alpha.md), REQ-EDT-008 / ACC-36. Les métriques et remarques de lisibilité sont séparées des erreurs syntaxiques ; les sources modifiées rendent le snapshot obsolète et bloquent sa navigation. Complexité lexicale estimée, sans graphe de contrôle. Revue IA optionnelle à construire, avec provenance et choix explicite du modèle/périmètre.
 
 Le parser DOIT distinguer lignes physiques et numéros BASIC, chaînes, commentaires, DATA, expressions, instructions composées et formes contextuelles. Définir une matrice de grammaire et de corpus : instruction couverte, forme opaque, diagnostic certain ou inspection. Une forme non couverte NE DOIT PAS recevoir une fausse erreur de syntaxe.
 

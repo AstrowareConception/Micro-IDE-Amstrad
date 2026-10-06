@@ -66,3 +66,5 @@ Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou
 - [0041 — Analyse BASIC en worker et monitoring](0041-analyse-basic-worker-monitoring.md).
 
 - [0042 — Inspection CPC en pause et qualification du débogage](0042-inspection-cpc-et-qualification-debug.md).
+
+- [0043 — Rapport de qualité BASIC à la demande](0043-rapport-qualite-basic.md).
