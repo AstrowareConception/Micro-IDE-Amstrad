@@ -16,7 +16,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | --- | --- | --- | --- | --- | --- |
 | IDE-001 | Créer/ouvrir un projet portable, manifeste et cible explicites | P | P0 | J1 | Déplacement/reprise sans perte ; migrations et versions inconnues conservées |
 | IDE-002 | Explorateur sources/documents/ressources, filtre et états dirty/Git | P | P1 | IDE-001 | 0.30 : dossiers réels, filtre des dossiers chargés, brouillons et aperçus texte ; exclusions configurables, badges Git et navigation persistante restent ouverts |
-| IDE-003 | Ajouter, renommer, déplacer, supprimer des sources proprement | P | P1 | DUR | Manifeste cohérent ; collision/lien/annulation sans perte ; ajout seul livré |
+| IDE-003 | Ajouter, renommer, déplacer, supprimer des sources proprement | P | P1 | DUR | 0.31 : renommer/déplacer/supprimer avec aperçu, journal/reprise et copie du brouillon ; ajout durable, import/duplication et plateformes restent ouverts |
 | IDE-004 | Onglets, fermeture individuelle/tout/autres et fichiers épinglés | P | P1 | DUR | Brouillon arbitrable ; ordre et vue conservés ; onglets chargés déjà livrés |
 | IDE-005 | Projets récents, modèles hello/graphismes/jeu et assistant de démarrage | P | P1 | IDE-001 | 0.27 : vingt projets récents privés, filtre/réouverture/retrait, dossiers périmés et projet remplacé contrôlés ; modèles et assistant de démarrage à construire |
 | IDE-006 | Import listings ASCII/tokenisés et projets anciens | N | P2 | Codecs | Roundtrip et encodages CPC ; original jamais écrasé |
@@ -26,8 +26,8 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | ID | Fonction et qualification | État | Priorité | Dépendance | Critère de validation |
 | --- | --- | --- | --- | --- | --- |
 | IDE-007 | Sauvegarder fichier actif, Enregistrer tout et conflits externes | P | P0 | J1-03 | 0.18 : actif/global partagent journal/historique et préconditions ; autres mutations et plateformes à qualifier |
-| IDE-008 | Journal et reprise après crash de sauvegarde multifichier | P | P0 | IDE-007 | 0.17 : journal versionné, deux choix, SIGKILL Linux, conflits/revisions ; autres mutations, Windows et panne électrique encore non qualifiés |
-| IDE-009 | Historique local durable indépendant de Git | P | P0 | IDE-008 | 0.18 : snapshots avant/après, 20/64 Mio, persistance/déplacement ; labels et autres mutations à venir |
+| IDE-008 | Journal et reprise après crash de sauvegarde multifichier | P | P0 | IDE-007 | 0.31 : sauvegarde, agent et organisation humaine journalisés, deux choix, arrêts de processus et conflits ; ajout/import, persistance Windows et panne électrique ouverts |
+| IDE-009 | Historique local durable indépendant de Git | P | P0 | IDE-008 | 0.31 : snapshots sauvegarde/agent/organisation et copie du brouillon supprimé, 20/64 Mio ; labels, autres mutations et restauration d’un ancien projet à venir |
 | IDE-010 | Diff et restauration de fichier/fragment/version locale | P | P0 | IDE-009 | 0.18 : diff Monaco, buffer/revision/disque guards, undo et sauvegarde explicite ; fragments/projet entier à venir |
 | IDE-011 | Autosauvegarde optionnelle et récupération des brouillons | P | P1 | DUR | 0.19 : copie opt-in/2 s/15 s, SIGKILL, reprise sélective/undo sans faux enregistré ; listings/réglages/plateformes à qualifier |
 | IDE-012 | Watcher externe et rechargement/comparaison contrôlés | P | P1 | DUR | Notifications bornées ; dirty conservé ; rename/delete et clients Git testés |

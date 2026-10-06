@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.30
+# CPCéleste — Dossier de conception et réalisation — version 0.31
+
+**Sources 0.31** : renommage/déplacement/suppression durables, aperçu, copie du brouillon supprimé et rétablissement de la dernière organisation. [Guide](implementation/source-operations-alpha.md), [ADR 0038](adr/0038-organisation-durable-des-sources.md). Le lot 1 reste partiel.
 
 **Explorateur 0.30** : dossiers réels, sources et documents, filtre local, fichiers privés/générés et aperçu texte inerte. [Guide](implementation/project-explorer-alpha.md), [ADR 0037](adr/0037-explorateur-projet-lecture-seule.md). Le lot 1 reste partiel.
 

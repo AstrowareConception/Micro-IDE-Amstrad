@@ -196,3 +196,7 @@ select{font:inherit;width:100%;margin:8px 0;background:var(--input);color:inheri
 .explorer-preview-dialog::backdrop { background: #000a; }
 .explorer-preview-dialog h2 { overflow-wrap: anywhere; }
 .explorer-preview-dialog textarea { width: 100%; font-family: monospace; resize: vertical; margin-bottom: 1rem; }
+
+.source-operation-dialog table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 1rem 0; }
+.source-operation-dialog th, .source-operation-dialog td { padding: .6rem .5rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.source-operation-dialog th:first-child { width: 22%; }
