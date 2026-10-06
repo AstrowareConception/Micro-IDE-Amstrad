@@ -33,6 +33,8 @@ test('resource and recursion limits give explicit partial coverage and bounded o
  assert.equal(analyzeEditor('X'.repeat(ANALYSIS_LIMITS.characters + 1)).diagnostics[0]?.code, 'analysis-limit');
  const many = analyzeEditor(Array.from({ length: 1500 }, (_, i) => `${i + 1} PRONT`).join('\n'));
  assert.equal(many.diagnostics.length, 500); assert.equal(many.coverage.limited, true);
+ const dense = analyzeEditor(Array.from({ length: 20 }, (_, i) => `${i + 1} ${Array(501).fill('GOTO 20').join(':')}`).join('\n'));
+ assert.deepEqual(dense.diagnostics, []); assert.equal(dense.references.length, 10000); assert.equal(dense.coverage.limited, true);
 });
 test('lexical LRU preserves fresh semantic analysis through edits, insertion and target removal', () => {
  const inspect = createAnalysisEngine();

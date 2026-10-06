@@ -38,6 +38,6 @@ export function PerformancePanel({ visible, snapshot, documents }: { visible: bo
    const entry = snapshot.entries.find(item => item.id === doc.id), result = entry?.result;
    return <tr key={doc.id}><th>{doc.name}</th><td>{entry?.revision ?? '—'}</td><td>{result ? `${result.durationMs.toFixed(1)} ms · ${entry!.source.length} caractères UTF-16` : entry?.error ? 'Échec' : 'En attente'}</td><td>{result ? `${result.cacheHits} / ${result.cacheMisses}` : '—'}</td><td>{result ? `${result.analysis.coverage.lines} lignes · ${result.analysis.coverage.opaque} zones partielles${result.analysis.coverage.limited ? ' · limite atteinte' : ''}` : '—'}</td></tr>;
   })}</tbody></table></div>
-  <p className="muted">Bornes : 1 Mio de caractères / 10 000 lignes par source ; 500 diagnostics, 100 zones détaillées, 4 096 variables ; cache lexical partagé de 50 000 tokens / 2 Mio de caractères. Délai maximal d’un travail : 5 s.</p>
+  <p className="muted">Bornes : 1 Mio de caractères / 10 000 lignes par source ; 500 diagnostics, 100 zones détaillées, 4 096 variables / 10 000 références ; cache lexical partagé de 50 000 tokens / 2 Mio de caractères. Délai maximal d’un travail : 5 s.</p>
  </section>;
 }

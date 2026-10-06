@@ -2,7 +2,7 @@ import { analyze, tokenize, type Analysis, type Diagnostic, type Token } from '.
 import { KEYWORDS } from './catalog.ts';
 import { inspectExpression } from './expression.ts';
 
-export const ANALYSIS_LIMITS = { characters: 1_048_576, lines: 10_000, lineCharacters: 8192, lineTokens: 2048, diagnostics: 500, inspections: 100, variables: 4096 } as const;
+export const ANALYSIS_LIMITS = { characters: 1_048_576, lines: 10_000, lineCharacters: 8192, lineTokens: 2048, diagnostics: 500, inspections: 100, variables: 4096, references: 10_000 } as const;
 export interface Inspection { line: number; start: number; end: number; reason: string }
 export interface EditorAnalysis extends Analysis {
  coverage: { checked: number; opaque: number; limited: boolean; lines: number };
@@ -174,6 +174,7 @@ export function analyzeEditor(source: string, lex: (line: string) => Token[] = t
  });
  if (result.diagnostics.length >= ANALYSIS_LIMITS.diagnostics) coverage.limited = true;
  if (result.variables.length > ANALYSIS_LIMITS.variables) { result.variables.length = ANALYSIS_LIMITS.variables; coverage.limited = true; }
+ if (result.references.length > ANALYSIS_LIMITS.references) { result.references.length = ANALYSIS_LIMITS.references; coverage.limited = true; }
  result.diagnostics.sort((a, b) => a.line - b.line || a.start - b.start);
  return result;
 }
