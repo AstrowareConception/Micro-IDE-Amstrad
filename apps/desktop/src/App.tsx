@@ -26,6 +26,7 @@ import { AgentPanel } from './AgentPanel.tsx';
 import { EmulatorPanel, type EmulatorLaunch } from './EmulatorPanel.tsx';
 import { FirmwarePanel } from './FirmwarePanel.tsx';
 import { DocumentsPanel } from './DocumentsPanel.tsx';
+import { ProjectExplorerPanel } from './ProjectExplorerPanel.tsx';
 import { GitLogPanel } from './GitLogPanel.tsx';
 import { GitPanel } from './GitPanel.tsx';
 import { RenumberPanel } from './RenumberPanel.tsx';
@@ -62,6 +63,7 @@ export function App() {
   const [projectName, setProjectName] = useState('Mon projet CPC');
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [sourceName, setSourceName] = useState('');
+  const [documentRequest, setDocumentRequest] = useState<{ id: string; nonce: string }>();
   const active = documents.find(document => document.id === activeId)!;
   const { source } = active;
   const [status, setStatus] = useState('Prêt. Écrivez du BASIC, sans ROM ni connexion.');
@@ -361,7 +363,7 @@ export function App() {
   ] : [];
   return <main className="workbench" style={{ '--sidebar-width': `${preferences.sidebarWidth}px`, '--agent-width': `${preferences.agentWidth}px`, '--output-height': `${preferences.outputHeight}px` } as CSSProperties}>
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.29 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.30 · AstroWare Conception</p></div></div>
       <span className="profile">CPC 6128 · BASIC 1.1</span>
     </header>
     <WorkbenchMenus groups={[
@@ -425,11 +427,14 @@ export function App() {
 
 
         <div className="tool-content" hidden={tool !== 'documents'}>{!project && <div className="empty-tool">Ouvrez un projet pour importer textes, images et PDF.</div>}
-        {project && <DocumentsPanel key={`documents:${project.sessionId}`} sessionId={project.sessionId} manifest={project.manifest} busy={busy} onBusy={setBusy} onManifest={manifest => setProject(previous => previous ? { ...previous, manifest } : previous)} />}
+        {project && <DocumentsPanel key={`documents:${project.sessionId}`} sessionId={project.sessionId} manifest={project.manifest} busy={busy} requested={documentRequest} onBusy={setBusy} onManifest={manifest => setProject(previous => previous ? { ...previous, manifest } : previous)} />}
         </div><div className="tool-content" hidden={tool !== 'project'}><section className="panel"><h2>{project?.manifest.name ?? 'Projets BASIC'}</h2>
           {project ? <>
             <p>Entrée : {project.manifest.sources.find(item => item.id === project.manifest.entryPoint)?.cpcName}</p>
-            <nav className="project-files" aria-label="Explorateur de sources">{documents.map(document => <div key={document.id}><Button disabled={busy} onClick={() => setActiveId(document.id)} onContextMenu={event => { event.preventDefault(); setContextSource(document.id); }} aria-current={document.id === activeId ? 'page' : undefined}>{document.name}{document.source !== document.saved ? ' •' : ''}</Button><Button disabled={busy} aria-label={`Actions de ${document.name}`} onClick={() => setContextSource(document.id)}>⋯</Button></div>)}</nav>
+            <ProjectExplorerPanel key={`explorer:${project.sessionId}`} sessionId={project.sessionId} manifest={project.manifest} busy={busy} activeSourceId={active.sourceId} dirtyIds={documents.filter(item => item.source !== item.saved).map(item => item.sourceId)}
+              onSource={id => { const item = documents.find(item => item.sourceId === id); if (item) setActiveId(item.id); }}
+              onSourceActions={id => { const item = documents.find(item => item.sourceId === id); if (item) setContextSource(item.id); }}
+              onDocument={id => { setDocumentRequest({ id, nonce: crypto.randomUUID() }); showTool('documents'); }} />
             <label htmlFor="source-name">Nouvelle source (1–8 caractères)</label><input id="source-name" value={sourceName} onChange={event => setSourceName(event.target.value)} maxLength={8} />
             <Button disabled={busy || !sourceName} onClick={() => { if (files.project) void projectOperation(() => files.project!.add(project.sessionId, sourceName), true); }}>Ajouter source</Button>
             <Button disabled={busy || active.sourceId === project.manifest.entryPoint} onClick={() => { if (files.project) void projectOperation(() => files.project!.setEntry(project.sessionId, active.sourceId)); }}>Définir comme entrée</Button>

@@ -1,4 +1,5 @@
 import type { RecentProjectsPort } from '../../../packages/workspace/src/recent-projects.ts';
+import type { ExplorerPort } from '../../../packages/workspace/src/explorer.ts';
 import type { GitOperationsPort, GitHubPort } from '../../../packages/version-control/src/operations.ts';
 import { feedbackReport, type FeedbackInput } from '../feedback.ts';
 import { buildListingDisk } from '../../../packages/basic-language/src/build.ts';
@@ -30,6 +31,7 @@ export interface DesktopPort {
   drafts?: DraftPort;
   external?: ExternalPort;
   recentProjects?: RecentProjectsPort;
+  explorer?: ExplorerPort;
   project?: {
     open(): Promise<ProjectSnapshot | Failure | null>;
     create(name: string): Promise<ProjectSnapshot | Failure | null>;

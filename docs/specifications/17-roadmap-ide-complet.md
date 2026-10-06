@@ -15,7 +15,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | ID | Fonction et qualification | État | Priorité | Dépendance | Critère de validation |
 | --- | --- | --- | --- | --- | --- |
 | IDE-001 | Créer/ouvrir un projet portable, manifeste et cible explicites | P | P0 | J1 | Déplacement/reprise sans perte ; migrations et versions inconnues conservées |
-| IDE-002 | Explorateur sources/documents/ressources, filtre et états dirty/Git | P | P1 | IDE-001 | Sélection exacte ; aucune confusion entre original/document/artefact |
+| IDE-002 | Explorateur sources/documents/ressources, filtre et états dirty/Git | P | P1 | IDE-001 | 0.30 : dossiers réels, filtre des dossiers chargés, brouillons et aperçus texte ; exclusions configurables, badges Git et navigation persistante restent ouverts |
 | IDE-003 | Ajouter, renommer, déplacer, supprimer des sources proprement | P | P1 | DUR | Manifeste cohérent ; collision/lien/annulation sans perte ; ajout seul livré |
 | IDE-004 | Onglets, fermeture individuelle/tout/autres et fichiers épinglés | P | P1 | DUR | Brouillon arbitrable ; ordre et vue conservés ; onglets chargés déjà livrés |
 | IDE-005 | Projets récents, modèles hello/graphismes/jeu et assistant de démarrage | P | P1 | IDE-001 | 0.27 : vingt projets récents privés, filtre/réouverture/retrait, dossiers périmés et projet remplacé contrôlés ; modèles et assistant de démarrage à construire |
@@ -230,3 +230,7 @@ La demande utilisateur priorise [Git et GitHub intégrés](../implementation/git
 ## Priorité et spécifications 0.29
 
 À la demande produit, [huit lots](18-increments-ide-production.md) détaillent parcours, dépendances et recettes ; [le document 19](19-agent-experience-consommation.md) spécifie configuration/mission, résultats, reprise et consommation. La correction agent vient en premier, puis explorateur et parser. [Réalisation 0.29](../implementation/agent-missions-alpha.md) : IDE-062/063/064/065 progressent (batch, résultats visibles, reprise dans la session, tarifs officiels et usage détaillé) mais restent P. Pas de reprise durable de conversation, coffre système ni outil RUN/capture agent.
+
+## Explorateur — alpha 0.30, 6 octobre 2026
+
+IDE-002 avance avec [l’arbre réel du projet](../implementation/project-explorer-alpha.md) : lecture à la demande, filtre des dossiers chargés, états de brouillon, sources conservant leurs buffers, documents rejoignant leurs aperçus et fichiers ordinaires UTF-8 en lecture seule. Les liens sont identifiés sans parcours, les listes/lectures bornées, les versions périmées refusées. [ADR 0037](../adr/0037-explorateur-projet-lecture-seule.md). Lot 1, IDE-002/003/004 et R5 restent partiels : mutations humaines durables, édition des fichiers ordinaires, onglet de prévisualisation, badges Git, exclusions configurables et persistance des vues à réaliser ; parser ensuite selon le document 18.

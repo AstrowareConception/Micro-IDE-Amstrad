@@ -82,6 +82,10 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
     remove: id => ipcRenderer.invoke('recent-projects:remove', id),
     clear: () => ipcRenderer.invoke('recent-projects:clear'),
   }),
+  explorer: Object.freeze({
+    list: (sessionId, directory, showHidden) => ipcRenderer.invoke('explorer:list', { sessionId, directory, showHidden }),
+    preview: (sessionId, path, revision) => ipcRenderer.invoke('explorer:preview', { sessionId, path, revision }),
+  }),
   project: Object.freeze({
     open: () => ipcRenderer.invoke('project:open'),
     create: name => ipcRenderer.invoke('project:create', name),

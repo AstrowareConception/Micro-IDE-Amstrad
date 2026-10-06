@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.28
+# CPCéleste — Dossier de conception et réalisation — version 0.30
+
+**Explorateur 0.30** : dossiers réels, sources et documents, filtre local, fichiers privés/générés et aperçu texte inerte. [Guide](implementation/project-explorer-alpha.md), [ADR 0037](adr/0037-explorateur-projet-lecture-seule.md). Le lot 1 reste partiel.
 
 **Git et GitHub 0.28** : branches/remotes/clone, fetch/pull fast-forward/push, GitHub privé et PR, message IA relu. [Guide](implementation/git-network-alpha.md), [ADR 0035](adr/0035-atelier-git-reseau-et-github.md).
 

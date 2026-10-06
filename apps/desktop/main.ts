@@ -8,6 +8,7 @@ import { parseProject, buildProjectDisk } from '../../packages/workspace/src/pro
 import { feedbackReport } from './feedback.ts';
 import { RecentProjectsStore } from './recent-projects-store.ts';
 import { ProjectStore } from './project-store.ts';
+import { ProjectExplorer } from './project-explorer.ts';
 import { decodeImage } from './image-document.ts';
 import { extractPdf } from './pdf-document.ts';
 import { AgentController } from './agent-controller.ts';
@@ -391,6 +392,8 @@ route('git:index', async payload => {
   if (choice.response !== 1) return null;
   gitMutation(); await store.assertCurrent(); return inspector.changeIndex(value.snapshotId, value.changeId, value.action);
 });
+route('explorer:list', async payload => { const { store, value } = projectRequest(payload); return new ProjectExplorer(store).list(value.directory, value.showHidden); }, true);
+route('explorer:preview', async payload => { const { store, value } = projectRequest(payload); return new ProjectExplorer(store).preview(value.path, value.revision); });
 route('project:save', async payload => {
   const { store, value } = projectRequest(payload);
   if (typeof value.id !== 'string') throw new Error('Identifiant de source requis.');
