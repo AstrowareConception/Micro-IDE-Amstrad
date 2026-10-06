@@ -1,3 +1,4 @@
+import { verifyAgentDesktop } from './agent-desktop-smoke.mjs';
 import assert from 'node:assert/strict';
 import { verifyGitDesktop } from './git-desktop-smoke.mjs';
 import { _electron as electron, expect } from '@playwright/test';
@@ -308,6 +309,7 @@ try {
   await desktop.evaluate(async () => {
     let step = 0;
     globalThis.fetch = async (url, init) => {
+      if (String(url).startsWith('https://developers.openai.com/')) return new Response('No compatible pricing fixture', { status: 404 });
       if (url === 'https://api.openai.com/v1/models') { globalThis.modelListReads = (globalThis.modelListReads ?? 0) + 1; return Response.json({ object: 'list', data: [{ id: 'gpt-5.4-2026-03-05', created: 1700000000, owned_by: 'openai' }, ...(globalThis.modelListReads > 1 ? [{ id: 'gpt-99-test-future', created: 1800000000, owned_by: 'openai' }] : [])] }); }
       if (url !== 'https://api.openai.com/v1/responses') throw new Error('Unexpected endpoint');
       const body = JSON.parse(init.body);
@@ -339,6 +341,7 @@ try {
       return Response.json({ status: 'completed', output, usage: { total_tokens: 5 } });
     };
   });
+  await page.getByRole('button', { name: 'Réglages IA', exact: true }).click();
   await page.getByLabel('Clé API OpenAI', { exact: true }).fill('sk-test-fixture-not-real');
   await page.getByRole('button', { name: 'Configurer la clé', exact: true }).click();
   await expect(page.getByLabel('Modèle OpenAI', { exact: true })).toBeEnabled();
@@ -348,13 +351,14 @@ try {
   await page.getByRole('button', { name: 'Actualiser les modèles', exact: true }).click();
   await expect(page.getByLabel('Modèle OpenAI', { exact: true })).toContainText('gpt-99-test-future');
   await expect(page.getByLabel('Modèle OpenAI', { exact: true })).toHaveValue('gpt-5.4-2026-03-05');
+  await page.getByRole('button', { name: 'Fermer les réglages IA', exact: true }).click();
   await page.getByLabel('Mission de programmation', { exact: true }).fill('Crée un titre et un programme auxiliaire, puis construis le DSK.');
   await page.getByRole('button', { name: 'Lancer l’agent', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Arrêter l’agent', exact: true })).toBeEnabled();
   const concurrent = await page.evaluate(() => window.desktop.save('10 END'));
   assert.match(concurrent.error, /mission agent/);
   await desktop.evaluate(() => globalThis.__agentTestRelease());
-  await page.locator('.agent-result').getByText(/^completed ·/).waitFor();
+  await page.locator('.agent-result').getByText('Mission terminée', { exact: true }).waitFor();
   await page.getByRole('tab', { name: 'src/help.bas', exact: true }).waitFor();
   assert.equal(await readFile(join(moved, 'src/main.bas'), 'utf8'), '10 PRINT "AGENT"\n20 END\n');
   assert.equal(await readFile(join(moved, 'src/help.bas'), 'utf8'), '10 PRINT "HELPER"\n20 END\n');
@@ -401,18 +405,23 @@ try {
   await expect(consent).not.toBeChecked();
 
   // Cancel a pending generation. The controlled fetch rejects on AbortSignal.
-  await desktop.evaluate(() => { globalThis.fetch = async (url, init) => url === 'https://api.openai.com/v1/models' ? Response.json({ data: [{ id: 'gpt-5.4-2026-03-05', created: 1700000000, owned_by: 'openai' }] }) : new Promise((_resolve, reject) => init.signal.addEventListener('abort', () => reject(new Error('Aborted')), { once: true })); });
+  await desktop.evaluate(() => { globalThis.fetch = async (url, init) => String(url).startsWith('https://developers.openai.com/') ? Promise.resolve(new Response('', { status: 404 })) : url === 'https://api.openai.com/v1/models' ? Response.json({ data: [{ id: 'gpt-5.4-2026-03-05', created: 1700000000, owned_by: 'openai' }] }) : new Promise((_resolve, reject) => init.signal.addEventListener('abort', () => reject(new Error('Aborted')), { once: true })); });
   // Reconfigure so the adapter captures the new controlled transport.
+  await page.getByRole('button', { name: 'Réglages IA', exact: true }).click();
   await page.getByLabel('Clé API OpenAI', { exact: true }).fill('sk-test-fixture-not-real');
   await page.getByRole('button', { name: 'Configurer la clé', exact: true }).click();
   await expect(page.getByLabel('Modèle OpenAI', { exact: true })).toBeEnabled();
   await page.getByLabel('Modèle OpenAI', { exact: true }).selectOption('gpt-5.4-2026-03-05');
+  await page.getByRole('button', { name: 'Fermer les réglages IA', exact: true }).click();
   await page.getByRole('button', { name: 'Lancer l’agent', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Arrêter l’agent', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Arrêter l’agent', exact: true }).click();
-  await page.locator('.agent-result').getByText(/^cancelled ·/).waitFor();
+  await page.locator('.agent-result').getByText('Mission arrêtée', { exact: true }).waitFor();
+  await verifyAgentDesktop(desktop, page);
+  await page.getByRole('button', { name: 'Réglages IA', exact: true }).click();
   await page.getByRole('button', { name: 'Oublier la clé', exact: true }).click();
   await page.locator('.agent-notice').filter({ hasText: 'Clé oubliée.' }).waitFor();
+  await page.getByRole('button', { name: 'Fermer les réglages IA', exact: true }).click();
   // ROM configuration exercises native selectors and real storage, using original synthetic bytes.
   await showTool(page, 'ROM CPC');
   const romPanel = page.getByRole('region', { name: 'Configuration ROM CPC' });

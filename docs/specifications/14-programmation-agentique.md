@@ -90,3 +90,7 @@ Il vérifie les critères observables prévus, conserve capture et rapport, et p
 ## Essais dédiés
 
 La recette couvre une mission multifichier, l'accès progressif à des références, une correction sur un échec réel, la transmission limitée au scope, une consigne pendant un appel, un conflit avec une saisie manuelle, un retry de mutation, une reprise après crash, un blocage ROM et une limite de budget. Un faux fournisseur déterministe permet ces essais en CI ; les essais multimodaux réels restent volontaires et bornés.
+
+## Expérience et réalisation 0.29
+
+Le [document 19](19-agent-experience-consommation.md) précise états utilisateur, résultats d’outils, budgets et comptage/coût. La reprise courante conserve la conversation en mémoire et les outils en attente, avec budget supplémentaire volontaire et préconditions projet/buffers/disque ; dix continuations maximum. Le journal de mutations après crash n’est pas une conversation durable. Aucun outil d’exécution CPC ajouté à cette tranche.

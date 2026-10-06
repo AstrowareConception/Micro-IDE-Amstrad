@@ -61,3 +61,7 @@ La phase J2 doit notamment vérifier syntaxe des flux, différences BASIC, limit
 ACC-30 vérifie présence et hashes des sources fournies, extraction inerte du HTML, recherche d'une commande, accès à son dialecte et provenance, gestion d'une faute dans le corpus, consultation des familles réellement utilisées et refus d'une commande inventée. Les fiches sont éprouvées sur fixtures de petites tailles puis ROM lorsque le comportement dépend de l'exécution.
 
 La mission finale cite les familles consultées et les limitations restantes, sans surcharger l'utilisateur d'une bibliographie à chaque instruction. Un changement de corpus invalide caches et fiches dérivées concernés ; il ne modifie pas rétroactivement les sources d'un projet. Une nouvelle cible exige profil et couverture propres.
+
+## Consultation groupée — 0.29
+
+Les fiches complètes effectivement livrées par recherche comptent comme consultées au même titre qu’une lecture de fiche. `reference_read_many` fournit 1–32 fiches nommées, provenance et commandes absentes. Les métadonnées des sources et plages de corpus ne donnent pas consultation implicite de toutes les fiches. La garde d’écriture sur les commandes couvertes non consultées reste active ; voir [parcours agent](19-agent-experience-consommation.md).

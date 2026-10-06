@@ -20,6 +20,7 @@ export const DEFINITIONS = [
   tool('documents_inspect_image', 'Retourne l’aperçu PNG nettoyé d’une image PNG/JPEG autorisée pour analyse visuelle, ses dimensions et provenance. Pas de conversion CPC, pas d’original ni métadonnées EXIF.', { id: s }),
   tool('reference_search', 'Recherche lexicale de commandes natives dans les fiches et sources fournies.', { query: s }),
   tool('reference_read', 'Lit une fiche par nom (PRINT, MODE…) ou une source du corpus par ID et plage ; données documentaires inertes.', { id: s, startLine: n, endLine: n }),
+  tool('reference_read_many', 'Lit en un appel 1–32 fiches de commandes (MODE, INK, PRINT…). Les fiches absentes sont explicitement signalées.', { names: { type: 'array', items: s, minItems: 1, maxItems: 32 } }),
   tool('project_replace_source', 'Remplace et enregistre une source déclarée ; hash de lecture requis. Consulte les références des commandes couvertes avant mutation.', { id: s, expectedHash: s, source: s }),
   tool('project_create_source', 'Crée et enregistre un fichier BASIC indépendant et son entrée manifeste ; nom sans extension de 1–8 caractères ASCII.', { name: s, source: s }),
   tool('language_analyze', 'Diagnostics réels du sous-ensemble pour toutes les sources. Aucun test ROM.'),
@@ -61,7 +62,7 @@ export class WorkspaceTools implements ToolPort {
     if (new TextEncoder().encode(source).length > 65536 || source.includes('\0') || source.charCodeAt(0) === 0xfeff) throw new Error('Source agent limitée à 64 Kio UTF-8 sans BOM/NUL.');
     const commands = new Set(source.split('\n').flatMap(line => tokenize(line).filter(token => token.kind === 'keyword').map(token => token.text.toUpperCase())));
     const missing = COMMANDS.filter(card => commands.has(card.name) && !this.consulted.has(card.name)).map(card => card.name);
-    if (missing.length) throw new Error(`reference-required : consulter ${missing.join(', ')}. Couverture partielle ; commandes hors fiches à signaler.`);
+    if (missing.length) throw new Error(`reference-required : consulter ${missing.join(', ')} avec reference_read_many, puis retenter la mutation. Couverture partielle ; commandes hors fiches à signaler.`);
   }
   async execute(name: string, input: unknown): Promise<unknown> {
     const definition = this.definitions.find(tool => tool.name === name);
@@ -116,7 +117,16 @@ export class WorkspaceTools implements ToolPort {
       }
       case 'reference_search': {
         const query = str(value.query, 100).toUpperCase();
-        return { cards: COMMANDS.filter(card => `${card.name} ${card.description}`.toUpperCase().includes(query)), sources: this.corpus.map(({ id, sha256 }) => ({ id, sha256 })), provenance: REFERENCE };
+        const cards = COMMANDS.filter(card => `${card.name} ${card.description}`.toUpperCase().includes(query));
+        for (const card of cards) this.consulted.add(card.name);
+        return { cards, sources: this.corpus.map(({ id, sha256 }) => ({ id, sha256 })), provenance: REFERENCE };
+      }
+      case 'reference_read_many': {
+        if (!Array.isArray(value.names) || !value.names.length || value.names.length > 32) throw new Error('invalid-arguments');
+        const names = [...new Set(value.names.map(name => str(name, 100).toUpperCase()))];
+        const cards = COMMANDS.filter(card => names.includes(card.name));
+        for (const card of cards) this.consulted.add(card.name);
+        return { cards, missing: names.filter(name => !cards.some(card => card.name === name)), provenance: REFERENCE, dialect: 'locomotive-1.1', caveat: 'Signatures indicatives non exhaustives, non qualifiées ROM.' };
       }
       case 'reference_read': {
         const id = str(value.id, 100); const [start, end] = range(value);

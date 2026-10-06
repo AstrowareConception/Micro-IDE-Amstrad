@@ -168,3 +168,16 @@ select{font:inherit;width:100%;margin:8px 0;background:var(--input);color:inheri
 .github-repositories button{width:100%;text-align:left;overflow-wrap:anywhere;margin:3px 0}
 
 .git-network-tools>summary{cursor:pointer;font-weight:600;padding:10px 0;color:var(--accent)}
+
+.agent-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.agent-settings { max-width: min(680px, 92vw); }
+.agent-settings fieldset { display: grid; gap: 9px; }
+.agent-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
+.agent-stats div { background: var(--input); padding: 8px; border: 1px solid var(--line); border-radius: 5px; }
+.agent-stats dt { font-size: 12px; opacity: .8; }
+.agent-stats dd { margin: 4px 0 0; font-variant-numeric: tabular-nums; }
+.agent-chat { white-space: pre-wrap; padding: 10px; border-left: 3px solid var(--accent); }
+.agent-tool-error { color: #e15e6b; overflow-wrap: anywhere; }
+.agent-result > p { overflow-wrap: anywhere; white-space: pre-wrap; }
+
+.agent-panel .agent-settings h2 { display: block; margin-top: 0; }

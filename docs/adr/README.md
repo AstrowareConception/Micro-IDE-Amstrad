@@ -52,3 +52,5 @@ Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou
 - [0034 — Projets récents et placement des menus](0034-projets-recents-et-placement-menus.md).
 
 - [0035 — Atelier Git réseau et GitHub](0035-atelier-git-reseau-et-github.md).
+
+- [0036 — Reprise, résultats d’outils et consommation agent](0036-agent-reprise-resultats-et-consommation.md).
