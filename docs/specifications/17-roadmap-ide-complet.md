@@ -60,7 +60,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | ID | Fonction et qualification | État | Priorité | Dépendance | Critère de validation |
 | --- | --- | --- | --- | --- | --- |
 | IDE-026 | Menus, palette, ouverture rapide, contextes CPC | L | P1 | 0.14 | Clavier, source ciblée, états désactivés et tests navigateur/Electron |
-| IDE-027 | Panneaux redimensionnables, masquables et disposition persistée | P | P1 | IDE-026 | Petites fenêtres lisibles ; raccourci de restauration de layout |
+| IDE-027 | Panneaux redimensionnables, masquables et disposition persistée | P | P1 | IDE-026 | 0.26 : séparateurs, flottants dans l’IDE, géométrie/visibilité persistées, restauration via menu/palette ; fenêtres système et ancrage sur un autre côté restent ouverts |
 | IDE-028 | Préférences police, thèmes clair/sombre, keymap | P | P1 | IDE-026 | Zoom/minimap, raccourcis et fiche souris session livrés ; persistance/migration et contraste à qualifier |
 | IDE-029 | Centre de notifications, journal de tâches et annulation | P | P1 | J1/J5 | Opérations identifiées, erreurs actionnables, aucun secret dans logs |
 | IDE-030 | Accessibilité, focus, lecteur écran et français/anglais | P | P0 | J6 | Parcours complet au clavier ; audits contraste/annonces/focus ; UI française livrée |
@@ -211,3 +211,7 @@ Le [profil privé d’identité Git](../implementation/git-identity-alpha.md), [
 ## Correctif build — alpha 0.24.1, 6 octobre 2026
 
 Le [guide Exécuter](../implementation/emulator-run-alpha.md) décrit désormais un build desktop qui prépare automatiquement le moteur manquant avec le SDK verrouillé. Régression PowerShell sur checkout propre avec chemin contenant des espaces et transport WASM ; builds suivants réutilisables. La recette Windows concerne la chaîne de construction, sans clore la qualification fonctionnelle WIN/J6 ni installer les ROM. Suite produit inchangée : recettes CPC avant branches Git.
+
+## Incrément 0.26 — Panneaux et écran CPC
+
+IDE-027 progresse : séparateurs souris/clavier pour largeurs et hauteur des sorties, trois groupes détachables/réancrables et agrandissables dans l’IDE, positions/taille/visibilité conservées, recadrage après réduction de fenêtre et restauration par menu/palette. Les sessions restent montées pendant ces transitions. Le CPC utilise une colonne de commandes à gauche et un écran ajustable avec zoom jusqu’à 300 %. [Guide](../implementation/production-workbench-alpha.md), [ADR 0033](../adr/0033-panneaux-flottants-et-ecran-cpc.md). IDE-027 reste P : fenêtres système indépendantes, réancrage sur un autre côté et sorties flottantes séparément restent ouverts.

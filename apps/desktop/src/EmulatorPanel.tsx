@@ -5,6 +5,15 @@ import { files } from './port.ts';
 export interface EmulatorLaunch { id: string; request: RunRequest }
 const specials: Record<string, number> = { Enter: 13, Escape: 3, Backspace: 1, Delete: 12, ArrowLeft: 8, ArrowRight: 9, ArrowDown: 10, ArrowUp: 11 };
 export function EmulatorPanel({ launch, onClose, onConfigure }: { launch: EmulatorLaunch; onClose(): void; onConfigure(): void }) {
+  const viewport = useRef<HTMLDivElement>(null);
+  const [screenSize, setScreenSize] = useState({ width: 400, height: 200 });
+  const [zoom, setZoom] = useState('fit');
+  useEffect(() => {
+    const element = viewport.current; if (!element) return;
+    const observer = new ResizeObserver(([entry]) => { if (entry) setScreenSize({ width: entry.contentRect.width, height: entry.contentRect.height }); });
+    observer.observe(element); return () => observer.disconnect();
+  }, []);
+  const scale = zoom === 'fit' ? Math.max(.01, Math.min((screenSize.width - 16) / 768, (screenSize.height - 16) / 544)) : Number(zoom);
   const canvas = useRef<HTMLCanvasElement>(null), worker = useRef<Worker | undefined>(undefined);
   const [message, setMessage] = useState('Construction et vérification des ROM…'), [phase, setPhase] = useState('preparing'), [paused, setPaused] = useState(false);
   const [seconds, setSeconds] = useState(0), [provenance, setProvenance] = useState(''), [sound, setSound] = useState(false);
@@ -65,15 +74,10 @@ export function EmulatorPanel({ launch, onClose, onConfigure }: { launch: Emulat
   }
   const active = phase === 'manual' || phase === 'running';
   return <section className="emulator-window" role="dialog" aria-label="Émulateur CPC 6128">
-    <div className="emulator-heading"><h2>CPC 6128 · Exécution</h2><Button onClick={onClose}>Arrêter et fermer le CPC</Button></div>
-    <p role="status">{message}</p><p className="muted">{provenance || 'Les buffers courants sont utilisés ; aucune sauvegarde automatique.'}</p>
-    <canvas ref={canvas} width={768} height={272} tabIndex={0} aria-label="Écran et clavier du CPC" onBlur={release} onKeyDown={event => {
-      if (!active || paused || event.ctrlKey || event.metaKey || event.repeat) return;
-      const key = specials[event.key] ?? (event.key.length === 1 && /^[\x20-\x7d]$/.test(event.key) ? event.key.charCodeAt(0) : undefined);
-      if (key !== undefined) { event.preventDefault(); physical.current.set(event.code, key); send({ type: 'key', key, down: true }); }
-    }} onKeyUp={event => { const key = physical.current.get(event.code); if (key !== undefined) { event.preventDefault(); physical.current.delete(event.code); send({ type: 'key', key, down: false }); } }} />
-    <p>{seconds.toFixed(2)} s émulées · {paused ? 'En pause' : active ? 'Machine active' : 'Préparation'} · Cliquez dans l’écran pour utiliser le clavier CPC.</p>
+    <div className="emulator-command-column">
+    <h2>CPC 6128 · Exécution</h2>
     <div className="emulator-controls">
+      <Button icon="stop" onClick={onClose}>Arrêter et fermer le CPC</Button>
       {phase === 'manual' && <Button disabled={paused} onClick={() => send({ type: 'ready' })}>Ready est visible : lancer le programme</Button>}
       <Button disabled={!active} onClick={() => { release(); clearAudio(); send({ type: 'pause', paused: !paused }); }}>{paused ? 'Reprendre le CPC' : 'Pause CPC'}</Button>
       <Button disabled={!active || paused} onClick={() => send({ type: 'break' })}>Interrompre BASIC (ESC)</Button>
@@ -81,6 +85,19 @@ export function EmulatorPanel({ launch, onClose, onConfigure }: { launch: Emulat
       <Button disabled={!active} onClick={() => send({ type: 'export' })}>Exporter la disquette de session</Button>
       <Button onClick={() => { onClose(); onConfigure(); }}>Configurer les ROM</Button>
     </div>
-    <p className="muted">Relancez avec Exécuter/F5 pour une machine propre et les dernières modifications. Le programme d’entrée du projet est lancé ; les autres sources restent des fichiers séparés sur le disque. Firmware inconnu : confirmation manuelle de Ready. Compatibilité matérielle complète en cours de qualification.</p>
+    <label className="emulator-zoom">Taille de l’écran CPC<select aria-label="Taille de l’écran CPC" value={zoom} onChange={event => setZoom(event.target.value)}>
+      <option value="fit">Ajuster au panneau</option><option value="1">100 %</option><option value="1.5">150 %</option><option value="2">200 %</option><option value="3">300 %</option>
+    </select></label>
+    <p role="status">{message}</p>
+    <p>{seconds.toFixed(2)} s émulées · {paused ? 'En pause' : active ? 'Machine active' : 'Préparation'}</p>
+    <details><summary>Informations de session</summary><p className="muted">{provenance || 'Les buffers courants sont utilisés ; aucune sauvegarde automatique.'}</p><p className="muted">Relancez avec Exécuter/F5 pour une machine propre et les dernières modifications. Le programme d’entrée du projet est lancé ; les autres sources restent des fichiers séparés sur le disque. Firmware inconnu : confirmation manuelle de Ready. Compatibilité matérielle complète en cours de qualification.</p></details>
+    </div>
+    <div className="emulator-screen-column"><div ref={viewport} className="emulator-viewport"><div className="emulator-screen-content" style={{ minWidth: scale * 768 + 16, minHeight: scale * 544 + 16 }}>
+    <canvas ref={canvas} style={{ width: scale * 768, height: scale * 544 }} width={768} height={272} tabIndex={0} aria-label="Écran et clavier du CPC" onBlur={release} onKeyDown={event => {
+      if (!active || paused || event.ctrlKey || event.metaKey || event.repeat) return;
+      const key = specials[event.key] ?? (event.key.length === 1 && /^[\x20-\x7d]$/.test(event.key) ? event.key.charCodeAt(0) : undefined);
+      if (key !== undefined) { event.preventDefault(); physical.current.set(event.code, key); send({ type: 'key', key, down: true }); }
+    }} onKeyUp={event => { const key = physical.current.get(event.code); if (key !== undefined) { event.preventDefault(); physical.current.delete(event.code); send({ type: 'key', key, down: false }); } }} />
+    </div></div><p className="emulator-keyboard-hint">Cliquez dans l’écran pour utiliser le clavier CPC.</p></div>
   </section>;
 }

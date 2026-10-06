@@ -46,3 +46,5 @@ Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou
 - [0031 — Catalogue OpenAI dynamique](0031-catalogue-modeles-openai-dynamique.md) : select actualisé via API officielle, permissions de clé et choix explicite.
 
 - [0032 — Préférences persistantes et retours utilisateurs](0032-preferences-et-retours-utilisateurs.md).
+
+- [0033 — Panneaux flottants et écran CPC](0033-panneaux-flottants-et-ecran-cpc.md).

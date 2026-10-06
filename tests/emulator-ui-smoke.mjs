@@ -49,6 +49,24 @@ try {
   await page.screenshot({ path: `out/emulator-${browserMode ? 'browser' : 'desktop'}-alpha.png` });
   await machine.getByRole('button', { name: 'Pause CPC', exact: true }).click(); await expect(machine).toContainText('En pause');
   const clock = (await machine.innerText()).match(/([\d.]+) s émulées/)[1]; await page.waitForTimeout(300); assert.equal((await machine.innerText()).match(/([\d.]+) s émulées/)[1], clock);
+  const dock = page.locator('.output-dock'), originalSize = await screen.boundingBox();
+  await page.evaluate(() => { window.originalCpcCanvas = document.querySelector('.emulator-window canvas'); });
+  await page.getByRole('button', { name: 'Détacher les sorties', exact: true }).click();
+  await expect(dock).toHaveAttribute('data-floating', 'true');
+  await expect.poll(async () => (await screen.boundingBox()).height).toBeGreaterThan(originalSize.height + 150);
+  const controls = await machine.locator('.emulator-command-column').boundingBox(), displayed = await screen.boundingBox();
+  assert.ok(controls.x + controls.width < displayed.x, 'Controls are left of the CPC screen');
+  await machine.getByRole('combobox', { name: 'Taille de l’écran CPC', exact: true }).selectOption('2');
+  await expect.poll(async () => (await screen.boundingBox()).width).toBe(1536);
+  await machine.getByRole('combobox', { name: 'Taille de l’écran CPC', exact: true }).selectOption('fit');
+  await dock.getByRole('button', { name: 'Agrandir les sorties', exact: true }).click();
+  await expect.poll(async () => (await screen.boundingBox()).height).toBeGreaterThan(600);
+  await dock.getByRole('button', { name: 'Restaurer les sorties', exact: true }).click();
+  await dock.getByRole('button', { name: 'Réancrer les sorties', exact: true }).click();
+  assert.ok(await page.evaluate(() => window.originalCpcCanvas === document.querySelector('.emulator-window canvas')));
+  assert.equal((await machine.innerText()).match(/([\d.]+) s émulées/)[1], clock, 'Docking preserves the paused machine');
+  assert.equal(await screenPrefix(), reference.outputFramePrefix);
+
   let exported;
   if (browserMode) {
     const downloaded = page.waitForEvent('download'); await machine.getByRole('button', { name: 'Exporter la disquette de session', exact: true }).click(); exported = await (await downloaded).path();

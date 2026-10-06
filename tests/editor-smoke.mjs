@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { verifyPanelLayout } from './panel-layout-smoke.mjs';
 import { chromium, expect } from '@playwright/test';
 import { spawn } from 'node:child_process';
 import { mkdir, readFile } from 'node:fs/promises';
@@ -59,6 +60,7 @@ try {
   await page.keyboard.press('Control+j'); await expect(page.getByRole('navigation', { name: 'Panneaux de sortie', exact: true })).toBeVisible();
   assert.equal(await page.locator('.toolbar button:not(:has(svg))').count(), 0, 'Each toolbar action has an accessible SVG icon');
   await page.keyboard.press('Control+Shift+e');
+  await verifyPanelLayout(page);
   await page.keyboard.press('Control+Shift+P');
   const palette = page.getByRole('dialog', { name: 'Commandes CPCéleste', exact: true });
   await palette.getByRole('textbox').fill('minimap'); await palette.getByRole('textbox').press('Enter');
@@ -251,6 +253,10 @@ try {
   await expect(modelPicker).toBeEnabled(); await expect(modelPicker).toHaveValue('');
   await expect(modelsPage.getByLabel('Clé API OpenAI', { exact: true })).toHaveValue('');
   await modelPicker.selectOption('gpt-99-ui'); await expect(modelPicker).toHaveValue('gpt-99-ui');
+  await modelsPage.getByRole('button', { name: 'Détacher l’agent IA', exact: true }).click();
+  await expect(modelPicker).toHaveValue('gpt-99-ui');
+  await modelsPage.getByRole('button', { name: 'Réancrer l’agent IA', exact: true }).click();
+  await expect(modelPicker).toHaveValue('gpt-99-ui');
   await modelsPage.getByRole('button', { name: 'Actualiser les modèles', exact: true }).click();
   await expect(modelPicker).toContainText('gpt-100-ui-new'); await expect(modelPicker).toHaveValue('gpt-99-ui');
   await modelPicker.selectOption('gpt-100-ui-new'); await expect(modelPicker).toHaveValue('gpt-100-ui-new');
