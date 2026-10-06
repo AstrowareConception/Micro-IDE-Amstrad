@@ -10,10 +10,10 @@ export interface LineReference extends LineTarget {}
 export interface Analysis { diagnostics: Diagnostic[]; targets: LineTarget[]; references: LineReference[]; variables: string[] }
 
 /** A tolerant single-line lexer, not a full parser. Offsets are UTF-16, zero based. */
-export function tokenize(line: string): Token[] {
+export function tokenize(line: string, tokenLimit = Infinity): Token[] {
   const tokens: Token[] = [];
   let cursor = 0;
-  while (cursor < line.length) {
+  while (cursor < line.length && tokens.length < tokenLimit) {
     if (/\s/.test(line[cursor]!)) { cursor++; continue; }
     const start = cursor;
     const rest = line.slice(cursor);
@@ -77,7 +77,7 @@ function literalReferences(tokens: Token[], physicalLine: number): LineReference
   return refs;
 }
 
-export function analyze(source: string): Analysis {
+export function analyze(source: string, tokensForLine: (line: string, index: number) => Token[] = line => tokenize(line), diagnosticLimit = Infinity): Analysis {
   const diagnostics: Diagnostic[] = [];
   const targets: LineTarget[] = [];
   const references: LineReference[] = [];
@@ -87,7 +87,7 @@ export function analyze(source: string): Analysis {
     const physical = index + 1;
     if (!line.trim()) return;
     const report = (start: number, end: number, code: string, message: string, severity: Diagnostic['severity'] = 'error') =>
-      diagnostics.push({ line: physical, start, end, code, message, severity });
+      diagnostics.length < diagnosticLimit && diagnostics.push({ line: physical, start, end, code, message, severity });
     const prefix = /^\s*(\d+)(?=\s|[a-zA-Z?'&]|$)/.exec(line);
     if (!prefix) report(0, Math.max(1, line.length), 'line-number', 'Le listing doit commencer par un numéro BASIC.');
     else {
@@ -99,7 +99,7 @@ export function analyze(source: string): Analysis {
       }
       previous = number;
     }
-    const tokens = tokenize(line);
+    const tokens = tokensForLine(line, index);
     for (const token of tokens) {
       if (token.kind === 'identifier') variables.add(token.text.toUpperCase());
       if (token.kind === 'string' && (token.text.length === 1 || !token.text.endsWith('"')))
@@ -113,11 +113,12 @@ export function analyze(source: string): Analysis {
     }
   });
   const numbers = new Set(targets.map(t => t.number));
-  for (const ref of references) if (!numbers.has(ref.number)) diagnostics.push({ ...ref, code: 'missing-target', message: `La ligne BASIC ${ref.number} n’existe pas dans ce listing.`, severity: 'error' });
+  for (const ref of references) if (!numbers.has(ref.number) && diagnostics.length < diagnosticLimit) diagnostics.push({ ...ref, code: 'missing-target', message: `La ligne BASIC ${ref.number} n’existe pas dans ce listing.`, severity: 'error' });
   return { diagnostics, targets, references, variables: [...variables].sort() };
 }
 
 export function completionContext(line: string, offset: number): 'none' | 'target' | 'code' {
+  if (line.length > 8192) return 'none';
   const tokens = tokenize(line.slice(0, offset));
   const last = tokens.at(-1);
   if (last?.kind === 'keyword' && last.text.toUpperCase() === 'DATA') return 'none';
@@ -128,6 +129,7 @@ export function completionContext(line: string, offset: number): 'none' | 'targe
 }
 
 export function commandAt(line: string, offset: number): CommandCard | undefined {
+  if (line.length > 8192) return undefined;
   const token = tokenize(line).find(t => t.start <= offset && offset < t.end && t.kind === 'keyword');
   return COMMANDS.find(card => card.name === token?.text.toUpperCase());
 }

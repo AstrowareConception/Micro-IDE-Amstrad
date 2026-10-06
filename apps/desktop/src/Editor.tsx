@@ -1,7 +1,9 @@
 import type { Preferences } from './preferences.ts';
 import { useEffect, useRef } from 'react';
 import { monaco, language } from './monaco-language.ts';
-import { analyze, commandAt, type Diagnostic } from '../../../packages/basic-language/src/language.ts';
+import { commandAt, type Diagnostic } from '../../../packages/basic-language/src/language.ts';
+import { awaitModelAnalysis, indexModelAnalysis, releaseModelAnalysis } from './model-analysis.ts';
+import type { EditorAnalysis } from '../../../packages/basic-language/src/syntax.ts';
 import type { CommandCard } from '../../../packages/basic-language/src/catalog.ts';
 import type { SearchChange, SearchMatch } from '../../../packages/workspace/src/search.ts';
 
@@ -9,7 +11,9 @@ export interface EditorWorkspace { apply(changes: SearchChange[]): void; source(
 
 interface Props {
   preferences: Preferences;
-  documents: { id: string; source: string }[]; activeId: string; diagnostics: Diagnostic[]; busy: boolean;
+  documents: { id: string; source: string }[]; activeId: string; analyses: Map<string, EditorAnalysis>; busy: boolean;
+  problemNavigation: { id: string; source: string; diagnostic: Diagnostic } | undefined;
+  onNextProblem(reverse: boolean, line: number, column: number): void;
   onChange(id: string, source: string): void; onCommand(card: CommandCard | undefined): void;
   onPosition(line: number, column: number): void;
   onSave(): void; onReady(editor: monaco.editor.IStandaloneCodeEditor): void;
@@ -44,10 +48,7 @@ export function Editor(props: Props) {
     });
     const save = editor.addAction({ id: 'save-listing', label: 'Enregistrer le listing', contextMenuGroupId: '2_cpc', contextMenuOrder: 1, run: () => latest.current.onSave() });
     const navigateProblem = (reverse: boolean) => {
-      const position = editor.getPosition(), diagnostics = latest.current.diagnostics; if (!position || !diagnostics.length) return;
-      const ordered = reverse ? [...diagnostics].reverse() : diagnostics;
-      const diagnostic = ordered.find(item => reverse ? item.line < position.lineNumber || (item.line === position.lineNumber && item.start + 1 < position.column) : item.line > position.lineNumber || (item.line === position.lineNumber && item.start + 1 > position.column)) ?? ordered[0]!;
-      editor.setPosition({ lineNumber: diagnostic.line, column: diagnostic.start + 1 }); editor.revealLineInCenter(diagnostic.line); editor.focus();
+      const position = editor.getPosition(); if (position) latest.current.onNextProblem(reverse, position.lineNumber, position.column);
     };
     const actions = [
       editor.addAction({ id: 'basic-comment', label: 'Commenter / décommenter les lignes BASIC', keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Slash], run: () => {
@@ -65,11 +66,13 @@ export function Editor(props: Props) {
       editor.addAction({ id: 'cpc-export', label: 'Exporter le projet en DSK…', contextMenuGroupId: '2_cpc', contextMenuOrder: 3, run: () => { if (!latest.current.busy) latest.current.onExport(); } }),
       editor.addAction({ id: 'cpc-commands', label: 'Commandes CPCéleste…', contextMenuGroupId: '2_cpc', contextMenuOrder: 4, run: () => latest.current.onPalette() }),
     ];
-    const navigate = editor.addAction({ id: 'basic-goto-line', label: 'Aller à la cible BASIC', contextMenuGroupId: 'navigation', contextMenuOrder: 1, keybindings: [monaco.KeyCode.F12], run: () => {
+    const navigate = editor.addAction({ id: 'basic-goto-line', label: 'Aller à la cible BASIC', contextMenuGroupId: 'navigation', contextMenuOrder: 1, keybindings: [monaco.KeyCode.F12], run: async () => {
       const position = editor.getPosition();
       const model = editor.getModel();
       if (!position || !model) return;
-      const analysis = analyze(model.getValue());
+      const version = model.getVersionId();
+      const analysis = await awaitModelAnalysis(model);
+      if (!analysis || editor.getModel() !== model || model.getVersionId() !== version) return;
       const reference = analysis.references.find(ref => ref.line === position.lineNumber && ref.start <= position.column - 1 && position.column - 1 <= ref.end);
       const target = analysis.targets.find(item => item.number === reference?.number);
       if (target) { editor.setPosition({ lineNumber: target.line, column: target.start + 1 }); editor.revealLineInCenter(target.line); }
@@ -92,7 +95,7 @@ export function Editor(props: Props) {
     return () => {
       latest.current.onWorkspaceReady(undefined);
       for (const action of actions) action.dispose(); navigate.dispose(); save.dispose(); cursor.dispose(); editor.dispose();
-      for (const item of models.current.values()) { item.change.dispose(); item.model.dispose(); }
+      for (const item of models.current.values()) { item.change.dispose(); releaseModelAnalysis(item.model); item.model.dispose(); }
       models.current.clear(); active.current = undefined; instance.current = null;
     };
   }, []);
@@ -102,7 +105,7 @@ export function Editor(props: Props) {
       let item = models.current.get(document.id);
       if (!item) {
         const model = monaco.editor.createModel(document.source, language);
-        item = { model, change: model.onDidChangeContent(() => latest.current.onChange(document.id, model.getValue())), view: null };
+        item = { model, change: model.onDidChangeContent(() => { indexModelAnalysis(model, undefined); monaco.editor.setModelMarkers(model, language, []); markerDecorations.current?.clear(); latest.current.onChange(document.id, model.getValue()); }), view: null };
         models.current.set(document.id, item);
       } else if (item.model.getValue() !== document.source) item.model.setValue(document.source);
     }
@@ -115,7 +118,7 @@ export function Editor(props: Props) {
       editor.focus();
     }
     for (const [id, item] of models.current) {
-      if (!props.documents.some(document => document.id === id)) { item.change.dispose(); item.model.dispose(); models.current.delete(id); }
+      if (!props.documents.some(document => document.id === id)) { item.change.dispose(); releaseModelAnalysis(item.model); item.model.dispose(); models.current.delete(id); }
     }
   }, [props.documents, props.activeId]);
   useEffect(() => {
@@ -134,12 +137,24 @@ export function Editor(props: Props) {
     for (const item of models.current.values()) item.model.updateOptions({ tabSize: p.tabSize, insertSpaces: p.insertSpaces });
   }, [props.preferences, props.activeId]);
   useEffect(() => {
-    const model = instance.current?.getModel();
-    if (model) monaco.editor.setModelMarkers(model, language, props.diagnostics.map(d => ({
-      startLineNumber: d.line, endLineNumber: d.line, startColumn: d.start + 1, endColumn: d.end + 1,
-      message: d.message, code: d.code, severity: d.severity === 'error' ? monaco.MarkerSeverity.Error : monaco.MarkerSeverity.Warning, source: 'Syntaxe BASIC / analyse partielle',
-    })));
-    markerDecorations.current?.set(props.diagnostics.map(d => ({ range: new monaco.Range(d.line, 1, d.line, 1), options: { glyphMarginClassName: d.severity === 'error' ? 'basic-error-glyph' : 'basic-warning-glyph', glyphMarginHoverMessage: { value: d.message }, overviewRuler: { color: d.severity === 'error' ? '#f48080' : '#ffbe76', position: monaco.editor.OverviewRulerLane.Right } } })));
-  }, [props.diagnostics, props.activeId]);
+    for (const [id, item] of models.current) {
+      const analysis = props.analyses.get(id);
+      indexModelAnalysis(item.model, analysis);
+      monaco.editor.setModelMarkers(item.model, language, (analysis?.diagnostics ?? []).map(d => ({
+        startLineNumber: d.line, endLineNumber: d.line, startColumn: d.start + 1, endColumn: d.end + 1,
+        message: d.message, code: d.code, severity: d.severity === 'error' ? monaco.MarkerSeverity.Error : monaco.MarkerSeverity.Warning, source: d.code === 'export-ascii' ? 'Export ASCII' : 'BASIC / inspection partielle',
+      })));
+    }
+    const diagnostics = props.analyses.get(props.activeId)?.diagnostics ?? [];
+    const byLine = new Map<number, Diagnostic>();
+    for (const d of diagnostics) if (!byLine.has(d.line) || d.severity === 'error') byLine.set(d.line, d);
+    markerDecorations.current?.set([...byLine.values()].map(d => ({ range: new monaco.Range(d.line, 1, d.line, 1), options: { glyphMarginClassName: d.severity === 'error' ? 'basic-error-glyph' : 'basic-warning-glyph', glyphMarginHoverMessage: { value: d.message }, overviewRuler: { color: d.severity === 'error' ? '#f48080' : '#ffbe76', position: monaco.editor.OverviewRulerLane.Right } } })));
+  }, [props.analyses, props.activeId]);
+  useEffect(() => {
+    const target = props.problemNavigation, editor = instance.current;
+    if (!target || target.id !== props.activeId || !editor || editor.getModel()?.getValue() !== target.source) return;
+    const d = target.diagnostic, range = new monaco.Range(d.line, d.start + 1, d.line, d.end + 1);
+    editor.setSelection(range); editor.revealRangeInCenter(range); editor.focus();
+  }, [props.problemNavigation, props.activeId]);
   return <div className="editor-host" ref={host} />;
 }

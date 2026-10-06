@@ -1,3 +1,4 @@
+import { verifyBasicDiagnostics } from './basic-diagnostics-smoke.mjs';
 import { verifyNotifications } from './notifications-smoke.mjs';
 import { verifyPersonalization } from './personalization-smoke.mjs';
 import { verifySourceOperations } from './source-operations-smoke.mjs';
@@ -342,6 +343,7 @@ try {
   await verifySourceOperations(browser, errors);
   await verifyPersonalization(browser, errors);
   await verifyNotifications(browser, errors);
+  await verifyBasicDiagnostics(browser, errors);
   assert.deepEqual(errors, [], 'No browser errors');
   console.log('Editor browser smoke: completion, coloration, help, diagnostics, F12, downloads, dirty protection plus renumber preview/apply/DSK/undo/redo/stale revision passed.');
 } catch (error) {

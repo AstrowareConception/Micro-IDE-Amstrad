@@ -40,6 +40,8 @@ Les onglets offrent fermer, fermer autres, fermer tous, épingler et scinder l�
 
 Couverture : IDE-013 à 020, IDE-024.
 
+**Tranche 0.34** : [worker, diagnostics et performance](../implementation/basic-diagnostics-alpha.md) livrés avec révisions et couverture partielle explicites. La qualification complète LOT-2 reste ouverte ; [plan de débogueur](../implementation/basic-debugger-plan.md) distinct du parser.
+
 Le parser DOIT distinguer lignes physiques et numéros BASIC, chaînes, commentaires, DATA, expressions, instructions composées et formes contextuelles. Définir une matrice de grammaire et de corpus : instruction couverte, forme opaque, diagnostic certain ou inspection. Une forme non couverte NE DOIT PAS recevoir une fausse erreur de syntaxe.
 
 Analyser les buffers en worker après temporisation, avec révision ; un résultat périmé est ignoré. Marqueurs dans le code, gouttière, onglet et panneau Problèmes indiquent fichier, plage, gravité, message et couverture. Clic/Entrée navigue à l’erreur. Cible : retour des diagnostics en moins de 300 ms après la pause de frappe pour 5 000 lignes sur le matériel de référence, à mesurer avant annonce.

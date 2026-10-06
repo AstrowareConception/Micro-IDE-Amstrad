@@ -37,8 +37,8 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | ID | Fonction et qualification | État | Priorité | Dépendance | Critère de validation |
 | --- | --- | --- | --- | --- | --- |
 | IDE-013 | Coloration, complétion contextuelle, aide sourcée | P | P0 | Corpus 15 | Fiches exhaustives et cas opaques/dialectes qualifiés ; sous-ensemble livré |
-| IDE-014 | Lexer/parser et diagnostics fiables avec provenance | P | P0 | IDE-013 | Corpus réel, erreurs certaines vs avertissements ; aucune validation inventée |
-| IDE-015 | Navigation définitions/cibles, usages et symboles BASIC | P | P1 | IDE-014 | F12 littéral livré ; lignes, variables, fonctions et usages calculés distingués |
+| IDE-014 | Lexer/parser et diagnostics fiables avec provenance | P | P0 | IDE-013 | 0.34 : worker temporisé/révisionné, grammaire structurelle étendue, couverture opaque explicite et diagnostics multifichiers ; corpus/qualification ROM exhaustifs ouverts |
+| IDE-015 | Navigation définitions/cibles, usages et symboles BASIC | P | P1 | IDE-014 | F12 littéral et F8 multifichiers sur index worker versionné livrés ; usages/symboles calculés et navigation complète ouverts |
 | IDE-016 | Renumérotation sûre, plages et références | P | P0 | IDE-014 | Cibles couvertes réécrites ; formes ambiguës bloquées ; undo livré |
 | IDE-017 | Renommage sémantique de variables/fonctions | N | P1 | IDE-014 | Suffixes/types, portée et chaînes/DATA/commentaires préservés |
 | IDE-018 | Templates/snippets, insertion de lignes et conventions | N | P1 | IDE-014 | Numéros sans collision ; génération minimale conforme au profil |
@@ -141,7 +141,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-070 | IPC, liens/chemins, documents inertes, budgets et secrets | P | P0 | Tous | Frontières déjà testées ; audit complet plateformes/codecs avant 1.0 |
 | IDE-071 | Tests unitaires, intégration, Electron et matrice Windows/Linux/macOS | P | P0 | WIN/J6 | CI Linux livrée ; installation Windows propre, plateformes annoncées exactes |
 | IDE-072 | Installateurs, signatures, notices et mises à jour contrôlées | N | P0 | IDE-071 | Installation/désinstallation/upgrade sans perte ; attestations et licences |
-| IDE-073 | Performance, gros projets, travailleurs et accessibilité mesurées | P | P0 | J6 | Budgets mesurés sur matériel cible ; aucun gel UI ; limites visibles |
+| IDE-073 | Performance, gros projets, travailleurs et accessibilité mesurées | P | P0 | J6 | 0.34 : limites parser/cache, benchmark 5 000 lignes et monitoring visible seulement ; mesure de bout en bout sur matériel cible et sessions longues ouvertes |
 | IDE-074 | Guides intégrés, onboarding, exemples et diagnostic support | P | P1 | IDE-071 | Guides français livrés ; aide in-app/export diagnostic expurgé et exemples CPC qualifiés |
 | IDE-075 | Identité CPCéleste, icônes et cohérence visuelle | L | P1 | PR 14 | Nom/logo intégrés, charte disponible ; déclinaisons packaging à compléter avec IDE-072 |
 

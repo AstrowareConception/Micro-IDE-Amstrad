@@ -14,7 +14,8 @@ import 'monaco-editor/features/gotoError/register.js';
 import 'monaco-editor/features/folding/register.js';
 import EditorWorker from 'monaco-editor/editor/editor.worker.js?worker';
 import { COMMANDS, REFERENCE } from '../../../packages/basic-language/src/catalog.ts';
-import { analyze, commandAt, completionContext, tokenize } from '../../../packages/basic-language/src/language.ts';
+import { commandAt, completionContext, tokenize } from '../../../packages/basic-language/src/language.ts';
+import { awaitModelAnalysis, cachedModelAnalysis } from './model-analysis.ts';
 
 globalThis.MonacoEnvironment = { getWorker: () => new EditorWorker() };
 const language = 'locomotive-basic';
@@ -30,7 +31,7 @@ class LineState implements monaco.languages.IState {
 }
 monaco.languages.setTokensProvider(language, {
   getInitialState: () => new LineState(),
-  tokenize: (line, state) => ({ endState: state, tokens: tokenize(line).map(t => ({ startIndex: t.start, scopes: t.kind })) }),
+  tokenize: (line, state) => ({ endState: state, tokens: tokenize(line.slice(0, 8192), 1024).map(t => ({ startIndex: t.start, scopes: t.kind })) }),
 });
 monaco.editor.defineTheme('cpc-workbench', {
   base: 'vs-dark', inherit: true,
@@ -57,8 +58,8 @@ monaco.languages.registerCompletionItemProvider(language, {
     if (context === 'none') return { suggestions: [] };
     const word = model.getWordUntilPosition(position);
     const range = new monaco.Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn);
-    const analysis = analyze(model.getValue());
-    if (context === 'target') return { suggestions: analysis.targets.map(target => ({
+    const analysis = cachedModelAnalysis(model);
+    if (context === 'target') return { suggestions: (analysis?.targets ?? []).filter(target => String(target.number).startsWith(word.word)).slice(0, 1000).map(target => ({
       label: String(target.number), kind: monaco.languages.CompletionItemKind.Reference,
       insertText: String(target.number), detail: `Ligne BASIC · position ${target.line}`, range,
     })) };
@@ -67,7 +68,7 @@ monaco.languages.registerCompletionItemProvider(language, {
         kind: card.kind === 'function' ? monaco.languages.CompletionItemKind.Function : monaco.languages.CompletionItemKind.Keyword,
         detail: card.syntax, documentation: { value: `${card.description}\n\n${provenance}\n\nLocalisation : command-reference.txt, ligne ${card.line}` }, range,
       })),
-      ...analysis.variables.filter(name => name !== word.word.toUpperCase()).map(name => ({ label: name, insertText: name, kind: monaco.languages.CompletionItemKind.Variable, detail: 'Identifiant observé (pas une déclaration vérifiée)', range })),
+      ...(analysis?.variables ?? []).filter(name => name !== word.word.toUpperCase() && name.startsWith(word.word.toUpperCase())).slice(0, 256).map(name => ({ label: name, insertText: name, kind: monaco.languages.CompletionItemKind.Variable, detail: 'Identifiant observé (pas une déclaration vérifiée)', range })),
     ] };
   },
 });
@@ -79,8 +80,8 @@ monaco.languages.registerHoverProvider(language, {
   },
 });
 monaco.languages.registerDefinitionProvider(language, {
-  provideDefinition: (model, position) => {
-    const analysis = analyze(model.getValue());
+  provideDefinition: async (model, position) => {
+    const analysis = await awaitModelAnalysis(model); if (!analysis) return null;
     const reference = analysis.references.find(ref => ref.line === position.lineNumber && ref.start <= position.column - 1 && position.column - 1 <= ref.end);
     const target = analysis.targets.find(t => t.number === reference?.number);
     return target ? { uri: model.uri, range: new monaco.Range(target.line, target.start + 1, target.line, target.end + 1) } : null;

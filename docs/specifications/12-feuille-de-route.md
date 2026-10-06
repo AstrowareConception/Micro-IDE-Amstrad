@@ -1,5 +1,7 @@
 # 12 — Feuille de route et backlog de réalisation
 
+**Diagnostics et performance 0.34** : analyse BASIC en worker temporisé, révisions protégées, contrôles structurels étendus, diagnostics multifichiers et monitoring à la demande. [Guide](../implementation/basic-diagnostics-alpha.md). Débogueur BASIC : [faisabilité et étapes](../implementation/basic-debugger-plan.md), mapping ROM encore à qualifier.
+
 La [tranche notifications 0.33](../implementation/notifications-alpha.md) prolonge le lot 7 après intégration des PR 26–34 : registre local de session, filtres, lecture, détails et aperçus réglables ([ADR 0040](../adr/0040-centre-notifications-session.md)). Journal de tâches durable, progression unifiée et annulation depuis le centre restent ouverts ; IDE-029 partiel.
 
 La [personnalisation 0.32](../implementation/personalization-alpha.md) avance le lot 7 : réglages recherchables, options du code, accents/densité, keymap cohérente avec menus/aide, profils portables, dispositions et concentration ([ADR 0039](../adr/0039-personnalisation-profils-et-keymap.md)). Overrides projet, fenêtres OS, keymap exhaustive et audit accessibilité restent ouverts.
