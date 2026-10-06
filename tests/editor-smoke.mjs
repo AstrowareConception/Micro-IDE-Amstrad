@@ -166,6 +166,10 @@ try {
   const editorBounds = await page.locator('.editor-host').boundingBox();
   assert.ok(editorBounds.height >= 140 && editorBounds.y + editorBounds.height < 940, 'Emulator leaves editor visible');
   await page.getByRole('button', { name: 'Arrêter et fermer le CPC', exact: true }).click();
+  await page.setViewportSize({ width: 1024, height: 768 });
+  assert.ok((await page.locator('.editor-host').boundingBox()).height >= 140, 'Code remains visible in a smaller window');
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'No page-wide horizontal overflow');
+  await page.setViewportSize({ width: 1440, height: 960 });
   await mkdir('out', { recursive: true }); await page.screenshot({ path: 'out/workbench-alpha.png' });
   // UI model catalogue recipe uses a deterministic IPC fixture, never a paid API call.
   const modelsPage = await browser.newPage({ viewport: { width: 1440, height: 960 } });

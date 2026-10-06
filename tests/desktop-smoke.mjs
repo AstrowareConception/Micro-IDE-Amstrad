@@ -96,7 +96,7 @@ try {
   // Closing a dirty view preserves its buffer and undo model; both mouse and keyboard reopen it.
   await page.getByRole('tab', { name: /src\/util.bas/ }).click({ button: 'middle' });
   await expect(page.getByRole('tab', { name: /src\/util.bas/ })).toHaveCount(0);
-  await page.getByRole('navigation', { name: 'Explorateur de sources', exact: true }).getByRole('button', { name: /src\/util.bas/ }).click();
+  await page.getByRole('navigation', { name: 'Explorateur de sources', exact: true }).getByRole('button', { name: /^src\/util\.bas/ }).click();
   await expect(page.locator('.monaco-editor .view-lines')).toContainText('UTIL DRAFT');
   await page.keyboard.press('Control+w');
   await expect(page.getByRole('tab', { name: /src\/util.bas/ })).toHaveCount(0);

@@ -21,6 +21,7 @@ export class OpenAIProvider implements ModelPort {
     if (!response.body) throw new Error('Liste des modèles OpenAI absente.');
     const reader = response.body.getReader(), chunks: Uint8Array[] = []; let length = 0;
     try { while (true) { const part = await reader.read(); if (part.done) break; length += part.value.length; if (length > 1024 * 1024) { await reader.cancel(); throw new Error('Liste des modèles OpenAI trop volumineuse.'); } chunks.push(part.value); } }
+    catch { await reader.cancel().catch(() => undefined); throw new Error(length > 1024 * 1024 ? 'Liste des modèles OpenAI trop volumineuse.' : 'Lecture de la liste des modèles interrompue.'); }
     finally { reader.releaseLock(); }
     const bytes = new Uint8Array(length); let offset = 0; for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
     const text = new TextDecoder().decode(bytes);

@@ -21,7 +21,7 @@ test('official model listing is fresh, bounded, secret-free and admits future GP
 });
 
 test('model errors never reflect provider bodies or credentials and malformed/oversize catalogues fail', async () => {
-  for (const response of [new Response(key, { status: 401 }), new Response(key, { status: 403 }), new Response(key, { status: 429 }), new Response('not-json'), Response.json({ data: [] }), Response.json({ data: [row(key)] }), new Response('X'.repeat(1024 * 1024 + 1))]) {
+  for (const response of [new Response(key, { status: 401 }), new Response(key, { status: 403 }), new Response(key, { status: 429 }), new Response('not-json'), Response.json({ data: [] }), Response.json({ data: [row(key)] }), new Response('X'.repeat(1024 * 1024 + 1)), new Response(new ReadableStream({ start(controller) { controller.error(new Error(key)); } }))]) {
     const provider = new OpenAIProvider(key, 'gpt-test', async () => response);
     await assert.rejects(provider.listModels(), error => error instanceof Error && !error.message.includes(key));
   }
