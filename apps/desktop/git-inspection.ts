@@ -2,10 +2,11 @@ import { execFile } from 'node:child_process';
 import { lstat, readdir, realpath, access, readFile, writeFile, mkdir, mkdtemp, rmdir, unlink, open, rename } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { join, dirname, delimiter, isAbsolute, relative, basename } from 'node:path';
-import { devNull } from 'node:os';
 import { randomUUID, createHash } from 'node:crypto';
 import { gitPath, parseStatus, commitInput, PROJECT_GIT_IGNORE, type GitCommitInput, type GitCommitPlan, type GitCommitResult, type GitChange, type GitDiff, type DiffSide, type RepositoryStatus, type GitInitPlan, type IndexAction, type GitHistory } from '../../packages/version-control/src/inspection.ts';
 
+// Git for Windows explicitly maps /dev/null; Node's Windows device path is rejected by Git.
+export const GIT_NULL = '/dev/null';
 const LIMIT = 1024 * 1024;
 const digest = (value: Uint8Array | string) => createHash('sha256').update(value).digest('hex');
 const safeKeys = /^(core\.(repositoryformatversion|filemode|bare|logallrefupdates|ignorecase|precomposeunicode|autocrlf|eol|safecrlf|ignorestat|symlinks|protecthfs|protectntfs)|user\.(name|email)|remote\.[^.]+\.(url|pushurl|fetch|tagopt)|branch\..+\.(remote|merge))$/i;
@@ -42,7 +43,7 @@ export class GitInspection {
   private async run(args: string[], cwd = this.root, indexFile?: string, options?: { input?: string; identity?: GitCommitInput; prepared?: () => Promise<void> }): Promise<string> {
     const executable = await this.locate();
     const env: NodeJS.ProcessEnv = { PATH: this.searchPath, LC_ALL: 'C', GIT_CONFIG_NOSYSTEM: '1',
-      GIT_CONFIG_SYSTEM: devNull, GIT_CONFIG_GLOBAL: devNull, GIT_OPTIONAL_LOCKS: '0',
+      GIT_CONFIG_SYSTEM: GIT_NULL, GIT_CONFIG_GLOBAL: GIT_NULL, GIT_OPTIONAL_LOCKS: '0',
       GIT_TERMINAL_PROMPT: '0', GIT_NO_LAZY_FETCH: '1', GIT_ATTR_NOSYSTEM: '1' };
     if (process.env.SystemRoot) env.SystemRoot = process.env.SystemRoot;
     if (indexFile) env.GIT_INDEX_FILE = indexFile;
@@ -53,7 +54,7 @@ export class GitInspection {
     return new Promise((resolve, reject) => {
       let preparationError: unknown, preparing = false, output = '';
       const child = execFile(executable, ['--no-pager', '-c', 'core.fsmonitor=false', '-c', 'core.untrackedCache=false',
-        '-c', `core.attributesFile=${devNull}`, '-c', `core.hooksPath=${devNull}`, '-c', 'protocol.allow=never', '-c', 'maintenance.auto=false', '-c', 'gc.auto=0', ...args],
+        '-c', `core.attributesFile=${GIT_NULL}`, '-c', `core.hooksPath=${GIT_NULL}`, '-c', 'protocol.allow=never', '-c', 'maintenance.auto=false', '-c', 'gc.auto=0', ...args],
       { cwd, env, shell: false, windowsHide: true, timeout: 10_000, maxBuffer: LIMIT, encoding: 'buffer' }, (error, stdout) => {
         // Never return stderr, config values, credentials or absolute host paths over IPC.
         if (preparationError) { reject(preparationError); return; }

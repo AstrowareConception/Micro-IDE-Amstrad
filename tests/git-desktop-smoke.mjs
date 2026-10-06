@@ -2,13 +2,12 @@ import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
-import { devNull } from 'node:os';
 import { expect } from '@playwright/test';
 import { ProjectStore } from '../apps/desktop/project-store.ts';
 import { GitOperations } from '../apps/desktop/git-operations.ts';
-import { GitInspection } from '../apps/desktop/git-inspection.ts';
+import { GitInspection, GIT_NULL } from '../apps/desktop/git-inspection.ts';
 import { gitHttpsFixture } from './git-https-fixture.ts';
-const git = (root, ...args) => execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', ...args], { cwd: root, encoding: 'utf8', env: { ...process.env, GIT_CONFIG_GLOBAL: devNull, GIT_CONFIG_NOSYSTEM: '1' }, stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+const git = (root, ...args) => execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', ...args], { cwd: root, encoding: 'utf8', env: { ...process.env, GIT_CONFIG_GLOBAL: GIT_NULL, GIT_CONFIG_NOSYSTEM: '1' }, stdio: ['pipe', 'pipe', 'pipe'] }).trim();
 export async function verifyGitDesktop(page, desktop, temporary) {
   const server = await gitHttpsFixture({ allowAnonymous: true }), root = join(temporary, 'git-remote-project');
   try {
@@ -50,6 +49,7 @@ export async function verifyGitDesktop(page, desktop, temporary) {
     await desktop.evaluate(() => { globalThis.gitFixtureNextResponse = 0; });
     await sync.getByRole('button', { name: 'Confirmer l’opération Git…', exact: true }).click(); await expect(sync).toContainText('Opération annulée'); assert.equal(git(root, 'remote'), '');
     await sync.getByRole('button', { name: 'Ajouter le remote', exact: true }).click(); await sync.getByRole('button', { name: 'Confirmer l’opération Git…', exact: true }).click();
+    await expect(sync).toContainText('Ajouter un remote : terminé');
     assert.equal(git(root, 'remote', 'get-url', 'origin'), server.url);
     await page.keyboard.press('Control+Alt+k'); await expect(sync.getByLabel('Aperçu de l’opération Git', { exact: true })).toContainText('1 commit');
     await sync.getByRole('button', { name: 'Confirmer l’opération Git…', exact: true }).click(); await expect(sync).toContainText('terminé');

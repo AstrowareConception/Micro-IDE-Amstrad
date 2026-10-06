@@ -1,6 +1,6 @@
 # Atelier Git et GitHub — alpha 0.28
 
-Date : 2026-10-06. [ADR 0035](../adr/0035-atelier-git-reseau-et-github.md), suite des [commits examinés](git-commit-alpha.md). Git doit être installé dans le PATH ; aucun outil Git ou shell n’est accordé à l’agent.
+Date : 2026-10-06. [ADR 0035](../adr/0035-atelier-git-reseau-et-github.md), suite des [commits examinés](git-commit-alpha.md). Git doit être installé dans le PATH ; son adaptateur utilise `/dev/null`, reconnu nativement par Git for Windows, pour neutraliser configurations, attributs et hooks ; aucun outil Git ou shell n’est accordé à l’agent.
 
 ## Parcours
 

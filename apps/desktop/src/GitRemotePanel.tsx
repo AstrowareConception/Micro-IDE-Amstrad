@@ -19,7 +19,7 @@ export function GitRemotePanel({ sessionId, busy, dirty, onBusy, onProject }: {
     setNotice('error' in result ? result.error : result.stopped ? 'Arrêt demandé ; attente du résultat Git.' : 'Aucun transfert Git actif.');
   }
   async function action(work: () => Promise<void>, canCancel = false) {
-    if (busy || !port) return; onBusy(true); setCancellable(canCancel);
+    if (busy || !port) return; onBusy(true); setCancellable(canCancel); setNotice('Opération en cours…');
     try { await work(); } catch (error) { setPlan(undefined); setNotice(error instanceof Error ? error.message : 'Opération Git non confirmée ; actualisez avant de reprendre.'); }
     finally { setCancellable(false); onBusy(false); }
   }

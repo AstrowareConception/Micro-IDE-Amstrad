@@ -2,16 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { mkdtemp, mkdir, readFile, writeFile, realpath, symlink } from 'node:fs/promises';
-import { tmpdir, devNull } from 'node:os';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { GitInspection } from '../apps/desktop/git-inspection.ts';
+import { GitInspection, GIT_NULL } from '../apps/desktop/git-inspection.ts';
 import { GitOperations } from '../apps/desktop/git-operations.ts';
 import { newProject } from '../packages/workspace/src/project.ts';
 import { branchName, remoteUrl, githubRepository, type GitRequest } from '../packages/version-control/src/operations.ts';
 import { PROJECT_GIT_IGNORE } from '../packages/version-control/src/inspection.ts';
 const git = (root: string, ...args: string[]) => execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', ...args],
-  { cwd: root, encoding: 'utf8', env: { ...process.env, GIT_CONFIG_GLOBAL: devNull, GIT_CONFIG_NOSYSTEM: '1' }, stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+  { cwd: root, encoding: 'utf8', env: { ...process.env, GIT_CONFIG_GLOBAL: GIT_NULL, GIT_CONFIG_NOSYSTEM: '1' }, stdio: ['pipe', 'pipe', 'pipe'] }).trim();
 async function fixture() {
   const temp = await realpath(await mkdtemp(join(tmpdir(), 'cpceleste-git-ops-'))), a = join(temp, 'A'), remote = join(temp, 'remote.git'), b = join(temp, 'B');
   await mkdir(join(a, 'src'), { recursive: true }); await mkdir(remote);

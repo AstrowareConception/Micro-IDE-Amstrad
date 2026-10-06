@@ -1,9 +1,9 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { mkdir, mkdtemp, writeFile, rm, lstat, readdir } from 'node:fs/promises';
 import { join, dirname, delimiter, isAbsolute, relative } from 'node:path';
-import { tmpdir, devNull } from 'node:os';
+import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
-import { GitInspection } from './git-inspection.ts';
+import { GitInspection, GIT_NULL } from './git-inspection.ts';
 import { ProjectStore } from './project-store.ts';
 import { parseProject } from '../../packages/workspace/src/project.ts';
 import { gitPath, parseStatus } from '../../packages/version-control/src/inspection.ts';
@@ -37,7 +37,7 @@ export class GitOperations {
   private async run(args: string[], url?: string): Promise<Buffer> {
     const executable = await this.inspector.executablePath();
     const searchPath = (process.env.PATH ?? '').split(delimiter).filter(path => isAbsolute(path) && (isAbsolute(relative(this.root, path)) || relative(this.root, path) === '..' || relative(this.root, path).startsWith('..' + (process.platform === 'win32' ? '\\' : '/')))).join(delimiter);
-    const env: NodeJS.ProcessEnv = { PATH: searchPath, LC_ALL: 'C', GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: devNull, GIT_CONFIG_SYSTEM: devNull,
+    const env: NodeJS.ProcessEnv = { PATH: searchPath, LC_ALL: 'C', GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: GIT_NULL, GIT_CONFIG_SYSTEM: GIT_NULL,
       GIT_TERMINAL_PROMPT: '0', GIT_NO_LAZY_FETCH: '1', GIT_ATTR_NOSYSTEM: '1', GIT_OPTIONAL_LOCKS: '0' };
     for (const key of ['SystemRoot', 'HOME', 'USERPROFILE', 'SSH_AUTH_SOCK', 'TEMP', 'TMP']) if (process.env[key]) env[key] = process.env[key];
     env.GIT_SSH_COMMAND = 'ssh -oBatchMode=yes -oStrictHostKeyChecking=yes -oPermitLocalCommand=no -oClearAllForwardings=yes';
@@ -45,8 +45,8 @@ export class GitOperations {
     if (authorization) { env.GIT_CONFIG_COUNT = '1'; env.GIT_CONFIG_KEY_0 = 'http.' + new URL(url).origin + '/.extraHeader'; env.GIT_CONFIG_VALUE_0 = 'Authorization: ' + authorization; }
     return new Promise((resolve, reject) => {
       this.interrupted = false;
-      const child = spawn(executable, ['--no-pager', '-c', 'core.fsmonitor=false', '-c', 'core.untrackedCache=false', '-c', 'core.hooksPath=' + devNull,
-        '-c', 'core.attributesFile=' + devNull, '-c', 'protocol.allow=never', '-c', 'protocol.https.allow=always', '-c', 'protocol.ssh.allow=always',
+      const child = spawn(executable, ['--no-pager', '-c', 'core.fsmonitor=false', '-c', 'core.untrackedCache=false', '-c', 'core.hooksPath=' + GIT_NULL,
+        '-c', 'core.attributesFile=' + GIT_NULL, '-c', 'protocol.allow=never', '-c', 'protocol.https.allow=always', '-c', 'protocol.ssh.allow=always',
         ...(url && this.options.approvedLocal?.includes(url) ? ['-c', 'protocol.file.allow=always'] : []),
         '-c', 'http.followRedirects=false', '-c', 'http.sslVerify=true', '-c', 'credential.helper=', '-c', 'maintenance.auto=false', '-c', 'gc.auto=0',
         ...(this.options.certificateAuthority ? ['-c', 'http.sslCAInfo=' + this.options.certificateAuthority] : []), ...args],

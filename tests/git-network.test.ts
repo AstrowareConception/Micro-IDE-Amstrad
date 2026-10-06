@@ -4,14 +4,13 @@ import { execFileSync } from 'node:child_process';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { devNull } from 'node:os';
 import { gitHttpsFixture } from './git-https-fixture.ts';
-import { GitInspection } from '../apps/desktop/git-inspection.ts';
+import { GitInspection, GIT_NULL } from '../apps/desktop/git-inspection.ts';
 import { GitOperations } from '../apps/desktop/git-operations.ts';
 import { newProject } from '../packages/workspace/src/project.ts';
 import { PROJECT_GIT_IGNORE } from '../packages/version-control/src/inspection.ts';
 import type { GitRequest } from '../packages/version-control/src/operations.ts';
-const git = (root: string, ...args: string[]) => execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', ...args], { cwd: root, stdio: 'ignore', env: { ...process.env, GIT_CONFIG_GLOBAL: devNull, GIT_CONFIG_NOSYSTEM: '1' } });
+const git = (root: string, ...args: string[]) => execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', ...args], { cwd: root, stdio: 'ignore', env: { ...process.env, GIT_CONFIG_GLOBAL: GIT_NULL, GIT_CONFIG_NOSYSTEM: '1' } });
 async function perform(operations: GitOperations, request: GitRequest) { const state = await operations.overview(); const plan = await operations.prepare(state.revision, request); return operations.apply(plan.id); }
 test('real authenticated HTTPS supports push, private-style clone, fetch/pull and rejects credentials/TLS without exposing secrets', { skip: process.platform === 'win32', timeout: 60_000 }, async () => {
   const server = await gitHttpsFixture();
