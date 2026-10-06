@@ -15,8 +15,8 @@ export function SettingsDialog({ preferences, onApply, onClose }: { preferences:
         <label>Thème<select aria-label="Thème" autoFocus value={draft.theme} onChange={event => setDraft(previous => ({ ...previous, theme: event.target.value as Preferences['theme'] }))}><option value="dark">Sombre</option><option value="light">Clair</option><option value="system">Système</option></select></label>
         <label>Police du code<input required maxLength={200} value={draft.fontFamily} onChange={event => setDraft(previous => ({ ...previous, fontFamily: event.target.value }))} /></label>
         {number('fontSize', 'Taille du code (px)', 10, 32)}
-        {number('sidebarWidth', 'Largeur des outils (px)', 180, 360)}{number('agentWidth', 'Largeur de l’assistant (px)', 240, 420)}{number('outputHeight', 'Hauteur des sorties (px)', 120, 360)}
-        <p className="muted">La disposition s’adapte aux petites fenêtres. Affichage permet de masquer chaque zone.</p>
+        {number('sidebarWidth', 'Largeur des outils (px)', 180, 800)}{number('agentWidth', 'Largeur de l’assistant (px)', 240, 800)}{number('outputHeight', 'Hauteur des sorties (px)', 120, 1200)}
+        <p className="muted">Glissez les séparateurs pour ajuster les dimensions. Les en-têtes permettent de détacher ou d’agrandir les panneaux ; Affichage permet de restaurer la disposition.</p>
       </fieldset>
       <fieldset><legend>Édition</legend>
         {number('tabSize', 'Taille d’indentation', 1, 8)}{check('insertSpaces', 'Indenter avec des espaces')}{check('autoIndent', 'Indentation automatique')}{check('wordWrap', 'Retour visuel à la ligne')}{check('autoClosingBrackets', 'Fermer automatiquement les parenthèses')}{check('minimap', 'Afficher la minimap')}

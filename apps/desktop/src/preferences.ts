@@ -24,7 +24,7 @@ export function parsePreferences(value: unknown): Preferences {
   for (const [key, min, max] of [
     ['fontSize', 10, 32], ['tabSize', 1, 8], ['autoSaveDelay', 1000, 60000],
     ['renumberStart', 1, 65535], ['renumberStep', 1, 65535],
-    ['sidebarWidth', 180, 360], ['agentWidth', 240, 420], ['outputHeight', 120, 360],
+    ['sidebarWidth', 180, 800], ['agentWidth', 240, 800], ['outputHeight', 120, 1200],
   ] as const) {
     const number = input[key];
     if (typeof number === 'number' && Number.isInteger(number) && number >= min && number <= max) result[key] = number;

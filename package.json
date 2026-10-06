@@ -1,6 +1,6 @@
 {
   "name": "micro-ide-amstrad",
-  "version": "0.25.0",
+  "version": "0.26.0",
   "main": "dist/apps/desktop/main.js",
   "private": true,
   "type": "module",

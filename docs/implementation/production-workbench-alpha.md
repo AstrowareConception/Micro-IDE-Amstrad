@@ -1,8 +1,18 @@
-# Atelier CPCéleste — alpha 0.25
+# Atelier CPCéleste — alpha 0.26
 
 L’atelier sépare outils du projet à gauche, code au centre, assistant IA à droite et sorties en bas. La barre d’activité donne accès à l’explorateur, la recherche, Git, les documents, la référence BASIC, la récupération et les ROM. Les menus reprennent ces fonctions ; Git propose accès au panneau, actualisation, historique et préparation du formulaire de commit. Le panneau conserve aperçu/confirmation pour les mutations Git.
 
 Un seul menu reste ouvert. Clic extérieur, Échap, Tab, perte de focus et activation d’une commande le ferment. Les flèches naviguent parmi les actions et les menus. Les actions comportent des icônes SVG et des noms accessibles.
+
+## Disposition et écran CPC
+
+Les séparateurs entre outils/code/assistant règlent les largeurs ; celui placé au-dessus des sorties règle leur hauteur, notamment celle du terminal. Le dock peut occuper presque toute la hauteur disponible en conservant au moins 140 px de code. Les poignées acceptent la souris ou les flèches au clavier (10 px, Maj : 40 px) ; Échap annule un glisser en cours.
+
+Les en-têtes des trois zones **outils**, **assistant IA** et **sorties** proposent détacher, agrandir/restaurer et masquer. Détacher libère leur espace d’origine et les transforme en panneaux flottants **à l’intérieur de l’IDE**. La poignée de l’en-tête déplace le panneau ; celle du coin inférieur droit règle sa taille. Le bouton réancrer le remet à sa place. Position, taille, mode flottant/agrandi et visibilité sont conservés dans le profil local ; les séparateurs partagent les dimensions des paramètres. Une réduction de fenêtre recadre les panneaux pour garder leurs commandes accessibles. Affichage → Restaurer la disposition des panneaux, également dans la palette, rétablit les trois zones et les dimensions initiales sans toucher aux préférences de code.
+
+Les sorties restent un groupe d’onglets (Problèmes/CPC/Terminal/Git). Leur détachement ne recrée ni le worker CPC ni le terminal, et conserve les formulaires et les buffers. Les fenêtres système indépendantes, sorties détachables séparément et ancrage sur un autre côté restent une suite possible.
+
+Le CPC affiche les commandes **en colonne à gauche**, l’écran à droite. Le choix Ajuster au panneau exploite largeur et hauteur disponibles ; 100/150/200/300 % permettent de lire des détails avec barres de défilement. Agrandir les sorties offre un écran sur presque toute la fenêtre. L’affichage pixelisé et le rapport 768/544 corrigent le rendu sans changer les pixels bruts du moteur. Les informations de session sont regroupées dans un volet dépliable.
 
 ## Raccourcis
 
@@ -59,6 +69,6 @@ xvfb-run -a npm run test:desktop
 python scripts/check_specs.py --schemas
 ```
 
-La recette navigateur vérifie aussi fermeture/réouverture de buffers modifiés, undo/redo entre sources, absence de collage molette et de saut de ligne parasite dans l’ouverture rapide, puis menus exclusifs, focus/flèches/Échap/clic extérieur, réouverture de la recherche par raccourci, panneaux masquables, Git découvrable, assistant séparé, icônes, trois erreurs pendant la saisie, F8, commentaire BASIC et éditeur visible pendant l’exécution. Les recettes Electron conservent les contrôles de persistence, IA, documents, terminal, Git, récupération et protection des buffers. Les preuves sont produites dans `out/` et publiées par CI ; aucune ROM dans Git.
+La recette navigateur vérifie aussi fermeture/réouverture de buffers modifiés, undo/redo entre sources, absence de collage molette et de saut de ligne parasite dans l’ouverture rapide, puis menus exclusifs, focus/flèches/Échap/clic extérieur, réouverture de la recherche par raccourci, panneaux masquables, Git découvrable, assistant séparé, icônes, trois erreurs pendant la saisie, F8, commentaire BASIC et éditeur visible pendant l’exécution. Les recettes Electron conservent les contrôles de persistence, IA, documents, terminal, Git, récupération et protection des buffers. La recette 0.26 ajoute glisser des trois séparateurs, navigation clavier, détacher/déplacer/redimensionner/agrandir/réancrer chaque zone, conservation des instances, rechargement des dimensions et recadrage à 640×480. La recette CPC réelle vérifie la conservation du canvas, du temps en pause et des pixels après détachement/zoom/réancrage ; le terminal natif reste actif pendant un détachement. Les preuves sont produites dans `out/` et publiées par CI ; aucune ROM dans Git.
 
-Cette tranche améliore l’ergonomie de l’alpha sans qualifier le produit 1.0 : explorateur intégral des fichiers, séparateurs déplaçables, ancrage/fenêtres détachées, keymap configurable, parser BASIC complet, PTY et branches/synchronisation Git restent ouverts. Voir [ADR 0030](../adr/0030-atelier-menus-diagnostics.md).
+Cette tranche améliore l’ergonomie de l’alpha sans qualifier le produit 1.0 : explorateur intégral des fichiers, fenêtres système indépendantes, ancrage sur un autre côté, sorties détachables séparément, keymap configurable, parser BASIC complet, PTY et branches/synchronisation Git restent ouverts. Voir [ADR 0030](../adr/0030-atelier-menus-diagnostics.md).

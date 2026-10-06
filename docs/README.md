@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.25
+# CPCéleste — Dossier de conception et réalisation — version 0.26
+
+**Disposition 0.26** : panneaux flottants dans l’IDE, séparateurs, hauteur du terminal, écran CPC ajustable et zoom. [Guide](implementation/production-workbench-alpha.md), [ADR 0033](adr/0033-panneaux-flottants-et-ecran-cpc.md).
 
 **Atelier 0.25** : outils et Git à gauche, assistant IA à droite, sorties en bas ; menus exclusifs, icônes, raccourcis et diagnostics syntaxiques pendant la saisie. [Guide](implementation/production-workbench-alpha.md).
 

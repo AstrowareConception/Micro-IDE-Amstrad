@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
-export type IconName = 'file' | 'folder' | 'save' | 'saveAll' | 'search' | 'replace' | 'run' | 'stop' | 'pause' | 'disk' | 'undo' | 'redo' | 'git' | 'history' | 'branch' | 'terminal' | 'code' | 'book' | 'chip' | 'spark' | 'settings' | 'close' | 'plus' | 'check' | 'warning' | 'download' | 'trash' | 'eye' | 'key' | 'zoom' | 'menu';
+export type IconName = 'file' | 'folder' | 'save' | 'saveAll' | 'search' | 'replace' | 'run' | 'stop' | 'pause' | 'disk' | 'undo' | 'redo' | 'git' | 'history' | 'branch' | 'terminal' | 'code' | 'book' | 'chip' | 'spark' | 'settings' | 'close' | 'plus' | 'check' | 'warning' | 'download' | 'trash' | 'eye' | 'key' | 'zoom' | 'menu' | 'dock' | 'undock' | 'maximize' | 'restore' | 'grip' | 'resize';
 const paths: Record<IconName, string> = {
  file: 'M6 3h8l4 4v14H6z M14 3v5h4 M9 12h6 M9 16h6',
  folder: 'M3 6h7l2 3h9v11H3z', save: 'M4 3h14l3 3v15H3V3z M7 3v6h9V3 M7 21v-8h10v8',
@@ -25,6 +25,12 @@ const paths: Record<IconName, string> = {
  key: 'M9 5a5 5 0 1 0 0 10 5 5 0 0 0 0-10 M13 13l8 8 M17 17l3-3',
  zoom: 'M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0 M15 15l6 6 M7 10h6 M10 7v6',
  menu: 'M4 6h16 M4 12h16 M4 18h16',
+ dock: 'M3 3h18v18H3z M3 15h18 M8 7l4 4 4-4 M12 5v6',
+ undock: 'M3 7v14h14 M9 3h12v12H9z M12 12l6-6 M14 6h4v4',
+ maximize: 'M3 9V3h6 M15 3h6v6 M21 15v6h-6 M9 21H3v-6',
+ restore: 'M8 3h13v13 M3 8h13v13H3z',
+ grip: 'M8 5h1 M15 5h1 M8 12h1 M15 12h1 M8 19h1 M15 19h1',
+ resize: 'M7 21L21 7 M13 21l8-8 M19 21l2-2',
 };
 export function Icon({ name, className = '' }: { name: IconName; className?: string }) {
  return <svg className={`icon ${className}`} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d={paths[name]} /></svg>;

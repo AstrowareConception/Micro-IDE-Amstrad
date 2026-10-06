@@ -576,6 +576,11 @@ try {
   await terminalPanel.getByLabel('Commande système', { exact: true }).fill('sleep 20 & wait');
   await terminalPanel.getByRole('button', { name: 'Exécuter la commande', exact: true }).click();
   await expect(terminalPanel.getByRole('button', { name: 'Arrêter la commande', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: 'Détacher les sorties', exact: true }).click();
+  await expect(page.locator('.output-dock')).toHaveAttribute('data-floating', 'true');
+  await expect(terminalPanel.getByLabel('Commande système', { exact: true })).toHaveValue('sleep 20 & wait');
+  await expect(terminalPanel.getByRole('button', { name: 'Arrêter la commande', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: 'Réancrer les sorties', exact: true }).click();
   const blockedTerminal = await page.evaluate(() => window.desktop.open());
   assert.match(blockedTerminal.error, /terminal est active/);
   const blockedSaveAll = await page.evaluate(() => window.desktop.project.saveAll('forged', []));
