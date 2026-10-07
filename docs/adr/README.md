@@ -70,3 +70,5 @@ Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou
 - [0043 — Rapport de qualité BASIC à la demande](0043-rapport-qualite-basic.md).
 
 - [0044 — Tests BASIC isolés à la demande](0044-tests-basic-isoles.md).
+
+- [0045 — Debugger BASIC ancré sur un firmware qualifié](0045-debugger-basic-firmware-qualifie.md).

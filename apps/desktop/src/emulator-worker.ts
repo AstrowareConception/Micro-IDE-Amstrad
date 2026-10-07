@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 import { runCommand, type RunImage } from '../../../packages/emulator/src/run.ts';
 import { CPC_REGISTER_NAMES } from '../../../packages/emulator/src/inspection.ts';
+import { BASIC_DEBUG_PROFILE, basicDebuggerAvailable, type BasicDebugSnapshot, type BasicDebugStopReason } from '../../../packages/emulator/src/basic-debug.ts';
 interface Cpc {
   HEAPU8: Uint8Array; HEAPF32: Float32Array;
   _malloc(bytes: number): number; _free(pointer: number): void;
@@ -12,15 +13,75 @@ interface Cpc {
   _cpc_bridge_frame(): number; _cpc_bridge_palette(): number; _cpc_bridge_ticks(): number;
   _cpc_bridge_audio(pointer: number, capacity: number): number; _cpc_bridge_export(pointer: number, capacity: number): number;
   _cpc_bridge_register(index: number): number; _cpc_bridge_read_ram(address: number, pointer: number, length: number): number;
+  _cpc_bridge_peek(address: number): number; _cpc_bridge_debug_arm(address: number, upperRom: number, tickBudget: number): number;
+  _cpc_bridge_debug_cancel(): number; _cpc_bridge_debug_reason(): number;
 }
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 let cpc: Cpc | undefined, id = '', paused = false, live = false, starting = false, launched = false;
 let image: RunImage, audio = 0, output = 0, held: number | undefined, wait = 0, queue: number[] = [], last = 0, repaint = 0;
 let recognition = false, remainder = 0, framePending = false;
+let debugAvailable = false, debugMode: 'idle' | 'step' | 'continue' = 'idle';
+let debugBreakpoints = new Set<number>(), debugSkipLinePointer: number | undefined;
 const check = (value: number) => { if (value < 0) throw new Error(`Moteur CPC : opération refusée (${value}).`); return value; };
 const send = (value: Record<string, unknown>, transfer: Transferable[] = []) => scope.postMessage({ id, ...value }, transfer);
 function release() { queue = []; held = undefined; wait = 0; cpc?._cpc_bridge_release_keys(); }
-function typeRun() { if (!cpc || launched || paused) return; launched = true; release(); queue = [...runCommand(image.entry)].map(c => c.charCodeAt(0)); send({ type: 'state', phase: 'running', message: `Commande RUN"${image.entry}" envoyée au CPC. Résultat et erreurs visibles sur l’écran.` }); }
+function word(address: number) {
+  if (!cpc || address < 0 || address > 0xfffe) return 0;
+  return check(cpc._cpc_bridge_peek(address)) | check(cpc._cpc_bridge_peek(address + 1)) << 8;
+}
+function debugSnapshot(reason: BasicDebugStopReason): BasicDebugSnapshot | undefined {
+  if (!cpc) return;
+  const linePointer = word(BASIC_DEBUG_PROFILE.linePointerAddress);
+  if (linePointer < 0x100 || linePointer > 0xfffd) return;
+  const line = word(linePointer);
+  const statementPointer = check(cpc._cpc_bridge_register(BASIC_DEBUG_PROFILE.statementRegisterIndex));
+  if (line < 1 || line > 65535 || statementPointer < 0 || statementPointer > 65535) return;
+  return { line, linePointer, statementPointer, ticks: cpc._cpc_bridge_ticks(), reason };
+}
+function rearmBasicDebug(mode: 'step' | 'continue') {
+  if (!cpc || !debugAvailable) return;
+  check(cpc._cpc_bridge_pause(0)); paused = false;
+  check(cpc._cpc_bridge_debug_arm(BASIC_DEBUG_PROFILE.boundary, BASIC_DEBUG_PROFILE.upperRom, BASIC_DEBUG_PROFILE.tickBudget));
+  debugMode = mode;
+}
+function armBasicDebug(mode: 'step' | 'continue') {
+  if (!cpc || !debugAvailable) return;
+  if (paused) { check(cpc._cpc_bridge_pause(0)); paused = false; }
+  else check(cpc._cpc_bridge_debug_cancel());
+  check(cpc._cpc_bridge_debug_arm(BASIC_DEBUG_PROFILE.boundary, BASIC_DEBUG_PROFILE.upperRom, BASIC_DEBUG_PROFILE.tickBudget));
+  debugMode = mode; remainder = 0; last = performance.now(); release();
+}
+function handleBasicDebugStop(): boolean {
+  if (!cpc || debugMode === 'idle') return false;
+  const reason = check(cpc._cpc_bridge_debug_reason());
+  if (!reason) return false;
+  if (reason === 2) {
+    paused = true; debugMode = 'idle'; release();
+    send({ type: 'debug-budget', message: 'Debugger BASIC : budget de sécurité atteint avant le prochain arrêt exploitable.' });
+    return true;
+  }
+  const snapshot = debugSnapshot(debugMode === 'step' ? 'step' : 'breakpoint');
+  if (!snapshot) { rearmBasicDebug(debugMode); return false; }
+  if (debugMode === 'step') {
+    paused = true; debugMode = 'idle'; debugSkipLinePointer = snapshot.linePointer; release();
+    send({ type: 'debug-stop', snapshot });
+    return true;
+  }
+  if (debugSkipLinePointer === snapshot.linePointer) { rearmBasicDebug('continue'); return false; }
+  if (debugSkipLinePointer !== undefined) debugSkipLinePointer = undefined;
+  if (debugBreakpoints.has(snapshot.line)) {
+    paused = true; debugMode = 'idle'; debugSkipLinePointer = snapshot.linePointer; release();
+    send({ type: 'debug-stop', snapshot });
+    return true;
+  }
+  rearmBasicDebug('continue');
+  return false;
+}
+function typeRun() {
+  if (!cpc || launched || paused) return;
+  launched = true; release(); queue = [...runCommand(image.entry)].map(c => c.charCodeAt(0));
+  send({ type: 'state', phase: 'running', message: `Commande RUN"${image.entry}" envoyée au CPC. Résultat et erreurs visibles sur l’écran.` });
+}
 // Only an observed boot screen with an identified firmware may trigger automatic RUN.
 const READY_SCREENS: Record<string, readonly string[]> = {
   'ce133ea170940147f6c73d6c9f9e7a05be81fc8ff9aae8386011c47e593852bf:58503070d553d7152a2dbce40976418281a8bf1f4a5a7ede75269f2e39275977:ea65e0fb44ee93ede4b6c507509b7e5ddf497fb7155023bea91ef229469fa04d': ['463daf9b810f7bc36fb0c570a970269051bd023c91c6db7935ea21c0add3b607'],
@@ -65,7 +126,11 @@ function tick() {
             else { held = queue.shift()!; check(cpc._cpc_bridge_key(held, 1)); wait = 60000; }
           }
         }
+        if (launched && debugAvailable && debugBreakpoints.size && debugMode === 'idle' && !queue.length && held === undefined && !paused) {
+          armBasicDebug('continue');
+        }
         check(cpc._cpc_bridge_step(10000));
+        if (handleBasicDebugStop()) { remainder = 0; break; }
       }
     }
     if (now - repaint >= 40) { repaint = now; frame(); }
@@ -80,6 +145,7 @@ scope.onmessage = event => {
     void (async () => {
       image = value.image as RunImage;
       if (typeof id !== 'string' || image.disk.length !== 194816 || Object.values(image.roms).some(rom => !(rom instanceof Uint8Array) || rom.length !== 16384)) throw new Error('Image CPC invalide.');
+      debugAvailable = basicDebuggerAvailable(image.firmware);
       runCommand(image.entry);
       const moduleUrl = new URL('../emulator/cpc.mjs', scope.location.href).href;
       const { default: createCpc } = await import(/* @vite-ignore */ moduleUrl);
@@ -89,15 +155,42 @@ scope.onmessage = event => {
       try { const os = put(image.roms.os), basic = put(image.roms.basic), amsdos = put(image.roms.amsdos), disk = put(image.disk); check(cpc._cpc_bridge_init(os, 16384, basic, 16384, amsdos, 16384)); check(cpc._cpc_bridge_mount(disk, image.disk.length)); }
       finally { for (const p of allocated) cpc._free(p); }
       audio = cpc._malloc(4096 * 4); output = cpc._malloc(194816); if (!audio || !output) throw new Error('Mémoire CPC indisponible.');
-      live = true; last = performance.now(); send({ type: 'state', phase: 'manual', message: 'CPC démarré. Si RUN ne part pas automatiquement, attendez Ready puis confirmez le prompt.' }); tick();
+      live = true; last = performance.now();
+      send({ type: 'state', phase: 'manual', message: 'CPC démarré. Si RUN ne part pas automatiquement, attendez Ready puis confirmez le prompt.' });
+      send({ type: 'debug-capability', available: debugAvailable, profile: debugAvailable ? 'CPC 6128 · Locomotive BASIC 1.1 qualifié' : undefined });
+      tick();
     })().catch(() => { live = false; cpc?._cpc_bridge_dispose(); send({ type: 'error', message: 'Moteur CPC indisponible ou démarrage refusé. Vérifiez les ROM et le build WebAssembly.' }); });
     return;
   }
   if (!live || !cpc || value.id !== id) return;
   try {
     if (value.type === 'frame-ack') { framePending = false; }
-    else if (value.type === 'pause' && typeof value.paused === 'boolean') { paused = value.paused; remainder = 0; last = performance.now(); release(); check(cpc._cpc_bridge_pause(Number(paused))); frame(); }
+    else if (value.type === 'pause' && typeof value.paused === 'boolean') {
+      if (value.paused) { debugMode = 'idle'; debugSkipLinePointer = undefined; check(cpc._cpc_bridge_debug_cancel()); }
+      paused = value.paused; remainder = 0; last = performance.now(); release(); check(cpc._cpc_bridge_pause(Number(paused))); frame();
+    }
     else if (value.type === 'ready') typeRun();
+    else if (value.type === 'debug-config' && Array.isArray(value.lines) && value.lines.length <= 64 &&
+      value.lines.every((line: unknown) => Number.isInteger(line) && Number(line) >= 1 && Number(line) <= 65535)) {
+      debugBreakpoints = new Set(value.lines as number[]);
+      if (debugAvailable && launched && !paused) {
+        if (debugBreakpoints.size && !queue.length && held === undefined) armBasicDebug('continue');
+        else if (!debugBreakpoints.size) { debugMode = 'idle'; debugSkipLinePointer = undefined; check(cpc._cpc_bridge_debug_cancel()); }
+      }
+      send({ type: 'debug-configured', lines: [...debugBreakpoints] });
+    }
+    else if (value.type === 'debug-step' && debugAvailable && launched) {
+      debugSkipLinePointer = undefined; armBasicDebug('step');
+    }
+    else if (value.type === 'debug-continue' && debugAvailable && launched) {
+      if (debugBreakpoints.size) armBasicDebug('continue');
+      else {
+        debugMode = 'idle'; debugSkipLinePointer = undefined;
+        if (paused) { check(cpc._cpc_bridge_pause(0)); paused = false; }
+        else check(cpc._cpc_bridge_debug_cancel());
+        remainder = 0; last = performance.now();
+      }
+    }
     else if (value.type === 'release') release();
     else if (value.type === 'break' && !paused) { release(); queue = [3, 3]; }
     else if (value.type === 'key' && !paused && !queue.length && held === undefined && Number.isInteger(value.key) && value.key >= 0 && value.key <= 255 && typeof value.down === 'boolean') check(cpc._cpc_bridge_key(value.key, Number(value.down)));

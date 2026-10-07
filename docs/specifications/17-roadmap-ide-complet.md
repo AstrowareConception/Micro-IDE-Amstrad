@@ -109,7 +109,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-051 | Moteur CPC 6128 intégré en worker, boot/run/reset/pause | P | P0 | FW/J0 | Boot BASIC réel, RAM/banques, temps/audio/vidéo et disque vérifiés |
 | IDE-052 | Clavier/focus, joystick, écran pixel net et audio | P | P0 | IDE-051 | Relâchement touches, ESC et retour focus ; captures non altérées |
 | IDE-053 | Disque mutable, OPENOUT, sauvegarde et export session | P | P0 | IDE-051 | Écriture relue par émulateur indépendant ; original DSK intact |
-| IDE-054 | Breakpoints/pas à pas BASIC, variables et pile | B | P2 | FW/Instrumentation | État réel expliqué, pas de debugger simulé ; limites ROM visibles |
+| IDE-054 | Breakpoints/pas à pas BASIC, variables et pile | P | P2 | FW/Instrumentation | 0.38 : breakpoints de lignes et pas statement ancrés sur le BASIC 1.1 qualifié, ligne/pointeurs/ticks réels ; variables, pile GOSUB, Step Over/Out, gutter Monaco et autres firmwares restent ouverts |
 | IDE-055 | Mémoire, banques, désassemblage Z80 et snapshots | P | P2 | IDE-051 | 0.35 : registres et RAM derrière ROM en pause, huit configurations de banques ; désassemblage/snapshots/restauration ouverts |
 | IDE-056 | CPC 464/664 puis Plus et autres Amstrad | N | P2 | Profils qualifiés | Recette propre à chaque machine ; aucun support déduit du seul 6128 |
 
@@ -142,7 +142,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | --- | --- | --- | --- | --- | --- |
 | IDE-070 | IPC, liens/chemins, documents inertes, budgets et secrets | P | P0 | Tous | Frontières déjà testées ; audit complet plateformes/codecs avant 1.0 |
 | IDE-071 | Tests unitaires, intégration, Electron et matrice Windows/Linux/macOS | P | P0 | WIN/J6 | CI Linux livrée ; installation Windows propre, plateformes annoncées exactes |
-| IDE-072 | Installateurs, signatures, notices et mises à jour contrôlées | N | P0 | IDE-071 | Installation/désinstallation/upgrade sans perte ; attestations et licences |
+| IDE-072 | Installateurs, signatures, notices et mises à jour contrôlées | N | P0 | IDE-071 | 0.38.1 visera un Packaging Preview non signé (NSIS/portable Windows, AppImage/deb Linux, artefacts CI) ; signatures, auto-update et canaux stables restent requis pour 1.0 |
 | IDE-073 | Performance, gros projets, travailleurs et accessibilité mesurées | P | P0 | J6 | 0.34 : limites parser/cache, benchmark 5 000 lignes et monitoring visible seulement ; mesure de bout en bout sur matériel cible et sessions longues ouvertes |
 | IDE-074 | Guides intégrés, onboarding, exemples et diagnostic support | P | P1 | IDE-071 | Guides français livrés ; aide in-app/export diagnostic expurgé et exemples CPC qualifiés |
 | IDE-075 | Identité CPCéleste, icônes et cohérence visuelle | L | P1 | PR 14 | Nom/logo intégrés, charte disponible ; déclinaisons packaging à compléter avec IDE-072 |
@@ -240,3 +240,26 @@ IDE-002 avance avec [l’arbre réel du projet](../implementation/project-explor
 ## Qualité BASIC — alpha 0.36, 6 octobre 2026
 
 Demande produit : rapport ponctuel de longueur, complexité et code smells. [Réalisation](../implementation/basic-quality-alpha.md), [ADR 0043](../adr/0043-rapport-qualite-basic.md). Le socle local travaille en worker jetable sur un snapshot de buffers, sans passe supplémentaire pendant la frappe. Les remarques sont des observations ou des pistes de revue, distinctes des diagnostics syntaxiques. La complexité est une estimation lexicale par listing ; aucun score global ni somme entre programmes. Les corrections et la revue IA restent explicites et à construire.
+
+
+## Avancement alpha 0.37 — 7 octobre 2026
+
+IDE-077 passe de N à P avec les tests BASIC à la demande : listings de test autonomes, assertions natives via zone RAM réservée, machines et disquettes isolées, timeouts et rapports structurés avec provenance. La génération de scénarios persistants, les entrées clavier, assertions écran/fichiers, couverture et génération IA restent ouvertes. [Guide](../implementation/basic-tests-alpha.md), [ADR 0044](../adr/0044-tests-basic-isoles.md). PR #40 fusionnée sur main.
+
+## Avancement alpha 0.38 — debugger BASIC réel
+
+IDE-054 passe de B à P. Le debugger réutilise le hook machine qualifié en 0.35 sur le Locomotive BASIC 1.1 exact : frontière interpréteur `&DE60`, pointeur de ligne lu depuis `&AE1D`, pointeur de statement observé dans HL. Le worker peut effectuer un pas statement, continuer jusqu’à l’un de 64 breakpoints de lignes, puis exposer ligne/pointeurs/ticks pendant que la machine est réellement figée et inspectable. Les hashes firmware conditionnent strictement l’activation ; aucune autre ROM n’est déclarée compatible par extrapolation. Variables, tableaux, chaînes, pile GOSUB/RETURN, Step Over/Out, watchpoints et gutter Monaco restent ouverts. [Guide](../implementation/basic-debugger-alpha.md), [ADR 0045](../adr/0045-debugger-basic-firmware-qualifie.md).
+
+## Trajectoire immédiate validée — 7 octobre 2026
+
+| Version | Lot | Sortie visée |
+| --- | --- | --- |
+| 0.38 | Debugger BASIC | Breakpoints lignes, pas statement, continue, ligne réellement exécutée et inspection CPC stable |
+| 0.38.1 | Packaging Preview | `CPCeleste-Setup-0.38.1.exe`, portable Windows, AppImage et deb Linux, moteur WASM embarqué, artefacts GitHub Actions et checksums ; builds alpha non signés |
+| 0.39 | Tests BASIC 2.0 | Suites persistantes, fixtures, clavier, écran/RAM/fichiers et instrumentation enrichie |
+| 0.40 | Analyse statique 2.0 | CFG/call graph, complexité consolidée, dead code et boucles/sous-routines |
+| 0.41 | Intelligence IDE | symboles/usages, renommage sémantique, inspections et quick fixes |
+| 0.42 | Profiler CPC/BASIC | hotspots, fréquence d’exécution et coûts observés |
+| 0.43 | Agent IA observant le CPC | analyser, tester, exécuter, debugger, corriger et revérifier sous permissions explicites |
+
+Le Packaging Preview est volontairement avancé avant la 1.0 afin de détecter tôt les différences entre exécution de développement et application réellement installée : chemins `asar`, workers, WASM, ressources, stockage utilisateur, firmware privé et upgrade. La 1.0 conservera IDE-071/072 comme critères de qualification, signature et mise à jour contrôlée.
