@@ -1,0 +1,52 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { spawn } from 'node:child_process';
+import { chromium, expect } from '@playwright/test';
+import { buildListingDisk } from '../packages/basic-language/src/build.ts';
+import { BASIC_TEST_EXAMPLE } from '../packages/emulator/src/basic-tests.ts';
+import { BASIC_TEST_FIRMWARE, basicTestHash } from '../packages/emulator/src/basic-test-runtime.ts';
+const root = process.env.CPC_TEST_ROM_DIR;
+if (!root) throw new Error('CPC_TEST_ROM_DIR requis ; ROM jamais incluses dans les captures.');
+const roms = Object.fromEntries(await Promise.all(['os', 'basic', 'amsdos'].map(async role => [role, Array.from(await readFile(join(root, `cpc6128_${role}.bin`)))])));
+const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--config', 'apps/desktop/vite.config.ts', '--host', '127.0.0.1', '--port', '5173', '--strictPort'], { stdio: ['ignore', 'pipe', 'pipe'] });
+let browser;
+const errors = [];
+try {
+ await new Promise((resolve, reject) => { const timer = setTimeout(() => reject(new Error('Vite timeout')), 15000); server.stdout.on('data', chunk => { if (String(chunk).includes('127.0.0.1')) { clearTimeout(timer); resolve(); } }); server.once('exit', code => { clearTimeout(timer); reject(new Error(`Vite exited ${code}`)); }); });
+ browser = await chromium.launch({ headless: true });
+ const page = await browser.newPage({ viewport: { width: 1440, height: 960 }, acceptDownloads: true }); page.on('pageerror', error => errors.push(error.message));
+ await page.exposeFunction('prepareTestImage', async request => {
+  assert.deepEqual(Object.keys(request), ['source']);
+  const disk = buildListingDisk(request.source);
+  return { disk: Array.from(disk), entry: 'MAIN.BAS', label: 'Recette firmware', sha256: await basicTestHash(disk), firmware: BASIC_TEST_FIRMWARE, roms };
+ });
+ await page.addInitScript(source => {
+  window.testCount = 0; window.testStops = 0;
+  window.desktop = { setDirty() {}, open: async () => ({ name: 'tests-score.bas', source }), emulator: { prepare: async request => {
+   window.testCount++; const image = await window.prepareTestImage(request);
+   return { ...image, disk: new Uint8Array(image.disk), roms: Object.fromEntries(Object.entries(image.roms).map(([role, bytes]) => [role, new Uint8Array(bytes)])) };
+  } } };
+  const NativeWorker = window.Worker;
+  window.Worker = new Proxy(NativeWorker, { construct(Target, args) { const worker = new Target(...args); if (String(args[0]).includes('basic-test-worker')) { const terminate = worker.terminate.bind(worker); worker.terminate = () => { window.testStops++; terminate(); }; } return worker; } });
+ }, BASIC_TEST_EXAMPLE);
+ await page.goto('http://127.0.0.1:5173'); await page.locator('.view-lines').first().waitFor(); await page.getByRole('button', { name: 'Ouvrir', exact: true }).click();
+ await page.getByRole('navigation', { name: 'Panneaux de sortie', exact: true }).getByRole('button', { name: 'Tests BASIC', exact: true }).click();
+ const panel = page.getByRole('region', { name: 'Tests BASIC', exact: true });
+ assert.equal(await page.evaluate(() => window.testCount), 0);
+ await panel.getByRole('button', { name: 'Exécuter les tests BASIC', exact: true }).click();
+ await expect(panel.getByRole('heading', { level: 3 })).toContainText('Réussi', { timeout: 30000 }); await expect(panel.locator('tbody tr')).toHaveCount(2);
+ assert.equal(await page.evaluate(() => window.testStops), 1);
+ const downloadPending = page.waitForEvent('download'); await panel.getByRole('button', { name: 'Exporter JSON', exact: true }).click();
+ const downloaded = await downloadPending, chunks = []; for await (const chunk of await downloaded.createReadStream()) chunks.push(chunk);
+ const report = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+ assert.equal(report.results[0].outcome, 'passed'); assert.deepEqual(report.results[0].cases.map(test => test.observed), [1, 1]); assert.deepEqual(report.results[0].firmware, BASIC_TEST_FIRMWARE);
+ assert.equal(report.results[0].sourceSha256, await basicTestHash(new TextEncoder().encode(BASIC_TEST_EXAMPLE)));
+ assert.ok(!JSON.stringify(report).includes('score=100'));
+ await page.getByRole('button', { name: 'Agrandir les sorties', exact: true }).click(); await page.screenshot({ path: 'out/basic-tests-firmware-browser.png' }); await page.getByRole('button', { name: 'Restaurer les sorties', exact: true }).click();
+ const input = page.locator('.listing .monaco-editor textarea'); await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText(BASIC_TEST_EXAMPLE.replace('score=150 THEN', 'score=151 THEN'));
+ await expect(panel).toContainText('Rapport obsolète'); assert.equal(await page.evaluate(() => window.testCount), 1);
+ await panel.getByRole('button', { name: 'Exécuter les tests BASIC', exact: true }).click(); await expect(panel.getByRole('heading', { level: 3 })).toContainText('Échoué', { timeout: 30000 });
+ assert.equal(await page.evaluate(() => window.testStops), 2); assert.deepEqual(errors, []);
+ console.log('Real BASIC assertions in browser worker: pass/fail, SHA-256 provenance, immutable dirty source and worker disposal passed.');
+} finally { await browser?.close(); server.kill('SIGTERM'); }

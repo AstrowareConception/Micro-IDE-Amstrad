@@ -1,6 +1,6 @@
 {
   "name": "micro-ide-amstrad",
-  "version": "0.36.0",
+  "version": "0.37.0",
   "main": "dist/apps/desktop/main.js",
   "private": true,
   "type": "module",
@@ -18,6 +18,8 @@
     "emulator:prepare": "node scripts/emulator-build.mjs",
     "start": "electron .",
     "test:editor": "node tests/editor-smoke.mjs",
+    "test:basic-runtime": "node tests/basic-test-runtime-smoke.mjs",
+    "test:basic-browser": "node tests/basic-tests-firmware-smoke.mjs",
     "test:emulator": "node tests/emulator-ui-smoke.mjs",
     "test:desktop": "node tests/desktop-smoke.mjs",
     "build:hello": "node scripts/disk-cli.mjs build examples/hello-cpc/src/main.bas out/hello.dsk MAIN.BAS",

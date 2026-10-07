@@ -10,7 +10,7 @@ Il suffit parfois d’un `MODE 1`, de quelques couleurs et d’une idée pour re
 
 Le fil conducteur est simple : **garder la création au centre, raccourcir le chemin entre une idée et son résultat, et vous laisser comprendre ce que l’outil fait.** Le BASIC reste du BASIC, vos sources restent des fichiers texte et votre projet reste un dossier que vous pouvez conserver, déplacer et versionner.
 
-Cette notice présente les fonctions livrées dans **CPCéleste 0.36.0, alpha desktop**, au **7 octobre 2026**. Elle réunit découverte du produit et mode d’emploi. Les captures représentent l’interface réelle ; celles issues des recettes automatisées utilisent des données de démonstration. Leur [provenance détaillée](images/guide-utilisateur/README.md) distingue captures locales, Electron et services distants simulés. Cliquez sur une image pour l’ouvrir en grand dans GitHub.
+Cette notice présente les fonctions livrées dans **CPCéleste 0.37.0, alpha desktop**, au **7 octobre 2026**. Elle réunit découverte du produit et mode d’emploi. Les captures représentent l’interface réelle ; celles issues des recettes automatisées utilisent des données de démonstration. Leur [provenance détaillée](images/guide-utilisateur/README.md) distingue captures locales, Electron et services distants simulés. Cliquez sur une image pour l’ouvrir en grand dans GitHub.
 
 <a id="sommaire"></a>
 ## Votre parcours dans la notice
@@ -115,6 +115,7 @@ L’organisation accompagne le geste de programmation : **outils à gauche, code
 | Onglets et éditeur central | Passer d’une source à l’autre en conservant curseur et annulation |
 | Assistant IA | Saisir une mission, suivre son activité et examiner les changements |
 | Sorties | Problèmes, CPC, terminal, qualité, performance et journal Git |
+| Tests BASIC (0.37) | Assertions natives sur listings autonomes, rapports à la demande et provenance |
 | Cloche et bande de notification | Retrouver les retours de l’atelier et rejoindre leurs détails |
 | Barre d’état | Position du curseur et contexte courant |
 
@@ -471,6 +472,16 @@ Les numéros, espaces, casse et commentaires sont normalisés pour rechercher le
 
 Si vous éditez, renommez ou supprimez une source, le rapport devient obsolète et demande un nouveau calcul avant navigation. Vous pouvez annuler une analyse. Les exports contiennent la date, les métriques, les remarques et la couverture, sans inclure les listings ou leurs extraits. Les limites et omissions sont indiquées ; une absence de remarque ne certifie pas la qualité du programme.
 
+### Vérifier le comportement avec les tests BASIC (0.37)
+
+La lisibilité ne suffit pas : **vos routines doivent aussi produire les bons résultats**. Ouvrez [l’exemple de tests de score](../examples/basic-tests/tests-score.bas), puis **BASIC → Tests BASIC à la demande…** ou l’onglet **Tests BASIC**. Choisissez le listing actif ou les listings déclarés parmi les sources chargées, puis lancez les tests explicitement.
+
+Chaque programme de test s’exécute par les ROM sur un CPC et un DSK isolés. Vos buffers, brouillons et session interactive restent intacts. Les assertions sont écrites en BASIC, déclarées par des lignes `REM @CPCTEST` et transmettent leurs résultats via une petite zone RAM réservée avec `MEMORY &7FFF`. L’exemple montre deux scénarios et une routine GOSUB ; aucune syntaxe ASSERT nouvelle ni extraction automatique de routine.
+
+Le rapport distingue **réussi, échoué, incomplet, délai dépassé, bloqué et annulé**. Il conserve les hashes de la source réellement testée, du DSK et des ROM, ainsi que le temps émulé. Modifier le code rend le rapport obsolète sans lancer un nouveau test. Exportez Markdown ou JSON sans inclure vos sources ou les ROM.
+
+Le premier banc accepte le jeu 6128 anglais identifié, jusqu’à 8 listings autonomes de 16 Kio et 32 assertions chacun. Le budget après RUN est réglable de 1 à 15 secondes émulées ; un délai ou une fin sans résultats complets ne vaut jamais réussite. Pas encore de clavier scénarisé, couverture ou tests visuels/fichiers. [Convention, exemple et limites détaillées](implementation/basic-tests-alpha.md).
+
 ### Observer la réactivité de l’IDE
 
 **Affichage → Afficher les mesures de performance**, ou l’onglet **Performance**, expose durées d’analyse par source, réutilisation du cache, révisions et compteurs de demandes acceptées ou périmées. **Recommencer** remet cette observation à zéro sans relancer le parser.
@@ -723,7 +734,7 @@ CPCéleste est déjà un atelier riche, utilisable pour écrire, organiser, anal
 | Terminal | Commandes hôte bornées, sorties et arrêt | PTY et expérience interactive complète |
 | Distribution | Application Electron construite depuis les sources, archives CI | Installateur autonome signé, auto-update et qualification multiplateforme complète |
 
-La référence actuelle est le **CPC 6128 classique avec Locomotive BASIC 1.1 et AMSDOS**. Les succès sur ce profil ne valent pas promesse de compatibilité CPC 664, Plus, PCW ou PC-1512. Aucun framework de tests unitaires BASIC exécutés sur CPC n’est livré comme fonction utilisateur ; les tests du dépôt vérifient les composants de l’IDE et les recettes documentées.
+La référence actuelle est le **CPC 6128 classique avec Locomotive BASIC 1.1 et AMSDOS**. Les succès sur ce profil ne valent pas promesse de compatibilité CPC 664, Plus, PCW ou PC-1512. Depuis 0.37, le banc **Tests BASIC** exécute les assertions de listings autonomes sur le jeu anglais identifié ; il reste distinct des tests internes de l’IDE et ne fournit pas de couverture ou de lecteur de variables.
 
 La [roadmap qualifiée](specifications/17-roadmap-ide-complet.md) décrit les objectifs et leur état. Les éléments futurs y restent clairement distingués des capacités que vous pouvez utiliser aujourd’hui.
 

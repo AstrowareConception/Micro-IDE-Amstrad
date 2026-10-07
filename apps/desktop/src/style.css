@@ -259,6 +259,11 @@ select{font:inherit;width:100%;margin:8px 0;background:var(--input);color:inheri
 .cpc-inspection th, .cpc-inspection td { padding: .4rem; text-align: left; border-bottom: 1px solid var(--line); }
 
 .quality-panel { padding: 12px; }
+.quality-panel pre { overflow-x: auto; }
+.basic-test-result { margin: 12px 0; padding: 12px; border: 1px solid var(--line); border-radius: 6px; overflow-x: auto; }
+.basic-test-result table { width: 100%; border-collapse: collapse; text-align: left; }
+.basic-test-result th, .basic-test-result td { padding: 8px; border-bottom: 1px solid var(--line); }
+.basic-test-result details p { overflow-wrap: anywhere; }
 .quality-actions { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin-bottom: 10px; }
 .quality-actions label { display: grid; gap: 4px; }
 .quality-metrics { overflow-x: auto; margin: 12px 0; }

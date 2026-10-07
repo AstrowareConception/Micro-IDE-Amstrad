@@ -89,6 +89,8 @@ jobs:
           git clone --no-checkout https://github.com/floooh/chips-test.git .cache/firmware-reference
           git -C .cache/firmware-reference checkout 3785836e76c43922f78a50e1f8adfed259ab9672
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node tests/firmware-runtime.mjs
+          CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node tests/basic-test-runtime-smoke.mjs
+          CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node tests/basic-tests-firmware-smoke.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-basic-debug.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms CPC_UI_MODE=browser node tests/emulator-ui-smoke.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms xvfb-run -a node tests/emulator-ui-smoke.mjs

@@ -44,6 +44,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-018 | Templates/snippets, insertion de lignes et conventions | N | P1 | IDE-014 | Numéros sans collision ; génération minimale conforme au profil |
 | IDE-019 | Formatage optionnel et inspections/corrections ciblées | N | P2 | IDE-014 | Sémantique inchangée ; aperçu ; aucune casse/espacement opaque détruit |
 | IDE-076 | Rapport de qualité BASIC à la demande | P | P2 | IDE-014 | 0.36 : métriques lexicales, complexité estimée, cinq règles, navigation protégée et exports ; graphe de contrôle, sous-programmes et revue IA contextuelle restent ouverts |
+| IDE-077 | Tests de programmes BASIC à la demande | P | P1 | IDE-050, FW | 0.37 : listings autonomes déclarés, assertions natives par RAM réservée, machines/disques isolés et rapports à provenance ; scénarios persistants, clavier, écran/fichiers, couverture et génération IA restent ouverts |
 | IDE-020 | Multi-curseurs, pliage, signets, navigation retour/avance | P | P1 | Monaco | Gestes repris explicitement en recette, sessions conservées ; capacité Monaco seule insuffisante |
 
 ## 4. Recherche et transformations textuelles

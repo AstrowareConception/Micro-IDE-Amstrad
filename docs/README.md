@@ -1,8 +1,10 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.36
+# CPCéleste — Dossier de conception et réalisation — version 0.37
+
+**Tests BASIC 0.37** : listings autonomes sur machines isolées, assertions natives et rapport borné à la demande. [Guide et limites](implementation/basic-tests-alpha.md), [ADR 0044](adr/0044-tests-basic-isoles.md).
 
 ## Vous cherchez le mode d’emploi ?
 
-**[Présentation commerciale et notice utilisateur illustrée de CPCéleste](guide-utilisateur.md)** : 25 chapitres, 20 captures, tous les parcours de la version 0.36, des premiers pas aux fonctions avancées.
+**[Présentation commerciale et notice utilisateur illustrée de CPCéleste](guide-utilisateur.md)** : 25 chapitres, 20 captures, les parcours de la version 0.36 complétés par les tests BASIC 0.37, des premiers pas aux fonctions avancées.
 
 Le dossier ci-dessous conserve les spécifications et les rapports des incréments successifs.
 
