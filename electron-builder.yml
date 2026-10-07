@@ -1,0 +1,48 @@
+appId: com.astroware.cpceleste
+productName: CPCéleste
+asar: true
+compression: normal
+npmRebuild: false
+directories:
+  output: release
+files:
+  - dist/**/*
+  - package.json
+  - LICENSE
+  - licenses/**/*
+win:
+  icon: apps/desktop/public/brand/cpceleste-icon.png
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+nsis:
+  oneClick: true
+  perMachine: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: CPCéleste
+  artifactName: CPCeleste-Setup-${version}.${ext}
+portable:
+  artifactName: CPCeleste-Portable-${version}.${ext}
+linux:
+  icon: apps/desktop/public/brand/cpceleste-icon.png
+  category: Development
+  maintainer: AstroWare Conception
+  vendor: AstroWare Conception
+  synopsis: IDE Locomotive BASIC pour Amstrad CPC
+  description: Atelier desktop CPCéleste pour éditer, analyser, tester et exécuter du Locomotive BASIC avec émulation CPC intégrée.
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+appImage:
+  artifactName: CPCeleste-${version}-x86_64.AppImage
+deb:
+  artifactName: cpceleste_${version}_amd64.deb
