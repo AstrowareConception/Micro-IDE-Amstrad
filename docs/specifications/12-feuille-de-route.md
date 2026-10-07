@@ -1,5 +1,7 @@
 # 12 — Feuille de route et backlog de réalisation
 
+**Tests BASIC 0.37** : premier banc d’assertions natives à la demande, listings de test autonomes, CPC/DSK isolés, rapports et provenance. [Guide](../implementation/basic-tests-alpha.md), [ADR 0044](../adr/0044-tests-basic-isoles.md). IDE-077 partiel ; fixtures/scénarios persistants, assertions écran/fichier, couverture et outils IA restent ouverts. Suite : consolidation du débogueur BASIC puis aide IA aux tests, sans verdict donné par le modèle.
+
 **Qualité BASIC 0.36** : rapport local à la demande sur la source active ou les buffers chargés ; longueurs, segments, complexité estimée et cinq pistes de revue localisées. Exports Markdown/JSON, annulation et sources modifiées signalées. [Guide et limites](../implementation/basic-quality-alpha.md).
 
 **Inspection CPC 0.35** : registres Z80 et RAM logique en pause, lecture à la demande ; première preuve ciblée de frontières BASIC en natif/WASM, sans débogueur BASIC public. [Guide et limites](../implementation/cpc-inspection-alpha.md).

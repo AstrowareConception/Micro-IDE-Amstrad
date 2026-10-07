@@ -40,6 +40,7 @@ Chaque ligne est une exigence normative identifiable. **MVP** signifie attendue 
 | REQ-EMU-007 | Conserver sur une copie les écritures disque du programme et permettre leur export explicite, sans altérer le DSK de construction. | MVP | ACC-11 |
 | REQ-EMU-008 | Isoler un crash ou une boucle infinie de l'émulateur ; arrêter la session sans perdre le projet. | 1.0 | ACC-14 |
 | REQ-EMU-009 | Afficher les capacités et résultats de qualification par profil ; activer 464/664/Plus uniquement après preuves dédiées. | Suite | ACC-17 |
+| REQ-EMU-010 | Exécuter à la demande des listings de test BASIC autonomes sur des CPC/disques isolés, avec assertions déclarées, profil ROM identifié, budgets et annulation. Produire un rapport à provenance sans code/ROM, distinguer réussite, échec, incomplet, délai et blocage ; un état terminé sans résultats ne vaut pas réussite. | Suite | ACC-37 |
 | REQ-DSK-001 | Exporter un DSK standard AMSDOS DATA, 40 pistes, 1 face, 9 secteurs de 512 octets ; CAT et RUN fonctionnent ailleurs. | MVP | ACC-11 |
 | REQ-DSK-002 | Fournir les noms exacts, tailles, espace disponible et commande de lancement avant l'export ; écrire atomiquement la destination. | MVP | ACC-07 |
 | REQ-DSK-003 | Inspecter les DSK standard et Extended compatibles ; un format ou une protection non pris en charge est annoncé sans altération. | MVP | ACC-12 |

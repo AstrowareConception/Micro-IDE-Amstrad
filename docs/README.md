@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.36
+# CPCéleste — Dossier de conception et réalisation — version 0.37
+
+**Tests BASIC 0.37** : listings autonomes sur machines isolées, assertions natives et rapport borné à la demande. [Guide et limites](implementation/basic-tests-alpha.md), [ADR 0044](adr/0044-tests-basic-isoles.md).
 
 **Qualité BASIC 0.36** : rapport local à la demande sur la source active ou les buffers chargés ; longueurs, segments, complexité estimée et cinq pistes de revue localisées. Exports Markdown/JSON, annulation et sources modifiées signalées. [Guide et limites](implementation/basic-quality-alpha.md).
 
