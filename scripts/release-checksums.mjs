@@ -9,7 +9,7 @@ export function distributionArtifacts(directory) {
   return readdirSync(directory, { withFileTypes: true })
     .filter(entry => entry.isFile() && DISTRIBUTION.test(entry.name))
     .map(entry => entry.name)
-    .sort((a, b) => a.localeCompare(b, 'en'));
+    .sort();
 }
 
 export function writeChecksums(directory, outputName = 'SHA256SUMS.txt') {
