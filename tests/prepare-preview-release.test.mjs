@@ -16,6 +16,7 @@ const artifacts = ['cpceleste-windows-preview', 'cpceleste-linux-preview'].map(n
 
 test('release promotion accepts one successful main packaging run only', () => {
   assert.equal(validateSource(run, artifacts, repository, '123'), sha);
+  assert.equal(validateSource({ ...run, event: 'schedule' }, artifacts, repository, '123'), sha);
   for (const patch of [{ conclusion: 'failure' }, { status: 'in_progress' }, { head_branch: 'feature' },
     { event: 'pull_request' }, { path: '.github/workflows/editor.yml' }, { head_repository: { full_name: 'fork/cpceleste' } }]) {
     assert.throws(() => validateSource({ ...run, ...patch }, artifacts, repository, '123'));

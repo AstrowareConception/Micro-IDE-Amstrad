@@ -16,6 +16,10 @@ Ces paquets sont des previews alpha non signées. Les ROM Amstrad ne sont pas pr
 <a id="telecharger"></a>
 ## Télécharger et démarrer
 
+L’entrée principale est désormais **[GitHub Releases](https://github.com/AstrowareConception/Micro-IDE-Amstrad/releases)**. Ouvrir la préversion la plus récente puis **Assets** : les quatre paquets, les empreintes SHA-256, les preuves de démarrage et la provenance sont joints. Les pièces jointes d’une release publique ne subissent pas la rétention de 14 jours des artefacts Actions et sont téléchargeables sans connexion GitHub. Les anciennes préversions sont conservées ; le workflow n’écrase aucun fichier publié.
+
+### Archive initiale 0.38.1
+
 Build vérifié le **7 octobre 2026** : [exécution 37609669941](https://github.com/AstrowareConception/Micro-IDE-Amstrad/actions/runs/37609669941), commit `06e19b956b955bf5fba9a56a6d8c89a4ea4cd1fb`. Les deux jobs de packaging et les deux contrôles de démarrage du binaire empaqueté sont réussis.
 
 | Archive | Contenu |
@@ -69,11 +73,24 @@ La preuve exige :
 
 Sous Linux CI, le binaire unpacked est lancé sous Xvfb avec `--no-sandbox` pour éviter de confondre la politique sandbox du runner avec le contenu du paquet.
 
-## GitHub Actions et release
+## GitHub Actions et publication automatique
 
-Le workflow `.github/workflows/package-preview.yml` construit nativement les deux plateformes sur demande (`workflow_dispatch`, en sélectionnant la branche à qualifier), sur les changements de `main` correspondant aux chemins surveillés, ou sur tag preview. Il ne se déclenche plus à chaque mise à jour de pull request. Une nouvelle exécution manuelle sur la même branche annule la précédente ; les publications par tag ne sont pas interrompues automatiquement. Chaque job publie ses artefacts CI et son rapport de smoke test.
+Le workflow `.github/workflows/package-preview.yml` vérifie `main` **chaque lundi à 03 h 17 UTC** (04 h 17 en hiver et 05 h 17 en été en France), via le cron `17 3 * * 1`. GitHub peut différer une exécution planifiée. Un lancement manuel reste disponible : **Actions → Desktop packaging preview → Run workflow → main**.
 
-Un tag de forme `v*-preview*` déclenche en plus un job final qui récupère les artefacts Windows et Linux du même run, régénère un `SHA256SUMS.txt` global et crée une GitHub Release en brouillon.
+Les modifications du workflow de packaging ou de son script de publication sur `main` déclenchent également une exécution, afin de qualifier la mise en place et la maintenance de la chaîne de distribution. Les autres commits applicatifs et les PR ne déclenchent plus de packaging automatique. Les contrôles courants de CI restent actifs.
+
+1. Calculer une empreinte des entrées Git de construction : contenus, chemins et modes des fichiers ; code, corpus embarqué, licences, dépendances, locks, scripts et configuration du packaging sont inclus. `docs/`, tests, exemples, README racine, AGENTS et workflows hors packaging sont exclus.
+2. Comparer cette empreinte à la dernière préversion **automatique publiée**. Si elle est identique et que tous les fichiers attendus sont présents, terminer sans compilation ni nouvelle release. Une modification uniquement documentaire n’entraîne donc aucun nouveau build.
+3. Sinon, construire Windows x64 (NSIS + portable) et Linux x64 (AppImage + deb). Exécuter TypeScript et les tests Node sur Linux, puis contrôler le démarrage et l’accès UI/WASM du binaire réellement empaqueté sur chaque plateforme.
+4. Seulement si les deux jobs réussissent, récupérer leurs artefacts du même run, vérifier leurs SHA-256 d’origine et leurs preuves de démarrage, puis publier une **préversion publique** au commit exact construit.
+
+Le tag est unique : `v<version>-preview.<run_id>`. Chaque release contient les quatre paquets, `SHA256SUMS.txt`, les deux rapports `packaged-smoke-*.json`, `build-provenance.json` et `README-PREVIEW.md`. La version interne du logiciel reste celle de `package.json` ; le tag et le commit distinguent les builds d’une même alpha. Aucune préversion n’est promue automatiquement en version stable « Latest ».
+
+Une seule exécution de publication est active à la fois ; une nouvelle demande ne coupe pas un upload en cours. Un échec bloque la publication et n’entraîne aucune boucle de relance automatique. Corriger la cause puis relancer manuellement le workflow permet de repartir du `main` corrigé. Le workflow ne supprime ni ancienne release ni tag. Les événements créés avec `GITHUB_TOKEN` ne lancent pas de nouvelle cascade de workflows de publication.
+
+Les artefacts Actions restent conservés 14 jours pour diagnostic ; la disponibilité durable repose sur les pièces jointes des Releases. Cette automatisation ne fournit pas encore de signature ni de mise à jour automatique **dans** l’IDE.
+
+Références : [événements GitHub Actions](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows), [publication avec GitHub CLI](https://cli.github.com/manual/gh_release_create).
 
 ## Préparer une release sans reconstruire
 

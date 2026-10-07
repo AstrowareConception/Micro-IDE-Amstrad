@@ -10,7 +10,7 @@ export function validateSource(run, artifacts, repository, runId) {
   if (!/^\d+$/.test(String(runId)) || String(run.id) !== String(runId)
     || run.repository?.full_name !== repository || run.head_repository?.full_name !== repository
     || run.path !== '.github/workflows/package-preview.yml' || run.head_branch !== 'main'
-    || !['push', 'workflow_dispatch'].includes(run.event)
+    || !['push', 'workflow_dispatch', 'schedule'].includes(run.event)
     || run.status !== 'completed' || run.conclusion !== 'success'
     || !/^[a-f0-9]{40}$/.test(run.head_sha)) {
     throw new Error('La source doit être un packaging réussi de main dans ce dépôt.');

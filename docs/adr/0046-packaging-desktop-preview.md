@@ -22,13 +22,13 @@ La 0.38.1 introduit un **Packaging Preview** volontairement non signé :
 - `electron-builder` stable **26.17.0** épinglé dans la commande de packaging, sans dépendance runtime supplémentaire ;
 - construction sur la plateforme cible : Windows sur runner Windows, Linux sur runner Linux ;
 - checksums SHA-256 des artefacts distribuables ;
-- GitHub Release en brouillon uniquement lorsqu’un tag `v*-preview*` déclenche le workflow.
+- première stratégie : brouillon de release sur tag preview ; remplacée le 7 octobre par la publication périodique décrite ci-dessous.
 
 La CI lance ensuite le **binaire réellement empaqueté**, fenêtre masquée, et lui demande une preuve minimale : `app.isPackaged`, version, URL `cpceleste://app/index.html` et lecture du vrai `cpc.wasm` par le protocole applicatif. Ce mode de smoke test n’est actif qu’en application empaquetée et lorsque la variable de CI dédiée est fournie.
 
 ## Maîtrise des déclenchements CI — 7 octobre 2026
 
-La fabrication des installateurs est déclenchée explicitement sur la branche à qualifier, sur les changements pertinents de `main`, ou par tag preview. Elle ne se répète plus à chaque commit de pull request. Les contrôles courants restent automatiques sur PR et sur `main`, avec annulation des exécutions obsolètes et sans doublon `push`/PR sur une branche de travail. La recette du binaire empaqueté reste obligatoire pour qualifier une livraison.
+La stratégie initiale combinait lancement manuel, changements pertinents de `main` et tag preview. La cadence périodique ci-dessous la remplace à la demande produit. Elle ne se répète plus à chaque commit de pull request. Les contrôles courants restent automatiques sur PR et sur `main`, avec annulation des exécutions obsolètes et sans doublon `push`/PR sur une branche de travail. La recette du binaire empaqueté reste obligatoire pour qualifier une livraison.
 
 ## Frontières de distribution
 
@@ -47,3 +47,11 @@ La recette empaquetée devient une régression permanente afin qu’une modifica
 ## Distribution depuis un build existant — 7 octobre 2026
 
 Un workflow manuel distinct peut créer un brouillon de préversion depuis les artefacts encore disponibles d’un packaging réussi de `main`. Il conserve le commit source et les binaires, vérifie leurs empreintes d’origine et leurs preuves de démarrage, et ajoute une provenance explicite. Il ne reconstruit pas le produit et ne publie pas automatiquement le brouillon. Un tag existant est refusé. Ce parcours évite de reconstruire simplement pour rendre les téléchargements durables.
+
+## Publication périodique autorisée — 7 octobre 2026
+
+La demande produit autorise la construction régulière et la publication publique des exécutables. Le workflow existant devient hebdomadaire (lundi 03 h 17 UTC), lançable manuellement sur `main`. Les modifications de sa propre configuration ou du script de publication déclenchent sa qualification ; les autres pushes applicatifs et les tags ne déclenchent plus de packaging.
+
+Une empreinte des entrées Git de construction est comparée à la dernière préversion automatique publiée et complète. Les changements documentaires seuls ne déclenchent pas de compilation. En cas de changement, les deux plateformes sont construites, la suite Node/TypeScript est exécutée sur Linux et les deux binaires empaquetés passent leur smoke test. Le job final vérifie les empreintes d’origine et les preuves UI/WASM avant publication d’une préversion publique au SHA exact.
+
+La release porte un tag unique `v<version>-preview.<run_id>`, reste hors du canal stable et conserve binaires, SHA-256, rapports et provenance. Aucun remplacement d’asset, suppression de release, boucle de relance ou mise à jour automatique dans l’IDE. Le lancement sans changement est un succès sans build. La préparation manuelle d’un brouillon depuis un ancien build reste disponible séparément.

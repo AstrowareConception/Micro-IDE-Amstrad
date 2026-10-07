@@ -1,6 +1,6 @@
 # CPCéleste — Dossier de conception et réalisation — version 0.38.1
 
-**Packaging Preview 0.38.1** : premiers paquets desktop réels Windows x64 (NSIS + portable) et Linux x64 (AppImage + deb), ASAR/WASM vérifiés depuis le binaire empaqueté, checksums et draft Release sur tag preview. [Guide et limites](implementation/packaging-preview-alpha.md), [ADR 0046](adr/0046-packaging-desktop-preview.md).
+**Packaging Preview 0.38.1** : premiers paquets desktop réels Windows x64 (NSIS + portable) et Linux x64 (AppImage + deb), ASAR/WASM vérifiés depuis le binaire empaqueté, checksums et publication hebdomadaire de préversions GitHub si le code ou la chaîne de construction a changé. [Guide et limites](implementation/packaging-preview-alpha.md), [ADR 0046](adr/0046-packaging-desktop-preview.md).
 
 **Debugger BASIC 0.38** : breakpoints de lignes et pas statement ancrés sur le firmware Locomotive BASIC 1.1 qualifié. [Guide](implementation/basic-debugger-alpha.md), [ADR 0045](adr/0045-debugger-basic-firmware-qualifie.md).
 

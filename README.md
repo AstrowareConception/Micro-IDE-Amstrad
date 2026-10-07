@@ -2,13 +2,17 @@
 
 **Vos idées prennent vie en BASIC.** Retrouvez le plaisir de créer sur Amstrad CPC dans un atelier moderne : éditeur intelligent, exécution intégrée avec F5, agent IA, projets multifichiers, Git/GitHub et outils de qualité du code.
 
-## Télécharger CPCéleste — preview 0.38.1
+## Télécharger CPCéleste — previews Windows et Linux
 
-**[Windows x64 — installateur et portable](https://github.com/AstrowareConception/Micro-IDE-Amstrad/actions/runs/37609669941/artifacts/11477066469)** · **[Linux x64 — AppImage et deb](https://github.com/AstrowareConception/Micro-IDE-Amstrad/actions/runs/37609669941/artifacts/11477206526)**
+### [Télécharger depuis GitHub Releases →](https://github.com/AstrowareConception/Micro-IDE-Amstrad/releases)
 
-Archives ZIP du build validé du 7 octobre 2026, à extraire avant utilisation. Une connexion GitHub est nécessaire pour télécharger les artefacts Actions ; leur expiration actuelle est le **21 octobre 2026**. [Guide de téléchargement, installation et vérification](docs/implementation/packaging-preview-alpha.md#telecharger).
+Dans la préversion la plus récente, ouvrir **Assets** puis choisir le Setup Windows, le portable Windows, l’AppImage ou le paquet deb Linux. Ces fichiers restent disponibles après expiration des artefacts de CI, et leur téléchargement public ne demande pas de compte GitHub. [Guide de téléchargement, installation et vérification](docs/implementation/packaging-preview-alpha.md#telecharger).
 
-Vous pouvez utiliser ces paquets **sans Node.js, npm, Python ni compilation**. Pour un premier essai sous Windows, lancez `CPCeleste-Portable-0.38.1.exe` après extraction. Preview non signée ; ROM non incluses. Les [Releases](https://github.com/AstrowareConception/Micro-IDE-Amstrad/releases) accueilleront les versions publiées ; aucune release publique n'est annoncée à ce stade.
+**Publication hebdomadaire automatique** : le lundi à 03 h 17 UTC, uniquement si le code ou la chaîne de construction a changé depuis la dernière préversion publiée. Un lancement manuel est possible depuis Actions. Les builds et les tests doivent réussir avant publication ; aucun installateur n’est construit à chaque commit applicatif ou chaque PR.
+
+Vous pouvez utiliser ces paquets **sans Node.js, npm, Python ni compilation**. Pour essayer sous Windows, choisir `CPCeleste-Portable-<version>.exe`. Les previews restent non signées et n’incluent pas les ROM CPC.
+
+Les archives Actions initiales 0.38.1 du 7 octobre restent disponibles jusqu’au **21 octobre 2026** : [Windows](https://github.com/AstrowareConception/Micro-IDE-Amstrad/actions/runs/37609669941/artifacts/11477066469) · [Linux](https://github.com/AstrowareConception/Micro-IDE-Amstrad/actions/runs/37609669941/artifacts/11477206526). Connexion GitHub requise pour ces archives Actions uniquement.
 
 ## Découvrez tout ce que vous pouvez créer
 
@@ -29,7 +33,7 @@ Vous pouvez utiliser ces paquets **sans Node.js, npm, Python ni compilation**. P
 
 ## Nouveautés et guides techniques
 
-**Packaging Preview 0.38.1** : génération native de `CPCeleste-Setup-0.38.1.exe`, version portable Windows, AppImage et deb Linux. Le paquet ASAR est lancé en CI et doit réellement charger l’UI et le moteur CPC/WASM avant validation. Checksums SHA-256 et GitHub Release en brouillon sur tag preview ; builds non signés. [Guide](docs/implementation/packaging-preview-alpha.md).
+**Packaging Preview 0.38.1** : génération native de `CPCeleste-Setup-0.38.1.exe`, version portable Windows, AppImage et deb Linux. Le paquet ASAR est lancé en CI et doit réellement charger l’UI et le moteur CPC/WASM avant validation. Checksums SHA-256, préversions GitHub publiques automatiques si les entrées ont changé, et préparation manuelle de brouillons depuis un build existant ; builds non signés. [Guide](docs/implementation/packaging-preview-alpha.md).
 
 **Debugger BASIC 0.38** : breakpoints par numéro de ligne, pas vers le prochain statement et continuation sur le Locomotive BASIC 1.1 exactement qualifié ; ligne/pointeurs/ticks observés par le firmware réel, sans simulation côté éditeur. [Guide](docs/implementation/basic-debugger-alpha.md).
 
