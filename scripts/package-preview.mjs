@@ -29,10 +29,15 @@ execFileSync(npm, ['run', 'build:desktop'], common);
 const platformArgs = target === 'win'
   ? ['--win', 'nsis', 'portable', '--x64']
   : ['--linux', 'AppImage', 'deb', '--x64'];
+// Avoid npm exec/npx here: npm's temporary-package lock is known to fail
+// nondeterministically on Windows with large cold dependency trees.
 execFileSync(npm, [
-  'exec', '--yes', '--package', 'electron-builder@26.17.0', '--',
-  'electron-builder', '--config', 'electron-builder.yml', '--publish', 'never', ...platformArgs,
+  'install', '--no-save', '--package-lock=false', '--ignore-scripts', 'electron-builder@26.17.0',
 ], common);
+const builder = resolve(root, 'node_modules', '.bin', process.platform === 'win32' ? 'electron-builder.cmd' : 'electron-builder');
+execFileSync(builder, ['--config', 'electron-builder.yml', '--publish', 'never', ...platformArgs], {
+  cwd: root, stdio: 'inherit', shell: false,
+});
 
 const result = writeChecksums(resolve(root, 'release'), `SHA256SUMS-${target}.txt`);
 console.log(`CPCéleste 0.38.1 packaging preview : ${result.artifacts.join(', ')}`);
