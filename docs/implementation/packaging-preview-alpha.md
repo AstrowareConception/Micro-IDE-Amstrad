@@ -51,7 +51,7 @@ Sous Linux CI, le binaire unpacked est lancé sous Xvfb avec `--no-sandbox` pour
 
 ## GitHub Actions et release
 
-Le workflow `.github/workflows/package-preview.yml` construit nativement les deux plateformes sur pull request et sur demande. Chaque job publie ses artefacts CI et son rapport de smoke test.
+Le workflow `.github/workflows/package-preview.yml` construit nativement les deux plateformes sur demande (`workflow_dispatch`, en sélectionnant la branche à qualifier) ou sur tag preview. Il ne se déclenche plus à chaque mise à jour de pull request. Une nouvelle exécution manuelle sur la même branche annule la précédente ; les publications par tag ne sont pas interrompues automatiquement. Chaque job publie ses artefacts CI et son rapport de smoke test.
 
 Un tag de forme `v*-preview*` déclenche en plus un job final qui récupère les artefacts Windows et Linux du même run, régénère un `SHA256SUMS.txt` global et crée une GitHub Release en brouillon.
 

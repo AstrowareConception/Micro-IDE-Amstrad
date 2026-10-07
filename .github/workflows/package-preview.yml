@@ -1,24 +1,14 @@
 name: Desktop packaging preview
 
 on:
-  pull_request:
-    paths:
-      - 'apps/desktop/**'
-      - 'packages/**'
-      - 'scripts/build-desktop.mjs'
-      - 'scripts/emulator-build.mjs'
-      - 'scripts/prepare_emulator.py'
-      - 'scripts/package-preview.mjs'
-      - 'scripts/packaged-smoke.mjs'
-      - 'scripts/release-checksums.mjs'
-      - 'electron-builder.yml'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/package-preview.yml'
   workflow_dispatch:
   push:
     tags:
       - 'v*-preview*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 permissions:
   contents: read

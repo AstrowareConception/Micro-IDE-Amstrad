@@ -26,6 +26,10 @@ La 0.38.1 introduit un **Packaging Preview** volontairement non signé :
 
 La CI lance ensuite le **binaire réellement empaqueté**, fenêtre masquée, et lui demande une preuve minimale : `app.isPackaged`, version, URL `cpceleste://app/index.html` et lecture du vrai `cpc.wasm` par le protocole applicatif. Ce mode de smoke test n’est actif qu’en application empaquetée et lorsque la variable de CI dédiée est fournie.
 
+## Maîtrise des déclenchements CI — 7 octobre 2026
+
+La fabrication des installateurs est déclenchée explicitement sur la branche à qualifier ou par tag preview. Elle ne se répète plus à chaque commit de pull request. Les contrôles courants restent automatiques sur PR et sur `main`, avec annulation des exécutions obsolètes et sans doublon `push`/PR sur une branche de travail. La recette du binaire empaqueté reste obligatoire pour qualifier une livraison.
+
 ## Frontières de distribution
 
 Aucune ROM Amstrad n’est empaquetée ou téléchargée. Les ROM continuent d’être importées vers `app.getPath('userData')`.
