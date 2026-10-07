@@ -23,6 +23,8 @@ import { GitIdentityStore } from './git-identity-store.ts';
 import { ProjectTerminal } from './terminal.ts';
 import { romRole } from '../../packages/emulator/src/firmware.ts';
 
+const APP_ID = 'com.astroware.cpceleste';
+app.setAppUserModelId(APP_ID);
 const base = dirname(fileURLToPath(import.meta.url));
 const rendererRoot = join(base, '../../renderer');
 protocol.registerSchemesAsPrivileged([{ scheme: 'cpceleste', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
@@ -82,6 +84,7 @@ function route(channel: string, handler: (payload: unknown) => Promise<unknown>,
 
 // Do not hold the ESM entry point open while waiting for Electron's ready lifecycle.
 void app.whenReady().then(async () => {
+const packageSmokeFile = app.isPackaged ? process.env.CPCELESTE_PACKAGE_SMOKE_FILE : undefined;
 ipcMain.handle('git:cancel', event => { trusted(event); return gitTransfer?.cancel() ?? { stopped: false }; });
 ipcMain.handle('feedback:open', async (event, payload: unknown) => {
   trusted(event);
@@ -106,7 +109,7 @@ async function rememberProject(store: ProjectStore) {
 }
 const gitIdentity = new GitIdentityStore(app.getPath('userData'));
 const firmware = new FirmwareStore(join(app.getPath('userData'), 'firmware'));
-window = new BrowserWindow({ width: 1440, height: 960, minWidth: 900, minHeight: 650,
+window = new BrowserWindow({ width: 1440, height: 960, minWidth: 900, minHeight: 650, show: !packageSmokeFile,
   backgroundColor: '#10151d', title: 'CPCéleste — Atelier Amstrad CPC', icon: join(base, '../../renderer/brand/cpceleste-icon.png'),
   webPreferences: { preload: join(base, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true },
 });
@@ -592,5 +595,20 @@ route('firmware:import', async payload => {
 });
 route('firmware:clear', async () => firmware.clear());
 await window.loadURL(page);
+if (packageSmokeFile) {
+  const wasm = await net.fetch('cpceleste://app/emulator/cpc.wasm');
+  const bytes = new Uint8Array(await wasm.arrayBuffer());
+  const wasmMagic = wasm.ok && bytes.length > 8 && bytes[0] === 0 && bytes[1] === 97 && bytes[2] === 115 && bytes[3] === 109;
+  if (!wasmMagic) throw new Error('Packaging smoke probe failed: moteur CPC/WASM inaccessible depuis le paquet.');
+  await writeFile(packageSmokeFile, JSON.stringify({
+    appId: APP_ID,
+    version: app.getVersion(),
+    packaged: app.isPackaged,
+    page: window.webContents.getURL(),
+    wasmBytes: bytes.length,
+    wasmMagic,
+  }, null, 2), { mode: 0o600 });
+  app.quit();
+}
 }).catch(error => { console.error('Desktop startup failed:', error); app.quit(); });
 app.on('window-all-closed', () => app.quit());
