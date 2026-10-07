@@ -33,10 +33,11 @@
     "test:sources-desktop": "node tests/source-desktop-smoke.mjs",
     "test:personalization-desktop": "node tests/personalization-desktop-smoke.mjs",
     "benchmark:basic": "node scripts/benchmark-basic-analysis.mjs",
-    "package:preview:win": "npm run build:desktop && npx --yes electron-builder@26.17.0 --config electron-builder.yml --win --x64 --publish never",
-    "package:preview:linux": "npm run build:desktop && npx --yes electron-builder@26.17.0 --config electron-builder.yml --linux --x64 --publish never",
+    "package:preview:win": "npm run build:desktop && npm run package:preview:builder && node .cache/packager/node_modules/electron-builder/out/cli/cli.js --config electron-builder.yml --win --x64 --publish never",
+    "package:preview:linux": "npm run build:desktop && npm run package:preview:builder && node .cache/packager/node_modules/electron-builder/out/cli/cli.js --config electron-builder.yml --linux --x64 --publish never",
     "package:checksums": "node scripts/checksums.mjs release",
-    "test:packaged": "node tests/packaged-smoke.mjs"
+    "test:packaged": "node tests/packaged-smoke.mjs",
+    "package:preview:builder": "npm install --prefix .cache/packager --package-lock=false --ignore-scripts --no-audit --no-fund electron-builder@26.17.0"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",
@@ -55,5 +56,6 @@
   },
   "productName": "CPCéleste",
   "description": "IDE desktop moderne pour créer, analyser, tester et exécuter des programmes Amstrad CPC.",
-  "author": "AstroWare Conception"
+  "author": "AstroWare Conception",
+  "desktopName": "cpceleste"
 }
