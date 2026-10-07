@@ -1,0 +1,61 @@
+appId: com.astroware.cpceleste
+productName: CPCéleste
+asar: true
+compression: normal
+
+directories:
+  output: release
+  buildResources: apps/desktop/public/brand
+
+files:
+  - dist/**/*
+  - package.json
+  - "!dist/**/*.map"
+
+extraResources:
+  - from: licenses
+    to: licenses
+    filter:
+      - "**/*"
+
+win:
+  executableName: CPCeleste
+  icon: cpceleste-icon.png
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: false
+  createStartMenuShortcut: true
+  shortcutName: CPCéleste
+  artifactName: "CPCeleste-Setup-${version}-${arch}.${ext}"
+
+portable:
+  artifactName: "CPCeleste-Portable-${version}-${arch}.${ext}"
+
+linux:
+  executableName: cpceleste
+  icon: cpceleste-icon.png
+  category: Development
+  maintainer: AstroWare Conception
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+
+appImage:
+  artifactName: "CPCeleste-${version}-${arch}.AppImage"
+
+deb:
+  artifactName: "cpceleste_${version}_${arch}.deb"
