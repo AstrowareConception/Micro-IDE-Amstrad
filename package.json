@@ -1,6 +1,6 @@
 {
   "name": "micro-ide-amstrad",
-  "version": "0.38.0",
+  "version": "0.38.1",
   "main": "dist/apps/desktop/main.js",
   "private": true,
   "type": "module",
@@ -32,7 +32,10 @@
     "harness": "node scripts/serve-harness.mjs",
     "test:sources-desktop": "node tests/source-desktop-smoke.mjs",
     "test:personalization-desktop": "node tests/personalization-desktop-smoke.mjs",
-    "benchmark:basic": "node scripts/benchmark-basic-analysis.mjs"
+    "benchmark:basic": "node scripts/benchmark-basic-analysis.mjs",
+    "package:preview:win": "npm run build:desktop && npx --yes electron-builder@26.17.0 --config electron-builder.yml --win --x64 --publish never",
+    "package:preview:linux": "npm run build:desktop && npx --yes electron-builder@26.17.0 --config electron-builder.yml --linux --x64 --publish never",
+    "package:checksums": "node scripts/checksums.mjs release"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",
@@ -48,5 +51,8 @@
     "pdfjs-dist": "6.4.299",
     "react": "19.3.0",
     "react-dom": "19.3.0"
-  }
+  },
+  "productName": "CPCéleste",
+  "description": "IDE desktop moderne pour créer, analyser, tester et exécuter des programmes Amstrad CPC.",
+  "author": "AstroWare Conception"
 }
