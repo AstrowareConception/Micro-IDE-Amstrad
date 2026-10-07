@@ -7,7 +7,7 @@ export function BasicDebuggerPanel({
   active: boolean;
   available: boolean;
   paused: boolean;
-  snapshot?: BasicDebugSnapshot;
+  snapshot: BasicDebugSnapshot | undefined;
   onConfigure(lines: number[]): void;
   onStep(): void;
   onContinue(): void;
