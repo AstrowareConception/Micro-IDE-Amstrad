@@ -43,6 +43,7 @@ portable:
 
 linux:
   executableName: cpceleste
+  syncDesktopName: true
   icon: cpceleste-icon.png
   category: Development
   maintainer: AstroWare Conception
