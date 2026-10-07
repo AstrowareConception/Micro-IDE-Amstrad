@@ -11,6 +11,7 @@ on:
       - scripts/emulator-build.mjs
       - scripts/prepare_emulator.py
       - scripts/checksums.mjs
+      - tests/packaged-smoke.mjs
       - apps/desktop/**
       - packages/**
       - knowledge/**
@@ -38,14 +39,11 @@ jobs:
       - name: Build Windows installer and portable executable
         shell: pwsh
         run: npm run package:preview:win
-      - name: Verify packaged application stays alive
+      - name: Smoke-test packaged Windows application
         shell: pwsh
         run: |
-          $exe = Resolve-Path "release\win-unpacked\CPCeleste.exe"
-          $process = Start-Process -FilePath $exe -PassThru
-          Start-Sleep -Seconds 6
-          if ($process.HasExited) { throw "CPCéleste packagé s'est arrêté prématurément (code $($process.ExitCode))." }
-          Stop-Process -Id $process.Id -Force
+          $env:CPC_PACKAGED_EXECUTABLE = (Resolve-Path "release\win-unpacked\CPCeleste.exe").Path
+          npm run test:packaged
       - name: Generate SHA-256 checksums
         run: node scripts/checksums.mjs release
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -73,18 +71,11 @@ jobs:
       - run: node node_modules/electron/install.js
       - name: Build AppImage and Debian package
         run: npm run package:preview:linux
-      - name: Smoke-test unpacked application
+      - name: Smoke-test packaged Linux application
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb
-          set +e
-          timeout 8s xvfb-run -a release/linux-unpacked/cpceleste --no-sandbox
-          code=$?
-          set -e
-          if [ "$code" -ne 124 ]; then
-            echo "CPCéleste packagé s'est arrêté prématurément (code $code)." >&2
-            exit 1
-          fi
+          CPC_PACKAGED_EXECUTABLE=release/linux-unpacked/cpceleste xvfb-run -a npm run test:packaged
       - name: Generate SHA-256 checksums
         run: node scripts/checksums.mjs release
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
