@@ -56,7 +56,13 @@ CPCéleste associe des fonctions rarement réunies dans un même parcours de pro
 <a id="premiers-pas"></a>
 ## 3. Installer CPCéleste et créer votre premier programme
 
-### Installer l’alpha depuis le dépôt
+### Télécharger la preview prête à lancer
+
+Depuis la version 0.38.1, des paquets Windows et Linux sont disponibles. Consultez le [guide de téléchargement](implementation/packaging-preview-alpha.md#telecharger) pour récupérer l’installateur Windows, la version portable, l’AppImage ou le paquet Debian. **Vous n’avez pas besoin d’installer Node.js, npm ou Python pour utiliser ces paquets.**
+
+Pour essayer rapidement sous Windows : téléchargez l’archive Windows, extrayez-la, puis ouvrez `CPCeleste-Portable-0.38.1.exe`. Pour une installation classique, utilisez `CPCeleste-Setup-0.38.1.exe`. Cette preview n’est pas signée et les ROM CPC restent à importer localement pour exécuter vos programmes.
+
+### Construire l’alpha depuis le dépôt
 
 La version actuelle se lance comme une application de bureau construite depuis les sources. Prévoyez **Node.js 24.12 ou supérieur dans la branche 24**, **Python 3.12 ou supérieur** et **Git**, accessibles dans votre terminal.
 

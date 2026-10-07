@@ -1,0 +1,42 @@
+name: Prepare preview release from existing build
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: 'Successful Desktop packaging preview run on main'
+        required: true
+        type: string
+      preview_tag:
+        description: 'New tag matching the source version (e.g. v0.38.1-preview.1)'
+        required: true
+        type: string
+
+concurrency:
+  group: cpceleste-prepare-preview-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.13.0
+      - name: Verify source, original checksums and smoke proofs; create draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+          PREVIEW_TAG: ${{ inputs.preview_tag }}
+        run: node scripts/prepare-preview-release.mjs
