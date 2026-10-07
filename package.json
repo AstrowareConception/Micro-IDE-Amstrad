@@ -10,7 +10,7 @@
   },
   "scripts": {
     "test": "node --test tests/*.test.ts tests/*.test.mjs",
-    "typecheck": "node --check tests/basic-quality-smoke.mjs && node --check tests/basic-diagnostics-smoke.mjs && node --check tests/notifications-smoke.mjs && node --check tests/personalization-smoke.mjs && node --check tests/personalization-desktop-smoke.mjs && node --check tests/source-operations-smoke.mjs && node --check tests/source-desktop-smoke.mjs && node --check tests/emulator-ui-smoke.mjs && node --check tests/firmware-runtime.mjs && node --check tests/editor-smoke.mjs && node --check tests/desktop-smoke.mjs && node --check tests/agent-workbench-smoke.mjs && node --check tests/agent-desktop-smoke.mjs && tsc --noEmit && tsc -p apps/desktop/tsconfig.json && tsc -p apps/desktop/tsconfig.main.json --noEmit",
+    "typecheck": "node --check tests/basic-quality-smoke.mjs && node --check tests/basic-diagnostics-smoke.mjs && node --check tests/notifications-smoke.mjs && node --check tests/personalization-smoke.mjs && node --check tests/personalization-desktop-smoke.mjs && node --check tests/source-operations-smoke.mjs && node --check tests/source-desktop-smoke.mjs && node --check tests/emulator-ui-smoke.mjs && node --check tests/firmware-runtime.mjs && node --check tests/editor-smoke.mjs && node --check tests/desktop-smoke.mjs && node --check tests/agent-workbench-smoke.mjs && node --check tests/agent-desktop-smoke.mjs && node --check tests/packaged-smoke.mjs && tsc --noEmit && tsc -p apps/desktop/tsconfig.json && tsc -p apps/desktop/tsconfig.main.json --noEmit",
     "dev:editor": "vite --config apps/desktop/vite.config.ts",
     "build:renderer": "vite build --config apps/desktop/vite.config.ts",
     "build:main": "tsc -p apps/desktop/tsconfig.main.json",
