@@ -1,3 +1,4 @@
+import type { BasicTestSuitesPort } from '../../../packages/emulator/src/basic-test-suites.ts';
 import type { RecentProjectsPort } from '../../../packages/workspace/src/recent-projects.ts';
 import type { ExplorerPort } from '../../../packages/workspace/src/explorer.ts';
 import type { SourceOperationsPort } from '../../../packages/workspace/src/source-operations.ts';
@@ -34,6 +35,7 @@ export interface DesktopPort {
   recentProjects?: RecentProjectsPort;
   explorer?: ExplorerPort;
   sourceOperations?: SourceOperationsPort;
+  basicTestSuites?: BasicTestSuitesPort;
   project?: {
     open(): Promise<ProjectSnapshot | Failure | null>;
     create(name: string): Promise<ProjectSnapshot | Failure | null>;

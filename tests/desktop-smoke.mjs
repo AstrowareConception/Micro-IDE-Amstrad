@@ -93,6 +93,27 @@ try {
   await page.getByRole('button', { name: 'Créer projet dans un dossier vide' }).click(); await discard;
   await page.getByRole('tab', { name: 'src/main.bas', exact: true }).waitFor();
   const sessionId = await page.evaluate(async () => (await window.desktop.project.open()).sessionId);
+  // Fixed-path suite/history persistence through the native IPC bridge.
+  const suitePortResult = await page.evaluate(async session => {
+    const port = window.desktop.basicTestSuites;
+    const initial = await port.load(session);
+    const saved = await port.save(session, initial.revision, [{ id: 'smoke', name: 'Recette native', sourceIds: ['main'], seconds: 3 }]);
+    const conflict = await port.save(session, initial.revision, []);
+    const staleSession = await port.load('obsolete-session');
+    const report = { schemaVersion: 1, id: 'native-run', createdAt: '2026-10-07T12:00:00.000Z', suiteId: 'smoke', suiteName: 'Recette native', seconds: 3,
+      sources: [{ id: 'main', name: 'src/main.bas', sha256: 'a'.repeat(64), cases: [{ slot: 1, name: 'Recette', line: 1 }] }],
+      results: [{ sourceId: 'main', name: 'src/main.bas', outcome: 'blocked', message: 'Recette de persistance, aucun verdict CPC.', emulatedSeconds: 0, cases: [] }] };
+    const recorded = await port.record(session, report);
+    const reopened = await window.desktop.project.open();
+    return { saved, conflict, staleSession, recorded, loaded: await port.load(reopened.sessionId), history: await port.history(reopened.sessionId) };
+  }, sessionId);
+  assert.equal(suitePortResult.saved.suites[0].name, 'Recette native');
+  assert.match(suitePortResult.conflict.error, /changé/); assert.ok(suitePortResult.staleSession.error);
+  assert.deepEqual(suitePortResult.loaded, suitePortResult.saved); assert.deepEqual(suitePortResult.history, suitePortResult.recorded);
+  assert.equal(JSON.parse(await readFile(join(root, 'microide.tests.json'), 'utf8')).suites[0].id, 'smoke');
+  assert.equal(JSON.parse(await readFile(join(root, '.microide/test-reports/history.json'), 'utf8')).reports[0].id, 'native-run');
+  await unlink(join(root, 'microide.tests.json'));
+  await unlink(join(root, '.microide/test-reports/history.json'));
   // The direct test open refreshed the host session, so reopen through UI as well.
   await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click();
   await expect(page.getByRole('button', { name: /^Enregistrer Ctrl/ })).toBeEnabled();

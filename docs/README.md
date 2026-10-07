@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.38.1
+# CPCéleste — Dossier de conception et réalisation — version 0.39.0
+
+**Suites BASIC 0.39 — premier lot** : suites persistantes, lancement individuel/global, historique des dix derniers rapports et retour aux assertions. [Guide](implementation/basic-test-suites-alpha.md), [ADR 0047](adr/0047-suites-basic-et-historique.md). Scénarios et fixtures restent ouverts.
 
 **Packaging Preview 0.38.1** : premiers paquets desktop réels Windows x64 (NSIS + portable) et Linux x64 (AppImage + deb), ASAR/WASM vérifiés depuis le binaire empaqueté, checksums et publication hebdomadaire de préversions GitHub si le code ou la chaîne de construction a changé. [Guide et limites](implementation/packaging-preview-alpha.md), [ADR 0046](adr/0046-packaging-desktop-preview.md).
 

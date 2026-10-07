@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "projectId": "09ff9cb1-6b3d-484a-9dd1-9f19bf439a70",
+  "name": "Tests des règles du jeu",
+  "target": {
+    "machineProfileId": "cpc6128-classic-v1",
+    "dialect": "locomotive-1.1"
+  },
+  "entryPoint": "score",
+  "sources": [
+    {
+      "id": "score",
+      "path": "src/tests-score.bas",
+      "cpcName": "SCORE.BAS"
+    },
+    {
+      "id": "collision",
+      "path": "src/tests-collision.bas",
+      "cpcName": "COLLIDE.BAS"
+    }
+  ],
+  "assets": [],
+  "documents": [],
+  "build": {
+    "listingFormat": "ascii",
+    "diskFormat": "standard-dsk",
+    "filesystem": "amsdos-data",
+    "textEncoding": "ascii-strict",
+    "lineEnding": "crlf",
+    "asciiEof": "ctrl-z",
+    "fileOrder": "cpc-name"
+  }
+}

@@ -93,6 +93,12 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
     restore: (sessionId, revision) => ipcRenderer.invoke('sources:restore', { sessionId, revision }),
     draft: sessionId => ipcRenderer.invoke('sources:draft', { sessionId }),
   }),
+  basicTestSuites: Object.freeze({
+    load: sessionId => ipcRenderer.invoke('basic-tests:load', { sessionId }),
+    save: (sessionId, revision, suites) => ipcRenderer.invoke('basic-tests:save', { sessionId, revision, suites }),
+    history: sessionId => ipcRenderer.invoke('basic-tests:history', { sessionId }),
+    record: (sessionId, report) => ipcRenderer.invoke('basic-tests:record', { sessionId, report }),
+  }),
   project: Object.freeze({
     open: () => ipcRenderer.invoke('project:open'),
     create: name => ipcRenderer.invoke('project:create', name),

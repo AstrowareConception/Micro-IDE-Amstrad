@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "suites": [
+    {
+      "id": "game-rules",
+      "name": "Règles du jeu",
+      "sourceIds": [
+        "score",
+        "collision"
+      ],
+      "seconds": 3
+    }
+  ]
+}
