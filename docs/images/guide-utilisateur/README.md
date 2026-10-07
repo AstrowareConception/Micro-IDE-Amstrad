@@ -1,4 +1,4 @@
-# Provenance des captures — CPCéleste 0.36.0
+# Provenance des captures — CPCéleste 0.36.0 à 0.39.1
 
 [Notice utilisateur](../../guide-utilisateur.md) · [README du produit](../../../README.md)
 
@@ -46,3 +46,7 @@ La reproduction des captures natives suit les prérequis et commandes du [workfl
 ## Vérifier ou actualiser les images
 
 Le fichier [manifest.json](manifest.json) fournit chemin, dimensions, origine et SHA-256 de chaque PNG. Lors d’une évolution de l’interface, régénérer les images concernées, réviser les légendes et actualiser ce manifeste. Ne pas présenter des réponses simulées comme une mission réellement facturée ou un compte connecté.
+
+## Capture 21 — Scénarios BASIC 0.39.1
+
+`21-tests-scenarios.png` provient de `tests/basic-tests-firmware-smoke.mjs`, exécuté localement le 7 octobre 2026. Vrai worker navigateur, moteur CPC/WASM qualifié repris de l’artefact CI de la PR #46 (moteur C inchangé), jeu ROM 6128 anglais identifié. Une saisie programmée et une fixture ASCII produisent une assertion native et deux observations réussies (fichier et rectangle écran). Le listing de recette est nommé tests-basic.bas ; son contenu de scénario est fourni par l’exemple du projet. L’image est une capture directe de l’article de résultat, sans modification des pixels. Aucun octet ROM, secret API ou contenu utilisateur privé n’est inclus.

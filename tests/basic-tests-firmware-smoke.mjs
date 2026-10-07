@@ -23,7 +23,7 @@ try {
  });
  await page.addInitScript(source => {
   window.testCount = 0; window.testStops = 0;
-  window.desktop = { setDirty() {}, open: async () => ({ name: 'tests-score.bas', source }), emulator: { prepare: async request => {
+  window.desktop = { setDirty() {}, open: async () => ({ name: 'tests-basic.bas', source }), emulator: { prepare: async request => {
    window.testCount++; const image = await window.prepareTestImage(request);
    return { ...image, disk: new Uint8Array(image.disk), roms: Object.fromEntries(Object.entries(image.roms).map(([role, bytes]) => [role, new Uint8Array(bytes)])) };
   } } };
@@ -47,6 +47,33 @@ try {
  const input = page.locator('.listing .monaco-editor textarea'); await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText(BASIC_TEST_EXAMPLE.replace('score=150 THEN', 'score=151 THEN'));
  await expect(panel).toContainText('Rapport obsolète'); assert.equal(await page.evaluate(() => window.testCount), 1);
  await panel.getByRole('button', { name: 'Exécuter les tests BASIC', exact: true }).click(); await expect(panel.getByRole('heading', { level: 3 })).toContainText('Échoué', { timeout: 30000 });
- assert.equal(await page.evaluate(() => window.testStops), 2); assert.deepEqual(errors, []);
- console.log('Real BASIC assertions in browser worker: pass/fail, SHA-256 provenance, immutable dirty source and worker disposal passed.');
+ assert.equal(await page.evaluate(() => window.testStops), 2);
+ const scenario = await readFile('examples/basic-test-suite/src/tests-scenario.bas', 'utf8');
+ await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText(scenario);
+ await panel.getByLabel('Budget émulé après RUN', { exact: true }).fill('8');
+ await panel.getByRole('button', { name: 'Exécuter les tests BASIC', exact: true }).click();
+ await expect(panel.getByRole('heading', { level: 3 })).toContainText('Réussi', { timeout: 30000 });
+ await expect(panel.locator('.scenario-observations tbody tr')).toHaveCount(2);
+ await expect(panel.locator('.scenario-observations')).toContainText('RESULT.TXT');
+ await expect(panel.getByRole('img', { name: 'Zone observée bord', exact: true })).toBeVisible();
+ const captureDownload = page.waitForEvent('download'); await panel.getByRole('button', { name: 'Télécharger la zone bord', exact: true }).click();
+ const capture = await captureDownload, png = []; for await (const chunk of await capture.createReadStream()) png.push(chunk);
+ assert.equal(Buffer.concat(png).subarray(1, 4).toString(), 'PNG');
+ const scenarioDownload = page.waitForEvent('download'); await panel.getByRole('button', { name: 'Exporter JSON', exact: true }).click();
+ const scenarioFile = await scenarioDownload, scenarioChunks = []; for await (const chunk of await scenarioFile.createReadStream()) scenarioChunks.push(chunk);
+ const scenarioReport = JSON.parse(Buffer.concat(scenarioChunks).toString('utf8'));
+ assert.deepEqual(scenarioReport.results[0].observations.map(item => item.outcome), ['passed', 'passed']);
+ assert.equal(scenarioReport.sources[0].checks.length, 2); assert.ok(!JSON.stringify(scenarioReport).includes('OPENOUT'));
+ await page.getByRole('button', { name: 'Agrandir les sorties', exact: true }).click();
+ await panel.locator('.scenario-observations').scrollIntoViewIfNeeded(); await page.screenshot({ path: 'out/basic-scenario-firmware-browser.png' });
+ await panel.locator('article').screenshot({ path: 'out/basic-scenario-results.png' });
+ await page.getByRole('button', { name: 'Restaurer les sorties', exact: true }).click();
+ await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText(scenario.replace('@CPCFILE RESULT.TXT "42', '@CPCFILE RESULT.TXT "43'));
+ await expect(panel).toContainText('Rapport obsolète');
+ await panel.getByRole('button', { name: 'Exécuter les tests BASIC', exact: true }).click();
+ await expect(panel.getByRole('heading', { level: 3 })).toContainText('Échoué', { timeout: 30000 });
+ await expect(panel.locator('.scenario-observations tbody tr').first()).toContainText('Échoué');
+ await expect(panel.locator('.scenario-observations tbody tr').last()).toContainText('Réussi');
+ assert.deepEqual(errors, []);
+ console.log('Real BASIC assertions in browser worker: pass/fail, SHA-256 provenance, immutable dirty source and worker disposal, scenario keyboard/fixtures/file/screen and PNG observation passed.');
 } finally { await browser?.close(); server.kill('SIGTERM'); }

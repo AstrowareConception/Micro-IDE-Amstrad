@@ -1,6 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.39.0
+# CPCéleste — Dossier de conception et réalisation — version 0.39.1
 
-**Suites BASIC 0.39 — premier lot** : suites persistantes, lancement individuel/global, historique des dix derniers rapports et retour aux assertions. [Guide](implementation/basic-test-suites-alpha.md), [ADR 0047](adr/0047-suites-basic-et-historique.md). Scénarios et fixtures restent ouverts.
+**Suites BASIC 0.39 — premier lot** : suites persistantes, lancement individuel/global, historique des dix derniers rapports et retour aux assertions. [Guide](implementation/basic-test-suites-alpha.md), [ADR 0047](adr/0047-suites-basic-et-historique.md). Le [deuxième lot 0.39.1](implementation/basic-scenarios-alpha.md) ajoute des scénarios clavier, fixtures ASCII et observations écran/fichier ([ADR 0048](adr/0048-scenarios-basic-reproductibles.md)).
 
 **Packaging Preview 0.38.1** : premiers paquets desktop réels Windows x64 (NSIS + portable) et Linux x64 (AppImage + deb), ASAR/WASM vérifiés depuis le binaire empaqueté, checksums et publication hebdomadaire de préversions GitHub si le code ou la chaîne de construction a changé. [Guide et limites](implementation/packaging-preview-alpha.md), [ADR 0046](adr/0046-packaging-desktop-preview.md).
 
@@ -10,7 +10,7 @@
 
 ## Vous cherchez le mode d’emploi ?
 
-**[Présentation commerciale et notice utilisateur illustrée de CPCéleste](guide-utilisateur.md)** : 25 chapitres, 20 captures, les parcours de la version 0.36 complétés par les tests BASIC 0.37, des premiers pas aux fonctions avancées.
+**[Présentation commerciale et notice utilisateur illustrée de CPCéleste](guide-utilisateur.md)** : 25 chapitres, 21 captures, les parcours de la version 0.36 complétés par les suites et scénarios BASIC 0.39.1, des premiers pas aux fonctions avancées.
 
 Le dossier ci-dessous conserve les spécifications et les rapports des incréments successifs.
 

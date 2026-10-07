@@ -44,7 +44,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-018 | Templates/snippets, insertion de lignes et conventions | N | P1 | IDE-014 | Numéros sans collision ; génération minimale conforme au profil |
 | IDE-019 | Formatage optionnel et inspections/corrections ciblées | N | P2 | IDE-014 | Sémantique inchangée ; aperçu ; aucune casse/espacement opaque détruit |
 | IDE-076 | Rapport de qualité BASIC à la demande | P | P2 | IDE-014 | 0.36 : métriques lexicales, complexité estimée, cinq règles, navigation protégée et exports ; graphe de contrôle, sous-programmes et revue IA contextuelle restent ouverts |
-| IDE-077 | Tests de programmes BASIC à la demande | P | P1 | IDE-050, FW | 0.37 : listings autonomes déclarés, assertions natives par RAM réservée, machines/disques isolés et rapports à provenance ; scénarios persistants, clavier, écran/fichiers, couverture et génération IA restent ouverts |
+| IDE-077 | Tests de programmes BASIC à la demande | P | P1 | IDE-050, FW | 0.39.1 : suites persistantes, assertions natives, clavier programmé, fixtures ASCII, observations exactes écran/fichier et rapports conservés ; couverture, fixtures binaires, scénarios sans signature et génération IA restent ouverts |
 | IDE-020 | Multi-curseurs, pliage, signets, navigation retour/avance | P | P1 | Monaco | Gestes repris explicitement en recette, sessions conservées ; capacité Monaco seule insuffisante |
 
 ## 4. Recherche et transformations textuelles
@@ -268,3 +268,8 @@ Le Packaging Preview est volontairement avancé avant la 1.0 afin de détecter t
 ## Avancement alpha 0.38.1 — Packaging Preview
 
 Le packaging desktop est avancé avant la 1.0 afin de qualifier dès maintenant les différences entre checkout et application distribuée. La configuration Electron Builder produit Windows x64 (NSIS + portable) et Linux x64 (AppImage + deb) avec ASAR, moteur CPC/WASM embarqué, identité CPCéleste et checksums SHA-256. Un smoke test démarre le binaire réellement empaqueté et vérifie le chargement de l’UI ainsi que du WASM via `cpceleste://`. Le workflow publie désormais une préversion GitHub publique chaque semaine si les entrées de construction ont changé, ou sur lancement manuel ; tests et empreintes sont bloquants. Les changements de la chaîne de publication déclenchent sa qualification. Aucun firmware n’est livré et Git reste hôte. IDE-071/072 restent P : signature, install/uninstall/upgrade, auto-update, ARM64/macOS et qualification fonctionnelle installée complète restent à faire. [Guide](../implementation/packaging-preview-alpha.md), [ADR 0046](../adr/0046-packaging-desktop-preview.md).
+
+
+## Avancement alpha 0.39 — Suites et scénarios
+
+Les lots 0.39.0 et 0.39.1 livrent suites persistantes par IDs de sources, lancement individuel/global, historique local des dix derniers rapports, clavier ASCII programmé, fixtures texte isolées et observations exactes écran/fichier. Une zone observée peut être examinée et téléchargée en PNG ; un changement de source rend le rapport obsolète. Les scripts d’assertion restent autonomes et conservent le protocole natif @CPCTEST. [Suites](../implementation/basic-test-suites-alpha.md), [scénarios](../implementation/basic-scenarios-alpha.md), [ADR 0048](../adr/0048-scenarios-basic-reproductibles.md). IDE-077 reste P : pas de couverture, fixtures binaires, OCR/tolérance, scénarios sans instrumentation ou génération IA. La prochaine priorité est l’analyse de flux à la demande de la 0.40.

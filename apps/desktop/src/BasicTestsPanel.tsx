@@ -1,3 +1,4 @@
+import { validateScenarioBudget, validScenarioCaptures, type BasicScenarioCapture } from '../../../packages/emulator/src/basic-test-scenario.ts';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from './Icon.tsx';
 import { files } from './port.ts';
@@ -7,6 +8,7 @@ interface Props { documents: BasicTestSource[]; activeId: string; scopeId: strin
 interface Snapshot { id: string; suiteId: string | null; suiteName: string | null; sources: BasicTestSource[]; metadata: BasicTestReportSource[]; results: BasicTestResult[]; createdAt: string; seconds: number; historicalMismatch?: boolean }
 export const BasicTestsPanel = memo(function BasicTestsPanel({ documents, activeId, scopeId, sessionId, visible = true, onConfigure, onReveal }: Props) {
  const [scope, setScope] = useState('active'), [seconds, setSeconds] = useState(3), [running, setRunning] = useState(false), [error, setError] = useState(''), [snapshot, setSnapshot] = useState<Snapshot>();
+ const [captures, setCaptures] = useState<Record<string, BasicScenarioCapture[]>>({});
  const [progress, setProgress] = useState('');
  const [library, setLibrary] = useState<BasicTestLibrary>(), [history, setHistory] = useState<BasicTestReport[]>([]);
  const [suiteId, setSuiteId] = useState(''), [suiteName, setSuiteName] = useState(''), [sourceIds, setSourceIds] = useState<string[]>([]), [suiteTarget, setSuiteTarget] = useState('all');
@@ -72,27 +74,27 @@ export const BasicTestsPanel = memo(function BasicTestsPanel({ documents, active
    const matches = await Promise.all(current.map(async (doc, index) => !!doc && doc.name === report.sources[index]!.name && await digest(doc.source) === report.sources[index]!.sha256));
    if (epoch !== libraryGeneration.current) return;
    setSnapshot({ ...report, metadata: report.sources, sources: current.map((doc, index) => doc ? { ...doc } : { id: report.sources[index]!.id, name: report.sources[index]!.name, source: '' }), historicalMismatch: matches.some(value => !value) });
-   setError(''); setArchiveNotice('Rapport historique chargé ; aucun test n’a été relancé.');
+   setCaptures({}); setError(''); setArchiveNotice('Rapport historique chargé ; aucun test n’a été relancé.');
   } catch { if (epoch === libraryGeneration.current) setLibraryError('Comparaison des empreintes impossible.'); }
   finally { if (epoch === libraryGeneration.current) setLibraryBusy(false); }
  }
 
  const generation = useRef(0), pending = useRef<(() => void) | undefined>(undefined);
  const stop = useCallback(() => { generation.current++; pending.current?.(); pending.current = undefined; }, []);
- useEffect(() => { stop(); setRunning(false); setSnapshot(undefined); setError(''); setProgress(''); return stop; }, [scopeId, stop]);
+ useEffect(() => { stop(); setRunning(false); setSnapshot(undefined); setCaptures({}); setError(''); setProgress(''); return stop; }, [scopeId, stop]);
  const stale = !!snapshot && (!!snapshot.historicalMismatch || snapshot.sources.some(before => !documents.some(now => now.id === before.id && now.name === before.name && now.source === before.source)));
  const blocked = (source: BasicTestSource, message: string): BasicTestResult => ({ sourceId: source.id, name: source.name, outcome: 'blocked', message, cases: [], emulatedSeconds: 0 });
  async function run() {
-  stop(); setError(''); setSnapshot(undefined); setArchiveNotice('');
+  stop(); setError(''); setSnapshot(undefined); setCaptures({}); setArchiveNotice('');
   const selected = scope === 'suite' ? suite?.sourceIds.filter(id => suiteTarget === 'all' || id === suiteTarget) : undefined;
   if (scope === 'suite' && (!selected?.length || selected.some(id => !documents.some(doc => doc.id === id)))) { setError('Une source de la suite est absente. Modifiez la suite ou restaurez sa source avant de la lancer.'); return; }
   const sources = (selected ? selected.map(id => documents.find(doc => doc.id === id)!) : documents.filter(doc => scope === 'active' ? doc.id === activeId : /^\s*\d+\s+REM\s+@CPCTEST\b/im.test(doc.source))).map(doc => ({ ...doc }));
   if (!sources.length || sources.length > BASIC_TEST_LIMITS.sources) { setError('Choisissez entre 1 et 8 listings de test déclarés.'); return; }
-  try { sources.forEach(basicTestPlan); } catch (reason) { setError(reason instanceof Error ? reason.message : 'Déclarations de tests invalides.'); return; }
+  try { sources.forEach(source => validateScenarioBudget(basicTestPlan(source).scenario, seconds)); } catch (reason) { setError(reason instanceof Error ? reason.message : 'Déclarations de tests invalides.'); return; }
   const id = generation.current, createdAt = new Date().toISOString(), results: BasicTestResult[] = [], budget = seconds;
   setRunning(true);
   let metadata: BasicTestReportSource[];
-  try { metadata = await Promise.all(sources.map(async source => ({ id: source.id, name: source.name, sha256: await digest(source.source), cases: basicTestPlan(source).cases }))); }
+  try { metadata = await Promise.all(sources.map(async source => ({ id: source.id, name: source.name, sha256: await digest(source.source), cases: basicTestPlan(source).cases, ...(basicTestPlan(source).scenario?.checks.length ? { checks: basicTestPlan(source).scenario!.checks.map(({ kind, name, line }) => ({ kind, name, line })) } : {}) }))); }
   catch { if (id === generation.current) { setRunning(false); setError('Empreintes de sources indisponibles.'); } return; }
   if (id !== generation.current) return;
   const base: Snapshot = { id: crypto.randomUUID(), suiteId: scope === 'suite' ? suite!.id : null, suiteName: scope === 'suite' ? suite!.name : null, sources, metadata, results: [], createdAt, seconds: budget };
@@ -122,6 +124,7 @@ export const BasicTestsPanel = memo(function BasicTestsPanel({ documents, active
       if (settled || id !== generation.current || event.data?.id !== `${id}:${source.id}`) return;
       const result: unknown = event.data.result;
       if (!validBasicTestResult(result, basicTestPlan(source))) { finish(blocked(source, typeof event.data.error === 'string' ? event.data.error : 'Réponse de tests invalide.')); return; }
+      if (validScenarioCaptures(event.data.captures, basicTestPlan(source).scenario)) setCaptures(previous => ({ ...previous, [source.id]: event.data.captures }));
       finish(result);
      };
      worker.postMessage({ id: `${id}:${source.id}`, source, image, seconds: budget });
@@ -174,7 +177,9 @@ export const BasicTestsPanel = memo(function BasicTestsPanel({ documents, active
   {archiveNotice && <p role="status">{archiveNotice}</p>}
   <details><summary>Écrire un test et connaître les limites</summary>
    <p>Chaque listing est un programme autonome, sans concaténation ni chargement implicite des autres sources. Déclarez chaque assertion avec une ligne REM @CPCTEST 1 Nom du test (slots 1 à 32). Réservez &amp;8000–&amp;8023 avec MEMORY &amp;7FFF ; écrivez 1 pour réussi ou 2 pour échoué à &amp;8003 + slot. Après toutes les assertions, écrivez la signature de fin : POKE &amp;8000,67:POKE &amp;8001,80:POKE &amp;8002,67:POKE &amp;8003,165. Consultez l’exemple ci-dessous.</p>
-   <p>Jeu CPC 6128 anglais identifié uniquement. 8 listings de 16 Kio maximum, 32 assertions/listing, 1–15 s émulées après saisie de RUN et 60 s réelles de préparation/exécution par listing. Le banc ne fournit pas de clavier interactif, de lecture de variables, de couverture ou d’analyse automatique des erreurs à l’écran. Une signature absente donne un délai dépassé, jamais un succès. Les tests déclarés sont responsables de leurs assertions et de la zone mémoire réservée.</p>
+   <p>Jeu CPC 6128 anglais identifié uniquement. 8 listings de 16 Kio maximum, 32 assertions/listing, 1–15 s émulées après saisie de RUN et 60 s réelles de préparation/exécution par listing. Les scénarios ajoutent une saisie clavier ASCII programmée, des fichiers texte initiaux et des comparaisons exactes d’écran/fichier. Pas de clavier interactif, lecture de variables, couverture ou reconnaissance du texte à l’écran. Une signature absente donne un délai dépassé, jamais un succès. Les tests déclarés sont responsables de leurs assertions et de la zone mémoire réservée.</p>
+   <p>Scénarios : ajoutez REM @CPCINPUT 3000 "21\r" pour une saisie après 3 s émulées depuis la fin de la commande RUN. Les touches sont appuyées 60 ms et relâchées 60 ms. REM @CPCFIXTURE SEED.TXT "21\r\n" ajoute un fichier initial ; REM @CPCFILE RESULT.TXT "42\r\n" exige un contenu ASCII exact après CLOSEOUT. REM @CPCSCREEN fond 0 0 8 8 suivi d’un SHA-256 compare les pixels RGBA de cette zone dans le cadre 768 × 272. Copier une empreinte observée uniquement après avoir vérifié l’écran attendu ; aucun apprentissage automatique d’un résultat en échec.</p>
+   <p>8 saisies, 64 touches au total, 4 fixtures (4 Kio au total), 8 observations. Le budget couvre toute la saisie. Les observations sont prises à la première signature de fin : stabilisez l’écran et fermez les fichiers avant celle-ci. Une fin avant les saisies restantes bloque le scénario. Les commentaires de scénario sont enregistrés avec le listing.</p>
    <pre>{BASIC_TEST_EXAMPLE}</pre>
   </details>
   {running && <p role="status">Tests en cours : {progress}</p>}{error && <p role="alert">{error}</p>}
@@ -182,6 +187,8 @@ export const BasicTestsPanel = memo(function BasicTestsPanel({ documents, active
   {snapshot && <><p role="status" className={stale ? 'warning' : 'muted'}>{stale ? 'Rapport obsolète : des sources ont changé.' : 'Snapshot de tests sur les sources inchangées.'} · {snapshot.createdAt} · {snapshot.results.length}/{snapshot.sources.length} listings terminés</p>
    {snapshot.results.map(result => <article className="basic-test-result" key={result.sourceId}><h3>{result.name} · {labels[result.outcome]}</h3><p>{result.message}</p><p>{result.emulatedSeconds.toFixed(3)} s émulées au total (boot et clavier compris)</p>
     {result.cases.length > 0 && <table><caption>Assertions · {result.name}</caption><thead><tr><th>Slot</th><th>Test</th><th>Résultat</th><th>Octet lu</th>{onReveal && <th>Source</th>}</tr></thead><tbody>{result.cases.map(test => <tr key={test.slot}><td>{test.slot}</td><th scope="row">{test.name}</th><td>{labels[test.outcome]}</td><td>{test.observed}</td>{onReveal && <td><Button disabled={stale} onClick={() => onReveal(result.sourceId, test.line)}>Voir ligne {test.line}</Button></td>}</tr>)}</tbody></table>}
+    {!!result.observations?.length && <table className="scenario-observations"><caption>Observations du scénario · {result.name}</caption><thead><tr><th>Observation</th><th>Résultat</th><th>Empreintes SHA-256</th>{onReveal && <th>Source</th>}</tr></thead><tbody>{result.observations.map(observation => <tr key={`${observation.kind}:${observation.name}`}><th scope="row">{observation.kind === 'screen' ? 'Écran' : 'Fichier'} · {observation.name}</th><td>{labels[observation.outcome]}<p>{observation.message}</p></td><td>Attendu : <code>{observation.expectedSha256}</code><br />Observé : <code>{observation.actualSha256 ?? 'absent ou hors profil'}</code></td>{onReveal && <td><Button disabled={stale} onClick={() => onReveal(result.sourceId, observation.line)}>Voir ligne {observation.line}</Button></td>}</tr>)}</tbody></table>}
+    {captures[result.sourceId]?.map(capture => <ScenarioScreen key={`${capture.name}:${capture.line}`} capture={capture} />)}
     <details><summary>Provenance du test</summary><p>Source SHA-256 : {result.sourceSha256 ?? 'non préparée'}<br />DSK SHA-256 : {result.diskSha256 ?? 'non préparé'}</p>{result.firmware && Object.entries(result.firmware).map(([role, hash]) => <p key={role}>{role} : {hash}</p>)}</details>
    </article>)}
   </>}
@@ -194,3 +201,9 @@ function save(text: string, name: string, type: string) {
 }
 
 async function digest(source: string): Promise<string> { return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(source))), value => value.toString(16).padStart(2, '0')).join(''); }
+
+function ScenarioScreen({ capture }: { capture: BasicScenarioCapture }) {
+ const canvas = useRef<HTMLCanvasElement>(null);
+ useEffect(() => { canvas.current?.getContext('2d')?.putImageData(new ImageData(new Uint8ClampedArray(capture.rgba), capture.width, capture.height), 0, 0); }, [capture]);
+ return <figure className="scenario-screen"><figcaption>Zone observée : {capture.name} · {capture.width} × {capture.height} pixels · aperçu de cette exécution, non conservé dans l’historique</figcaption><canvas ref={canvas} width={capture.width} height={capture.height} role="img" aria-label={`Zone observée ${capture.name}`} style={{ width: Math.max(96, capture.width), maxWidth: '100%', height: 'auto', imageRendering: 'pixelated' }} /><Button onClick={() => { if (!canvas.current) return; const anchor = document.createElement('a'); anchor.href = canvas.current.toDataURL('image/png'); anchor.download = `cpceleste-${capture.name}.png`; anchor.click(); }}>Télécharger la zone {capture.name}</Button></figure>;
+}

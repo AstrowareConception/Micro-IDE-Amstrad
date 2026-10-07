@@ -281,3 +281,11 @@ select{font:inherit;width:100%;margin:8px 0;background:var(--input);color:inheri
 .basic-test-suites > details, .basic-test-suites > p { flex-basis: 100%; margin: 0; }
 .basic-test-source { display: flex; align-items: center; gap: 8px; padding: 4px; overflow-wrap: anywhere; }
 .basic-test-source input { flex: 0 0 auto; width: auto; }
+
+.scenario-observations { table-layout: fixed; width: 100%; }
+.scenario-observations code { overflow-wrap: anywhere; font-size: 11px; }
+.scenario-observations td, .scenario-observations th { overflow-wrap: anywhere; vertical-align: top; }
+
+.scenario-screen { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 12px 0; }
+.scenario-screen figcaption { flex-basis: 100%; color: var(--muted); }
+.scenario-screen canvas { border: 1px solid var(--line-strong); }

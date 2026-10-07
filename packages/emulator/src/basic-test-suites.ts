@@ -1,8 +1,9 @@
+import type { BasicScenarioCheckIdentity } from './basic-test-scenario.ts';
 import { BASIC_TEST_LIMITS, validBasicTestResult, type BasicTestCase, type BasicTestResult } from './basic-tests.ts';
 export const BASIC_TEST_SUITE_LIMITS = { suites: 16, history: 10, libraryBytes: 32 * 1024, historyBytes: 2 * 1024 * 1024 } as const;
 export interface BasicTestSuite { id: string; name: string; sourceIds: string[]; seconds: number }
 export interface BasicTestSuiteFile { schemaVersion: 1; suites: BasicTestSuite[] }
-export interface BasicTestReportSource { id: string; name: string; sha256: string; cases: BasicTestCase[] }
+export interface BasicTestReportSource { id: string; name: string; sha256: string; cases: BasicTestCase[]; checks?: BasicScenarioCheckIdentity[] }
 export interface BasicTestReport {
  schemaVersion: 1; id: string; createdAt: string; suiteId: string | null; suiteName: string | null;
  seconds: number; sources: BasicTestReportSource[]; results: BasicTestResult[];
@@ -48,7 +49,7 @@ export function parseBasicTestReport(value: unknown): BasicTestReport {
  if ((suiteId === null) !== (suiteName === null)) throw new Error('Identité de suite incomplète.');
  if (!Array.isArray(report.sources) || report.sources.length < 1 || report.sources.length > BASIC_TEST_LIMITS.sources || !Array.isArray(report.results) || report.results.length !== report.sources.length) throw new Error('Rapport final complet de 1 à 8 listings requis.');
  const sources: BasicTestReportSource[] = report.sources.map(raw => {
-  const source = object(raw, ['id', 'name', 'sha256', 'cases']);
+  const source = object(raw, ['id', 'name', 'sha256', 'cases'], ['checks']);
   if (typeof source.sha256 !== 'string' || !HASH.test(source.sha256) || !Array.isArray(source.cases) || !source.cases.length || source.cases.length > BASIC_TEST_LIMITS.cases) throw new Error('Provenance des tests invalide.');
   const cases = source.cases.map(raw => {
    const item = object(raw, ['slot', 'name', 'line']);
@@ -56,16 +57,26 @@ export function parseBasicTestReport(value: unknown): BasicTestReport {
    return { slot: item.slot as number, line: item.line as number, name: text(item.name, 120) };
   });
   if (new Set(cases.map(item => item.slot)).size !== cases.length) throw new Error('Assertion dupliquée.');
-  return { id: id(source.id), name: text(source.name, 240), sha256: source.sha256, cases };
+  let checks: BasicScenarioCheckIdentity[] | undefined;
+  if (source.checks !== undefined) {
+   if (!Array.isArray(source.checks) || !source.checks.length || source.checks.length > 8) throw new Error('Observations de scénario invalides.');
+   checks = source.checks.map(raw => {
+    const check = object(raw, ['kind', 'name', 'line']);
+    if (!['screen', 'file'].includes(String(check.kind)) || !Number.isInteger(check.line) || Number(check.line) < 1 || Number(check.line) > 16384) throw new Error('Déclaration d’observation invalide.');
+    return { kind: check.kind as 'screen' | 'file', name: text(check.name, 40), line: check.line as number };
+   });
+   if (new Set(checks.map(item => `${item.kind}:${item.name}`)).size !== checks.length) throw new Error('Observation dupliquée.');
+  }
+  return { id: id(source.id), name: text(source.name, 240), sha256: source.sha256, cases, ...(checks ? { checks } : {}) };
  });
  if (new Set(sources.map(source => source.id)).size !== sources.length) throw new Error('Source dupliquée dans le rapport.');
  const results = report.results.map((raw, index) => {
   const source = sources[index]!;
-  const item = object(raw, ['sourceId', 'name', 'outcome', 'message', 'cases', 'emulatedSeconds'], ['diskSha256', 'sourceSha256', 'firmware']);
+  const item = object(raw, ['sourceId', 'name', 'outcome', 'message', 'cases', 'emulatedSeconds'], ['diskSha256', 'sourceSha256', 'firmware', 'observations']);
   if (Array.isArray(item.cases)) for (const test of item.cases) object(test, ['slot', 'name', 'line', 'outcome', 'observed']);
   if (item.firmware !== undefined) object(item.firmware, ['os', 'basic', 'amsdos']);
   const checked = item.outcome === 'cancelled' ? { ...item, outcome: 'blocked' } : item;
-  if (!validBasicTestResult(checked, { source: { id: source.id, name: source.name, source: '' }, cases: source.cases }) || item.sourceSha256 !== undefined && item.sourceSha256 !== source.sha256) throw new Error('Résultat ou empreinte de source incohérents.');
+  if (!validBasicTestResult(checked, { source: { id: source.id, name: source.name, source: '' }, cases: source.cases }, source.checks ?? []) || item.sourceSha256 !== undefined && item.sourceSha256 !== source.sha256) throw new Error('Résultat ou empreinte de source incohérents.');
   return structuredClone(item) as unknown as BasicTestResult;
  });
  return { schemaVersion: 1, id: id(report.id), createdAt: report.createdAt, suiteId, suiteName, seconds: budget(report.seconds), sources, results };

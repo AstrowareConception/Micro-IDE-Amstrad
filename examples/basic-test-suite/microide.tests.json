@@ -9,6 +9,14 @@
         "collision"
       ],
       "seconds": 3
+    },
+    {
+      "id": "interactive",
+      "name": "Clavier, fichier et écran",
+      "sourceIds": [
+        "scenario"
+      ],
+      "seconds": 8
     }
   ]
 }

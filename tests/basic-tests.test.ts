@@ -55,6 +55,7 @@ test('Runtime refuses unknown firmware and invalid budgets without starting the 
   HEAPU8: new Uint8Array(65536), _malloc: () => 1024, _free: () => {},
   _cpc_bridge_init: () => { initialized++; return 0; }, _cpc_bridge_mount: () => 0, _cpc_bridge_step: () => 0,
   _cpc_bridge_pause: () => 0, _cpc_bridge_key: () => 0, _cpc_bridge_release_keys: () => {}, _cpc_bridge_dispose: () => { disposed++; },
+  _cpc_bridge_export: () => 194816, _cpc_bridge_palette: () => 1, _cpc_bridge_height: () => 272,
   _cpc_bridge_register: () => 0, _cpc_bridge_read_ram: () => 36, _cpc_bridge_width: () => 768, _cpc_bridge_stride: () => 768, _cpc_bridge_frame: () => 1, _cpc_bridge_ticks: () => 0,
  };
  const image = { disk: buildListingDisk(source.source), entry: 'MAIN.BAS', label: 'Test', sha256: 'a'.repeat(64), firmware: { os: '', basic: '', amsdos: '' }, roms: { os: new Uint8Array(16384), basic: new Uint8Array(16384), amsdos: new Uint8Array(16384) } };
