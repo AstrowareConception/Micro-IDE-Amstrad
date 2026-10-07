@@ -373,9 +373,13 @@ L’assistant de CPCéleste sait utiliser des outils de programmation : explorer
 
 1. Ouvrez un projet.
 2. Dans l’assistant, ouvrez **Réglages IA**.
-3. Saisissez votre clé API OpenAI puis choisissez un modèle accessible et compatible avec les outils requis.
-4. Consultez le catalogue, les informations tarifaires disponibles et les budgets.
+3. Dans **Connexion OpenAI**, saisissez votre clé puis cliquez sur **Configurer la clé**.
+4. Dans **Modèle et estimation**, choisissez un modèle accessible et compatible avec les outils requis. Dépliez **Tarifs et estimation (USD)** pour consulter les informations disponibles, puis ajustez les trois limites dans **Budget par lancement ou reprise**.
 5. Fermez les réglages et formulez votre mission dans le panneau principal.
+
+![Réglages IA : connexion, modèle et budget, dans l’ordre de configuration](images/guide-utilisateur/22-reglages-ia.png)
+
+Les libellés restent au-dessus de leur champ, y compris dans une fenêtre étroite. Les réglages s’appliquent au fil de vos actions ; le bouton de fermeture vous ramène à la mission.
 
 Le catalogue présente les modèles accessibles à votre clé et peut être actualisé ; son rafraîchissement automatique est prévu toutes les 15 minutes. L’accès au modèle ne garantit pas à lui seul sa prise en charge des outils : celle-ci est vérifiée lors de la mission. Les modèles avec une date de retrait connue sont signalés.
 

@@ -16,7 +16,7 @@ L’objectif produit est qu’un utilisateur puisse décrire son besoin, suivre 
 
 **AG-UX-01** — Le panneau agent contient mission, contexte autorisé, démarrer/arrêter/reprendre, messages publics, résultat, changements et consommation. Bouton « Réglages IA » ouvrant une fenêtre dédiée ; clé, catalogue des modèles et budgets ne prennent pas la place de la conversation.
 
-**AG-UX-02** — Réglages : clé masquée conservée côté main, oubli, modèle dans le catalogue officiel accessible au compte, date/actualisation, budgets, disponibilité tarifaire et capacités. Pas de modèle saisi à la main. La liste reste actualisée via `GET /v1/models` ; un modèle candidat n’est pas une preuve de compatibilité outils/vision. Changer de modèle ne transforme pas silencieusement une mission existante.
+**AG-UX-02** — Réglages : clé masquée conservée côté main, oubli, modèle dans le catalogue officiel accessible au compte, date/actualisation, budgets, disponibilité tarifaire et capacités. Pas de modèle saisi à la main. La liste reste actualisée via `GET /v1/models` ; un modèle candidat n’est pas une preuve de compatibilité outils/vision. Changer de modèle ne transforme pas silencieusement une mission existante. Le parcours présente la clé avant le modèle, puis les budgets ; libellés et champs restent groupés, et le détail tarifaire est dépliable sous le modèle. L’oubli ou le remplacement de clé invalide aussi les informations tarifaires en attente.
 
 **AG-UX-03** — La mission suffit ; « Consigne de suivi (facultatif) » permet de préciser pendant le travail. Exemples : palette, nom du jeu, correction d’une préférence. Aucun champ de suivi obligatoire ou instruction cachée nécessaire au succès. Le champ n’autorise jamais l’agent à publier ni élargir le scope.
 

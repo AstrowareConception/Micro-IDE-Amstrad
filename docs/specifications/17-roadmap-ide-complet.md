@@ -273,3 +273,8 @@ Le packaging desktop est avancé avant la 1.0 afin de qualifier dès maintenant 
 ## Avancement alpha 0.39 — Suites et scénarios
 
 Les lots 0.39.0 et 0.39.1 livrent suites persistantes par IDs de sources, lancement individuel/global, historique local des dix derniers rapports, clavier ASCII programmé, fixtures texte isolées et observations exactes écran/fichier. Une zone observée peut être examinée et téléchargée en PNG ; un changement de source rend le rapport obsolète. Les scripts d’assertion restent autonomes et conservent le protocole natif @CPCTEST. [Suites](../implementation/basic-test-suites-alpha.md), [scénarios](../implementation/basic-scenarios-alpha.md), [ADR 0048](../adr/0048-scenarios-basic-reproductibles.md). IDE-077 reste P : pas de couverture, fixtures binaires, OCR/tolérance, scénarios sans instrumentation ou génération IA. La prochaine priorité est l’analyse de flux à la demande de la 0.40.
+
+
+## Correctif 0.39.2 — Ergonomie des réglages IA
+
+Retour utilisateur traité avant la 0.40 : parcours clé → modèle → budget, regroupement des champs/actions, détail tarifaire dépliable, petites fenêtres et navigation clavier. Message tarifaire effacé et réponses périmées invalidées après oubli/remplacement de clé. [Réalisation et recette](../implementation/agent-missions-alpha.md#reglages-0392). La priorité suivante reste l’analyse de flux BASIC à la demande de la 0.40.

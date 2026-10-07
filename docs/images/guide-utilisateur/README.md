@@ -1,4 +1,4 @@
-# Provenance des captures — CPCéleste 0.36.0 à 0.39.1
+# Provenance des captures — CPCéleste 0.36.0 à 0.39.2
 
 [Notice utilisateur](../../guide-utilisateur.md) · [README du produit](../../../README.md)
 
@@ -50,3 +50,8 @@ Le fichier [manifest.json](manifest.json) fournit chemin, dimensions, origine et
 ## Capture 21 — Scénarios BASIC 0.39.1
 
 `21-tests-scenarios.png` provient de `tests/basic-tests-firmware-smoke.mjs`, exécuté localement le 7 octobre 2026. Vrai worker navigateur, moteur CPC/WASM qualifié repris de l’artefact CI de la PR #46 (moteur C inchangé), jeu ROM 6128 anglais identifié. Une saisie programmée et une fixture ASCII produisent une assertion native et deux observations réussies (fichier et rectangle écran). Le listing de recette est nommé tests-basic.bas ; son contenu de scénario est fourni par l’exemple du projet. L’image est une capture directe de l’article de résultat, sans modification des pixels. Aucun octet ROM, secret API ou contenu utilisateur privé n’est inclus.
+
+
+## Capture 22 — Réglages IA 0.39.2
+
+`22-reglages-ia.png` est une copie octet pour octet de `out/agent-settings-unconfigured.png`, produite par `tests/agent-workbench-smoke.mjs` sur le renderer 0.39.2, base `c6fc8d4ebf65e6073bf30ccf87b82ce5c7bd9fae`. Chromium sous Linux, fenêtre 854 × 973, projet et port agent contrôlés. Elle montre le dialogue avant configuration : aucune clé ni réponse d’un fournisseur réel. Reproduction : `npm run build:renderer` puis `npm run test:editor`. Le libellé alpha 0.36 de la barre principale est un ancien texte d’interface, distinct de la version du paquet.
