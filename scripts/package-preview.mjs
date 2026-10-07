@@ -31,11 +31,13 @@ const platformArgs = target === 'win'
   : ['--linux', 'AppImage', 'deb', '--x64'];
 // Avoid npm exec/npx here: npm's temporary-package lock is known to fail
 // nondeterministically on Windows with large cold dependency trees.
+const builderPrefix = resolve(root, '.cache', 'packaging');
+mkdirSync(builderPrefix, { recursive: true });
 execFileSync(npm, [
-  'install', '--no-save', '--package-lock=false', '--ignore-scripts', 'electron-builder@26.17.0',
+  'install', '--prefix', builderPrefix, '--no-save', '--package-lock=false', '--ignore-scripts', 'electron-builder@26.17.0',
 ], common);
-const builder = resolve(root, 'node_modules', '.bin', process.platform === 'win32' ? 'electron-builder.cmd' : 'electron-builder');
-execFileSync(builder, ['--config', 'electron-builder.yml', '--publish', 'never', ...platformArgs], {
+const builderCli = resolve(builderPrefix, 'node_modules', 'electron-builder', 'out', 'cli', 'cli.js');
+execFileSync(process.execPath, [builderCli, '--config', 'electron-builder.yml', '--publish', 'never', ...platformArgs], {
   cwd: root, stdio: 'inherit', shell: false,
 });
 
