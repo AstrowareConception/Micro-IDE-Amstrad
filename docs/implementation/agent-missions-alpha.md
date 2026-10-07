@@ -29,3 +29,12 @@ Tarif lu à la sélection, actualisable et relu avant lancement après une heure
 Reprise dans la même session, dix continuations maximum. Conversation non persistée au relancement ; les journaux disque assurent leur propre récupération. Saturation de contexte/stagnation demande une mission ciblée. HTTP/délai sans usage reçu : facture potentielle inconnue. Le compteur raisonnement n’expose jamais le raisonnement interne.
 
 Aucun RUN/capture CPC offert à l’agent : DSK construit/relu structurellement. La beauté/densité d’un titre et la compatibilité ROM ne sont pas garanties par une boucle testée. Recette avec modèle réel choisi et vérification visuelle encore nécessaire, puis outils machine du lot 6. IDE-062/063/064/065 restent partiels ; R7/J5/J6 ouverts.
+
+<a id="reglages-0392"></a>
+## Réglages IA 0.39.2 — 7 octobre 2026
+
+Retour utilisateur : la grille générique à deux colonnes séparait libellés, champs et boutons ; le modèle précédait la clé nécessaire à son chargement. Le dialogue suit désormais trois groupes numérotés : connexion OpenAI, modèle et estimation, budget. Chaque libellé reste attaché à son champ ; la clé reçoit le focus initial. Configurer/oublier restent près de la clé, actualiser près du modèle. Le détail des tarifs se déplie sous le modèle. Les trois budgets occupent une ligne sur grand écran et une colonne sous 600 px. La fermeture reste accessible lors du défilement.
+
+L’oubli ou le remplacement de clé efface aussi le message tarifaire précédent et invalide les réponses tarifaires encore en attente. Aucun changement des budgets par défaut, du stockage des secrets ou des permissions de mission.
+
+La recette existante `agent-workbench-smoke.mjs` vérifie le placement des libellés et l’absence de débordement horizontal en 854 × 973, 420 × 740 et 1024 × 600, le focus et Tab, la configuration, l’oubli, puis la reconfiguration et la mission avec fournisseur contrôlé. La capture de la notice montre l’interface sans clé, sans appel payant.

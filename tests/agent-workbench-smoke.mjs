@@ -16,8 +16,8 @@ export async function verifyAgentWorkbench(browser, errors) {
       agent: {
         models: async () => { configured = true; return { models: [{ id: 'gpt-5.6-luna', created: 100, owner: 'openai' }], fetchedAt: new Date().toISOString(), model }; },
         selectModel: async value => { model = value; return { model }; },
-        configure: async () => { configured = false; return { configured: false, model: '' }; },
-        pricing: async () => pricing,
+        configure: async () => { configured = false; model = ''; return { configured: false, model: '' }; },
+        pricing: async () => window.delayPricing ? new Promise(resolve => { window.resolvePricing = () => resolve(pricing); }) : pricing,
         start: async (session, objective, buffers, docs, budget) => { window.agentCalls.push({ action: 'start', session, objective, buffers, docs, budget }); if (!configured || model !== pricing.model) throw new Error('Missing configuration'); return { taskId: 'mission-ui' }; },
         resume: async (taskId, buffers, session) => { window.agentCalls.push({ action: 'resume', taskId, buffers, session }); phase = 'resume'; return { taskId }; },
         status: async () => {
@@ -41,11 +41,48 @@ export async function verifyAgentWorkbench(browser, errors) {
     await expect(page.getByLabel('Clé API OpenAI', { exact: true })).toHaveCount(0);
     await panel.getByRole('button', { name: 'Réglages IA', exact: true }).click();
     const settings = page.getByRole('dialog', { name: 'Réglages de l’agent IA', exact: true });
+    await expect(settings.getByLabel('Clé API OpenAI', { exact: true })).toBeFocused();
+    await expect(settings.getByLabel('Modèle OpenAI', { exact: true })).toBeDisabled();
+    for (const viewport of [{ width: 854, height: 973 }, { width: 420, height: 740 }, { width: 1024, height: 600 }]) {
+      await page.setViewportSize(viewport);
+      const layout = await settings.evaluate(dialog => {
+        const bounds = element => { const box = element.getBoundingClientRect(); return { x: box.x, y: box.y, width: box.width, height: box.height }; };
+        return { dialog: bounds(dialog), fits: dialog.scrollWidth <= dialog.clientWidth + 1,
+          keyLabel: bounds(dialog.querySelector('label[for="openai-key"]')), key: bounds(dialog.querySelector('#openai-key')),
+          modelLabel: bounds(dialog.querySelector('label[for="openai-model"]')), model: bounds(dialog.querySelector('#openai-model')) };
+      });
+      assert.ok(layout.fits, 'Settings must not scroll horizontally');
+      assert.ok(layout.dialog.x >= 0 && layout.dialog.x + layout.dialog.width <= viewport.width);
+      assert.ok(layout.dialog.y >= 0 && layout.dialog.y + layout.dialog.height <= viewport.height);
+      assert.ok(layout.keyLabel.y + layout.keyLabel.height <= layout.key.y, 'Key label stays above its input');
+      assert.ok(layout.modelLabel.y + layout.modelLabel.height <= layout.model.y, 'Model label stays above its select');
+      assert.ok(layout.key.y + layout.key.height < layout.modelLabel.y, 'Key setup precedes model selection');
+      if (viewport.width === 854) await page.screenshot({ path: 'out/agent-settings-unconfigured.png' });
+      if (viewport.width === 420) await page.screenshot({ path: 'out/agent-settings-narrow.png' });
+    }
+    await page.setViewportSize({ width: 1440, height: 960 });
     await settings.getByLabel('Clé API OpenAI', { exact: true }).fill('sk-ui-fixture-not-real');
+    await page.keyboard.press('Tab');
+    await expect(settings.getByRole('button', { name: 'Configurer la clé', exact: true })).toBeFocused();
     await settings.getByRole('button', { name: 'Configurer la clé', exact: true }).click();
     await expect(settings.getByLabel('Clé API OpenAI', { exact: true })).toHaveValue('');
     await settings.getByLabel('Modèle OpenAI', { exact: true }).selectOption('gpt-5.6-luna');
+    await settings.getByText('Tarifs et estimation (USD)', { exact: true }).click();
     await expect(settings).toContainText('Tarif officiel actualisé.');
+    await page.evaluate(() => { window.delayPricing = true; });
+    await settings.getByRole('button', { name: 'Actualiser le tarif officiel', exact: true }).click();
+    await expect(settings).toContainText('Lecture du tarif officiel…');
+    await settings.getByRole('button', { name: 'Oublier la clé', exact: true }).click();
+    await expect(settings.getByLabel('Modèle OpenAI', { exact: true })).toBeDisabled();
+    await page.evaluate(async () => { window.resolvePricing(); window.delayPricing = false; await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))); });
+    await expect(settings).not.toContainText('Tarif officiel actualisé.');
+    await expect(settings).not.toContainText('Par million de tokens');
+    await expect(settings).toContainText('Choisissez un modèle pour consulter son tarif.');
+    await settings.getByLabel('Clé API OpenAI', { exact: true }).fill('sk-ui-fixture-not-real');
+    await settings.getByRole('button', { name: 'Configurer la clé', exact: true }).click();
+    await settings.getByLabel('Modèle OpenAI', { exact: true }).selectOption('gpt-5.6-luna');
+    await expect(settings).toContainText('Tarif officiel actualisé.');
+    await settings.getByText('Tarifs et estimation (USD)', { exact: true }).click();
     await settings.getByLabel('Tours modèle maximum', { exact: true }).fill('12');
     await page.screenshot({ path: 'out/agent-settings-alpha.png' });
     await page.keyboard.press('Escape'); await expect(settings).toHaveCount(0);

@@ -170,8 +170,28 @@ select{font:inherit;width:100%;margin:8px 0;background:var(--input);color:inheri
 .git-network-tools>summary{cursor:pointer;font-weight:600;padding:10px 0;color:var(--accent)}
 
 .agent-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.agent-settings { max-width: min(680px, 92vw); }
-.agent-settings fieldset { display: grid; gap: 9px; }
+.agent-settings { width: min(760px, calc(100vw - 32px)); max-width: none; max-height: calc(100dvh - 32px); }
+.agent-settings fieldset { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 12px; }
+.agent-setting-step { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; margin-right: 4px; border-radius: 50%; background: var(--selected); color: var(--accent); font-size: 12px; }
+.agent-settings .agent-connection-status { color: var(--accent); font-size: 12px; }
+.agent-setting-field { min-width: 0; }
+.agent-settings input, .agent-settings select { min-width: 0; width: 100%; margin: 6px 0; }
+.agent-setting-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.agent-model-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+.agent-budget-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.agent-pricing-details { border-top: 1px solid var(--line); padding-top: 10px; overflow-wrap: anywhere; }
+.agent-pricing-details summary { cursor: pointer; color: var(--label); font-size: 12px; }
+.agent-pricing-details > p, .agent-pricing-details > button { margin-top: 10px; }
+.agent-settings-notice { overflow-wrap: anywhere; font-size: 12px; }
+.agent-settings-notice:empty { display: none; }
+.agent-settings .settings-actions { position: sticky; bottom: -24px; background: var(--panel); padding: 12px 0; border-top: 1px solid var(--line); }
+.agent-settings .settings-actions button:first-child { margin-right: 0; }
+@media(max-width:600px) {
+  .agent-settings { padding: 16px; }
+  .agent-model-controls, .agent-budget-fields { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .agent-model-controls > button { justify-self: start; }
+  .agent-settings .settings-actions { bottom: -16px; }
+}
 .agent-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
 .agent-stats div { background: var(--input); padding: 8px; border: 1px solid var(--line); border-radius: 5px; }
 .agent-stats dt { font-size: 12px; opacity: .8; }

@@ -20,6 +20,7 @@ export function AgentPanel(props: Props) {
   const [key, setKey] = useState(''), [model, setModel] = useState('');
   const [catalog, setCatalog] = useState<ModelCatalog>();
   const modelRequest = useRef(false);
+  const pricingRequest = useRef(0);
   const [configured, setConfigured] = useState(false), [objective, setObjective] = useState('');
   const [view, setView] = useState<AgentView | undefined>(), [taskId, setTaskId] = useState<string | undefined>();
   const [message, setMessage] = useState(''), [requesting, setRequesting] = useState(false);
@@ -86,11 +87,11 @@ export function AgentPanel(props: Props) {
       if (forget) {
         const result = await port.configure('', '');
         if ('error' in result) { reportError(result.error); }
-        else { setConfigured(false); setView(previous => previous ? { ...previous, resumable: false } : previous); setCatalog(undefined); setModel(''); setPricing(undefined); setMessage('Clé oubliée.'); }
+        else { pricingRequest.current++; setConfigured(false); setView(previous => previous ? { ...previous, resumable: false } : previous); setCatalog(undefined); setModel(''); setPricing(undefined); setPricingNotice(''); setMessage('Clé oubliée.'); }
       } else {
         const result = await port.models(key);
         if ('error' in result) { reportError(result.error); }
-        else { setConfigured(true); setView(previous => previous ? { ...previous, resumable: false } : previous); setCatalog(result); setModel(result.model); setPricing(undefined); setMessage('Clé vérifiée, conservée en mémoire. Choisissez un modèle dans la liste OpenAI.'); }
+        else { pricingRequest.current++; setConfigured(true); setView(previous => previous ? { ...previous, resumable: false } : previous); setCatalog(result); setModel(result.model); setPricing(undefined); setPricingNotice(''); setMessage('Clé vérifiée, conservée en mémoire. Choisissez un modèle dans la liste OpenAI.'); }
       }
     } catch { reportError('Configuration impossible.'); }
     finally { setKey(''); modelRequest.current = false; setRequesting(false); }
@@ -104,9 +105,10 @@ export function AgentPanel(props: Props) {
   }
   async function loadPricing(value = model) {
     if (!port?.pricing || !value) return;
+    const request = ++pricingRequest.current;
     setPricingNotice('Lecture du tarif officiel…');
-    try { const result = await port.pricing(value); if ('error' in result) { setPricing(undefined); setPricingNotice(result.error); } else { setPricing(result); setPricingNotice('Tarif officiel actualisé.'); } }
-    catch { setPricing(undefined); setPricingNotice('Tarif inaccessible ; estimation indisponible.'); }
+    try { const result = await port.pricing(value); if (request !== pricingRequest.current) return; if ('error' in result) { setPricing(undefined); setPricingNotice(result.error); } else { setPricing(result); setPricingNotice('Tarif officiel actualisé.'); } }
+    catch { if (request === pricingRequest.current) { setPricing(undefined); setPricingNotice('Tarif inaccessible ; estimation indisponible.'); } }
   }
   async function resume() {
     if (!port?.resume || !taskId || !props.sessionId) return;
@@ -140,29 +142,46 @@ export function AgentPanel(props: Props) {
     <p className="muted">Sources et extraits consultés transmis à OpenAI. L’agent enregistre ses modifications avec checkpoint local. API facturée par OpenAI.</p>
     <label htmlFor="agent-objective">Mission de programmation</label><textarea id="agent-objective" value={objective} onChange={event => setObjective(event.target.value)} maxLength={20000} rows={4} placeholder="Crée un écran de titre CPC en MODE 1…" disabled={props.busy || requesting} />
     {settingsOpen && <AgentSettingsDialog onClose={() => setSettingsOpen(false)}>
-    <p className="agent-settings-notice" aria-live="polite">{message}</p>
-    <fieldset><legend>Connexion OpenAI</legend>
-    <label htmlFor="openai-model">Modèle OpenAI</label><select id="openai-model" value={model} disabled={props.busy || requesting || !catalog?.models.length} onChange={event => void selectModel(event.target.value)}>
-      <option value="">{configured ? 'Choisir un modèle…' : 'Configurer la clé pour charger les modèles'}</option>
-      {catalog?.models.map(item => <option key={item.id} value={item.id}>{item.id}{item.shutdownDate ? ` · retrait ${item.shutdownDate}` : ''}</option>)}
-    </select>
-    <Button icon="history" disabled={!configured || props.busy || requesting} onClick={() => void refreshModels()}>Actualiser les modèles</Button>
-    {catalog && <p className="muted">Liste OpenAI vérifiée le {new Date(catalog.fetchedAt).toLocaleString('fr-FR')} · actualisation toutes les 15 min. Modèles accessibles à votre clé ; prise en charge des outils vérifiée lors de la mission.</p>}
-
-    <label htmlFor="openai-key">Clé API OpenAI</label><input id="openai-key" type="password" autoComplete="off" spellCheck={false} value={key} disabled={props.busy || requesting} onChange={event => setKey(event.target.value)} />
-    <Button disabled={!port || props.busy || requesting || !key} onClick={() => void configure()}>Configurer la clé</Button>
-    <Button disabled={!configured || props.busy || requesting} onClick={() => void configure(true)}>Oublier la clé</Button></fieldset>
-    <fieldset><legend>Budget par lancement ou reprise</legend>
+    <fieldset><legend><span className="agent-setting-step" aria-hidden="true">1</span> Connexion OpenAI</legend>
+      <p className="agent-connection-status" role="status">{configured ? 'Clé configurée pour cette session' : 'Clé API à configurer'}</p>
+      <div className="agent-setting-field">
+        <label htmlFor="openai-key">Clé API OpenAI</label>
+        <input id="openai-key" type="password" autoComplete="off" spellCheck={false} aria-describedby="openai-key-help" placeholder={configured ? 'Saisir une autre clé pour la remplacer' : 'Collez votre clé API'} value={key} disabled={props.busy || requesting} onChange={event => setKey(event.target.value)} />
+        <p id="openai-key-help" className="muted">La clé reste en mémoire jusqu’à son oubli ou la fermeture de l’application.</p>
+      </div>
+      <div className="agent-setting-actions">
+        <Button icon="key" className="primary" disabled={!port || props.busy || requesting || !key.trim()} onClick={() => void configure()}>Configurer la clé</Button>
+        <Button icon="close" disabled={!configured || props.busy || requesting} onClick={() => void configure(true)}>Oublier la clé</Button>
+      </div>
+    </fieldset>
+    <fieldset><legend><span className="agent-setting-step" aria-hidden="true">2</span> Modèle et estimation</legend>
+      <div className="agent-setting-field">
+        <label htmlFor="openai-model">Modèle OpenAI</label>
+        <div className="agent-model-controls">
+          <select id="openai-model" aria-describedby="openai-model-help" value={model} disabled={props.busy || requesting || !catalog?.models.length} onChange={event => void selectModel(event.target.value)}>
+            <option value="">{configured ? 'Choisir un modèle…' : 'Configurez d’abord votre clé'}</option>
+            {catalog?.models.map(item => <option key={item.id} value={item.id}>{item.id}{item.shutdownDate ? ` · retrait ${item.shutdownDate}` : ''}</option>)}
+          </select>
+          <Button icon="history" disabled={!configured || props.busy || requesting} onClick={() => void refreshModels()}>Actualiser les modèles</Button>
+        </div>
+        <p id="openai-model-help" className="muted">{catalog ? `Liste OpenAI vérifiée le ${new Date(catalog.fetchedAt).toLocaleString('fr-FR')} · actualisation toutes les 15 min. La compatibilité avec les outils est vérifiée lors de la mission.` : 'Les modèles accessibles à votre clé apparaîtront après sa configuration.'}</p>
+      </div>
+      <details className="agent-pricing-details">
+        <summary>Tarifs et estimation (USD)</summary>
+        <p className="muted" aria-live="polite">{pricingNotice || (model ? 'Tarif non chargé.' : 'Choisissez un modèle pour consulter son tarif.')}</p>
+        {pricing && <p>Par million de tokens : entrée {pricing.input} $ · cache lu {pricing.cached} $ · sortie {pricing.output} $. Tarif vérifié le {new Date(pricing.fetchedAt).toLocaleString('fr-FR')}, valable 1 h pour l’estimation. Source : {pricing.source}</p>}
+        <Button icon="history" disabled={!model || props.busy || requesting} onClick={() => void loadPricing()}>Actualiser le tarif officiel</Button>
+        <p className="muted">L’estimation exige le détail d’usage et le tarif officiel du modèle effectivement retourné. Hors taxes, conversion et remises de compte. La facture OpenAI fait foi.</p>
+      </details>
+    </fieldset>
+    <fieldset><legend><span className="agent-setting-step" aria-hidden="true">3</span> Budget par lancement ou reprise</legend>
       <p className="muted">À la limite, la mission se met en pause. Une reprise volontaire accorde ce même budget supplémentaire et peut consommer de nouveaux tokens facturés.</p>
+      <div className="agent-budget-fields">
       {([{ key: 'maxTurns', label: 'Tours modèle maximum', min: 1, max: 100 }, { key: 'maxCalls', label: 'Appels outils maximum', min: 1, max: 200 }, { key: 'maxTokens', label: 'Tokens maximum', min: 1000, max: 500000 }] as const).map(item => <label key={item.key}>{item.label}<input type="number" min={item.min} max={item.max} step={1} value={budget[item.key]} disabled={props.busy} onChange={event => { const value = event.target.valueAsNumber; if (Number.isInteger(value) && value >= item.min && value <= item.max) setBudget(previous => ({ ...previous, [item.key]: value })); }} /></label>)}
+      </div>
       <p className="muted">Durée : 15 min par lancement. Le budget tokens est vérifié après la réponse et peut être dépassé par celle-ci.</p>
     </fieldset>
-    <fieldset><legend>Estimation API en USD</legend>
-      <Button icon="history" disabled={!model || props.busy || requesting} onClick={() => void loadPricing()}>Actualiser le tarif officiel</Button>
-      <p className="muted">{pricingNotice}</p>
-      {pricing && <p>Par million de tokens : entrée {pricing.input} $ · cache lu {pricing.cached} $ · sortie {pricing.output} $. Tarif vérifié le {new Date(pricing.fetchedAt).toLocaleString('fr-FR')}, valable 1 h pour l’estimation. Source : {pricing.source}</p>}
-      <p className="muted">L’estimation exige le détail d’usage et le tarif officiel du modèle effectivement retourné. Hors taxes, conversion et remises de compte. La facture OpenAI fait foi.</p>
-    </fieldset>
+    <p className="agent-settings-notice" aria-live="polite">{message}</p>
     </AgentSettingsDialog>}
 
     <label className="document-consent"><input type="checkbox" checked={includeDocuments} disabled={props.busy || requesting || !props.documentCount} onChange={event => setDocumentConsentSession(event.target.checked ? props.sessionId : undefined)} />Autoriser les documents du projet pour cette mission ({props.documentCount})</label>

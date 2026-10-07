@@ -198,6 +198,16 @@
       "sha256": "c9819d52f0d09aa6f1cc81d23dd5044150af0f7ea9e0f462f17a838fd0fa9278",
       "origin": "local-browser-real-firmware",
       "scenario": "tests/basic-tests-firmware-smoke.mjs"
+    },
+    {
+      "file": "22-reglages-ia.png",
+      "version": "0.39.2",
+      "baseCommit": "c6fc8d4ebf65e6073bf30ccf87b82ce5c7bd9fae",
+      "width": 854,
+      "height": 973,
+      "sha256": "de4f5338bcb9e6f68a8d5e1e50a53d935847ad937812fb6b9b99c6ca40e8c729",
+      "origin": "local-browser-controlled-agent",
+      "scenario": "tests/agent-workbench-smoke.mjs"
     }
   ]
 }
