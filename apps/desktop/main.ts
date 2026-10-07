@@ -25,6 +25,7 @@ import { romRole } from '../../packages/emulator/src/firmware.ts';
 
 const base = dirname(fileURLToPath(import.meta.url));
 const rendererRoot = join(base, '../../renderer');
+if (process.platform === 'win32') app.setAppUserModelId('com.astroware.cpceleste');
 protocol.registerSchemesAsPrivileged([{ scheme: 'cpceleste', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 const page = 'cpceleste://app/index.html';
 const MAX_SOURCE_BYTES = 1024 * 1024;
