@@ -1,5 +1,7 @@
 # 12 — Feuille de route et backlog de réalisation
 
+**Distribution périodique — 7 octobre 2026** : publication publique de préversions Windows/Linux chaque semaine si les entrées de construction ont changé, avec lancement manuel possible, tests bloquants, SHA-256 et provenance. Le packaging n’est plus relancé à chaque commit applicatif. IDE-072/J6-03 restent partiels : signature, installation/désinstallation, upgrade et mise à jour intégrée restent à qualifier. [Guide](../implementation/packaging-preview-alpha.md), [ADR 0046](../adr/0046-packaging-desktop-preview.md).
+
 **Tests BASIC 0.37** : premier banc d’assertions natives à la demande, listings de test autonomes, CPC/DSK isolés, rapports et provenance. [Guide](../implementation/basic-tests-alpha.md), [ADR 0044](../adr/0044-tests-basic-isoles.md). IDE-077 partiel ; fixtures/scénarios persistants, assertions écran/fichier, couverture et outils IA restent ouverts. Suite : consolidation du débogueur BASIC puis aide IA aux tests, sans verdict donné par le modèle.
 
 **Qualité BASIC 0.36** : rapport local à la demande sur la source active ou les buffers chargés ; longueurs, segments, complexité estimée et cinq pistes de revue localisées. Exports Markdown/JSON, annulation et sources modifiées signalées. [Guide et limites](../implementation/basic-quality-alpha.md).
