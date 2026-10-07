@@ -141,7 +141,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | ID | Fonction et qualification | État | Priorité | Dépendance | Critère de validation |
 | --- | --- | --- | --- | --- | --- |
 | IDE-070 | IPC, liens/chemins, documents inertes, budgets et secrets | P | P0 | Tous | Frontières déjà testées ; audit complet plateformes/codecs avant 1.0 |
-| IDE-071 | Tests unitaires, intégration, Electron et matrice Windows/Linux/macOS | P | P0 | WIN/J6 | CI Linux livrée ; installation Windows propre, plateformes annoncées exactes |
+| IDE-071 | Tests unitaires, intégration, Electron et matrice Windows/Linux/macOS | P | P0 | WIN/J6 | 0.38.1 : packaging natif Windows/Linux et smoke du binaire empaqueté/ASAR ; installation propre, ARM64/macOS et matrice fonctionnelle complète restent ouverts |
 | IDE-072 | Installateurs, signatures, notices et mises à jour contrôlées | N | P0 | IDE-071 | 0.38.1 visera un Packaging Preview non signé (NSIS/portable Windows, AppImage/deb Linux, artefacts CI) ; signatures, auto-update et canaux stables restent requis pour 1.0 |
 | IDE-073 | Performance, gros projets, travailleurs et accessibilité mesurées | P | P0 | J6 | 0.34 : limites parser/cache, benchmark 5 000 lignes et monitoring visible seulement ; mesure de bout en bout sur matériel cible et sessions longues ouvertes |
 | IDE-074 | Guides intégrés, onboarding, exemples et diagnostic support | P | P1 | IDE-071 | Guides français livrés ; aide in-app/export diagnostic expurgé et exemples CPC qualifiés |
@@ -263,3 +263,8 @@ IDE-054 passe de B à P. Le debugger réutilise le hook machine qualifié en 0.3
 | 0.43 | Agent IA observant le CPC | analyser, tester, exécuter, debugger, corriger et revérifier sous permissions explicites |
 
 Le Packaging Preview est volontairement avancé avant la 1.0 afin de détecter tôt les différences entre exécution de développement et application réellement installée : chemins `asar`, workers, WASM, ressources, stockage utilisateur, firmware privé et upgrade. La 1.0 conservera IDE-071/072 comme critères de qualification, signature et mise à jour contrôlée.
+
+
+## Avancement alpha 0.38.1 — Packaging Preview
+
+Le packaging desktop est avancé avant la 1.0 afin de qualifier dès maintenant les différences entre checkout et application distribuée. La configuration Electron Builder produit Windows x64 (NSIS + portable) et Linux x64 (AppImage + deb) avec ASAR, moteur CPC/WASM embarqué, identité CPCéleste et checksums SHA-256. Un smoke test démarre le binaire réellement empaqueté et vérifie le chargement de l’UI ainsi que du WASM via `cpceleste://`. Le workflow crée une GitHub Release en brouillon pour les tags preview. Aucun firmware n’est livré et Git reste hôte. IDE-071/072 restent P : signature, install/uninstall/upgrade, auto-update, ARM64/macOS et qualification fonctionnelle installée complète restent à faire. [Guide](../implementation/packaging-preview-alpha.md), [ADR 0046](../adr/0046-packaging-desktop-preview.md).
