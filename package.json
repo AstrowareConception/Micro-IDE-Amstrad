@@ -1,6 +1,6 @@
 {
   "name": "micro-ide-amstrad",
-  "version": "0.38.0",
+  "version": "0.38.1",
   "main": "dist/apps/desktop/main.js",
   "private": true,
   "type": "module",
@@ -32,7 +32,9 @@
     "harness": "node scripts/serve-harness.mjs",
     "test:sources-desktop": "node tests/source-desktop-smoke.mjs",
     "test:personalization-desktop": "node tests/personalization-desktop-smoke.mjs",
-    "benchmark:basic": "node scripts/benchmark-basic-analysis.mjs"
+    "benchmark:basic": "node scripts/benchmark-basic-analysis.mjs",
+    "package:preview:win": "node scripts/package-preview.mjs win",
+    "package:preview:linux": "node scripts/package-preview.mjs linux"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",
@@ -48,5 +50,8 @@
     "pdfjs-dist": "6.4.299",
     "react": "19.3.0",
     "react-dom": "19.3.0"
-  }
+  },
+  "description": "CPCéleste — atelier desktop moderne pour programmer, tester et explorer le Locomotive BASIC sur Amstrad CPC.",
+  "author": "AstroWare Conception",
+  "homepage": "https://github.com/AstrowareConception/Micro-IDE-Amstrad"
 }
