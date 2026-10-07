@@ -53,5 +53,6 @@
   },
   "description": "CPCéleste — atelier desktop moderne pour programmer, tester et explorer le Locomotive BASIC sur Amstrad CPC.",
   "author": "AstroWare Conception",
-  "homepage": "https://github.com/AstrowareConception/Micro-IDE-Amstrad"
+  "homepage": "https://github.com/AstrowareConception/Micro-IDE-Amstrad",
+  "desktopName": "com.astroware.cpceleste.desktop"
 }
