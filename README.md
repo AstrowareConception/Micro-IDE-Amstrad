@@ -15,11 +15,15 @@
 | Complétion, diagnostics, recherche et renumérotation | Projets, documents, agent OpenAI et rapports de qualité | Historique, brouillons, checkpoints et Git/GitHub |
 | F5 depuis les buffers, CPC 6128 intégré et export DSK | Thèmes, profils, raccourcis et panneaux ajustables | Sources locales et utilisation sans IA possible |
 
-**Version actuelle : alpha desktop 0.37.0.** L’édition et la construction DSK fonctionnent sans ROM ni clé IA. L’exécution demande vos ROM locales ; l’agent utilise votre accès API OpenAI. La notice distingue les fonctions disponibles des évolutions encore prévues.
+**Version actuelle : alpha desktop 0.38.1 Packaging Preview.** L’édition et la construction DSK fonctionnent sans ROM ni clé IA. L’exécution demande vos ROM locales ; l’agent utilise votre accès API OpenAI. La notice distingue les fonctions disponibles des évolutions encore prévues.
 
 [Installer et démarrer](docs/guide-utilisateur.md#premiers-pas) · [Exécuter avec F5](docs/guide-utilisateur.md#execution) · [Découvrir l’agent](docs/guide-utilisateur.md#agent) · [Personnaliser l’atelier](docs/guide-utilisateur.md#personnalisation) · [Roadmap](docs/specifications/17-roadmap-ide-complet.md)
 
 ## Nouveautés et guides techniques
+
+**Packaging Preview 0.38.1** : génération native de `CPCeleste-Setup-0.38.1.exe`, version portable Windows, AppImage et deb Linux. Le paquet ASAR est lancé en CI et doit réellement charger l’UI et le moteur CPC/WASM avant validation. Checksums SHA-256 et GitHub Release en brouillon sur tag preview ; builds non signés. [Guide](docs/implementation/packaging-preview-alpha.md).
+
+**Debugger BASIC 0.38** : breakpoints par numéro de ligne, pas vers le prochain statement et continuation sur le Locomotive BASIC 1.1 exactement qualifié ; ligne/pointeurs/ticks observés par le firmware réel, sans simulation côté éditeur. [Guide](docs/implementation/basic-debugger-alpha.md).
 
 **Tests BASIC 0.37** : assertions natives sur des listings autonomes, exécutés à la demande sur des CPC isolés ; résultats par cas, budgets, annulation, provenance et rapports Markdown/JSON. [Guide et exemple](docs/implementation/basic-tests-alpha.md). Jeu ROM 6128 anglais identifié requis ; pas de couverture ou de lecteur de variables ajouté.
 
@@ -57,7 +61,7 @@ Nom de produit du projet historiquement appelé « Micro IDE Amstrad ». [Identi
 
 Un atelier de programmation pour écrire du **Locomotive BASIC**, le tester dans un **Amstrad CPC émulé**, travailler avec une **IA et ses propres documents**, puis partager une **disquette DSK utilisable hors de l'IDE**.
 
-**État au 7 octobre 2026 : alpha desktop, version 0.37.0.** Electron/Monaco propose édition BASIC, menus/palette/contextes, ouverture rapide, renumérotation conservatrice, projets multifichiers et export DSK, ainsi qu'un agent OpenAI à outils : exploration, références du corpus fourni, documents TXT/MD/PDF texte et aperçus PNG/JPEG autorisés, création/remplacement de sources, renumérotation, analyse et construction, journal, avant/après et restauration de la mission courante. Clé API en mémoire côté main. L'import local des ROM OS/BASIC/AMSDOS et leur vérification sont disponibles ; Git natif ajoute statut/diff, création de dépôt, indexation sélective locale, commits examinés, historique paginé, branches/remotes et synchronisation fast-forward avec GitHub privé. Le terminal humain exécute des commandes hôte sans PTY, avec confirmation et limites ; aucun accès shell accordé à l’IA. Ce n'est pas encore le MVP : crash recovery complet, WebP/rendu PDF, merge/rebase et résolution des conflits Git, conversion écran et émulation intégrée qualifiée restent à construire. Boot BASIC 1.1 et RUN depuis DSK sont vérifiés avec un jeu 6128 anglais identifié ; la relecture indépendante et la qualification matérielle globale restent ouvertes.
+**État au 7 octobre 2026 : alpha desktop, version 0.38.1 Packaging Preview.** Electron/Monaco propose édition BASIC, menus/palette/contextes, ouverture rapide, renumérotation conservatrice, projets multifichiers et export DSK, ainsi qu'un agent OpenAI à outils : exploration, références du corpus fourni, documents TXT/MD/PDF texte et aperçus PNG/JPEG autorisés, création/remplacement de sources, renumérotation, analyse et construction, journal, avant/après et restauration de la mission courante. Clé API en mémoire côté main. L'import local des ROM OS/BASIC/AMSDOS et leur vérification sont disponibles ; Git natif ajoute statut/diff, création de dépôt, indexation sélective locale, commits examinés, historique paginé, branches/remotes et synchronisation fast-forward avec GitHub privé. Le terminal humain exécute des commandes hôte sans PTY, avec confirmation et limites ; aucun accès shell accordé à l’IA. Ce n'est pas encore le MVP : crash recovery complet, WebP/rendu PDF, merge/rebase et résolution des conflits Git, conversion écran et émulation intégrée qualifiée restent à construire. Boot BASIC 1.1 et RUN depuis DSK sont vérifiés avec un jeu 6128 anglais identifié ; la relecture indépendante et la qualification matérielle globale restent ouvertes.
 
 ## Lancer l'éditeur
 
@@ -111,6 +115,18 @@ Le moteur retenu est **floooh/chips en C/WASM**. [Intégration et qualification]
 **Git · dépôt et index locaux (0.13)** affiche version, branche, statut et diff index/disque, puis permet de créer un dépôt vide `main` avec exclusions et d'indexer/retirer un seul fichier sélectionné, avec confirmation native et préconditions. Les brouillons bloquent les mutations sans sauvegarde automatique. Git doit être installé séparément ; configurations non qualifiées/worktrees/sous-modules refusés. Sources déclarées, manifeste et `.gitignore` seulement ; pièces jointes privées exclues. [Guide 0.13 et limites](docs/implementation/git-local-index-alpha.md), [lecture 0.12](docs/implementation/git-alpha.md). L’historique paginé est ajouté en 0.14 ; [commits locaux 0.22](docs/implementation/git-commit-alpha.md) disponibles avec identité explicite par commit ; [profil privé d’identité 0.23](docs/implementation/git-identity-alpha.md) disponible ; branches/remotes/clone/fetch/pull/push sont ajoutés en [0.28](docs/implementation/git-network-alpha.md) ; réglage d’identité par dépôt et Git avancé restent à construire selon la [spécification JG](docs/specifications/16-integration-git.md). Le terminal humain peut lancer Git sous la responsabilité de l’utilisateur ; il ne remplace pas la qualification des boutons de synchronisation.
 
 Préparer les ROM dans **ROM du CPC 6128** : importer trois fichiers séparés de 16 Kio, vérifier les hashes et retrouver la sélection au redémarrage. Les fichiers restent dans le stockage applicatif local, hors projet et IA. [Guide ROM 0.7 et limites](docs/implementation/firmware-alpha.md). Après cet import, **Exécuter/F5** démarre la machine intégrée. Un jeu complet reste expérimental ; voir le [guide Exécuter](docs/implementation/emulator-run-alpha.md).
+
+Pour produire une preview installable après le build de développement :
+
+```bash
+# Windows x64
+npm run package:preview:win
+
+# Linux x64
+npm run package:preview:linux
+```
+
+Les paquets sont écrits dans `release/` avec leurs checksums. Les ROM restent strictement locales et ne sont jamais embarquées. [Packaging Preview 0.38.1](docs/implementation/packaging-preview-alpha.md).
 
 `npm run dev:editor` démarre uniquement un aperçu navigateur sur localhost : sauvegarder télécharge un fichier, ce n'est pas l'application de bureau.
 
