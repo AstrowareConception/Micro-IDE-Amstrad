@@ -1,5 +1,11 @@
 # CPCéleste — Dossier de conception et réalisation — version 0.36
 
+## Vous cherchez le mode d’emploi ?
+
+**[Présentation commerciale et notice utilisateur illustrée de CPCéleste](guide-utilisateur.md)** : 25 chapitres, 20 captures, tous les parcours de la version 0.36, des premiers pas aux fonctions avancées.
+
+Le dossier ci-dessous conserve les spécifications et les rapports des incréments successifs.
+
 **Qualité BASIC 0.36** : rapport local à la demande sur la source active ou les buffers chargés ; longueurs, segments, complexité estimée et cinq pistes de revue localisées. Exports Markdown/JSON, annulation et sources modifiées signalées. [Guide et limites](implementation/basic-quality-alpha.md).
 
 **Inspection CPC 0.35** : registres Z80 et RAM logique en pause, lecture à la demande ; première preuve ciblée de frontières BASIC en natif/WASM, sans débogueur BASIC public. [Guide et limites](implementation/cpc-inspection-alpha.md).
