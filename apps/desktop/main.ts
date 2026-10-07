@@ -1,8 +1,8 @@
-import { app, BrowserWindow, dialog, ipcMain, protocol, net, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, protocol, shell } from 'electron';
 import { readFile, writeFile, rename, unlink, lstat, mkdir } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
 import { join, dirname, relative, isAbsolute } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { buildListingDisk } from '../../packages/basic-language/src/build.ts';
 import { parseProject, buildProjectDisk } from '../../packages/workspace/src/project.ts';
 import { feedbackReport } from './feedback.ts';
@@ -96,7 +96,13 @@ protocol.handle('cpceleste', async request => {
     if (request.method !== 'GET' || url.hostname !== 'app' || parts.some(part => part === '..' || part === '.' || part.includes('\\')) || !/\.(html|js|mjs|wasm|css|ttf|png|svg|ico|txt)$/.test(parts.join('/'))) return new Response('Refusé', { status: 403 });
     const root = await realpath(rendererRoot), path = await realpath(join(root, ...parts)), location = relative(root, path);
     if (isAbsolute(location) || location.startsWith('..') || !(await lstat(path)).isFile()) return new Response('Refusé', { status: 403 });
-    return net.fetch(pathToFileURL(path).href);
+    const extension = path.slice(path.lastIndexOf('.')).toLowerCase();
+    const contentTypes: Record<string, string> = {
+      '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
+      '.wasm': 'application/wasm', '.css': 'text/css; charset=utf-8', '.ttf': 'font/ttf', '.png': 'image/png',
+      '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.txt': 'text/plain; charset=utf-8',
+    };
+    return new Response(new Uint8Array(await readFile(path)), { headers: { 'Content-Type': contentTypes[extension] ?? 'application/octet-stream' } });
   } catch { return new Response('Ressource absente', { status: 404 }); }
 });
 agent = new AgentController(join(app.getPath('userData'), 'agent-checkpoints'), join(base, '../../knowledge/locomotive-basic'));
