@@ -141,3 +141,14 @@ test('real file names are NUL-delimited and literal pathspecs cannot select othe
   git(root, 'update-index', '--add', '--cacheinfo', `160000,${oid},module`);
   await assert.rejects(inspector.status(), /Sous-modules/);
 });
+
+test('portable suite definitions are indexable; private report history remains excluded', async () => {
+ const { root, inspector } = await fixture();
+ await writeFile(join(root, 'microide.tests.json'), '{"schemaVersion":1,"suites":[]}\n');
+ await mkdir(join(root, '.microide/test-reports'), { recursive: true });
+ await writeFile(join(root, '.microide/test-reports/history.json'), 'private');
+ const status = await inspector.status();
+ assert.equal(status.changes.find(change => change.path === 'microide.tests.json')?.indexable, true);
+ const privateChange = status.changes.find(change => change.path.includes('.microide'));
+ assert.ok(!privateChange?.indexable);
+});

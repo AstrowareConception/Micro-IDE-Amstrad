@@ -189,7 +189,7 @@ export class GitInspection {
     // No private documents, ROM, conversations, credentials or arbitrary host content.
     const permitted = new Set(this.permittedPaths());
     if (!permitted.has(change.path) || (change.originalPath && !permitted.has(change.originalPath)))
-      throw new Error('Diff limité au manifeste, à .gitignore et aux sources BASIC déclarées ; autres contenus privés exclus du diff.');
+      throw new Error('Diff limité au manifeste, aux suites, à .gitignore et aux sources BASIC déclarées ; autres contenus privés exclus du diff.');
     if (await this.metadata() !== 'repository') throw new Error('Dépôt Git indisponible.');
     for (const relative of [change.path, ...(change.originalPath ? [change.originalPath] : [])]) {
       let path = this.root;
@@ -205,7 +205,7 @@ export class GitInspection {
     if (text.includes('\0')) throw new Error('Diff texte requis.');
     return { path: change.path, side: side as DiffSide, text };
   }
-  private permittedPaths(): string[] { return ['microide.project.json', '.gitignore', ...this.sourcePaths()]; }
+  private permittedPaths(): string[] { return ['microide.project.json', 'microide.tests.json', '.gitignore', ...this.sourcePaths()]; }
   private async exists(path: string): Promise<boolean> {
     try { await lstat(path); return true; }
     catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false; throw error; }
@@ -273,7 +273,7 @@ export class GitInspection {
     const permitted = new Set(this.permittedPaths()); const files: GitCommitPlan['files'] = [];
     for (let index = 0; index < fields.length; index += 2) {
       const status = fields[index]!, path = gitPath(fields[index + 1]!);
-      if (!['A', 'M', 'D'].includes(status) || !permitted.has(path)) throw new Error('Commit limité aux changements indexés des sources déclarées, manifeste et .gitignore ; autres contenus exclus.');
+      if (!['A', 'M', 'D'].includes(status) || !permitted.has(path)) throw new Error('Commit limité aux changements indexés des sources déclarées, manifeste, suites et .gitignore ; autres contenus exclus.');
       files.push({ path, status: status as 'A' | 'M' | 'D' });
     }
     const entries = (await this.run(['ls-files', '--stage', '-z'])).split('\0').filter(Boolean); let total = 0;
@@ -379,7 +379,7 @@ export class GitInspection {
       throw new Error('Sélection Git périmée ou invalide ; actualisez Git.');
     const change = this.changes.get(changeId);
     if (!change || change.kind === 'conflict' || change.kind === 'rename' || !this.permittedPaths().includes(change.path))
-      throw new Error('Indexation limitée aux sources déclarées, au manifeste et à .gitignore ; conflits, renommages et contenus privés refusés.');
+      throw new Error('Indexation limitée aux sources déclarées, au manifeste, aux suites et à .gitignore ; conflits, renommages et contenus privés refusés.');
     if ((action === 'stage' && change.worktree === '.') || (action === 'unstage' && (change.index === '.' || change.index === '?')))
       throw new Error('Aucun changement sélectionnable de ce côté.');
     return { ...change };

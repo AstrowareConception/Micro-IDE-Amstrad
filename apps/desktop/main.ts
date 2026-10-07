@@ -1,3 +1,4 @@
+import { BasicTestSuiteStore } from './basic-test-suite-store.ts';
 import { app, BrowserWindow, dialog, ipcMain, protocol, net, shell } from 'electron';
 import { readFile, writeFile, rename, unlink, lstat, mkdir } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
@@ -228,6 +229,11 @@ function projectRequest(payload: unknown): { store: ProjectStore; value: Record<
   const value = payload as Record<string, unknown>; project.assertSession(value.sessionId);
   return { store: project, value };
 }
+function testSuiteStore(store: ProjectStore) { return new BasicTestSuiteStore(store.root, store.manifest.projectId); }
+route('basic-tests:load', async payload => { const { store } = projectRequest(payload); await store.assertCurrent(); return testSuiteStore(store).load(); });
+route('basic-tests:save', async payload => { const { store, value } = projectRequest(payload); await store.assertCurrent(); return testSuiteStore(store).save(value.revision, value.suites, store.manifest.sources.map(source => source.id)); });
+route('basic-tests:history', async payload => { const { store } = projectRequest(payload); await store.assertCurrent(); return testSuiteStore(store).history(); });
+route('basic-tests:record', async payload => { const { store, value } = projectRequest(payload); await store.assertCurrent(); return testSuiteStore(store).record(value.report); });
 function gitInspector(store: ProjectStore): GitInspection {
   if (gitSession?.id !== store.sessionId) {
     const inspector = new GitInspection(store.root, () => store.manifest.sources.map(source => source.path));

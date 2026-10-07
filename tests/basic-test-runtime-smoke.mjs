@@ -26,4 +26,9 @@ await recipe('missing-assertion', BASIC_TEST_EXAMPLE.replace('70 IF score=100 TH
 await recipe('infinite-loop', '10 REM @CPCTEST 1 Loop\n20 GOTO 20\n', 'timeout');
 await recipe('basic-error', '10 REM @CPCTEST 1 Error\n20 ERROR 33\n', 'timeout');
 await recipe('input-wait', '10 REM @CPCTEST 1 Input\n20 INPUT a$\n', 'timeout');
+for (const name of ['score', 'collision']) {
+ const source = await readFile(`examples/basic-test-suite/src/tests-${name}.bas`, 'utf8');
+ const example = await recipe(`suite-example-${name}`, source, 'passed');
+ assert.equal(example.cases.length, 2);
+}
 await writeFile('out/basic-test-runtime.json', JSON.stringify({ results, independentEmulator: false, physicalCpc: false }, null, 2));

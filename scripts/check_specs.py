@@ -203,6 +203,7 @@ def check_schemas(data: dict[Path, object]) -> int:
         "proposal": ROOT / "contracts/ai-proposal.schema.json",
         "build": ROOT / "contracts/build-report.schema.json",
         "task": ROOT / "contracts/agent-task.schema.json",
+        "test-suites": ROOT / "contracts/basic-test-suites.schema.json",
     }
     validators = {}
     for key, path in contracts.items():
@@ -214,6 +215,7 @@ def check_schemas(data: dict[Path, object]) -> int:
             problem(path, f"invalid schema: {exc}")
     examples = [(p, "project") for p in ROOT.glob("examples/**/microide.project.json")]
     examples.extend([(ROOT / "examples/ai-proposal.json", "proposal"), (ROOT / "examples/build-report.json", "build"), (ROOT / "examples/agent-task.json", "task")])
+    examples.extend((p, "test-suites") for p in ROOT.glob("examples/**/microide.tests.json"))
     count = 0
     for path, key in examples:
         if key not in validators or data.get(path) is None:
@@ -251,7 +253,7 @@ def main() -> int:
         return 1
     print(f"OK: {markdown_count} Markdown files, {len(data)} JSON files, {requirement_count} requirements, {scenario_count} acceptance scenarios.")
     if args.schemas:
-        print(f"OK: 4 Draft 2020-12 schemas and {validated_count} examples validated.")
+        print(f"OK: 5 Draft 2020-12 schemas and {validated_count} examples validated.")
     print("CPC execution, disk compatibility and application performance have not been tested by this check.")
     return 0
 

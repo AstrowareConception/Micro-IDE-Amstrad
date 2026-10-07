@@ -23,9 +23,9 @@ export async function verifyBasicTests(browser, errors) {
    const worker = { onmessage: null, onerror: null, terminate() { window.testStops++; }, postMessage(message) {
     worker.message = message;
     if (window.testMode === 'hold') return;
-    queueMicrotask(() => worker.onmessage?.({ data: { id: message.id, result: {
+    queueMicrotask(async () => worker.onmessage?.({ data: { id: message.id, result: {
      sourceId: message.source.id, name: message.source.name, outcome: window.testMode, message: 'Résultat du transport contrôlé.', emulatedSeconds: 6,
-     cases: [{ slot: 1, line: 1, name: message.source.source.includes('Bonus') ? 'Bonus' : 'Score', outcome: window.testMode, observed: window.testMode === 'passed' ? 1 : 2 }], sourceSha256: 'a'.repeat(64), diskSha256: 'b'.repeat(64),
+     cases: [{ slot: 1, line: 1, name: message.source.source.includes('Bonus') ? 'Bonus' : 'Score', outcome: window.testMode, observed: window.testMode === 'passed' ? 1 : 2 }], sourceSha256: Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(message.source.source))), value => value.toString(16).padStart(2, '0')).join(''), diskSha256: 'b'.repeat(64),
     } } }));
    } }; window.testWorkers.push(worker); return worker;
   } });
@@ -77,5 +77,62 @@ export async function verifyBasicTests(browser, errors) {
   const exampleDownloading = page.waitForEvent('download'); await panel.getByRole('button', { name: 'Télécharger un exemple de tests', exact: true }).click();
   const exampleFile = await exampleDownloading, exampleChunks = []; for await (const chunk of await exampleFile.createReadStream()) exampleChunks.push(chunk);
   assert.ok(Buffer.concat(exampleChunks).toString('utf8').includes('MEMORY &7FFF')); await expect(page.getByRole('tab', { name: /src\/main.bas/ })).not.toContainText('*');
+  // Suite management and historical reports use the same UI, without executing on load.
+  await page.evaluate(() => {
+   window.testMode = 'passed'; window.testLibrary = { revision: null, suites: [] }; window.testHistory = [];
+   window.desktop.basicTestSuites = {
+    load: async () => structuredClone(window.testLibrary), history: async () => structuredClone(window.testHistory),
+    save: async (sessionId, revision, suites) => {
+     if (revision !== window.testLibrary.revision) return { error: 'Les suites ont changé sur disque.' };
+     window.testLibrary = { revision: crypto.randomUUID(), suites }; return structuredClone(window.testLibrary);
+    },
+    record: async (sessionId, report) => { window.testHistory = [report, ...window.testHistory].slice(0, 10); return structuredClone(window.testHistory); },
+   }; window.testScope = 'suite-project';
+  });
+  await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click();
+  await panel.getByLabel('Nom de la suite', { exact: true }).fill('Règles du jeu');
+  await panel.getByText('Choisir les listings de la suite', { exact: false }).click();
+  await panel.getByRole('checkbox', { name: 'src/main.bas', exact: true }).check();
+  await panel.getByRole('checkbox', { name: 'src/other.bas', exact: true }).check();
+  await panel.getByRole('button', { name: 'Enregistrer la suite', exact: true }).click();
+  await expect(panel.getByLabel('Suite enregistrée')).not.toHaveValue('');
+  const suiteId = await panel.getByLabel('Suite enregistrée').inputValue();
+  const beforeSuite = await page.evaluate(() => window.testWorkers.length);
+  await panel.getByLabel('Exécuter dans la suite').selectOption('other');
+  await panel.getByRole('button', { name: 'Exécuter les tests BASIC', exact: true }).click();
+  await expect(panel).toContainText('Rapport conservé'); await expect(panel.locator('article')).toHaveCount(1);
+  assert.equal(await page.evaluate(() => window.testWorkers.length), beforeSuite + 1);
+  await panel.getByLabel('Exécuter dans la suite').selectOption('all');
+  await panel.getByRole('button', { name: 'Exécuter les tests BASIC', exact: true }).click();
+  await expect(panel).toContainText('Rapport conservé'); await expect(panel.locator('article')).toHaveCount(2);
+  assert.equal(await page.evaluate(() => window.testWorkers.length), beforeSuite + 3);
+  await page.evaluate(() => { window.testScope = 'reopened-suite-project'; });
+  await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click();
+  await panel.getByLabel('Suite enregistrée').selectOption(suiteId);
+  await expect(panel.getByLabel('Nom de la suite', { exact: true })).toHaveValue('Règles du jeu');
+  await panel.getByLabel('Historique des tests').selectOption(await page.evaluate(() => window.testHistory[0].id));
+  await expect(panel).toContainText('Rapport historique chargé'); await expect(panel).toContainText('sources inchangées');
+  assert.equal(await page.evaluate(() => window.testWorkers.length), beforeSuite + 3, 'Opening suites and history never runs tests');
+  await expect(panel.getByRole('button', { name: 'Voir ligne 1', exact: true }).first()).toBeEnabled();
+  await panel.getByRole('button', { name: 'Voir ligne 1', exact: true }).first().click();
+  await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('\n30 REM updated after recorded result');
+  await expect(panel).toContainText('Rapport obsolète');
+  await expect(panel.getByRole('button', { name: 'Voir ligne 1', exact: true }).first()).toBeDisabled();
+  await panel.getByLabel('Historique des tests').selectOption(await page.evaluate(() => window.testHistory[0].id));
+  await expect(panel).toContainText('Rapport historique chargé'); await expect(panel).toContainText('Rapport obsolète');
+  await page.getByRole('button', { name: 'Agrandir les sorties', exact: true }).click();
+  await panel.getByRole('heading', { name: 'Tests BASIC à la demande', exact: true }).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: 'out/basic-test-suites-browser.png' });
+  // External modifications require refresh; the current suite is not silently overwritten.
+  await page.evaluate(() => { window.testLibrary.revision = 'external'; });
+  await panel.getByLabel('Nom de la suite', { exact: true }).fill('Conflit');
+  await panel.getByRole('button', { name: 'Enregistrer la suite', exact: true }).click();
+  await expect(panel).toContainText('Les suites ont changé');
+  assert.equal(await page.evaluate(() => window.testLibrary.suites[0].name), 'Règles du jeu');
+  await panel.getByRole('button', { name: 'Actualiser les suites et l’historique', exact: true }).click();
+  await expect(panel.getByRole('button', { name: 'Supprimer la suite', exact: true })).toBeEnabled();
+  await panel.getByRole('button', { name: 'Supprimer la suite', exact: true }).click();
+  await expect(panel.getByLabel('Suite enregistrée')).toHaveValue('');
+  assert.equal(await page.evaluate(() => window.testHistory.length), 2, 'Deleting a suite preserves reports');
  } finally { await page.close(); }
 }
