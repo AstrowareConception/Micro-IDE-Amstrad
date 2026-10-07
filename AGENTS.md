@@ -24,6 +24,9 @@ Le dépôt contient les spécifications, un prototype J0 et une alpha d'édition
 
 ## Vérification
 
+- Regrouper les changements cohérents et les vérifications locales avant de pousser ; ne pas publier chaque fichier par un commit distant séparé. Lire la première erreur utile avant toute nouvelle tentative CI. Ne pas relancer les anciens commits.
+- CI courante : `push` sur `main`, `pull_request` et lancement manuel ; annulation des exécutions obsolètes par workflow et PR/branche. Packaging : lancement manuel sur le commit à qualifier ou tag preview, jamais à chaque mise à jour de PR. Préserver les tests et leur résultat bloquant.
+
 Exécuter `python scripts/check_specs.py --schemas` avec les dépendances de `scripts/requirements-docs.txt` lors d'une modification documentaire ou contractuelle. Pour les codecs : `npm run typecheck` et `npm test` ; pour l'adaptateur : essais natifs, WASM et navigateur du guide J0, puis recette firmware/externe. Distinguer tests exécutés, tests bloqués et essais seulement prévus. Un succès dans le moteur intégré ne remplace pas les vérifications externes prescrites au document 11.
 
 ## Communication

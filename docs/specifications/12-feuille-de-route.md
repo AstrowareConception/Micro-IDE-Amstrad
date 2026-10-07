@@ -183,6 +183,8 @@ Ordre des incréments : finaliser la tranche PDF, puis réaliser JG-A (local, sa
 
 Renforcer crash recovery, accessibilité, performances et docs utilisateur. Construire les paquets sur plateformes ciblées, signer les diffusions officielles lorsque certificats disponibles, qualifier installation et export indépendant. Définir support et comportement de mise à jour. Rejouer les scénarios du MVP affectés par ces travaux.
 
+**Tranche précoce 0.38.1 — Packaging Preview** : J6-03 commence avant J6 complet avec des paquets réellement construits et démarrés en CI : Windows x64 (NSIS + portable) et Linux x64 (AppImage + deb), ASAR et moteur CPC/WASM inclus, checksums SHA-256 et release brouillon optionnelle sur tag preview. Cette preuve valide la capacité de construire et démarrer un paquet ; elle ne valide pas encore une installation Windows propre, la désinstallation, l’upgrade, la signature ou l’auto-update. J6-03 reste donc ouvert. [Guide](../implementation/packaging-preview-alpha.md), [ADR 0046](../adr/0046-packaging-desktop-preview.md).
+
 | Tâche | Dépendance | Critère de sortie |
 | --- | --- | --- |
 | J6-01 — Incidents et reprise | J5 | ACC-14 et absence de perte silencieuse |
@@ -194,7 +196,7 @@ Sortie : Windows 1.0. Les paquets Linux/macOS peuvent être diffusés en preview
 
 ## Après 1.0
 
-Priorités proposées : BASIC tokenisé et import de listings anciens ; debugger BASIC qualifié ; CPC 464/DDI-1 puis 664 ; deuxième fournisseur et modèles locaux ; sprites/tilemaps et caractères personnalisés ; assembleur Z80 avec appels BASIC ; snapshots SNA publics ; profils Plus si un cœur ASIC approprié est choisi. Chaque extension possède ADR, exigences et tests propres. L'architecture prépare les ports sans développer dès maintenant ces fonctions.
+Priorités proposées : BASIC tokenisé et import de listings anciens ; debugger BASIC avancé (variables, pile GOSUB/RETURN, Step Over/Out et watchpoints) ; CPC 464/DDI-1 puis 664 ; deuxième fournisseur et modèles locaux ; sprites/tilemaps et caractères personnalisés ; assembleur Z80 avec appels BASIC ; snapshots SNA publics ; profils Plus si un cœur ASIC approprié est choisi. Chaque extension possède ADR, exigences et tests propres. L'architecture prépare les ports sans développer dès maintenant ces fonctions.
 
 ## Définition de terminé d'un incrément
 

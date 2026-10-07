@@ -1,0 +1,125 @@
+name: Desktop packaging preview
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*-preview*'
+    paths:
+      - 'apps/desktop/**'
+      - 'packages/**'
+      - 'scripts/build-desktop.mjs'
+      - 'scripts/emulator-build.mjs'
+      - 'scripts/prepare_emulator.py'
+      - 'scripts/package-preview.mjs'
+      - 'scripts/packaged-smoke.mjs'
+      - 'scripts/release-checksums.mjs'
+      - 'electron-builder.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/package-preview.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows x64 — NSIS + portable
+    runs-on: windows-2025
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.13.0
+          cache: npm
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - run: npm ci --ignore-scripts
+      - run: node node_modules/electron/install.js
+      - name: Build unsigned Windows preview
+        run: npm run package:preview:win
+      - name: Smoke-test packaged Windows executable
+        run: node scripts/packaged-smoke.mjs win release/packaged-smoke-windows.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cpceleste-windows-preview
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            release/*.exe
+            release/SHA256SUMS-win.txt
+            release/packaged-smoke-windows.json
+
+  linux:
+    name: Linux x64 — AppImage + deb
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.13.0
+          cache: npm
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - run: npm ci --ignore-scripts
+      - run: node node_modules/electron/install.js
+      - name: Build unsigned Linux preview
+        run: npm run package:preview:linux
+      - name: Smoke-test packaged Linux executable
+        run: xvfb-run -a node scripts/packaged-smoke.mjs linux release/packaged-smoke-linux.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cpceleste-linux-preview
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            release/*.AppImage
+            release/*.deb
+            release/SHA256SUMS-linux.txt
+            release/packaged-smoke-linux.json
+
+  draft-release:
+    name: Draft GitHub Release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [windows, linux]
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Download packaging artifacts from this run
+        run: |
+          mkdir -p release-bundle/windows release-bundle/linux
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name cpceleste-windows-preview --dir release-bundle/windows
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name cpceleste-linux-preview --dir release-bundle/linux
+          find release-bundle/windows release-bundle/linux -maxdepth 1 -type f \( -name '*.exe' -o -name '*.AppImage' -o -name '*.deb' \) -exec cp {} release-bundle/ \;
+          node scripts/release-checksums.mjs release-bundle
+      - name: Prepare release notes
+        run: |
+          cat > release-bundle/README-PREVIEW.txt <<'EOF'
+          CPCéleste 0.38.1 — Packaging Preview
+
+          Build alpha non signé destiné à qualifier la distribution desktop.
+          Windows : installateur NSIS et exécutable portable x64.
+          Linux : AppImage et paquet deb x64.
+
+          Les ROM Amstrad ne sont jamais incluses. Elles restent importées localement par l'utilisateur.
+          Git reste une dépendance hôte pour les fonctions Git de cette preview.
+          Vérifiez SHA256SUMS.txt avant installation ou exécution.
+          EOF
+      - name: Create draft release for preview tag
+        run: |
+          gh release create "$GITHUB_REF_NAME"             --repo "$GITHUB_REPOSITORY"             --draft             --target "$GITHUB_SHA"             --title "CPCéleste 0.38.1 — Packaging Preview"             --notes-file release-bundle/README-PREVIEW.txt             release-bundle/*.exe release-bundle/*.AppImage release-bundle/*.deb release-bundle/SHA256SUMS.txt release-bundle/README-PREVIEW.txt
