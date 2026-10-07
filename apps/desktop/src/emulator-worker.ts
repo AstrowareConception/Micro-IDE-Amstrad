@@ -81,7 +81,6 @@ function typeRun() {
   if (!cpc || launched || paused) return;
   launched = true; release(); queue = [...runCommand(image.entry)].map(c => c.charCodeAt(0));
   send({ type: 'state', phase: 'running', message: `Commande RUN"${image.entry}" envoyée au CPC. Résultat et erreurs visibles sur l’écran.` });
-  if (debugAvailable && debugBreakpoints.size) armBasicDebug('continue');
 }
 // Only an observed boot screen with an identified firmware may trigger automatic RUN.
 const READY_SCREENS: Record<string, readonly string[]> = {
@@ -126,6 +125,9 @@ function tick() {
             if (held !== undefined) { check(cpc._cpc_bridge_key(held, 0)); held = undefined; wait = 60000; }
             else { held = queue.shift()!; check(cpc._cpc_bridge_key(held, 1)); wait = 60000; }
           }
+        }
+        if (launched && debugAvailable && debugBreakpoints.size && debugMode === 'idle' && !queue.length && held === undefined && !paused) {
+          armBasicDebug('continue');
         }
         check(cpc._cpc_bridge_step(10000));
         if (handleBasicDebugStop()) { remainder = 0; break; }
@@ -172,8 +174,8 @@ scope.onmessage = event => {
       value.lines.every((line: unknown) => Number.isInteger(line) && Number(line) >= 1 && Number(line) <= 65535)) {
       debugBreakpoints = new Set(value.lines as number[]);
       if (debugAvailable && launched && !paused) {
-        if (debugBreakpoints.size) armBasicDebug('continue');
-        else { debugMode = 'idle'; debugSkipLinePointer = undefined; check(cpc._cpc_bridge_debug_cancel()); }
+        if (debugBreakpoints.size && !queue.length && held === undefined) armBasicDebug('continue');
+        else if (!debugBreakpoints.size) { debugMode = 'idle'; debugSkipLinePointer = undefined; check(cpc._cpc_bridge_debug_cancel()); }
       }
       send({ type: 'debug-configured', lines: [...debugBreakpoints] });
     }
