@@ -35,7 +35,8 @@
     "benchmark:basic": "node scripts/benchmark-basic-analysis.mjs",
     "package:preview:win": "npm run build:desktop && npx --yes electron-builder@26.17.0 --config electron-builder.yml --win --x64 --publish never",
     "package:preview:linux": "npm run build:desktop && npx --yes electron-builder@26.17.0 --config electron-builder.yml --linux --x64 --publish never",
-    "package:checksums": "node scripts/checksums.mjs release"
+    "package:checksums": "node scripts/checksums.mjs release",
+    "test:packaged": "node tests/packaged-smoke.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",
