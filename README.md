@@ -2,6 +2,14 @@
 
 **Vos idées prennent vie en BASIC.** Retrouvez le plaisir de créer sur Amstrad CPC dans un atelier moderne : éditeur intelligent, exécution intégrée avec F5, agent IA, projets multifichiers, Git/GitHub et outils de qualité du code.
 
+## Télécharger CPCéleste — preview 0.38.1
+
+**[Windows x64 — installateur et portable](https://github.com/AstrowareConception/Micro-IDE-Amstrad/actions/runs/37609669941/artifacts/11477066469)** · **[Linux x64 — AppImage et deb](https://github.com/AstrowareConception/Micro-IDE-Amstrad/actions/runs/37609669941/artifacts/11477206526)**
+
+Archives ZIP du build validé du 7 octobre 2026, à extraire avant utilisation. Une connexion GitHub est nécessaire pour télécharger les artefacts Actions ; leur expiration actuelle est le **21 octobre 2026**. [Guide de téléchargement, installation et vérification](docs/implementation/packaging-preview-alpha.md#telecharger).
+
+Vous pouvez utiliser ces paquets **sans Node.js, npm, Python ni compilation**. Pour un premier essai sous Windows, lancez `CPCeleste-Portable-0.38.1.exe` après extraction. Preview non signée ; ROM non incluses. Les [Releases](https://github.com/AstrowareConception/Micro-IDE-Amstrad/releases) accueilleront les versions publiées ; aucune release publique n'est annoncée à ce stade.
+
 ## Découvrez tout ce que vous pouvez créer
 
 ### [Lire la présentation et la notice utilisateur illustrée →](docs/guide-utilisateur.md)

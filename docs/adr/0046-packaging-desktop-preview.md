@@ -28,7 +28,7 @@ La CI lance ensuite le **binaire réellement empaqueté**, fenêtre masquée, et
 
 ## Maîtrise des déclenchements CI — 7 octobre 2026
 
-La fabrication des installateurs est déclenchée explicitement sur la branche à qualifier ou par tag preview. Elle ne se répète plus à chaque commit de pull request. Les contrôles courants restent automatiques sur PR et sur `main`, avec annulation des exécutions obsolètes et sans doublon `push`/PR sur une branche de travail. La recette du binaire empaqueté reste obligatoire pour qualifier une livraison.
+La fabrication des installateurs est déclenchée explicitement sur la branche à qualifier, sur les changements pertinents de `main`, ou par tag preview. Elle ne se répète plus à chaque commit de pull request. Les contrôles courants restent automatiques sur PR et sur `main`, avec annulation des exécutions obsolètes et sans doublon `push`/PR sur une branche de travail. La recette du binaire empaqueté reste obligatoire pour qualifier une livraison.
 
 ## Frontières de distribution
 
@@ -43,3 +43,7 @@ Les builds preview ne sont pas signés et peuvent donc déclencher SmartScreen o
 IDE-071 et IDE-072 progressent mais restent partiels. Avant 1.0 restent notamment : installation/désinstallation automatisée, upgrade et migrations sur données existantes, signature Windows, stratégie de mise à jour, tests hors-ligne, ARM64 et qualification macOS.
 
 La recette empaquetée devient une régression permanente afin qu’une modification future du protocole, du WASM ou de l’arborescence `dist` ne produise pas silencieusement un installateur inutilisable.
+
+## Distribution depuis un build existant — 7 octobre 2026
+
+Un workflow manuel distinct peut créer un brouillon de préversion depuis les artefacts encore disponibles d’un packaging réussi de `main`. Il conserve le commit source et les binaires, vérifie leurs empreintes d’origine et leurs preuves de démarrage, et ajoute une provenance explicite. Il ne reconstruit pas le produit et ne publie pas automatiquement le brouillon. Un tag existant est refusé. Ce parcours évite de reconstruire simplement pour rendre les téléchargements durables.
