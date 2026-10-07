@@ -1,0 +1,193 @@
+{
+  "version": "0.36.0",
+  "baseCommit": "5645a17cbeacb34f437ffa55cf33dc85fa45c296",
+  "capturedOrRetrievedOn": "2026-10-07",
+  "images": [
+    {
+      "file": "01-atelier.png",
+      "width": 1600,
+      "height": 1000,
+      "sha256": "7d203499777d691265d4aa62ce5796cad2f95f0e4ddcbcf12e44b2fa0980283e",
+      "origin": "local-browser",
+      "scenario": "scripts/capture-user-guide.mjs"
+    },
+    {
+      "file": "02-palette.png",
+      "width": 1600,
+      "height": 1000,
+      "sha256": "6b40fa1b4db11cdf1c8a18a1cf458313456a4bf70c4018313abc65443656a3a3",
+      "origin": "local-browser",
+      "scenario": "scripts/capture-user-guide.mjs"
+    },
+    {
+      "file": "03-renumerotation.png",
+      "width": 1600,
+      "height": 1000,
+      "sha256": "603978fc93ab85e6cdcd6233f6eda6c98e3eaf41c9c904fc377bdc165bc5f80b",
+      "origin": "local-browser",
+      "scenario": "scripts/capture-user-guide.mjs"
+    },
+    {
+      "file": "04-qualite.png",
+      "width": 1600,
+      "height": 1000,
+      "sha256": "7a5f643b2082e32a484276c9f8d6d1f158ed3e57acd347c9b53272414a4251d2",
+      "origin": "local-browser",
+      "scenario": "scripts/capture-user-guide.mjs"
+    },
+    {
+      "file": "05-personnalisation.png",
+      "width": 1600,
+      "height": 1000,
+      "sha256": "9a1c094b484a21727896297a8fda60c5fecaae0bb85af47f63b456b6f8c5128a",
+      "origin": "local-browser",
+      "scenario": "scripts/capture-user-guide.mjs"
+    },
+    {
+      "file": "06-raccourcis.png",
+      "width": 1600,
+      "height": 1000,
+      "sha256": "992d7cd6d763dd19b763397f3ff7f370485f6f75bdbf3bd2b54d401ef43e14b6",
+      "origin": "local-browser",
+      "scenario": "scripts/capture-user-guide.mjs"
+    },
+    {
+      "file": "07-theme-clair.png",
+      "width": 1600,
+      "height": 1000,
+      "sha256": "8791ef805956d5ce7f1f4eac427515e8b3abfb1e741a109379380758de111ce0",
+      "origin": "local-browser",
+      "scenario": "scripts/capture-user-guide.mjs"
+    },
+    {
+      "file": "08-projet.png",
+      "width": 1280,
+      "height": 960,
+      "sha256": "e4cfd26ce8239c8c7a1d32515bf41cd497224e50c76f6095c91eea707291d182",
+      "origin": "ci",
+      "artifactId": 11445524450,
+      "original": "project-alpha.png",
+      "scenario": "tests/desktop-smoke.mjs"
+    },
+    {
+      "file": "09-diagnostics.png",
+      "width": 1440,
+      "height": 960,
+      "sha256": "99b66d9d11f31234a48854453ae1bdda183c67be6301c058909a79ac5c46b5c5",
+      "origin": "ci",
+      "artifactId": 11445524450,
+      "original": "basic-diagnostics-alpha.png",
+      "scenario": "tests/basic-diagnostics-smoke.mjs"
+    },
+    {
+      "file": "10-recherche.png",
+      "width": 1280,
+      "height": 960,
+      "sha256": "c868f0d5befd57e287b9435e083b5cc056f7502c5fa690a2c856f9e2cf547fe6",
+      "origin": "ci",
+      "artifactId": 11445524450,
+      "original": "search-alpha.png",
+      "scenario": "tests/desktop-smoke.mjs"
+    },
+    {
+      "file": "11-execution-cpc.png",
+      "width": 1280,
+      "height": 960,
+      "sha256": "615465cdc47bf65a539e61ae5ff80346f43d0b9386dba8712d49a51af715f425",
+      "origin": "ci",
+      "artifactId": 11445524450,
+      "original": "emulator-desktop-alpha.png",
+      "scenario": "tests/emulator-ui-smoke.mjs"
+    },
+    {
+      "file": "12-inspection-cpc.png",
+      "width": 1280,
+      "height": 960,
+      "sha256": "6901e70be38dea2826a302673ce4de869bc8db502fed005516823bc7410f6542",
+      "origin": "ci",
+      "artifactId": 11445524450,
+      "original": "cpc-inspection-desktop.png",
+      "scenario": "tests/emulator-ui-smoke.mjs"
+    },
+    {
+      "file": "13-historique.png",
+      "width": 1280,
+      "height": 960,
+      "sha256": "cdeaf363a1cf3f38f75a1eadffe7e000a590ceeefaa2be9fddf6405b5268fa49",
+      "origin": "ci",
+      "artifactId": 11445524450,
+      "original": "local-history-alpha.png",
+      "scenario": "tests/desktop-smoke.mjs"
+    },
+    {
+      "file": "14-agent.png",
+      "width": 1280,
+      "height": 960,
+      "sha256": "dc859f068bae01cc2ba904a6dd21d29605b864f15ff316b08905dbf530e794cf",
+      "origin": "ci",
+      "artifactId": 11445524450,
+      "original": "agent-missions-desktop-alpha.png",
+      "scenario": "tests/agent-desktop-smoke.mjs"
+    },
+    {
+      "file": "15-documents.png",
+      "width": 1280,
+      "height": 960,
+      "sha256": "296a8868a703d21aa97aca23328c9402e48262dfd77e608a5b2e0a222d5b9d98",
+      "origin": "ci",
+      "artifactId": 11445524450,
+      "original": "documents-alpha.png",
+      "scenario": "tests/desktop-smoke.mjs"
+    },
+    {
+      "file": "16-git-reseau.png",
+      "width": 1280,
+      "height": 960,
+      "sha256": "7fcd96108d832913557ab1168460c6c4d5eeae54fad6a6862816451fb2600450",
+      "origin": "ci",
+      "artifactId": 11445524450,
+      "original": "git-network-desktop-alpha.png",
+      "scenario": "tests/git-desktop-smoke.mjs"
+    },
+    {
+      "file": "17-github.png",
+      "width": 1280,
+      "height": 960,
+      "sha256": "88c1468a6f8ded5930436078e780de5ef2e2205e1903552907ac3b34d815c846",
+      "origin": "ci",
+      "artifactId": 11445524450,
+      "original": "github-private-desktop-alpha.png",
+      "scenario": "tests/git-desktop-smoke.mjs"
+    },
+    {
+      "file": "18-brouillons.png",
+      "width": 1280,
+      "height": 960,
+      "sha256": "ca50766c320e9b67052c4245e41c5fb3f0019c496d07aaa3b5c91cbe126edf59",
+      "origin": "ci",
+      "artifactId": 11445524450,
+      "original": "drafts-alpha.png",
+      "scenario": "tests/desktop-smoke.mjs"
+    },
+    {
+      "file": "19-notifications.png",
+      "width": 1280,
+      "height": 960,
+      "sha256": "b8f4f9618df599b49e300e74df56967f4ce79c1aeb9482115230681bf0f44c46",
+      "origin": "ci",
+      "artifactId": 11445524450,
+      "original": "notifications-desktop-alpha.png",
+      "scenario": "tests/notifications-smoke.mjs"
+    },
+    {
+      "file": "20-terminal.png",
+      "width": 1280,
+      "height": 960,
+      "sha256": "4ea28fb469d5e43dee70708ba17780d717da64e47e3142f4c0c90d44db9dc6e7",
+      "origin": "ci",
+      "artifactId": 11445524450,
+      "original": "workbench-alpha.png",
+      "scenario": "tests/desktop-smoke.mjs"
+    }
+  ]
+}
