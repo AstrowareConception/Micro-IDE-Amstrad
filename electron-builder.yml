@@ -29,6 +29,8 @@ nsis:
 portable:
   artifactName: CPCeleste-Portable-${version}.${ext}
 linux:
+  executableName: cpceleste
+  syncDesktopName: true
   icon: apps/desktop/public/brand/cpceleste-icon.png
   category: Development
   maintainer: AstroWare Conception
