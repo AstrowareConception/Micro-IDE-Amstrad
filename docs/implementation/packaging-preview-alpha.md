@@ -31,7 +31,9 @@ Les ROM OS/BASIC/AMSDOS ne font jamais partie de la release. Elles restent des e
 
 ## Validation CI
 
-La CI construit les vrais formats finaux, puis démarre l’application depuis le dossier unpacked produit par Electron Builder. Le test échoue si le processus quitte prématurément. Cela valide notamment la structure ASAR, la résolution du renderer, du preload, du corpus et des dépendances runtime au démarrage.
+La CI construit les vrais formats finaux, puis démarre l’application depuis le dossier unpacked produit par Electron Builder. Le test exige le vrai titre, le branding, le renderer React et Monaco. Cela valide la résolution du renderer, du preload, du corpus et des dépendances runtime au démarrage.
+
+Le premier essai avec ASAR a révélé `net::ERR_UNEXPECTED` sur les sous-ressources JS/CSS du protocole `cpceleste://`. La preview 0.38.1 garde donc les ressources applicatives unpacked. Ce choix ne modifie pas les frontières de sécurité Electron et évite de déclarer une compatibilité ASAR non prouvée.
 
 Les packages sont ensuite exposés comme artefacts GitHub Actions pendant 14 jours. Il ne s’agit pas encore d’une publication stable ni d’une mise à jour automatique.
 
