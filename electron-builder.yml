@@ -1,6 +1,6 @@
 appId: com.astroware.cpceleste
 productName: CPCéleste
-asar: true
+asar: false
 compression: normal
 
 directories:
