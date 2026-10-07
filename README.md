@@ -1,5 +1,26 @@
 # CPCéleste
 
+**Vos idées prennent vie en BASIC.** Retrouvez le plaisir de créer sur Amstrad CPC dans un atelier moderne : éditeur intelligent, exécution intégrée avec F5, agent IA, projets multifichiers, Git/GitHub et outils de qualité du code.
+
+## Découvrez tout ce que vous pouvez créer
+
+### [Lire la présentation et la notice utilisateur illustrée →](docs/guide-utilisateur.md)
+
+**25 chapitres et 20 captures de l’interface** pour découvrir le produit et apprendre à l’utiliser : premiers pas, édition BASIC, disquettes, émulateur, IA et documents, sauvegardes, versionnement, personnalisation et dépannage.
+
+[![L’atelier CPCéleste, un programme BASIC et ses outils réunis](docs/images/guide-utilisateur/01-atelier.png)](docs/guide-utilisateur.md)
+
+| Écrivez et expérimentez | Faites grandir vos créations | Gardez la maîtrise |
+| --- | --- | --- |
+| Complétion, diagnostics, recherche et renumérotation | Projets, documents, agent OpenAI et rapports de qualité | Historique, brouillons, checkpoints et Git/GitHub |
+| F5 depuis les buffers, CPC 6128 intégré et export DSK | Thèmes, profils, raccourcis et panneaux ajustables | Sources locales et utilisation sans IA possible |
+
+**Version actuelle : alpha desktop 0.36.0.** L’édition et la construction DSK fonctionnent sans ROM ni clé IA. L’exécution demande vos ROM locales ; l’agent utilise votre accès API OpenAI. La notice distingue les fonctions disponibles des évolutions encore prévues.
+
+[Installer et démarrer](docs/guide-utilisateur.md#premiers-pas) · [Exécuter avec F5](docs/guide-utilisateur.md#execution) · [Découvrir l’agent](docs/guide-utilisateur.md#agent) · [Personnaliser l’atelier](docs/guide-utilisateur.md#personnalisation) · [Roadmap](docs/specifications/17-roadmap-ide-complet.md)
+
+## Nouveautés et guides techniques
+
 **Qualité BASIC 0.36** : rapport local à la demande sur la source active ou les buffers chargés ; longueurs, segments, complexité estimée et cinq pistes de revue localisées. Exports Markdown/JSON, annulation et sources modifiées signalées. [Guide et limites](docs/implementation/basic-quality-alpha.md).
 
 **Inspection CPC 0.35** : registres Z80 et RAM logique en pause, lecture à la demande ; première preuve ciblée de frontières BASIC en natif/WASM, sans débogueur BASIC public. [Guide et limites](docs/implementation/cpc-inspection-alpha.md).
