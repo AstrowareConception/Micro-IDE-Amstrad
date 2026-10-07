@@ -72,3 +72,5 @@ Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou
 - [0044 — Tests BASIC isolés à la demande](0044-tests-basic-isoles.md).
 
 - [0045 — Debugger BASIC ancré sur un firmware qualifié](0045-debugger-basic-firmware-qualifie.md).
+
+- [0046 — Packaging desktop précoce et qualifié](0046-packaging-desktop-preview.md).
