@@ -10,7 +10,7 @@ Il suffit parfois d’un `MODE 1`, de quelques couleurs et d’une idée pour re
 
 Le fil conducteur est simple : **garder la création au centre, raccourcir le chemin entre une idée et son résultat, et vous laisser comprendre ce que l’outil fait.** Le BASIC reste du BASIC, vos sources restent des fichiers texte et votre projet reste un dossier que vous pouvez conserver, déplacer et versionner.
 
-Cette notice présente les fonctions livrées dans **CPCéleste 0.37.0, alpha desktop**, au **7 octobre 2026**. Elle réunit découverte du produit et mode d’emploi. Les captures représentent l’interface réelle ; celles issues des recettes automatisées utilisent des données de démonstration. Leur [provenance détaillée](images/guide-utilisateur/README.md) distingue captures locales, Electron et services distants simulés. Cliquez sur une image pour l’ouvrir en grand dans GitHub.
+Cette notice présente les fonctions livrées dans **CPCéleste 0.39.1, alpha desktop**, au **7 octobre 2026**. Elle réunit découverte du produit et mode d’emploi. Les captures représentent l’interface réelle ; celles issues des recettes automatisées utilisent des données de démonstration. Leur [provenance détaillée](images/guide-utilisateur/README.md) distingue captures locales, Electron et services distants simulés. Cliquez sur une image pour l’ouvrir en grand dans GitHub.
 
 <a id="sommaire"></a>
 ## Votre parcours dans la notice
@@ -121,7 +121,7 @@ L’organisation accompagne le geste de programmation : **outils à gauche, code
 | Onglets et éditeur central | Passer d’une source à l’autre en conservant curseur et annulation |
 | Assistant IA | Saisir une mission, suivre son activité et examiner les changements |
 | Sorties | Problèmes, CPC, terminal, qualité, performance et journal Git |
-| Tests BASIC (0.37) | Assertions natives sur listings autonomes, rapports à la demande et provenance |
+| Tests BASIC (0.39.1) | Suites persistantes, scénarios clavier, fixtures texte, observations écran/fichier et historique |
 | Cloche et bande de notification | Retrouver les retours de l’atelier et rejoindre leurs détails |
 | Barre d’état | Position du curseur et contexte courant |
 
@@ -478,7 +478,7 @@ Les numéros, espaces, casse et commentaires sont normalisés pour rechercher le
 
 Si vous éditez, renommez ou supprimez une source, le rapport devient obsolète et demande un nouveau calcul avant navigation. Vous pouvez annuler une analyse. Les exports contiennent la date, les métriques, les remarques et la couverture, sans inclure les listings ou leurs extraits. Les limites et omissions sont indiquées ; une absence de remarque ne certifie pas la qualité du programme.
 
-### Vérifier le comportement avec les tests BASIC (0.37)
+### Vérifier le comportement avec les tests BASIC (0.39.1)
 
 La lisibilité ne suffit pas : **vos routines doivent aussi produire les bons résultats**. Ouvrez [l’exemple de tests de score](../examples/basic-tests/tests-score.bas), puis **BASIC → Tests BASIC à la demande…** ou l’onglet **Tests BASIC**. Choisissez le listing actif ou les listings déclarés parmi les sources chargées, puis lancez les tests explicitement.
 
@@ -486,7 +486,17 @@ Chaque programme de test s’exécute par les ROM sur un CPC et un DSK isolés. 
 
 Le rapport distingue **réussi, échoué, incomplet, délai dépassé, bloqué et annulé**. Il conserve les hashes de la source réellement testée, du DSK et des ROM, ainsi que le temps émulé. Modifier le code rend le rapport obsolète sans lancer un nouveau test. Exportez Markdown ou JSON sans inclure vos sources ou les ROM.
 
-Le premier banc accepte le jeu 6128 anglais identifié, jusqu’à 8 listings autonomes de 16 Kio et 32 assertions chacun. Le budget après RUN est réglable de 1 à 15 secondes émulées ; un délai ou une fin sans résultats complets ne vaut jamais réussite. Pas encore de clavier scénarisé, couverture ou tests visuels/fichiers. [Convention, exemple et limites détaillées](implementation/basic-tests-alpha.md).
+Le premier banc accepte le jeu 6128 anglais identifié, jusqu’à 8 listings autonomes de 16 Kio et 32 assertions chacun. Le budget après RUN est réglable de 1 à 15 secondes émulées ; un délai ou une fin sans résultats complets ne vaut jamais réussite. Les scénarios de la 0.39.1 ajoutent clavier programmé et observations exactes écran/fichier ; la couverture reste à venir. [Convention, exemple et limites détaillées](implementation/basic-tests-alpha.md).
+
+### Retrouver ses suites et tester des interactions
+
+**Enregistrez vos vérifications comme une véritable suite de projet.** Dans **Suites du projet**, donnez un nom à une sélection de listings et mémorisez son budget. Vous pouvez ensuite exécuter tous ses tests ou un seul, puis retrouver les dix derniers rapports après réouverture. Le bouton **Voir ligne…** rejoint la déclaration de l’assertion ; il se désactive si le rapport ne correspond plus aux sources courantes.
+
+Le [projet d’exemple](../examples/basic-test-suite/README.md) contient une suite de règles de jeu et une suite **Clavier, fichier et écran**. Cette dernière charge un petit fichier initial, reçoit une saisie programmée et contrôle le résultat écrit sur son disque ainsi qu’une zone de l’écran. Les entrées et fichiers sont confinés au CPC de test. Une observation incorrecte fait échouer le rapport global, même lorsque les assertions BASIC ont réussi.
+
+![Rapport réel du scénario : assertion native, fichier produit, empreinte de la zone écran et aperçu téléchargeable](images/guide-utilisateur/21-tests-scenarios.png)
+
+L’image de la zone observée peut être téléchargée en PNG pour examen. Les comparaisons visuelles sont exactes et dépendent du moteur/firmware qualifié : ce n’est ni de la reconnaissance de texte ni une appréciation IA. Les captures ne sont pas conservées dans l’historique ; les verdicts et empreintes le sont. [Guide des suites](implementation/basic-test-suites-alpha.md) · [Écrire un scénario](implementation/basic-scenarios-alpha.md).
 
 ### Observer la réactivité de l’IDE
 

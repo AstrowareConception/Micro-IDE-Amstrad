@@ -17,6 +17,11 @@
       "id": "collision",
       "path": "src/tests-collision.bas",
       "cpcName": "COLLIDE.BAS"
+    },
+    {
+      "id": "scenario",
+      "path": "src/tests-scenario.bas",
+      "cpcName": "SCENARIO.BAS"
     }
   ],
   "assets": [],

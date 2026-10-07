@@ -1,30 +1,33 @@
+import { parseBasicScenario, validScenarioObservations, type BasicScenario, type BasicScenarioCheckIdentity, type BasicScenarioObservation } from './basic-test-scenario.ts';
 export const BASIC_TEST_LIMITS = { sources: 8, cases: 32, sourceBytes: 16 * 1024, seconds: 15 } as const;
 export const BASIC_TEST_MAILBOX = 0x8000;
 export const BASIC_TEST_SIGNATURE = [67, 80, 67, 165] as const;
 export interface BasicTestSource { id: string; name: string; source: string }
 export interface BasicTestCase { slot: number; name: string; line: number }
-export interface BasicTestPlan { source: BasicTestSource; cases: BasicTestCase[] }
+export interface BasicTestPlan { source: BasicTestSource; cases: BasicTestCase[]; scenario?: BasicScenario }
 export type BasicTestOutcome = 'passed' | 'failed' | 'incomplete' | 'timeout' | 'blocked' | 'cancelled';
 export interface BasicTestResult {
  sourceId: string; name: string; outcome: BasicTestOutcome; message: string;
  cases: (BasicTestCase & { outcome: 'passed' | 'failed' | 'incomplete'; observed: number })[];
  emulatedSeconds: number; diskSha256?: string; sourceSha256?: string;
  firmware?: Record<'os' | 'basic' | 'amsdos', string>;
+ observations?: BasicScenarioObservation[];
 }
-export function validBasicTestResult(value: unknown, plan: BasicTestPlan): value is BasicTestResult {
+export function validBasicTestResult(value: unknown, plan: BasicTestPlan, checks: readonly BasicScenarioCheckIdentity[] = plan.scenario?.checks ?? []): value is BasicTestResult {
  if (!value || typeof value !== 'object') return false;
  const result = value as BasicTestResult;
  if (result.sourceId !== plan.source.id || result.name !== plan.source.name || typeof result.message !== 'string' || result.message.length > 4096 || !Number.isFinite(result.emulatedSeconds) || result.emulatedSeconds < 0 || !Array.isArray(result.cases)) return false;
  if (!['passed', 'failed', 'incomplete', 'timeout', 'blocked'].includes(result.outcome)) return false;
  for (const hash of [result.diskSha256, result.sourceSha256]) if (hash !== undefined && (typeof hash !== 'string' || !/^[a-f0-9]{64}$/.test(hash))) return false;
  if (result.firmware && !['os', 'basic', 'amsdos'].every(role => typeof result.firmware![role as 'os'] === 'string' && /^[a-f0-9]{64}$/.test(result.firmware![role as 'os']))) return false;
- if (result.outcome === 'timeout' || result.outcome === 'blocked') return result.cases.length === 0;
+ if (result.outcome === 'timeout' || result.outcome === 'blocked') return result.cases.length === 0 && result.observations === undefined;
  if (result.cases.length !== plan.cases.length || !result.diskSha256 || !result.sourceSha256) return false;
  if (!result.cases.every((test, index) => {
   const declared = plan.cases[index]!;
   return !!test && test.slot === declared.slot && test.name === declared.name && test.line === declared.line && Number.isInteger(test.observed) && test.observed >= 0 && test.observed <= 255 && test.outcome === (test.observed === 1 ? 'passed' : test.observed === 2 ? 'failed' : 'incomplete');
  })) return false;
- const expected = result.cases.some(test => test.outcome === 'incomplete') ? 'incomplete' : result.cases.some(test => test.outcome === 'failed') ? 'failed' : 'passed';
+ if (checks.length ? !validScenarioObservations(result.observations, checks) : result.observations !== undefined) return false;
+ const expected = result.cases.some(test => test.outcome === 'incomplete') ? 'incomplete' : result.cases.some(test => test.outcome === 'failed') || result.observations?.some(test => test.outcome === 'failed') ? 'failed' : 'passed';
  return result.outcome === expected;
 }
 export function basicTestPlan(source: BasicTestSource): BasicTestPlan {
@@ -41,7 +44,8 @@ export function basicTestPlan(source: BasicTestSource): BasicTestPlan {
   cases.push({ slot, name: item[2]!, line: index + 1 });
  }
  if (!cases.length) throw new Error('Aucun test déclaré : ajoutez une ligne numérotée REM @CPCTEST 1 Nom du test.');
- return { source: { ...source }, cases };
+ const scenario = parseBasicScenario(source.source);
+ return { source: { ...source }, cases, ...(scenario ? { scenario } : {}) };
 }
 export function completedBasicTests(plan: BasicTestPlan, mailbox: Uint8Array): Pick<BasicTestResult, 'outcome' | 'message' | 'cases'> | undefined {
  if (mailbox.length !== 36) throw new Error('Boîte de résultats BASIC invalide.');
@@ -55,7 +59,7 @@ export function completedBasicTests(plan: BasicTestPlan, mailbox: Uint8Array): P
 }
 export function basicTestsMarkdown(results: BasicTestResult[]): string {
  const safe = (value: string) => value.replace(/[\r\n]/g, ' ').replace(/[\\`*_{}\[\]<>|#]/g, '\\$&');
- return '# Rapport de tests BASIC\n\nExécution CPC intégrée ; aucune qualification indépendante ou matérielle implicite.\n\n' + results.map(result => `## ${safe(result.name)}\n\nÉtat : ${result.outcome}. ${safe(result.message)}\n\nTemps émulé total : ${result.emulatedSeconds.toFixed(3)} s.\n\nSource SHA-256 : ${result.sourceSha256 ?? 'non préparée'}.\nDSK SHA-256 : ${result.diskSha256 ?? 'non préparé'}.\n\n${result.firmware ? Object.entries(result.firmware).map(([role, hash]) => `${role} : ${hash}`).join('\n') + '\n\n' : ''}${result.cases.map(test => `- Slot ${test.slot} · ${safe(test.name)} : ${test.outcome} (octet ${test.observed}).`).join('\n')}`).join('\n\n');
+ return '# Rapport de tests BASIC\n\nExécution CPC intégrée ; aucune qualification indépendante ou matérielle implicite.\n\n' + results.map(result => `## ${safe(result.name)}\n\nÉtat : ${result.outcome}. ${safe(result.message)}\n\nTemps émulé total : ${result.emulatedSeconds.toFixed(3)} s.\n\nSource SHA-256 : ${result.sourceSha256 ?? 'non préparée'}.\nDSK SHA-256 : ${result.diskSha256 ?? 'non préparé'}.\n\n${result.firmware ? Object.entries(result.firmware).map(([role, hash]) => `${role} : ${hash}`).join('\n') + '\n\n' : ''}${result.cases.map(test => `- Slot ${test.slot} · ${safe(test.name)} : ${test.outcome} (octet ${test.observed}).`).join('\n')}\n\n${(result.observations ?? []).map(test => `- ${test.kind} · ${safe(test.name)} : ${test.outcome}. ${safe(test.message)} Attendu : ${test.expectedSha256}. Observé : ${test.actualSha256 ?? 'absent/non qualifié'}.`).join('\n')}`).join('\n\n');
 }
 export const BASIC_TEST_EXAMPLE = `10 MEMORY &7FFF
 20 REM @CPCTEST 1 Score positif

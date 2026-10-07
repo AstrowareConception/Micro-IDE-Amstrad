@@ -188,6 +188,16 @@
       "artifactId": 11445524450,
       "original": "workbench-alpha.png",
       "scenario": "tests/desktop-smoke.mjs"
+    },
+    {
+      "file": "21-tests-scenarios.png",
+      "version": "0.39.1",
+      "baseCommit": "0d308a9541d6d84d7621078d7496905788a59240",
+      "width": 1398,
+      "height": 693,
+      "sha256": "c9819d52f0d09aa6f1cc81d23dd5044150af0f7ea9e0f462f17a838fd0fa9278",
+      "origin": "local-browser-real-firmware",
+      "scenario": "tests/basic-tests-firmware-smoke.mjs"
     }
   ]
 }

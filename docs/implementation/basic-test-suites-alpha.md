@@ -26,4 +26,4 @@ Les tests Node couvrent quotas, formats, cohérence des verdicts et empreintes, 
 
 ## Suite prévue
 
-Le lot suivant de la 0.39 porte sur des scénarios reproductibles : fixtures initiales, séquences clavier bornées, assertions écran/fichier. La couverture et l’aide IA viendront après ces contrats ; elles ne sont pas livrées ici. Aucun jalon global n’est clos par ce premier lot.
+Le [deuxième lot 0.39.1](basic-scenarios-alpha.md) réalise maintenant les scénarios avec fichiers ASCII initiaux, clavier programmé et observations exactes écran/fichier. La couverture et l’aide IA viendront après ces contrats ; elles ne sont pas livrées ici. Aucun jalon global n’est clos par ce premier lot.
