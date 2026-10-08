@@ -129,3 +129,5 @@ En cas de contradiction : contrat métier et exigence spécifique priment sur il
 Les [préférences et retours utilisateurs 0.25](adr/0032-preferences-et-retours-utilisateurs.md) ajoutent thèmes/police/édition/disposition persistés, auto-save de projet opt-in, journal Git dans le dock et tickets préparés depuis Aide.
 
 L’[agent 0.29](implementation/agent-missions-alpha.md) sépare réglages et mission, affiche résultats/erreurs et consommations, et reprend les limites avec contexte conservé dans la session ([ADR 0036](adr/0036-agent-reprise-resultats-et-consommation.md)). Spécifications des huit lots au document 18 et parcours agent au document 19 ; aucune qualification globale J5/J6 annoncée.
+
+L’[analyse de flux 0.40.0](implementation/basic-control-flow-alpha.md) ajoute au rapport Qualité un graphe exploratoire, les appels et cycles, et une complexité locale par entrée, avec conclusions suspendues sur les formes inconnues ([ADR 0049](adr/0049-graphe-basic-conservateur.md)).

@@ -230,3 +230,8 @@ Projets récents livré : registre local des vingt dernières racines ouvertes/c
 La demande utilisateur priorise [Git et GitHub intégrés](../implementation/git-network-alpha.md), [ADR 0035](../adr/0035-atelier-git-reseau-et-github.md). Menu Git, branches locales/distantes, remotes, upstream, clone dans un nouveau dossier, fetch, pull avec fetch préparatoire/fast-forward et push examinés ; buffers propres, cible projet vérifiée puis session rechargée. Init préserve un ignore existant avec exclusions locales. Compte GitHub privé par jeton en mémoire ou CLI, listing/association, dépôt personnel privé par défaut et PR brouillon, liens PR/CI. Suggestion IA du message depuis le seul diff indexé, sans outils ni commit automatique.
 
 192 tests Node ; transport HTTPS/TLS réel avec deux clones, rejets et arrêt, API privées contrôlées, recettes navigateur/Electron et build Windows consignés dans la PR. IDE-035/036/039 restent P : tags/stash, merge/rebase/conflits, OAuth/coffre système, qualification SSH/macOS et comptes/fournisseurs réels restent ouverts. Aucun jalon JG/R3/R4 global clos.
+
+
+## Avancement alpha 0.40.0 — Analyse de flux à la demande
+
+La [première tranche de graphe structurel](../implementation/basic-control-flow-alpha.md) enrichit le rapport Qualité : exploration des instructions, appels GOSUB, cycles, complexité par entrée et inaccessibilité depuis le début. Les formes inconnues suspendent les conclusions globales ; worker, quotas, navigation protégée et exports sans code restent communs au socle 0.36. REQ-EDT-008 / ACC-36 et IDE-076 restent partiels : formes imbriquées, événements et pile contextuelle suivent avant une prétention d’analyse globale exacte.

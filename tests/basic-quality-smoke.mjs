@@ -30,7 +30,7 @@ export async function verifyBasicQuality(browser, errors) {
   const panel = page.getByRole('region', { name: 'Qualité du code BASIC', exact: true });
   await expect(panel).toContainText('Choisissez le périmètre'); assert.equal(await page.evaluate(() => window.qualityRequests), 0);
   await panel.getByLabel('Périmètre du rapport').selectOption('loaded'); await panel.getByRole('button', { name: 'Générer le rapport', exact: true }).click();
-  await expect(panel).toContainText('Rapport sur les sources inchangées.'); await expect(panel.locator('tbody tr')).toHaveCount(2);
+  await expect(panel).toContainText('Rapport sur les sources inchangées.'); await expect(panel.locator('.quality-metrics tbody tr')).toHaveCount(2);
   for (const code of ['dense-line', 'unreachable-tail', 'duplicate-block', 'conditional-density', 'long-line']) await expect(panel).toContainText(code);
   assert.equal(await page.evaluate(() => window.qualityRequests), 1); assert.equal(await page.evaluate(() => window.qualityStops), 1);
   const download = page.waitForEvent('download'); await panel.getByRole('button', { name: 'Exporter JSON', exact: true }).click();
@@ -56,13 +56,13 @@ export async function verifyBasicQuality(browser, errors) {
   assert.equal(await page.evaluate(() => window.qualityStops), 2);
   await panel.getByRole('button', { name: 'Générer le rapport', exact: true }).click();
   await page.evaluate(() => window.oldQualityHandler({ data: { id: 2, report: { sources: [] } } }));
-  await expect(panel).toContainText('Analyse de qualité en cours…'); await expect(panel.locator('tbody tr')).toHaveCount(0);
+  await expect(panel).toContainText('Analyse de qualité en cours…'); await expect(panel.locator('.quality-metrics tbody tr')).toHaveCount(0);
   await page.evaluate(() => { window.qualityWorkers.at(-1).dispatchEvent(new ErrorEvent('error', { message: 'test failure' })); }); await expect(panel).toContainText('Analyse de qualité indisponible.');
   await page.evaluate(() => { window.holdQuality = false; }); await panel.getByLabel('Périmètre du rapport').selectOption('active'); await panel.getByRole('button', { name: 'Générer le rapport', exact: true }).click();
-  await expect(panel.locator('tbody tr')).toHaveCount(1); await expect(panel).toContainText('Rapport sur les sources inchangées.');
+  await expect(panel.locator('.quality-metrics tbody tr')).toHaveCount(1); await expect(panel).toContainText('Rapport sur les sources inchangées.');
   assert.equal(await page.evaluate(() => window.qualityRequests), 4); assert.equal(await page.evaluate(() => window.qualityStops), 4);
   // Leaving the pane keeps the snapshot, without launching another scan.
-  await page.getByRole('button', { name: /^Problèmes \d/ }).click(); await page.getByRole('navigation', { name: 'Panneaux de sortie', exact: true }).getByRole('button', { name: 'Qualité', exact: true }).click(); await expect(panel.locator('tbody tr')).toHaveCount(1);
+  await page.getByRole('button', { name: /^Problèmes \d/ }).click(); await page.getByRole('navigation', { name: 'Panneaux de sortie', exact: true }).getByRole('button', { name: 'Qualité', exact: true }).click(); await expect(panel.locator('.quality-metrics tbody tr')).toHaveCount(1);
   assert.equal(await page.evaluate(() => window.qualityRequests), 4);
   await page.evaluate(() => { window.holdQuality = true; window.qualityTimeout = true; }); await panel.getByRole('button', { name: 'Générer le rapport', exact: true }).click();
   await expect(panel).toContainText('Analyse interrompue après 15 secondes.'); assert.equal(await page.evaluate(() => window.qualityStops), 5);

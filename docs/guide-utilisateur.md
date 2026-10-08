@@ -468,7 +468,17 @@ Le rapport présente, pour chaque listing, lignes physiques et lignes de code, c
 
 L’estimation de complexité suit la formule `1 + IF + FOR + WHILE + nombre de cibles des ON sélecteurs`, pour un listing contenant du code. C’est un indicateur lexical, pas un graphe de contrôle exact : événements, erreurs, routines et sauts calculés ne sont pas entièrement reconstruits. Les contributions non reconnues sont signalées et les complexités des programmes indépendants ne sont pas additionnées.
 
-### Cinq familles de remarques
+### Explorer les chemins du programme
+
+Dépliez **Flux BASIC** pour découvrir les branchements du listing. Filtrez les nœuds par numéro BASIC ou instruction, sélectionnez celui qui vous intéresse et suivez ses prédécesseurs et successeurs. Un clic, Entrée ou Espace sur un nœud recentre le graphe ; **Voir cette instruction dans le code** rejoint sa position. Les points d’entrée, appels GOSUB, cycles et récursions possibles complètent le rapport.
+
+![Exploration du flux BASIC : points d’entrée, complexité et branches du IF](images/guide-utilisateur/23-flux-basic.png)
+
+La **complexité de flux** porte sur les décisions accessibles depuis chaque entrée, sans développer ses sous-routines. Elle complète le comptage lexical ci-dessus ; les blocs partagés interdisent d’additionner les routines. L’[exemple fourni](../examples/control-flow/README.md) permet d’essayer immédiatement le parcours.
+
+Une instruction sans chemin depuis le début est une piste de revue : CONT ou RUN avec un autre numéro peuvent lui donner un rôle. Les formes inconnues, notamment contrôle machine, événements, IF imbriqués et NEXT multiples, rendent le graphe partiel et suspendent complexité et conclusions d’inaccessibilité. Les conditions ne sont pas évaluées ; les cycles ne prouvent pas que le programme boucle indéfiniment. [Détail des formes et limites](implementation/basic-control-flow-alpha.md).
+
+### Six familles de remarques
 
 | Remarque | Repère actuel | Comment l’utiliser |
 | --- | --- | --- |
@@ -477,6 +487,7 @@ L’estimation de complexité suit la formule `1 + IF + FOR + WHILE + nombre de 
 | Densité conditionnelle | Plus de 2 IF sur une ligne | Relire soigneusement les conditions et ELSE |
 | Bloc répété | Deux lignes consécutives répétées, au moins 12 tokens combinés | Envisager une factorisation, en respectant le fonctionnement BASIC |
 | Suite potentiellement inaccessible | Segment après certains GOTO littéraux ou RETURN nus | Revoir le flux normal de cette ligne |
+| Instruction sans chemin depuis le début | Graphe structurel couvert, sans chemin depuis la première ligne | Examiner les points d’entrée et usages manuels avant toute suppression |
 
 Les numéros, espaces, casse et commentaires sont normalisés pour rechercher les duplications ; les chaînes sont préservées et DATA est exclu. Les remarques n’interdisent pas les variables courtes, `GOTO`, `POKE` ou `CALL`, qui appartiennent aux usages CPC. **Aucune suggestion ne modifie votre code automatiquement.**
 
@@ -749,7 +760,7 @@ CPCéleste est déjà un atelier riche, utilisable pour écrire, organiser, anal
 | Débogage BASIC | Travaux techniques et inspection machine | Points d’arrêt, pas-à-pas et variables dans une interface publique |
 | IA | Agent OpenAI, outils, documents autorisés, budgets, reprise de session et checkpoint | Exécution/observation CPC par l’agent, reprise de conversation après redémarrage, autres fournisseurs livrés |
 | Ressources | TXT/MD, PNG/JPEG, PDF texte | OCR, rendu PDF visuel, WebP, conversion SCR, outils graphiques/sprites dédiés |
-| Qualité | Cinq règles locales, métriques et complexité estimée, exports | Graphe de contrôle exact, analyse globale de code mort, revue IA dédiée |
+| Qualité | Six règles, graphe exploratoire, appels/cycles, complexité par entrée, exports | Formes imbriquées/événementielles, pile contextuelle, analyse exacte et revue IA dédiée |
 | Git | Statut/diff, index, commits, historique, branches/remotes, clone/fetch/pull simple/push, GitHub/PR | Merge/rebase, résolution des conflits, stash, tags, signatures et Git avancé |
 | Terminal | Commandes hôte bornées, sorties et arrêt | PTY et expérience interactive complète |
 | Distribution | Application Electron construite depuis les sources, archives CI | Installateur autonome signé, auto-update et qualification multiplateforme complète |

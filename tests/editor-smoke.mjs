@@ -1,3 +1,4 @@
+import { verifyBasicFlow } from './basic-flow-smoke.mjs';
 import { verifyBasicDiagnostics } from './basic-diagnostics-smoke.mjs';
 import { verifyBasicQuality } from './basic-quality-smoke.mjs';
 import { verifyBasicTests } from './basic-tests-smoke.mjs';
@@ -347,6 +348,7 @@ try {
   await verifyNotifications(browser, errors);
   await verifyBasicDiagnostics(browser, errors);
   await verifyBasicQuality(browser, errors);
+  await verifyBasicFlow(browser, errors);
   await verifyBasicTests(browser, errors);
   assert.deepEqual(errors, [], 'No browser errors');
   console.log('Editor browser smoke: completion, coloration, help, diagnostics, F12, downloads, dirty protection plus renumber preview/apply/DSK/undo/redo/stale revision passed.');

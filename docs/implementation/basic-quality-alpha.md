@@ -41,6 +41,10 @@ Le nombre de lignes inspectées inclut les lignes lues lexicalement mais exclut 
 
 253 tests Node passent, dont sept nouveaux scénarios de métriques, sélecteurs/événements, chaînes/REM/DATA, CONT, duplication sensible aux chaînes, quotas et export sans code. Typecheck strict et build desktop passent. Le scénario navigateur ajouté à `test:editor` couvre demande active/multisource, absence d’analyse au repos/pendant la frappe, navigation intersource, snapshot obsolète, deux exports, annulation, erreur worker, nouvel essai et terminaison. Le parcours navigateur complet puis la recette ciblée finale passent sur Chromium Linux. Cette dernière couvre aussi réponse abandonnée, timeout injecté et changement de projet avec les mêmes IDs de source. La CI Linux/Windows est consignée dans la PR de l’incrément.
 
+## Évolution 0.40
+
+Le [premier lot d’analyse de flux](basic-control-flow-alpha.md) complète les métriques historiques ci-dessus avec un graphe structurel, des résumés par entrée, des appels/cycles et la règle `unreachable-flow`. Le rapport JSON devient version 2. Les limites de la 0.36 décrivent le socle initial ; les formes et limites nouvelles sont détaillées dans le guide 0.40.
+
 ## Suite IA et analyses plus précises
 
 Le socle fonctionne hors réseau et sans clé. La revue IA/agents n’est pas livrée dans cette tranche. La suite pourra fournir au modèle choisi les métriques et passages explicitement sélectionnés, avec références BASIC, limites et budget. Les explications contextuelles resteraient distinguées des mesures reproductibles ; toute correction utiliserait les checkpoints et préconditions de mission existants. Un graphe de contrôle et la qualification sur corpus/ROM précéderont une complexité exacte par routine, une détection globale de code mort ou une preuve de terminaison.
