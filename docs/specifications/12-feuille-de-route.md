@@ -239,3 +239,7 @@ La [première tranche de graphe structurel](../implementation/basic-control-flow
 ## Avancement alpha 0.40.1 — Branches imbriquées et NEXT multiples
 
 IF imbriqués/ELSE IF inspectés jusqu’à 16 niveaux, NEXT multiples structurés à entrée FOR littérale garantie, suppression des cibles inventées dans les mots collés. [Guide et 37 nouvelles assertions firmware](../implementation/basic-control-flow-alpha.md#qualification-0401), [ADR 0050](../adr/0050-branches-basic-qualifiees.md). Exemple et navigation dans le vrai worker vérifiés. Prochain lot : recherche de NEXT lors d’un saut initial, boucles conditionnelles, puis retours/événements ; symboles/usages 0.41 ensuite. REQ-EDT-008 / ACC-36 et IDE-076 restent partiels.
+
+## Avancement alpha 0.40.2 — Boucles contenues dans les branches
+
+FOR/NEXT et WHILE/WEND dans une même branche THEN/ELSE ; appariements entre branches refusés. Dernière variable d’un NEXT multiple ouverte aux bornes/pas variables et au saut initial ; fermetures intermédiaires toujours conservatrices. [Exemple et 26 nouvelles assertions firmware](../implementation/basic-control-flow-alpha.md#qualification-0402), [ADR 0051](../adr/0051-boucles-et-portees-conditionnelles.md). Suite : résumés des retours GOSUB, puis erreurs/événements ; symboles/usages 0.41 ensuite. Les cas de saut intermédiaire NEXT et de franchissement de portée restent partiels.

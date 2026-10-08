@@ -1,6 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.40.1
+# CPCéleste — Dossier de conception et réalisation — version 0.40.2
 
-**Flux BASIC 0.40.1** : IF imbriqués, ELSE IF, NEXT multiples qualifiés, contrôle de syntaxe étendu et préservation des identifiants tels que GOTO100. [Guide](implementation/basic-control-flow-alpha.md), [ADR 0050](adr/0050-branches-basic-qualifiees.md).
+**Flux BASIC 0.40.2** : boucles contenues dans une branche THEN/ELSE, sorties qualifiées de NEXT multiples et contrôle des appariements entre branches. [Guide](implementation/basic-control-flow-alpha.md), [ADR 0051](adr/0051-boucles-et-portees-conditionnelles.md).
 
 **Suites BASIC 0.39 — premier lot** : suites persistantes, lancement individuel/global, historique des dix derniers rapports et retour aux assertions. [Guide](implementation/basic-test-suites-alpha.md), [ADR 0047](adr/0047-suites-basic-et-historique.md). Le [deuxième lot 0.39.1](implementation/basic-scenarios-alpha.md) ajoute des scénarios clavier, fixtures ASCII et observations écran/fichier ([ADR 0048](adr/0048-scenarios-basic-reproductibles.md)).
 
@@ -12,7 +12,7 @@
 
 ## Vous cherchez le mode d’emploi ?
 
-**[Présentation commerciale et notice utilisateur illustrée de CPCéleste](guide-utilisateur.md)** : 25 chapitres, 23 captures, les parcours complétés par les suites/scénarios BASIC et l’analyse de flux 0.40.1, des premiers pas aux fonctions avancées.
+**[Présentation commerciale et notice utilisateur illustrée de CPCéleste](guide-utilisateur.md)** : 25 chapitres, 23 captures, les parcours complétés par les suites/scénarios BASIC et l’analyse de flux 0.40.2, des premiers pas aux fonctions avancées.
 
 Le dossier ci-dessous conserve les spécifications et les rapports des incréments successifs.
 

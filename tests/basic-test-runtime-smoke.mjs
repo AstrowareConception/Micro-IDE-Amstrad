@@ -90,6 +90,39 @@ await recipe('flow-keyword-like-variables', `10 REM @CPCTEST 1 Identifiers
 50 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165
 60 GOTO 60
 `, 'passed');
+// 0.40.2: qualify loop skip continuations and branch-contained loops on real ROM.
+const loopCases = [
+ ['skip-inner-separate', ['x=0:FOR i=1 TO 2:FOR j=2 TO 1:x=x+1:NEXT j:NEXT i:x=x+10'], 10],
+ ['skip-inner-lines', ['x=0','FOR i=1 TO 2','FOR j=2 TO 1','x=x+1','NEXT j','NEXT i','x=x+10'], 10],
+ ['skip-outer-list', ['x=0:FOR i=2 TO 1:FOR j=1 TO 2:x=x+1:NEXT j,i:x=x+10'], 10],
+ ['skip-outer-triple', ['x=0:FOR i=2 TO 1:FOR j=1 TO 2:FOR k=1 TO 1:x=x+1:NEXT k,j,i:x=x+10'], 10],
+ ['skip-outer-separate', ['x=0:FOR i=2 TO 1:FOR j=1 TO 2:x=x+1:NEXT j:NEXT i:x=x+10'], 10],
+ ['then-for', ['x=0:a=1','IF a THEN FOR i=1 TO 2:x=x+1:a=0:NEXT i:x=x+10 ELSE x=99'], 12],
+ ['then-skipped', ['x=0','IF 0 THEN FOR i=1 TO 2:x=x+1:NEXT i:x=x+10 ELSE x=x+20'], 20],
+ ['then-for-skip', ['x=0','IF 1 THEN FOR i=2 TO 1:x=x+1:NEXT i:x=x+10 ELSE x=99'], 10],
+ ['else-for', ['x=0','IF 0 THEN x=99 ELSE FOR i=1 TO 2:x=x+1:NEXT i:x=x+10'], 12],
+ ['then-while', ['x=0:a=1','IF a THEN WHILE x<3:x=x+1:a=0:WEND:x=x+10 ELSE x=99'], 13],
+ ['then-while-skip', ['x=0','IF 1 THEN WHILE 0:x=x+1:WEND:x=x+10 ELSE x=99'], 10],
+ ['else-while', ['x=0','IF 0 THEN x=99 ELSE WHILE x<3:x=x+1:WEND:x=x+10'], 13],
+ ['skip-for-around-while', ['x=0:FOR i=2 TO 1:WHILE 1:x=x+1:WEND:NEXT i:x=x+10'], 10],
+ ['skip-while-around-for', ['x=0:WHILE 0:FOR i=1 TO 2:x=x+1:NEXT i:WEND:x=x+10'], 10],
+ ['skip-while-around-while', ['x=0:WHILE 0:WHILE 1:x=x+1:WEND:WEND:x=x+10'], 10],
+ ['for-skip-in-while', ['x=0:c=2:WHILE c>0:FOR i=2 TO 1:x=x+1:NEXT i:c=c-1:WEND:x=x+10'], 10],
+ ['outer-negative-step', ['x=0:s=-1:FOR i=3 TO 1 STEP s:FOR j=1 TO 2:x=x+1:NEXT j,i:x=x+10'], 16],
+ ['skip-outer-negative-step', ['x=0:s=-1:FOR i=1 TO 3 STEP s:FOR j=1 TO 2:x=x+1:NEXT j,i:x=x+10'], 10],
+ ['nested-then-loops', ['x=0','IF 1 THEN IF 1 THEN FOR i=1 TO 2:WHILE x<3:x=x+1:WEND:NEXT i ELSE x=99 ELSE x=98'], 3],
+];
+for (const n of [0,2]) loopCases.push([`outer-bound-${n}`, [`x=0:n=${n}:FOR i=1 TO n:FOR j=1 TO 3:x=x+1:NEXT j,i:x=x+10`], 10+3*n]);
+for (const a of [0,1]) {
+ loopCases.push([`alternative-for-${a}`, [`x=0:a=${a}`, 'IF a THEN FOR i=1 TO 2:x=x+1:NEXT i ELSE FOR i=1 TO 3:x=x+1:NEXT i'], a ? 2 : 3]);
+ loopCases.push([`conditional-list-${a}`, [`x=0:a=${a}:n=2`, 'IF a THEN FOR i=1 TO n:FOR j=1 TO 3:x=x+1:NEXT j,i:x=x+10 ELSE x=20'], a ? 16 : 20]);
+}
+const loopLines = ['MEMORY &7FFF'];
+for (const [index, [name, code, expected]] of loopCases.entries()) loopLines.push(`REM @CPCTEST ${index+1} ${name}`, ...code, `IF x=${expected} THEN POKE &${(0x8004+index).toString(16)},1 ELSE POKE &${(0x8004+index).toString(16)},2`);
+loopLines.push('POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165', 'GOTO 4000');
+await recipe('flow-loop-scopes', loopLines.map((line,index)=>`${(index+1)*10} ${line}`).join('\n')+'\n4000 GOTO 4000\n', 'passed', 10);
+const conditionalExample = await readFile('examples/control-flow/conditional-loops.bas', 'utf8');
+await recipe('flow-loop-example', conditionalExample.replace('80 END','80 IF total=15 THEN POKE &8004,1 ELSE POKE &8004,2')+'90 REM @CPCTEST 1 Total\n100 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165\n110 GOTO 110\n', 'passed', 5);
 const failed = await recipe('score-failed', BASIC_TEST_EXAMPLE.replace('score=150 THEN', 'score=151 THEN'), 'failed'); assert.deepEqual(failed.cases.map(test => test.outcome), ['failed', 'passed']);
 await recipe('missing-assertion', BASIC_TEST_EXAMPLE.replace('70 IF score=100 THEN POKE &8005,1 ELSE POKE &8005,2', '70 REM assertion deliberately omitted'), 'incomplete');
 await recipe('infinite-loop', '10 REM @CPCTEST 1 Loop\n20 GOTO 20\n', 'timeout');

@@ -50,6 +50,27 @@ export async function verifyBasicFlow(browser, errors) {
   await expect(panel).toContainText('Rapport sur les sources inchangées.'); await flow.locator(':scope > summary').click();
   await expect(flow).toContainText('analyse partielle'); await expect(flow).toContainText('inaccessibilité et complexité non conclues');
   await expect(flow.locator('.flow-routines tbody tr').first().locator('td').nth(2)).toHaveText('Indisponible');
+  const conditional = await readFile('examples/control-flow/conditional-loops.bas', 'utf8');
+  await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText(conditional);
+  await panel.getByRole('button', { name: 'Générer le rapport', exact: true }).click();
+  await expect(panel).toContainText('Rapport sur les sources inchangées.'); await flow.locator(':scope > summary').click();
+  await expect(flow).toContainText('formes couvertes');
+  await expect(flow.locator('.flow-routines tbody tr').first().locator('td').nth(2)).toHaveText('9');
+  const conditionalDownload = page.waitForEvent('download'); await panel.getByRole('button', { name: 'Exporter JSON', exact: true }).click();
+  const conditionalChunks = []; for await (const chunk of await (await conditionalDownload).createReadStream()) conditionalChunks.push(chunk);
+  const conditionalGraph = JSON.parse(Buffer.concat(conditionalChunks).toString('utf8')).report.sources[0].flow;
+  assert.equal(conditionalGraph.complete, true); assert.equal(conditionalGraph.cycles.length, 4);
+  const forInThen = conditionalGraph.nodes.find(n=>n.basicLine===40 && n.operation==='FOR');
+  const forExit = conditionalGraph.edges.find(e=>e.from===forInThen.id && e.kind==='false');
+  assert.equal(conditionalGraph.nodes[forExit.to].basicLine, 50, 'FOR exit bypasses the ELSE arm');
+  await select.selectOption(String(forInThen.id));
+  await flow.getByRole('button', { name: 'Voir cette instruction dans le code', exact: true }).click();
+  await expect(page.locator('footer')).toContainText(`L${forInThen.line} · C${forInThen.end + 1}`);
+  await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText('10 IF A THEN FOR I=1 TO 2 ELSE NEXT I\n20 END');
+  await panel.getByRole('button', { name: 'Générer le rapport', exact: true }).click();
+  await expect(panel).toContainText('Rapport sur les sources inchangées.'); await flow.locator(':scope > summary').click();
+  await expect(flow).toContainText('ouverture et fermeture de boucle dans des branches IF différentes');
+  await expect(flow.locator('.flow-routines tbody tr').first().locator('td').nth(2)).toHaveText('Indisponible');
   const nested = await readFile('examples/control-flow/nested.bas', 'utf8');
   await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText(nested);
   await panel.getByRole('button', { name: 'Générer le rapport', exact: true }).click();
@@ -67,7 +88,7 @@ export async function verifyBasicFlow(browser, errors) {
   await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText(nested.replace('j=1 TO 3', 'j=1 TO n'));
   await panel.getByRole('button', { name: 'Générer le rapport', exact: true }).click();
   await expect(panel).toContainText('Rapport sur les sources inchangées.'); await flow.locator(':scope > summary').click();
-  await expect(flow).toContainText('NEXT multiple avec entrée FOR non garantie');
+  await expect(flow).toContainText('fermeture intermédiaire de NEXT multiple avec entrée FOR non garantie');
   await expect(flow.locator('.flow-routines tbody tr').first().locator('td').nth(2)).toHaveText('Indisponible');
   console.log('BASIC flow UI: real worker, per-entry complexity, graph keyboard navigation, source location, source-free JSON, stale guard and opaque-control fallback passed.');
  } finally { await page.close(); }
