@@ -1,4 +1,4 @@
-# Analyse de flux BASIC — alpha 0.40.8
+# Analyse de flux BASIC — alpha 0.40.9
 
 Date : 8 octobre 2026. Neuvième lot 0.40 ; REQ-EDT-008 / ACC-36, IDE-076 reste partiel. [ADR 0049](../adr/0049-graphe-basic-conservateur.md), [ADR 0050](../adr/0050-branches-basic-qualifiees.md), [ADR 0051](../adr/0051-boucles-et-portees-conditionnelles.md).
 
@@ -50,7 +50,7 @@ Le rapport JSON passe en **version 2** avec un champ `flow` par source (sous-for
 
 La recette `flow-control-forms` de `basic-test-runtime-smoke.mjs` exécute **trois assertions sur le vrai BASIC 1.1 du jeu CPC 6128 anglais identifié** : FOR initialement hors bornes, portée IF/ELSE et sélecteurs/appels, WHILE. Elle réussit localement avec le moteur WASM et les ROM privés déjà utilisés par les recettes précédentes. Elle vérifie ces formes, pas tous les graphes possibles ni un émulateur indépendant. La CI normale reprend cette recette, sans nouveau workflow ni packaging.
 
-Suite 0.40 : erreurs implicites, reprises conditionnelles et piles d’appels/boucles ; le saut initial des fermetures intermédiaires de NEXT et les boucles franchissant une branche restent à qualifier ; réduction des cas partiels et amélioration de la séparation des routines. Analyse de variables, corrections automatiques et revue IA restent à réaliser. La 0.41 (symboles/usages) et la 0.42 (mesures d’exécution) restent distinctes de ce modèle statique.
+État 0.40.9 : reprises conditionnelles, divisions simples et piles d’appels/boucles sont couvertes dans les limites des qualifications ci-dessous. Autres erreurs implicites et réentrées restent ouvertes ; le saut initial des fermetures intermédiaires de NEXT et les boucles franchissant une branche restent à qualifier ; réduction des cas partiels et amélioration de la séparation des routines. Analyse de variables, corrections automatiques et revue IA restent à réaliser. La 0.41 (symboles/usages) et la 0.42 (mesures d’exécution) restent distinctes de ce modèle statique.
 
 
 ## Qualification 0.40.1
@@ -203,3 +203,34 @@ L’interface présente une pile dépliable par contexte/transfert, au plus 16 l
 Tests de domaine : séparation des appelants, contexte actif préservé, retours précis, ON hors liste, absence de continuation inventée, profondeur 16/17 et récursion, quotas, exclusions et confidentialité. Chromium vérifie les piles des deux reprises, le lien vers le premier site de la ligne 30, les formats et l’obsolescence. [ADR 0057](../adr/0057-piles-appels-contextes-erreur.md).
 
 Suite : interaction avec les piles de boucles et autres erreurs implicites encore ouvertes ; symboles/usages 0.41 suivent. IDE-076/J2 demeurent partiels.
+
+<a id="qualification-0409"></a>
+## Qualification 0.40.9 — Boucles et reprises d’erreur
+
+FOR/NEXT et les appels mêlés à WHILE/WEND rejoignent les contextes d’erreur lorsque la structure est couverte. Chaque état possède maintenant une pile ordonnée de trames d’appel, FOR et WHILE, du plus ancien au plus récent. La pile décrit l’état **avant** l’instruction ou le transfert. `calls` reste la projection des appels ; `stack` expose les objets `{kind: call|for|while, node}`. Le sous-format passe à **flow 7 / errorFlow 4**, sans changer le scope des erreurs ni le rapport englobant. Les variables, conditions et valeurs restent absentes des exports.
+
+| Instruction | Effet dans le modèle qualifié |
+| --- | --- |
+| FOR / WHILE | Issue d’entrée avec une trame, ou saut initial sans trame |
+| NEXT | Recherche son FOR actif, abandonne les boucles plus récentes, puis poursuit le corps ou sort ; aucune réinitialisation du compteur |
+| WEND | Recherche son WHILE actif, abandonne les boucles plus récentes et rejoint le test sans conserver cette trame |
+| RETURN | Retire le dernier appel et les boucles ouvertes depuis lui ; conserve les boucles de l’appelant et l’erreur active |
+| RESUME / RESUME NEXT / RESUME ligne | Conserve la pile courante, y compris les boucles laissées ouvertes par le gestionnaire ; efface l’erreur active |
+
+Une fermeture recherche l’ouverture associée à son emplacement dans le programme : NEXT sans variable ne ferme pas arbitrairement le FOR le plus récemment empilé par le gestionnaire. Une trame GOSUB constitue une barrière pour NEXT/WEND. Les recettes vérifient ERR 1 / ERR 30 lorsque la fermeture est atteinte depuis l’autre côté d’un appel, sans ouverture active ou à un emplacement distinct de la fermeture associée. Le modèle suspend alors ses conclusions ; il ne simule pas ces nouvelles erreurs implicites.
+
+Réentrer directement dans une boucle déjà active, ou ouvrir un FOR avec un compteur potentiellement déjà actif dans le même appel, reste hors périmètre. Cela n’affirme pas que le programme est invalide : deux recettes de réentrée s’exécutent correctement sur le firmware. La garde des compteurs rapproche conservativement les suffixes numériques et les 40 premiers caractères ; elle ne constitue pas une analyse des types ou des symboles. Les boucles traversant les branches IF, fermetures intermédiaires de NEXT à saut initial non qualifié, événements asynchrones et formes opaques conservent leurs limites antérieures.
+
+Le modèle n’évalue ni conditions, ni bornes, ni pas, ni réparations de variables. Une boucle littéralement vraie conserve une issue abstraite de sortie ; les résultats sont des possibilités. Un parcours impossible en pratique peut donc déclencher une garde ou atteindre un budget. Les états incluent l’ordre des trames : les mêmes ERROR et gestionnaire sous des piles différentes ne sont pas fusionnés.
+
+**16 boucles actives et 16 appels imbriqués**, soit 32 trames maximum par état. Les autres plafonds restent 8192 états, 4096 transferts, 131072 transitions parcourues par source et 65536 états multisource. Les quatre types `loop-enter`, `loop-skip`, `loop-repeat`, `loop-leave` consomment le plafond des transferts. Un budget ou une exclusion retire ensemble origines, contextes et transferts ; aucun résultat incomplet n’est conservé. Calcul toujours local, à la demande, avec worker et annulation ; aucune nouvelle analyse à la frappe.
+
+La pile dépliable indique le nombre d’appels et de boucles, puis permet de rejoindre chaque GOSUB, FOR et WHILE à sa colonne exacte. Les listes restent limitées à 100 origines/contextes/transferts ; chaque pile compte au plus 32 liens. L’obsolescence désactive ces liens. Markdown conserve l’ordre avec les étiquettes FOR/WHILE ; JSON conserve les types et identifiants de nœuds.
+
+[loop-errors.bas](../../examples/control-flow/loop-errors.bas) affiche **Total 42, Erreurs 2**. Le FOR appelant survit aux retours de la sous-routine, tandis que son WHILE est abandonné par RETURN. Le gestionnaire utilise une autre boucle FOR terminée avant RESUME NEXT. Le modèle courant explore **30 états, 12 contextes et 15 transferts** ; il représente aussi la sortie abstraite du WHILE littéralement vrai.
+
+**36 nouvelles assertions firmware** : boucles simples, appels et retours anticipés, boucles du gestionnaire équilibrées ou en attente, trois modes RESUME, imbrications mixtes, NEXT sans variable, NEXT multiple, THEN/ELSE, réentrées et fermetures invalides avec code ERR observé. Les attentes sont centralisées dans `tests/fixtures/loop-error-cases.ts`. Le jeu CPC 6128 anglais identifié fonctionne dans le moteur WASM intégré ; aucun octet de firmware publié ni qualification indépendante/matérielle supplémentaire.
+
+Tests du domaine : initialisation FOR distincte des répétitions NEXT, conservation/abandon des trames, appels barrières, piles distinctes au même défaut, gardes, profondeur 16/17, plafond partagé et confidentialité. Chromium vérifie le vrai worker, l’export, les trames FOR/appel/WHILE du RETURN de la ligne 110, la navigation vers le FOR de la ligne 30 et l’obsolescence. [ADR 0058](../adr/0058-piles-boucles-contextes-erreur.md).
+
+Suite : erreurs implicites de pile et autres erreurs implicites, réentrées et franchissements non qualifiés restent au backlog. Le socle borné appels/boucles est disponible ; la prochaine tranche produit est **0.41, symboles et usages**. IDE-076/J2 restent partiels.

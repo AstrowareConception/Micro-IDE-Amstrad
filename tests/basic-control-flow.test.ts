@@ -301,7 +301,7 @@ test('return propagation remains iterative across a long chain and independent o
 
 test('Markdown and JSON export return summaries without source arguments', () => {
  const report=analyzeQuality([{id:'returns',name:'returns.bas',source:'10 GOSUB 100:PRINT "PRIVATE RETURN TEXT"\n20 END\n100 END'}]);
- assert.equal(report.sources[0]!.flow.version,6);
+ assert.equal(report.sources[0]!.flow.version,7);
  assert.equal(report.sources[0]!.flow.entries[1]!.returnStatus,'absent');
  const markdown=qualityMarkdown(report);
  assert.match(markdown,/chemin vers RETURN : Aucun chemin/);
@@ -310,7 +310,7 @@ test('Markdown and JSON export return summaries without source arguments', () =>
 
 test('event declarations have navigable targets without immediate calls, reachability or control cycles', () => {
  const flow=analyzeControlFlow('10 ON ERROR GOTO 100:ON BREAK GOSUB 200:ON SQ(1) GOSUB 200\n20 AFTER 50 GOSUB 200:EVERY t,2 GOSUB 200\n30 END\n100 RESUME NEXT\n200 RETURN');
- assert.equal(flow.version,6); assert.equal(flow.complete,false);
+ assert.equal(flow.version,7); assert.equal(flow.complete,false);
  assert.deepEqual(flow.handlers.map(h=>[h.event,h.action,h.targetLine]),[['error','register',100],['break','register',200],['sound','register',200],['after','register',200],['every','register',200]]);
  assert.equal(flow.edges.filter(e=>e.kind==='handler').length,5); assert.deepEqual(flow.calls,[]); assert.deepEqual(flow.cycles,[]);
  assert.deepEqual(flow.entries.map(e=>[flow.nodes[e.node]!.basicLine,e.kind]),[[10,'main'],[100,'handler'],[200,'handler']]);
@@ -414,7 +414,6 @@ test('retry reaches a fixed point; rethrow and errors inside a handler do not re
 test('unsupported contexts discard deductions rather than publishing guessed states', () => {
  for (const source of [
   '10 ON ERROR GOTO 100:AFTER 1 GOSUB 200\n20 ERROR 5\n30 END\n100 RESUME NEXT\n200 RETURN',
-  '10 ON ERROR GOTO 100:FOR I=1 TO 2\n20 ERROR 5:NEXT I\n30 END\n100 RESUME NEXT',
   '10 ON ERROR GOTO 100\n20 ERROR n\n30 END\n100 RESUME NEXT',
   '10 ON ERROR GOTO 100\n20 ERROR 256\n30 END\n100 RESUME NEXT',
   '10 ON ERROR GOTO 100:CALL &BD19\n20 ERROR 5\n30 END\n100 RESUME NEXT',
@@ -510,7 +509,7 @@ test('simple scalar divisions have typed sites without evaluating or exporting o
  for(const statement of ['q=secretNumerator/secretDivisor','LET q=10/d','q%=10\\d%','q!=10 MOD d!','q=-32767/+0','q=0/2']) {
   const flow=analyzeControlFlow(`10 ${statement}\n20 END`);
   assert.equal(flow.errorFlow.status,'covered',statement);
-  assert.equal(flow.errorFlow.version,3); assert.equal(flow.errorFlow.scope,'explicit-and-simple-division');
+  assert.equal(flow.errorFlow.version,4); assert.equal(flow.errorFlow.scope,'explicit-and-simple-division');
   assert.deepEqual(flow.errorFlow.sites.map(s=>s.kind),['division-zero']);
   assert.equal(flow.errorFlow.transfers[0]!.kind,statement.includes('/')?'warning':'unhandled');
   assert.equal(flow.complete,false); assert.deepEqual(flow.unreachable,[]);
@@ -576,7 +575,7 @@ test('implicit error exports distinguish possible origins and keep all private e
  const report=analyzeQuality([{id:'divisions',name:'divisions.bas',source:'10 ON ERROR GOTO 100\n20 privateResult=privateNumerator/privateDivisor\n30 END\n100 RESUME NEXT'}]);
  const markdown=qualityMarkdown(report); assert.match(markdown,/Division par zéro possible/); assert.match(markdown,/sans calculer son diviseur/);
  assert.ok(!markdown.includes('private')); assert.ok(!JSON.stringify(report).includes('private'));
- assert.equal(report.sources[0]!.flow.version,6);
+ assert.equal(report.sources[0]!.flow.version,7);
 });
 
 test('untrapped real division warns and continues in its own arm; integer division stops', () => {
@@ -594,7 +593,7 @@ test('untrapped real division warns and continues in its own arm; integer divisi
 test('nested calls resume the interrupted routine and return to their exact caller', () => {
  const flow=analyzeControlFlow('10 ON ERROR GOTO 300:GOSUB 100:END\n100 GOSUB 200:RETURN\n200 ERROR 5:RETURN\n300 RESUME NEXT');
  const result=flow.errorFlow; assert.equal(result.status,'covered',result.reason ?? '');
- assert.equal(result.version,3);
+ assert.equal(result.version,4);
  const raise=result.transfers.find(t=>t.kind==='raise')!;
  assert.deepEqual(raise.calls.map(id=>flow.nodes[id]!.basicLine),[10,100]);
  const resume=result.transfers.find(t=>t.kind==='next')!;
@@ -664,8 +663,8 @@ test('call depth is a conservative analysis budget and all incomplete results ar
   assert.deepEqual(result.sites,[]);assert.deepEqual(result.contexts,[]);assert.deepEqual(result.transfers,[]);
  }
 });
-test('stack underflow and mixed loop stacks suspend contextual conclusions', () => {
- for(const source of ['10 ON ERROR GOTO 100:RETURN\n100 RESUME NEXT','10 ON ERROR GOTO 100:ERROR 5\n100 RETURN','10 ON ERROR GOTO 100:WHILE A:GOSUB 200:WEND:END\n100 RESUME NEXT\n200 RETURN']) {
+test('stack underflow suspends contextual conclusions', () => {
+ for(const source of ['10 ON ERROR GOTO 100:RETURN\n100 RESUME NEXT','10 ON ERROR GOTO 100:ERROR 5\n100 RETURN']) {
   const result=analyzeControlFlow(source).errorFlow; assert.equal(result.status,'unsupported'); assert.deepEqual(result.contexts,[]);assert.deepEqual(result.transfers,[]);
  }
  const unused=analyzeControlFlow('10 ON ERROR GOTO 100:ERROR 5:END\n100 RESUME NEXT\n200 RETURN'); assert.equal(unused.errorFlow.status,'covered');
@@ -682,4 +681,103 @@ test('contextual call and return transfers share the existing transfer quota', (
  const result=analyzeControlFlow(source).errorFlow;
  assert.equal(result.status,'limited'); assert.match(result.reason!,/4096 transferts/);
  assert.deepEqual(result.sites,[]);assert.deepEqual(result.contexts,[]);assert.deepEqual(result.transfers,[]);
+});
+
+test('FOR contexts initialize once and NEXT repeats the body or removes its frame', () => {
+ const flow=analyzeControlFlow('10 ON ERROR GOTO 100:FOR i=1 TO n\n20 ERROR 5:NEXT i\n30 END\n100 RESUME NEXT');
+ assert.equal(flow.errorFlow.status,'covered');
+ const header=flow.nodes.find(n=>n.operation==='FOR')!, close=flow.nodes.find(n=>n.operation==='NEXT')!, fault=flow.nodes.find(n=>n.operation==='ERROR')!;
+ const resumed=flow.errorFlow.transfers.find(t=>t.kind==='next')!;
+ assert.deepEqual(resumed.stack,[{kind:'for',node:header.id}]);assert.deepEqual(resumed.calls,[]);
+ const repeat=flow.errorFlow.transfers.find(t=>t.node===close.id && t.kind==='loop-repeat')!;
+ assert.equal(flow.nodes[repeat.to!]!.basicLine,fault.basicLine); assert.notEqual(repeat.to,header.id);
+ assert.equal(flow.errorFlow.contexts.filter(c=>c.node===header.id).length,1);
+ assert.equal(flow.errorFlow.transfers.filter(t=>t.kind==='loop-leave').length,1);
+ assert.equal(flow.complete,false);assert.deepEqual(flow.unreachable,[]);
+});
+test('RETURN removes callee loops while preserving the caller loop and active fault', () => {
+ for(const [outer,inner,close] of [['FOR i=1 TO 2','WHILE a','NEXT i'],['WHILE a','FOR i=1 TO 2','WEND']]) {
+  const endInner=inner!.startsWith('FOR')?'NEXT i':'WEND';
+  const flow=analyzeControlFlow(`10 ON ERROR GOTO 300:${outer}:GOSUB 100:${close}:END\n100 ${inner}:ERROR 5:${endInner}:RETURN\n300 RETURN`);
+  assert.equal(flow.errorFlow.status,'covered',flow.errorFlow.reason ?? '');
+  const back=flow.errorFlow.transfers.find(t=>t.kind==='return' && flow.nodes[t.node]!.basicLine===300)!;
+  assert.deepEqual(back.stack.map(f=>f.kind),[outer!.startsWith('FOR')?'for':'while','call',inner!.startsWith('FOR')?'for':'while']);
+  const atClose=flow.errorFlow.contexts.find(c=>c.node===back.to && c.fault!==null)!;
+  assert.equal(atClose.stack.length,1);assert.deepEqual(atClose.calls,[]);assert.equal(atClose.fault,back.fault);
+ }
+});
+test('loop closures discard pending handler loops and RESUME preserves their ordered frames', () => {
+ for(const outer of ['FOR i=1 TO 2','WHILE a']) for(const inner of ['FOR j=1 TO 2','WHILE b']) for(const mode of ['NEXT','40']) {
+  const flow=analyzeControlFlow(`10 ON ERROR GOTO 100:${outer}\n30 ERROR 5\n40 ${outer.startsWith('FOR')?'NEXT i':'WEND'}:END\n100 ${inner}:RESUME ${mode}:${inner.startsWith('FOR')?'NEXT j':'WEND'}`);
+  assert.equal(flow.errorFlow.status,'covered',flow.errorFlow.reason ?? '');
+  const resume=flow.errorFlow.transfers.find(t=>t.kind===(mode==='NEXT'?'next':'line'))!;
+  assert.equal(resume.stack.length,2);assert.deepEqual(resume.stack.map(f=>flow.nodes[f.node]!.basicLine),[10,100]);
+  const repeated=flow.errorFlow.transfers.find(t=>flow.nodes[t.node]!.basicLine===40 && t.kind==='loop-repeat')!;
+  assert.equal(repeated.stack.length,2);
+  const target=flow.errorFlow.contexts.find(c=>(outer.startsWith('FOR')?flow.nodes[c.node]!.operation==='ERROR':c.node===repeated.to) && c.fault===null)!;
+  assert.equal(target.stack.length,outer.startsWith('FOR')?1:0);
+ }
+});
+test('bare RESUME retains caller loops after a balanced helper loop repairs a possible division', () => {
+ const flow=analyzeControlFlow('10 ON ERROR GOTO 100:FOR i=1 TO 2:q=10/d:NEXT i:END\n100 FOR j=1 TO 2:d=2:NEXT j:RESUME');
+ assert.equal(flow.errorFlow.status,'covered');
+ const retry=flow.errorFlow.transfers.find(t=>t.kind==='retry')!;
+ assert.equal(retry.stack.length,1);assert.equal(flow.nodes[retry.stack[0]!.node]!.basicLine,10);
+ assert.equal(flow.nodes[retry.to!]!.operation,'AFFECTATION');
+});
+test('unnamed NEXT closes its associated FOR past pending handler loops', () => {
+ const flow=analyzeControlFlow('10 ON ERROR GOTO 100:FOR i=1 TO 1:ERROR 5:NEXT:END\n100 FOR j=1 TO 1:RESUME NEXT:NEXT j');
+ assert.equal(flow.errorFlow.status,'covered');
+ const back=flow.errorFlow.transfers.find(t=>t.kind==='next')!;
+ assert.equal(back.stack.length,2);
+ const repeat=flow.errorFlow.transfers.find(t=>t.node===back.to && t.kind==='loop-repeat')!;
+ assert.equal(flow.nodes[repeat.to!]!.operation,'ERROR');
+ assert.equal(flow.errorFlow.contexts.find(c=>c.node===repeat.to)!.stack.length,1);
+});
+test('nested FOR and multiple NEXT retain distinct frames and do not reinitialize counters', () => {
+ const flow=analyzeControlFlow('10 ON ERROR GOTO 100:FOR i=1 TO n:FOR j=1 TO 2:ERROR 5:NEXT j,i:END\n100 RESUME NEXT');
+ assert.equal(flow.errorFlow.status,'covered');
+ const repeat=flow.errorFlow.transfers.filter(t=>t.kind==='loop-repeat');assert.equal(repeat.length,2);
+ assert.deepEqual(repeat.map(t=>flow.nodes[t.to!]!.operation).sort(),['ERROR','FOR']);
+ assert.equal(Math.max(...flow.errorFlow.contexts.map(c=>c.stack.length)),2);
+ assert.equal(flow.errorFlow.transfers.find(t=>t.kind==='raise')!.stack.length,2);
+});
+test('unmatched active closures and closures crossing a GOSUB discard all contextual results', () => {
+ for(const [start,end] of [['FOR i=1 TO 2','NEXT i'],['WHILE a','WEND']]) for(const scenario of ['jump','call','returned']) {
+  const body=scenario==='jump'?`10 ON ERROR GOTO 200:GOTO 30\n20 ${start}\n30 ${end}:END`:scenario==='call'?`10 ON ERROR GOTO 200:${start}:GOSUB 100\n30 ${end}:END\n100 GOTO 30`:`10 ON ERROR GOTO 200:GOSUB 100:GOTO 120\n100 ${start}:RETURN\n120 ${end}:END`;
+  const result=analyzeControlFlow(body+'\n200 RESUME NEXT').errorFlow;
+  assert.equal(result.status,'unsupported',body);assert.match(result.reason!,/ouverture active/);
+  assert.deepEqual(result.sites,[]);assert.deepEqual(result.contexts,[]);assert.deepEqual(result.transfers,[]);
+ }
+});
+test('direct loop reentry and ambiguous FOR counter reuse remain explicit exclusions', () => {
+ for(const body of ['WHILE a:GOTO 20:WEND','FOR i=1 TO 2:GOTO 20:NEXT i','FOR i=1 TO 2:GOTO 30:NEXT i\n30 FOR i!=1 TO 2:ERROR 5:NEXT i!']) {
+  const result=analyzeControlFlow(`10 ON ERROR GOTO 100\n20 ${body}\n40 END\n100 RESUME NEXT`).errorFlow;
+  assert.equal(result.status,'unsupported');assert.match(result.reason!,/Réentrée|compteur/);assert.deepEqual(result.transfers,[]);
+ }
+});
+test('same fault under different active loop stacks remains separated', () => {
+ const flow=analyzeControlFlow('10 ON ERROR GOTO 100:IF a THEN GOTO 50\n20 FOR i=1 TO 2:GOTO 50:NEXT i\n50 ERROR 5:END\n100 RESUME NEXT');
+ assert.equal(flow.errorFlow.status,'covered');
+ const raises=flow.errorFlow.transfers.filter(t=>t.kind==='raise');assert.equal(raises.length,2);
+ assert.equal(raises[0]!.node,raises[1]!.node);assert.deepEqual(raises.map(t=>t.stack.length).sort(),[0,1]);
+});
+test('loop depth and transfer limits remove all partial stack deductions', () => {
+ const nested=(count:number)=>'10 ON ERROR GOTO 100:'+Array(count).fill('WHILE a').join(':')+':ERROR 5:'+Array(count).fill('WEND').join(':')+':END\n100 RESUME NEXT';
+ const boundary=analyzeControlFlow(nested(ERROR_FLOW_LIMITS.loopDepth));assert.equal(boundary.errorFlow.status,'covered');
+ assert.equal(Math.max(...boundary.errorFlow.contexts.map(c=>c.stack.length)),16);
+ const limited=analyzeControlFlow(nested(17)).errorFlow;assert.equal(limited.status,'limited');assert.match(limited.reason!,/16 boucles/);
+ const many='1 ON ERROR GOTO 100\n'+Array.from({length:15},(_,i)=>`${10+i} `+Array(80).fill('FOR i=1 TO 2:NEXT i').join(':')).join('\n')+'\n30 END\n100 RESUME NEXT';
+ const transfers=analyzeControlFlow(many).errorFlow;assert.equal(transfers.status,'limited');assert.match(transfers.reason!,/4096 transferts/);
+ for(const result of [limited,transfers]) { assert.deepEqual(result.sites,[]);assert.deepEqual(result.contexts,[]);assert.deepEqual(result.transfers,[]); }
+});
+test('loop stack exports include frame order without counters or bounds', () => {
+ const source='10 ON ERROR GOTO 200:FOR privateCounter=1 TO privateBound:GOSUB 100:NEXT privateCounter:END\n100 WHILE privateCondition:ERROR 5:WEND:RETURN\n200 RESUME NEXT';
+ const report=analyzeQuality([{id:'loops',name:'loops.bas',source}]), flow=report.sources[0]!.flow;
+ assert.equal(flow.errorFlow.status,'covered');
+ const raise=flow.errorFlow.transfers.find(t=>t.kind==='raise')!;
+ assert.deepEqual(raise.stack.map(f=>f.kind),['for','call','while']);
+ assert.deepEqual(raise.calls,raise.stack.filter(f=>f.kind==='call').map(f=>f.node));
+ const text=qualityMarkdown(report);assert.match(text,/pile FOR BASIC 10\/C22 → BASIC 10\/C\d+ → WHILE BASIC 100\/C5/);
+ for(const name of ['privateCounter','privateBound','privateCondition']) { assert.ok(!text.includes(name));assert.ok(!JSON.stringify(report).includes(name)); }
 });

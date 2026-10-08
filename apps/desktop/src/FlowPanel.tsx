@@ -1,4 +1,4 @@
-import { ERROR_SITE_LABELS, ERROR_FLOW_METHOD, ERROR_FLOW_STATUS_LABELS, ERROR_TRANSFER_LABELS } from '../../../packages/basic-language/src/error-flow.ts';
+import { ERROR_SITE_LABELS, ERROR_FLOW_METHOD, ERROR_FLOW_STATUS_LABELS, ERROR_TRANSFER_LABELS, type ErrorStackFrame } from '../../../packages/basic-language/src/error-flow.ts';
 import { FLOW_EVENT_LABELS, FLOW_EVENT_ACTION_LABELS } from '../../../packages/basic-language/src/flow-events.ts';
 import { useId, useMemo, useState } from 'react';
 import { Button } from './Icon.tsx';
@@ -16,11 +16,12 @@ export function FlowPanel({ name, report, stale, onReveal }: Props) {
  const choices = useMemo(() => sorted.filter(node => `${node.basicLine} ${node.operation}`.toLowerCase().includes(query.toLowerCase())), [sorted, query]);
  const incoming = useMemo(() => report.edges.filter(edge => edge.to === selected), [report, selected]);
  const outgoing = useMemo(() => report.edges.filter(edge => edge.from === selected), [report, selected]);
- function callStack(calls: number[]) {
-  if (!calls.length) return <span className="muted"> · pile vide</span>;
-  return <details className="flow-call-stack"><summary>Pile : {calls.length} appel(s)</summary>
-   <p className="muted">Sites d’appel, du plus ancien au plus récent ; état avant le transfert.</p>
-   <ol>{calls.map((site, position) => <li key={position}><Button disabled={stale} onClick={() => onReveal(index.get(site)!)}>Appel {position + 1} · BASIC {index.get(site)!.basicLine} · C{index.get(site)!.start + 1}</Button></li>)}</ol>
+ function controlStack(stack: ErrorStackFrame[]) {
+  if (!stack.length) return <span className="muted"> · pile vide</span>;
+  const calls = stack.filter(frame => frame.kind === 'call').length, loops = stack.length - calls;
+  return <details className="flow-call-stack"><summary>Pile : {calls} appel(s){loops > 0 && ` · ${loops} boucle(s)`}</summary>
+   <p className="muted">Appels et boucles, du plus ancien au plus récent ; état avant le transfert.</p>
+   <ol>{stack.map((frame, position) => <li key={position}><Button disabled={stale} onClick={() => onReveal(index.get(frame.node)!)}>{frame.kind === 'call' ? 'Appel' : `Boucle ${frame.kind.toUpperCase()}`} {position + 1} · BASIC {index.get(frame.node)!.basicLine} · C{index.get(frame.node)!.start + 1}</Button></li>)}</ol>
   </details>;
  }
  function box(id: number | null, x: number, y: number, active = false, key = '') {
@@ -69,14 +70,14 @@ export function FlowPanel({ name, report, stale, onReveal }: Props) {
       <Button disabled={stale} onClick={() => onReveal(index.get(context.node)!)}>Instruction BASIC {index.get(context.node)!.basicLine} · C{index.get(context.node)!.start + 1}</Button>
       {context.handler === null ? ' · piège désactivé' : <> · <Button disabled={stale} onClick={() => onReveal(index.get(context.handler!)!)}>Gestionnaire possible BASIC {index.get(context.handler)!.basicLine}</Button></>}
       {context.fault === null ? ' · aucune erreur en traitement' : <> · <Button disabled={stale} onClick={() => onReveal(index.get(context.fault!)!)}>Instruction interrompue BASIC {index.get(context.fault)!.basicLine} · C{index.get(context.fault)!.start + 1}</Button></>}
-      {callStack(context.calls)}
+      {controlStack(context.stack)}
      </li>)}</ul>{report.errorFlow.contexts.length > 100 && <p>100 contextes affichés ; suite dans les exports.</p>}
      <h4>Déclenchements et reprises dans ce modèle</h4>
      <ul className="flow-error-transfers">{report.errorFlow.transfers.slice(0, 100).map((transfer, i) => <li key={i}>
       {ERROR_TRANSFER_LABELS[transfer.kind]}{errorSites.get(transfer.kind === 'nested' ? transfer.node : transfer.fault ?? transfer.node) === 'division-zero' && ' (division par zéro possible)'} · <Button disabled={stale} onClick={() => onReveal(index.get(transfer.node)!)}>Départ BASIC {index.get(transfer.node)!.basicLine} · C{index.get(transfer.node)!.start + 1}</Button>
       {transfer.to === null ? ' → arrêt du chemin' : <> → <Button disabled={stale} onClick={() => onReveal(index.get(transfer.to!)!)}>Destination BASIC {index.get(transfer.to)!.basicLine} · C{index.get(transfer.to)!.start + 1}</Button></>}
       {transfer.fault !== null && <> · <Button disabled={stale} onClick={() => onReveal(index.get(transfer.fault!)!)}>Instruction interrompue BASIC {index.get(transfer.fault)!.basicLine} · C{index.get(transfer.fault)!.start + 1}</Button></>}
-      {callStack(transfer.calls)}
+      {controlStack(transfer.stack)}
      </li>)}</ul>{report.errorFlow.transfers.length > 100 && <p>100 transferts affichés ; suite dans les exports.</p>}
     </>}
    </details>}

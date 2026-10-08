@@ -17,7 +17,7 @@ export interface FlowCall { caller: number; callee: number; site: number }
 export interface FlowHandler extends FlowEventForm { site: number; target: number | null }
 export interface FlowCycle { nodes: number[]; hasExit: boolean; reachable: boolean }
 export interface FlowReport {
- version: 6; complete: boolean; reasons: string[]; omittedReasons: number; entry: number | null;
+ version: 7; complete: boolean; reasons: string[]; omittedReasons: number; entry: number | null;
  nodes: FlowNode[]; edges: FlowEdge[]; entries: FlowEntry[]; calls: FlowCall[]; handlers: FlowHandler[]; cycles: FlowCycle[];
  unreachable: number[]; reachable: number[]; errorFlow: ErrorFlowReport;
 }
@@ -69,7 +69,7 @@ function components(ids: number[], adjacency: Map<number, number[]>): number[][]
 }
 
 export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIMITS.nodes, errorStateBudget: number = ERROR_FLOW_LIMITS.states): FlowReport {
- const report: FlowReport = { version: 6, complete: true, reasons: [], omittedReasons: 0, entry: null, nodes: [], edges: [], entries: [], calls: [], handlers: [], cycles: [], unreachable: [], reachable: [], errorFlow: emptyErrorFlow() };
+ const report: FlowReport = { version: 7, complete: true, reasons: [], omittedReasons: 0, entry: null, nodes: [], edges: [], entries: [], calls: [], handlers: [], cycles: [], unreachable: [], reachable: [], errorFlow: emptyErrorFlow() };
  const reasons = new Set<string>();
  let structureComplete = true;
  function partial(reason: string, blocksContext = true) {
@@ -253,7 +253,7 @@ export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIM
   }
  } catch (error) { partial(error instanceof Error ? error.message : 'Construction du graphe interrompue.'); }
  report.handlers.sort((a, b) => report.nodes[a.site]!.line - report.nodes[b.site]!.line || report.nodes[a.site]!.start - report.nodes[b.site]!.start);
- report.errorFlow = analyzeErrorFlow(report, errorResumptions, literalErrors, errorSites, structureComplete, errorStateBudget);
+ report.errorFlow = analyzeErrorFlow(report, errorResumptions, literalErrors, errorSites, structureComplete, new Map(loops.filter(loop => loop.name === 'FOR').map(loop => [loop.node, loop.variable.replace(/[!%]$/, '').slice(0, 40)])), errorStateBudget);
  // Least fixed point of finite paths to RETURN. Each rule is an OR alternative;
  // its dependencies are ANDed (callee AND continuation for a simple GOSUB).
  // Each dependency is processed once: O(nodes + edges), no stack simulation.
