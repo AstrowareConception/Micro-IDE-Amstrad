@@ -43,7 +43,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-017 | Renommage sémantique de variables/fonctions | N | P1 | IDE-014 | Suffixes/types, portée et chaînes/DATA/commentaires préservés |
 | IDE-018 | Templates/snippets, insertion de lignes et conventions | N | P1 | IDE-014 | Numéros sans collision ; génération minimale conforme au profil |
 | IDE-019 | Formatage optionnel et inspections/corrections ciblées | N | P2 | IDE-014 | Sémantique inchangée ; aperçu ; aucune casse/espacement opaque détruit |
-| IDE-076 | Rapport de qualité BASIC à la demande | P | P2 | IDE-014 | 0.40.7 : divisions simples/erreurs possibles, reprises conditionnelles et contextes des ERROR explicites, cartographie événementielle et reprises, résumés GOSUB, graphe structurel, boucles contenues dans THEN/ELSE, sorties de NEXT qualifiées, appels/cycles et complexité locale ; fermetures intermédiaires sautées, portées traversées, événements et retours contextuels restent ouverts |
+| IDE-076 | Rapport de qualité BASIC à la demande | P | P2 | IDE-014 | 0.40.8 : piles d’appels contextuelles, divisions simples/erreurs possibles, reprises conditionnelles et contextes des ERROR explicites, cartographie événementielle et reprises, résumés GOSUB, graphe structurel, boucles contenues dans THEN/ELSE, sorties de NEXT qualifiées, appels/cycles et complexité locale ; fermetures intermédiaires sautées, portées traversées, événements et retours contextuels restent ouverts |
 | IDE-077 | Tests de programmes BASIC à la demande | P | P1 | IDE-050, FW | 0.39.1 : suites persistantes, assertions natives, clavier programmé, fixtures ASCII, observations exactes écran/fichier et rapports conservés ; couverture, fixtures binaires, scénarios sans signature et génération IA restent ouverts |
 | IDE-020 | Multi-curseurs, pliage, signets, navigation retour/avance | P | P1 | Monaco | Gestes repris explicitement en recette, sessions conservées ; capacité Monaco seule insuffisante |
 
@@ -292,7 +292,7 @@ IF imbriqués et ELSE IF jusqu’à 16 niveaux, syntaxe des branches inspectée,
 
 Boucles FOR/NEXT et WHILE/WEND entièrement contenues dans une branche THEN/ELSE, avec identité de portée empêchant les appariements entre branches. Dernière variable de NEXT multiple ouverte aux bornes/pas variables et au saut initial ; fermetures intermédiaires conservatrices. Exemple `conditional-loops.bas` (15, complexité 9), 26 nouvelles assertions firmware, tests de graphe et parcours navigateur. [Réalisation](../implementation/basic-control-flow-alpha.md#qualification-0402), [ADR 0051](../adr/0051-boucles-et-portees-conditionnelles.md).
 
-**Prochain lot 0.40** : piles et autres erreurs implicites après les divisions simples de la 0.40.7. Le saut initial d’une fermeture intermédiaire de NEXT et les boucles franchissant une branche restent des limites explicites à qualifier. La compréhension des symboles/usages 0.41 suit ce socle. IDE-076/J2 restent partiels ; aucune analyse exacte tous programmes n’est annoncée.
+**Prochain lot 0.40** : piles de boucles et autres erreurs implicites après les piles d’appels de la 0.40.8. Le saut initial d’une fermeture intermédiaire de NEXT et les boucles franchissant une branche restent des limites explicites à qualifier. La compréhension des symboles/usages 0.41 suit ce socle. IDE-076/J2 restent partiels ; aucune analyse exacte tous programmes n’est annoncée.
 
 
 ## Avancement alpha 0.40.3 — Résumés des retours GOSUB
@@ -318,3 +318,8 @@ Les ERROR dans IF/THEN/ELSE imbriqués rejoignent le modèle contextuel. RESUME 
 ## Avancement alpha 0.40.7 — Divisions et erreurs possibles
 
 Affectations scalaires simples avec /, division entière ou MOD : origine potentielle, issue normale conservée et reprise contextualisée. Sans piège, l’avertissement / poursuit l’évaluation ; les divisions entières fautives arrêtent le chemin. Aucun calcul de valeurs ni de types. Panneau Contextes d’erreur, origines/opérateurs navigables, exports flow 5 / errorFlow 2 et exemple de réparation du diviseur. [52 assertions et neuf observations firmware bornées](../implementation/basic-control-flow-alpha.md#qualification-0407), [ADR 0056](../adr/0056-divisions-et-erreurs-possibles.md). Autres erreurs implicites, piles et événements restent ouverts ; symboles/usages 0.41 suivent. IDE-076/J2 restent partiels.
+
+
+## Avancement alpha 0.40.8 — Piles d’appels et erreurs
+
+GOSUB/ON GOSUB/RETURN rejoignent le modèle contextuel avec pile de sites bornée à 16 appels. Appelants distincts, auxiliaires de gestionnaire et reprises qui conservent les appels en attente ; RETURN conserve l’erreur active. Piles dépliables/navigables, exports flow 6 / errorFlow 3 et exemple 222/deux erreurs. [18 assertions et deux observations firmware](../implementation/basic-control-flow-alpha.md#qualification-0408), [ADR 0057](../adr/0057-piles-appels-contextes-erreur.md). Piles de boucles, autres erreurs implicites et événements restent ouverts ; dépassement d’un budget retire les résultats sans diagnostic de débordement réel. Symboles/usages 0.41 suivent ; IDE-076/J2 restent partiels.

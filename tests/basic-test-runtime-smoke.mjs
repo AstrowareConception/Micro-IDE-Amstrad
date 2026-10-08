@@ -26,6 +26,65 @@ async function recipe(name, source, outcome, seconds = 3, probes = {}) {
  assert.deepEqual(observed, probes, `${name}: RAM checkpoints before disposal`);
  results.push(result); console.log(`${name}: ${result.outcome} (${result.emulatedSeconds.toFixed(3)} s)`); return result;
 }
+// 0.40.8: call-stack preservation through error handlers and resumptions.
+const stackFinish='900 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165\n910 GOTO 910\n';
+const stackCases = [
+ ['nested-next','30 GOSUB 1000:x=x+100:GOTO 800','1000 GOSUB 1100:x=x+10:RETURN\n1100 ERROR 5:x=x+1:RETURN','2000 n=n+1:RESUME NEXT',111],
+ ['helper-return','30 GOSUB 1000:x=x+100:GOTO 800','1000 ERROR 5:x=x+1:RETURN','2000 n=n+1:GOSUB 2100:RESUME NEXT\n2100 x=x+10:RETURN',111],
+ ['handler-return','30 GOSUB 1000:x=x+100:GOTO 800','1000 ERROR 5:x=x+1:RETURN','2000 n=n+1:RETURN',100],
+ ['explicit-line','30 GOSUB 1000:x=x+100:GOTO 800\n40 x=x+10:RETURN','1000 ERROR 5:x=x+1:RETURN','2000 n=n+1:RESUME 40',110],
+ ['helper-no-caller','30 ERROR 5:x=x+1:GOTO 800','','2000 n=n+1:GOSUB 2100:x=250\n2100 x=x+10:RESUME NEXT',11],
+ ['retry-division','30 GOSUB 1000:x=x+100:GOTO 800','1000 q=10/d:x=x+1:RETURN','2000 n=n+1:d=2:GOSUB 2100:RESUME\n2100 x=x+10:RETURN',111],
+ ['pending-next','30 GOSUB 1000:x=x+100:GOTO 800','1000 ERROR 5:x=x+1:RETURN','2000 n=n+1:GOSUB 2100:x=x+10:RETURN\n2100 RESUME NEXT',111],
+ ['pending-line','30 GOSUB 1000:x=x+100:GOTO 800','1000 ERROR 5:x=x+1:RETURN\n1100 x=x+1:RETURN','2000 n=n+1:GOSUB 2100:x=x+10:RETURN\n2100 RESUME 1100',111],
+ ['pending-retry','30 GOSUB 1000:x=x+100:GOTO 800','1000 q=10/d:x=x+1:RETURN','2000 n=n+1:GOSUB 2100:x=x+10:RETURN\n2100 d=2:RESUME',111],
+ ['then-call','30 IF 1 THEN GOSUB 1000:x=x+100 ELSE x=99\n40 GOTO 800','1000 ERROR 5:x=x+1:RETURN','2000 n=n+1:RESUME NEXT',101],
+ ['else-call','30 IF 0 THEN x=99 ELSE GOSUB 1000:x=x+100\n40 GOTO 800','1000 ERROR 5:x=x+1:RETURN','2000 n=n+1:RESUME NEXT',101],
+ ['recursive','30 k=3:GOSUB 1000:x=x+100:GOTO 800','1000 k=k-1:IF k>0 THEN GOSUB 1000 ELSE ERROR 5\n1010 x=x+1:RETURN','2000 n=n+1:RESUME NEXT',103],
+];
+for(const [name,main,routine,handler,x] of stackCases) await recipe('error-stack-'+name,`10 REM @CPCTEST 1 Error call stack
+20 MEMORY &7FFF:ON ERROR GOTO 2000:x=0:n=0:d=0
+${main}
+800 IF x=${x} AND n=1 THEN POKE &8004,1 ELSE POKE &8004,2
+${stackFinish}${routine}
+${handler}
+`,'passed');
+for(const selector of [0,1,2,3]) await recipe('error-stack-selector-'+selector,`10 REM @CPCTEST 1 ON GOSUB selection and fallthrough
+20 MEMORY &7FFF:ON ERROR GOTO 2000:x=0:n=0
+30 ON ${selector} GOSUB 1000,1100:x=x+100
+40 IF x=${selector===1?101:selector===2?110:100} AND n=${selector===1||selector===2?1:0} THEN POKE &8004,1 ELSE POKE &8004,2
+${stackFinish}1000 ERROR 5:x=x+1:RETURN
+1100 ERROR 6:x=x+10:RETURN
+2000 n=n+1:RESUME NEXT
+`,'passed');
+await recipe('error-stack-handler-replacement',`10 REM @CPCTEST 1 Replacement survives RETURN
+20 MEMORY &7FFF:ON ERROR GOTO 2000:x=0:n=0
+30 GOSUB 1000:ERROR 6
+40 IF x=11 AND n=2 THEN POKE &8004,1 ELSE POKE &8004,2
+${stackFinish}1000 ERROR 5:RETURN
+2000 n=n+1:GOSUB 2100:RESUME NEXT
+2100 x=x+1:ON ERROR GOTO 2200:RETURN
+2200 x=x+10:n=n+1:RESUME NEXT
+`,'passed');
+await recipe('error-stack-return-keeps-fault',`10 REM @CPCTEST 1 RETURN keeps error active
+20 MEMORY &7FFF:ON ERROR GOTO 2000:POKE &8100,0:POKE &8101,0:n=0
+30 GOSUB 1000
+40 POKE &8101,1:ERROR 6:POKE &8101,2
+50 GOTO 50
+1000 ERROR 5:RETURN
+2000 n=n+1:POKE &8100,n:RETURN
+`,'timeout',3,{[0x8100]:1,[0x8101]:1});
+await recipe('error-stack-helper-nested-error',`10 REM @CPCTEST 1 Error inside handler helper does not reenter
+20 MEMORY &7FFF:ON ERROR GOTO 2000:POKE &8100,0:POKE &8101,0:n=0
+30 GOSUB 1000:POKE &8101,2
+40 GOTO 40
+1000 ERROR 5:RETURN
+2000 n=n+1:POKE &8100,n:GOSUB 2100:RESUME NEXT
+2100 POKE &8101,1:ERROR 6:RETURN
+`,'timeout',3,{[0x8100]:1,[0x8101]:1});
+const callErrorExample=await readFile('examples/control-flow/call-errors.bas','utf8');
+await recipe('error-stack-example',callErrorExample.replace('10 REM Deux appels et un gestionnaire avec auxiliaire','10 REM @CPCTEST 1 Two calls and handler helper').replace('20 ON ERROR','15 MEMORY &7FFF\n20 ON ERROR').replace('40 PRINT "Total";total;"Erreurs";n','40 IF total=222 AND n=2 THEN POKE &8004,1 ELSE POKE &8004,2\n45 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165'),'passed');
+
 // 0.40.7: three division operators, trapped and untrapped behavior.
 const divisionOperators = ['/',String.fromCharCode(92),'MOD'];
 for (const mode of ['retry','next','line']) for (const branch of ['plain','then','else','prefix','nested']) {

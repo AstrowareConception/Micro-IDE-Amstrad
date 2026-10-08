@@ -17,7 +17,7 @@ export interface FlowCall { caller: number; callee: number; site: number }
 export interface FlowHandler extends FlowEventForm { site: number; target: number | null }
 export interface FlowCycle { nodes: number[]; hasExit: boolean; reachable: boolean }
 export interface FlowReport {
- version: 5; complete: boolean; reasons: string[]; omittedReasons: number; entry: number | null;
+ version: 6; complete: boolean; reasons: string[]; omittedReasons: number; entry: number | null;
  nodes: FlowNode[]; edges: FlowEdge[]; entries: FlowEntry[]; calls: FlowCall[]; handlers: FlowHandler[]; cycles: FlowCycle[];
  unreachable: number[]; reachable: number[]; errorFlow: ErrorFlowReport;
 }
@@ -69,7 +69,7 @@ function components(ids: number[], adjacency: Map<number, number[]>): number[][]
 }
 
 export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIMITS.nodes, errorStateBudget: number = ERROR_FLOW_LIMITS.states): FlowReport {
- const report: FlowReport = { version: 5, complete: true, reasons: [], omittedReasons: 0, entry: null, nodes: [], edges: [], entries: [], calls: [], handlers: [], cycles: [], unreachable: [], reachable: [], errorFlow: emptyErrorFlow() };
+ const report: FlowReport = { version: 6, complete: true, reasons: [], omittedReasons: 0, entry: null, nodes: [], edges: [], entries: [], calls: [], handlers: [], cycles: [], unreachable: [], reachable: [], errorFlow: emptyErrorFlow() };
  const reasons = new Set<string>();
  let structureComplete = true;
  function partial(reason: string, blocksContext = true) {

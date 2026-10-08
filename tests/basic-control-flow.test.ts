@@ -301,7 +301,7 @@ test('return propagation remains iterative across a long chain and independent o
 
 test('Markdown and JSON export return summaries without source arguments', () => {
  const report=analyzeQuality([{id:'returns',name:'returns.bas',source:'10 GOSUB 100:PRINT "PRIVATE RETURN TEXT"\n20 END\n100 END'}]);
- assert.equal(report.sources[0]!.flow.version,5);
+ assert.equal(report.sources[0]!.flow.version,6);
  assert.equal(report.sources[0]!.flow.entries[1]!.returnStatus,'absent');
  const markdown=qualityMarkdown(report);
  assert.match(markdown,/chemin vers RETURN : Aucun chemin/);
@@ -310,7 +310,7 @@ test('Markdown and JSON export return summaries without source arguments', () =>
 
 test('event declarations have navigable targets without immediate calls, reachability or control cycles', () => {
  const flow=analyzeControlFlow('10 ON ERROR GOTO 100:ON BREAK GOSUB 200:ON SQ(1) GOSUB 200\n20 AFTER 50 GOSUB 200:EVERY t,2 GOSUB 200\n30 END\n100 RESUME NEXT\n200 RETURN');
- assert.equal(flow.version,5); assert.equal(flow.complete,false);
+ assert.equal(flow.version,6); assert.equal(flow.complete,false);
  assert.deepEqual(flow.handlers.map(h=>[h.event,h.action,h.targetLine]),[['error','register',100],['break','register',200],['sound','register',200],['after','register',200],['every','register',200]]);
  assert.equal(flow.edges.filter(e=>e.kind==='handler').length,5); assert.deepEqual(flow.calls,[]); assert.deepEqual(flow.cycles,[]);
  assert.deepEqual(flow.entries.map(e=>[flow.nodes[e.node]!.basicLine,e.kind]),[[10,'main'],[100,'handler'],[200,'handler']]);
@@ -413,7 +413,6 @@ test('retry reaches a fixed point; rethrow and errors inside a handler do not re
 });
 test('unsupported contexts discard deductions rather than publishing guessed states', () => {
  for (const source of [
-  '10 ON ERROR GOTO 100:GOSUB 200\n20 ERROR 5\n30 END\n100 RESUME NEXT\n200 RETURN',
   '10 ON ERROR GOTO 100:AFTER 1 GOSUB 200\n20 ERROR 5\n30 END\n100 RESUME NEXT\n200 RETURN',
   '10 ON ERROR GOTO 100:FOR I=1 TO 2\n20 ERROR 5:NEXT I\n30 END\n100 RESUME NEXT',
   '10 ON ERROR GOTO 100\n20 ERROR n\n30 END\n100 RESUME NEXT',
@@ -511,7 +510,7 @@ test('simple scalar divisions have typed sites without evaluating or exporting o
  for(const statement of ['q=secretNumerator/secretDivisor','LET q=10/d','q%=10\\d%','q!=10 MOD d!','q=-32767/+0','q=0/2']) {
   const flow=analyzeControlFlow(`10 ${statement}\n20 END`);
   assert.equal(flow.errorFlow.status,'covered',statement);
-  assert.equal(flow.errorFlow.version,2); assert.equal(flow.errorFlow.scope,'explicit-and-simple-division');
+  assert.equal(flow.errorFlow.version,3); assert.equal(flow.errorFlow.scope,'explicit-and-simple-division');
   assert.deepEqual(flow.errorFlow.sites.map(s=>s.kind),['division-zero']);
   assert.equal(flow.errorFlow.transfers[0]!.kind,statement.includes('/')?'warning':'unhandled');
   assert.equal(flow.complete,false); assert.deepEqual(flow.unreachable,[]);
@@ -566,7 +565,7 @@ test('implicit conditional sites preserve the qualified saved instruction bounda
 });
 test('implicit error results discard all deductions on unsupported or exhausted analysis', () => {
  const source='10 ON ERROR GOTO 100\n20 q=n/d\n30 END\n100 RESUME NEXT';
- for(const flow of [analyzeControlFlow(source,FLOW_LIMITS.nodes,3), analyzeControlFlow(source,5),analyzeControlFlow(source+'\n200 RETURN')]) {
+ for(const flow of [analyzeControlFlow(source,FLOW_LIMITS.nodes,3), analyzeControlFlow(source,5),analyzeControlFlow(source.replace('30 END','30 RETURN'))]) {
   assert.ok(['limited','unsupported'].includes(flow.errorFlow.status));
   assert.deepEqual(flow.errorFlow.sites,[]); assert.deepEqual(flow.errorFlow.contexts,[]); assert.deepEqual(flow.errorFlow.transfers,[]);
  }
@@ -577,7 +576,7 @@ test('implicit error exports distinguish possible origins and keep all private e
  const report=analyzeQuality([{id:'divisions',name:'divisions.bas',source:'10 ON ERROR GOTO 100\n20 privateResult=privateNumerator/privateDivisor\n30 END\n100 RESUME NEXT'}]);
  const markdown=qualityMarkdown(report); assert.match(markdown,/Division par zéro possible/); assert.match(markdown,/sans calculer son diviseur/);
  assert.ok(!markdown.includes('private')); assert.ok(!JSON.stringify(report).includes('private'));
- assert.equal(report.sources[0]!.flow.version,5);
+ assert.equal(report.sources[0]!.flow.version,6);
 });
 
 test('untrapped real division warns and continues in its own arm; integer division stops', () => {
@@ -590,4 +589,97 @@ test('untrapped real division warns and continues in its own arm; integer divisi
   if(operator==='/') assert.equal(flow.nodes[transfer.to!]!.start,line.indexOf('x=2'));
   else assert.equal(transfer.to,null);
  }
+});
+
+test('nested calls resume the interrupted routine and return to their exact caller', () => {
+ const flow=analyzeControlFlow('10 ON ERROR GOTO 300:GOSUB 100:END\n100 GOSUB 200:RETURN\n200 ERROR 5:RETURN\n300 RESUME NEXT');
+ const result=flow.errorFlow; assert.equal(result.status,'covered',result.reason ?? '');
+ assert.equal(result.version,3);
+ const raise=result.transfers.find(t=>t.kind==='raise')!;
+ assert.deepEqual(raise.calls.map(id=>flow.nodes[id]!.basicLine),[10,100]);
+ const resume=result.transfers.find(t=>t.kind==='next')!;
+ assert.deepEqual(resume.calls,raise.calls); assert.equal(flow.nodes[resume.to!]!.operation,'RETURN');
+ const returns=result.transfers.filter(t=>t.kind==='return');
+ assert.deepEqual(returns.map(t=>[flow.nodes[t.node]!.basicLine,flow.nodes[t.to!]!.basicLine,t.calls.length]),[[200,100,2],[100,10,1]]);
+ assert.equal(flow.complete,false); assert.deepEqual(flow.unreachable,[]);
+});
+test('two calls of the same routine keep fault and return contexts separated', () => {
+ const flow=analyzeControlFlow('10 ON ERROR GOTO 200:GOSUB 100:GOSUB 100:END\n100 ERROR 5:RETURN\n200 RESUME NEXT');
+ assert.equal(flow.errorFlow.status,'covered');
+ const raises=flow.errorFlow.transfers.filter(t=>t.kind==='raise'); assert.equal(raises.length,2);
+ assert.equal(raises[0]!.node,raises[1]!.node); assert.notDeepEqual(raises[0]!.calls,raises[1]!.calls);
+ const returns=flow.errorFlow.transfers.filter(t=>t.kind==='return'); assert.equal(returns.length,2);
+ assert.equal(returns[0]!.to,raises[1]!.calls[0]); assert.equal(flow.nodes[returns[1]!.to!]!.operation,'END');
+});
+test('handler helpers return normally and handler replacement survives routine return', () => {
+ const flow=analyzeControlFlow('10 ON ERROR GOTO 300:GOSUB 100:ERROR 6:END\n100 ERROR 5:RETURN\n300 GOSUB 400:RESUME NEXT\n400 ON ERROR GOTO 500:RETURN\n500 RESUME NEXT');
+ assert.equal(flow.errorFlow.status,'covered');
+ const raises=flow.errorFlow.transfers.filter(t=>t.kind==='raise');
+ assert.deepEqual(raises.map(t=>flow.nodes[t.to!]!.basicLine),[300,500]);
+ const helperReturn=flow.errorFlow.transfers.find(t=>t.kind==='return' && flow.nodes[t.node]!.basicLine===400)!;
+ assert.equal(helperReturn.calls.length,2); assert.notEqual(helperReturn.fault,null);
+ const resume=flow.errorFlow.transfers.find(t=>t.kind==='next' && flow.nodes[t.node]!.basicLine===300)!;
+ assert.equal(resume.calls.length,1); assert.equal(flow.nodes[resume.handler!]!.basicLine,500);
+});
+test('RESUME keeps pending calls made by the handler for retry next and explicit targets', () => {
+ for(const mode of ['','NEXT','110']) {
+  const fault=mode===''?'q=10/d':'ERROR 5';
+  const flow=analyzeControlFlow(`10 ON ERROR GOTO 200:GOSUB 100:END\n100 ${fault}:RETURN\n110 RETURN\n200 GOSUB 300:RETURN\n300 d=2:RESUME ${mode}`);
+  assert.equal(flow.errorFlow.status,mode===''?'limited':'covered');
+  // Retry of a possible division can fail again before pending helper frames
+  // return, so the conservative model reaches its depth budget.
+  if(mode==='') { assert.match(flow.errorFlow.reason!,/16 appels/); continue; }
+  const resume=flow.errorFlow.transfers.find(t=>t.kind===(mode==='NEXT'?'next':'line'))!;
+  assert.deepEqual(resume.calls.map(id=>flow.nodes[id]!.basicLine),[10,200]);
+  const returns=flow.errorFlow.transfers.filter(t=>t.kind==='return');
+  assert.deepEqual(returns.map(t=>[flow.nodes[t.node]!.basicLine,flow.nodes[t.to!]!.basicLine]),[[mode==='NEXT'?100:110,200],[200,10]]);
+ }
+});
+test('RETURN from a handler pops the interrupted call but keeps the active error', () => {
+ const flow=analyzeControlFlow('10 ON ERROR GOTO 200:GOSUB 100:ERROR 6:END\n100 ERROR 5:RETURN\n200 RETURN');
+ assert.equal(flow.errorFlow.status,'covered');
+ const back=flow.errorFlow.transfers.find(t=>t.kind==='return')!;
+ assert.equal(back.calls.length,1); assert.notEqual(back.fault,null);
+ const nested=flow.errorFlow.transfers.find(t=>t.kind==='nested')!;
+ assert.deepEqual(nested.calls,[]); assert.equal(nested.fault,back.fault); assert.equal(nested.to,null);
+});
+test('ON GOSUB keeps each selected call and the out-of-list path without direct fallthrough for GOSUB', () => {
+ const flow=analyzeControlFlow('10 ON ERROR GOTO 300:ON K GOSUB 100,200:ERROR 7:END\n100 ERROR 5:RETURN\n200 ERROR 6:RETURN\n300 RESUME NEXT');
+ assert.equal(flow.errorFlow.status,'covered');
+ assert.equal(flow.errorFlow.transfers.filter(t=>t.kind==='call').length,2);
+ assert.equal(flow.errorFlow.transfers.filter(t=>t.kind==='raise').length,3);
+ const mainFault=flow.errorFlow.transfers.find(t=>t.kind==='raise' && flow.nodes[t.node]!.basicLine===10)!; assert.deepEqual(mainFault.calls,[]);
+ for(const ending of ['END','STOP','GOTO 100']) {
+  const closed=analyzeControlFlow(`10 ON ERROR GOTO 200:GOSUB 100:ERROR 5:END\n100 ${ending}\n200 RESUME NEXT`);
+  assert.equal(closed.errorFlow.status,'covered'); assert.equal(closed.errorFlow.transfers.filter(t=>t.kind==='raise').length,0);
+ }
+});
+test('call depth is a conservative analysis budget and all incomplete results are removed', () => {
+ const chain=(count:number)=>'10 ON ERROR GOTO 5000:GOSUB 100:END\n'+Array.from({length:count},(_,i)=>`${100+i} ${i===count-1?'ERROR 5':`GOSUB ${101+i}`}:RETURN`).join('\n')+'\n5000 RESUME NEXT';
+ const boundary=analyzeControlFlow(chain(ERROR_FLOW_LIMITS.callDepth)); assert.equal(boundary.errorFlow.status,'covered');
+ assert.equal(Math.max(...boundary.errorFlow.contexts.map(c=>c.calls.length)),16);
+ for(const source of [chain(17),'10 ON ERROR GOTO 100:GOSUB 10:END\n100 RESUME NEXT','10 ON ERROR GOTO 100:GOSUB 200:END\n100 RESUME NEXT\n200 IF A THEN RETURN ELSE GOSUB 200:RETURN']) {
+  const result=analyzeControlFlow(source).errorFlow;
+  assert.equal(result.status,'limited'); assert.match(result.reason!,/16 appels/);
+  assert.deepEqual(result.sites,[]);assert.deepEqual(result.contexts,[]);assert.deepEqual(result.transfers,[]);
+ }
+});
+test('stack underflow and mixed loop stacks suspend contextual conclusions', () => {
+ for(const source of ['10 ON ERROR GOTO 100:RETURN\n100 RESUME NEXT','10 ON ERROR GOTO 100:ERROR 5\n100 RETURN','10 ON ERROR GOTO 100:WHILE A:GOSUB 200:WEND:END\n100 RESUME NEXT\n200 RETURN']) {
+  const result=analyzeControlFlow(source).errorFlow; assert.equal(result.status,'unsupported'); assert.deepEqual(result.contexts,[]);assert.deepEqual(result.transfers,[]);
+ }
+ const unused=analyzeControlFlow('10 ON ERROR GOTO 100:ERROR 5:END\n100 RESUME NEXT\n200 RETURN'); assert.equal(unused.errorFlow.status,'covered');
+});
+test('stack exports identify call sites in order and retain no expressions', () => {
+ const source='10 ON ERROR GOTO 300:ON privateSelector GOSUB 100,200:END\n100 GOSUB 200:RETURN\n200 ERROR 5:RETURN\n300 RESUME NEXT';
+ const report=analyzeQuality([{id:'calls',name:'calls.bas',source}]);
+ const text=qualityMarkdown(report); assert.match(text,/pile BASIC 10\/C22 → BASIC 100\/C5/);
+ assert.ok(!text.includes('privateSelector')); assert.ok(!JSON.stringify(report).includes('privateSelector'));
+});
+
+test('contextual call and return transfers share the existing transfer quota', () => {
+ const source='1 ON ERROR GOTO 5000\n'+Array.from({length:21},(_,i)=>`${10+i} `+Array(100).fill('GOSUB 10000').join(':')).join('\n')+'\n100 END\n5000 RESUME NEXT\n10000 RETURN';
+ const result=analyzeControlFlow(source).errorFlow;
+ assert.equal(result.status,'limited'); assert.match(result.reason!,/4096 transferts/);
+ assert.deepEqual(result.sites,[]);assert.deepEqual(result.contexts,[]);assert.deepEqual(result.transfers,[]);
 });

@@ -16,6 +16,13 @@ export function FlowPanel({ name, report, stale, onReveal }: Props) {
  const choices = useMemo(() => sorted.filter(node => `${node.basicLine} ${node.operation}`.toLowerCase().includes(query.toLowerCase())), [sorted, query]);
  const incoming = useMemo(() => report.edges.filter(edge => edge.to === selected), [report, selected]);
  const outgoing = useMemo(() => report.edges.filter(edge => edge.from === selected), [report, selected]);
+ function callStack(calls: number[]) {
+  if (!calls.length) return <span className="muted"> · pile vide</span>;
+  return <details className="flow-call-stack"><summary>Pile : {calls.length} appel(s)</summary>
+   <p className="muted">Sites d’appel, du plus ancien au plus récent ; état avant le transfert.</p>
+   <ol>{calls.map((site, position) => <li key={position}><Button disabled={stale} onClick={() => onReveal(index.get(site)!)}>Appel {position + 1} · BASIC {index.get(site)!.basicLine} · C{index.get(site)!.start + 1}</Button></li>)}</ol>
+  </details>;
+ }
  function box(id: number | null, x: number, y: number, active = false, key = '') {
   const node = id === null ? undefined : index.get(id);
   const choose = () => { if (node) setSelected(node.id); };
@@ -48,7 +55,7 @@ export function FlowPanel({ name, report, stale, onReveal }: Props) {
      {box(current.id, 322, 152, true, 'current')}
      {outgoing.slice(0, 5).map((edge, i) => box(edge.to, 632, 34 + i * 60, false, `out-${i}`))}
     </svg></div>
-    <p className="muted">{incoming.length} liaison(s) entrante(s), {outgoing.length} sortante(s) ; cinq par côté affichées. « Retour possible » reste une hypothèse structurelle. Sans chemin vers RETURN dans la cible, la suite du GOSUB est retirée. Un retour indéterminé la conserve ; aucune pile d’appels n’est simulée. Une liaison « Déclaration » en pointillés désigne un gestionnaire, sans saut immédiat ni preuve de déclenchement. Le graphe complet figure dans les exports.</p>
+    <p className="muted">{incoming.length} liaison(s) entrante(s), {outgoing.length} sortante(s) ; cinq par côté affichées. « Retour possible » reste une hypothèse structurelle. Sans chemin vers RETURN dans la cible, la suite du GOSUB est retirée. Un retour indéterminé la conserve ; le graphe structurel ne suit pas la pile. Le modèle contextuel ci-dessous la suit dans son périmètre borné. Une liaison « Déclaration » en pointillés désigne un gestionnaire, sans saut immédiat ni preuve de déclenchement. Le graphe complet figure dans les exports.</p>
    </>}
    {report.errorFlow.status !== 'not-needed' && <details className="flow-error-contexts"><summary>Contextes d’erreur · {ERROR_FLOW_STATUS_LABELS[report.errorFlow.status]}</summary>
     <p>{ERROR_FLOW_METHOD}</p><p>{report.errorFlow.states} états explorés.{report.errorFlow.reason && ` ${report.errorFlow.reason}`}</p>
@@ -62,12 +69,14 @@ export function FlowPanel({ name, report, stale, onReveal }: Props) {
       <Button disabled={stale} onClick={() => onReveal(index.get(context.node)!)}>Instruction BASIC {index.get(context.node)!.basicLine} · C{index.get(context.node)!.start + 1}</Button>
       {context.handler === null ? ' · piège désactivé' : <> · <Button disabled={stale} onClick={() => onReveal(index.get(context.handler!)!)}>Gestionnaire possible BASIC {index.get(context.handler)!.basicLine}</Button></>}
       {context.fault === null ? ' · aucune erreur en traitement' : <> · <Button disabled={stale} onClick={() => onReveal(index.get(context.fault!)!)}>Instruction interrompue BASIC {index.get(context.fault)!.basicLine} · C{index.get(context.fault)!.start + 1}</Button></>}
+      {callStack(context.calls)}
      </li>)}</ul>{report.errorFlow.contexts.length > 100 && <p>100 contextes affichés ; suite dans les exports.</p>}
      <h4>Déclenchements et reprises dans ce modèle</h4>
      <ul className="flow-error-transfers">{report.errorFlow.transfers.slice(0, 100).map((transfer, i) => <li key={i}>
       {ERROR_TRANSFER_LABELS[transfer.kind]}{errorSites.get(transfer.kind === 'nested' ? transfer.node : transfer.fault ?? transfer.node) === 'division-zero' && ' (division par zéro possible)'} · <Button disabled={stale} onClick={() => onReveal(index.get(transfer.node)!)}>Départ BASIC {index.get(transfer.node)!.basicLine} · C{index.get(transfer.node)!.start + 1}</Button>
       {transfer.to === null ? ' → arrêt du chemin' : <> → <Button disabled={stale} onClick={() => onReveal(index.get(transfer.to!)!)}>Destination BASIC {index.get(transfer.to)!.basicLine} · C{index.get(transfer.to)!.start + 1}</Button></>}
       {transfer.fault !== null && <> · <Button disabled={stale} onClick={() => onReveal(index.get(transfer.fault!)!)}>Instruction interrompue BASIC {index.get(transfer.fault)!.basicLine} · C{index.get(transfer.fault)!.start + 1}</Button></>}
+      {callStack(transfer.calls)}
      </li>)}</ul>{report.errorFlow.transfers.length > 100 && <p>100 transferts affichés ; suite dans les exports.</p>}
     </>}
    </details>}
