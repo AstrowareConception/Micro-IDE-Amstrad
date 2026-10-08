@@ -1,3 +1,4 @@
+import { ERROR_FLOW_LIMITS } from '../packages/basic-language/src/error-flow.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { analyzeQuality, qualityMarkdown } from '../packages/basic-language/src/quality.ts';
@@ -299,7 +300,7 @@ test('return propagation remains iterative across a long chain and independent o
 
 test('Markdown and JSON export return summaries without source arguments', () => {
  const report=analyzeQuality([{id:'returns',name:'returns.bas',source:'10 GOSUB 100:PRINT "PRIVATE RETURN TEXT"\n20 END\n100 END'}]);
- assert.equal(report.sources[0]!.flow.version,3);
+ assert.equal(report.sources[0]!.flow.version,4);
  assert.equal(report.sources[0]!.flow.entries[1]!.returnStatus,'absent');
  const markdown=qualityMarkdown(report);
  assert.match(markdown,/chemin vers RETURN : Aucun chemin/);
@@ -308,7 +309,7 @@ test('Markdown and JSON export return summaries without source arguments', () =>
 
 test('event declarations have navigable targets without immediate calls, reachability or control cycles', () => {
  const flow=analyzeControlFlow('10 ON ERROR GOTO 100:ON BREAK GOSUB 200:ON SQ(1) GOSUB 200\n20 AFTER 50 GOSUB 200:EVERY t,2 GOSUB 200\n30 END\n100 RESUME NEXT\n200 RETURN');
- assert.equal(flow.version,3); assert.equal(flow.complete,false);
+ assert.equal(flow.version,4); assert.equal(flow.complete,false);
  assert.deepEqual(flow.handlers.map(h=>[h.event,h.action,h.targetLine]),[['error','register',100],['break','register',200],['sound','register',200],['after','register',200],['every','register',200]]);
  assert.equal(flow.edges.filter(e=>e.kind==='handler').length,5); assert.deepEqual(flow.calls,[]); assert.deepEqual(flow.cycles,[]);
  assert.deepEqual(flow.entries.map(e=>[flow.nodes[e.node]!.basicLine,e.kind]),[[10,'main'],[100,'handler'],[200,'handler']]);
@@ -373,4 +374,87 @@ test('a truncated graph keeps event targets already known and declarations in so
  assert.deepEqual(flow.handlers.map(h=>h.event),['error','after']);
  assert.ok(flow.handlers.every(h=>h.target!==null && flow.nodes[h.target]!.basicLine===100));
  assert.ok(!flow.reasons.some(r=>r.includes('cible de gestionnaire'))); assert.deepEqual(flow.unreachable,[]);
+});
+
+test('explicit error contexts track handler replacement and the exact next instruction', () => {
+ const flow=analyzeControlFlow('10 ON ERROR GOTO 100\n20 ERROR 5:ERROR 6:PRINT "PRIVATE"\n30 END\n100 ON ERROR GOTO 200:RESUME NEXT\n200 RESUME NEXT');
+ const result=flow.errorFlow; assert.equal(result.status,'covered',result.reason ?? ''); assert.equal(flow.complete,false);
+ const raises=result.transfers.filter(t=>t.kind==='raise'); assert.equal(raises.length,2);
+ assert.deepEqual(raises.map(t=>flow.nodes[t.to!]!.basicLine),[100,200]);
+ const resumes=result.transfers.filter(t=>t.kind==='next'); assert.equal(resumes.length,2);
+ assert.equal(resumes[0]!.to,raises[1]!.node); assert.equal(resumes[0]!.fault,raises[0]!.node);
+ assert.equal(flow.nodes[resumes[1]!.to!]!.operation,'PRINT');
+ assert.ok(!JSON.stringify(result).includes('PRIVATE')); assert.deepEqual(flow.unreachable,[]);
+});
+test('branch joins retain distinct active handlers, including disabled traps', () => {
+ const flow=analyzeControlFlow('10 IF A THEN ON ERROR GOTO 100 ELSE ON ERROR GOTO 200\n20 IF B THEN ON ERROR GOTO 0\n30 ERROR 5\n40 END\n100 RESUME 40\n200 RESUME 40');
+ const result=flow.errorFlow; assert.equal(result.status,'covered',result.reason ?? '');
+ const node=flow.nodes.find(n=>n.operation==='ERROR')!.id;
+ assert.deepEqual(result.contexts.filter(c=>c.node===node).map(c=>c.handler===null?0:flow.nodes[c.handler]!.basicLine).sort((a,b)=>a-b),[0,100,200]);
+ assert.equal(result.transfers.filter(t=>t.kind==='unhandled').length,1);
+ assert.equal(result.transfers.filter(t=>t.kind==='line').length,2);
+});
+test('a shared RESUME keeps each interrupted ERROR and continuation correlated', () => {
+ const flow=analyzeControlFlow('10 ON ERROR GOTO 100\n20 IF A THEN 30 ELSE 40\n30 ERROR 5:GOTO 50\n40 ERROR 6:PRINT 1\n50 END\n100 RESUME NEXT');
+ assert.equal(flow.errorFlow.status,'covered');
+ const links=flow.errorFlow.transfers.filter(t=>t.kind==='next'); assert.equal(links.length,2);
+ assert.deepEqual(links.map(t=>[flow.nodes[t.fault!]!.basicLine,flow.nodes[t.to!]!.basicLine]).sort((a,b)=>a[0]!-b[0]!),[[30,30],[40,40]]);
+});
+test('retry reaches a fixed point; rethrow and errors inside a handler do not reenter it', () => {
+ const retry=analyzeControlFlow('10 ON ERROR GOTO 100\n20 ERROR 5\n30 END\n100 RESUME');
+ assert.equal(retry.errorFlow.status,'covered'); assert.equal(retry.errorFlow.transfers.length,2);
+ assert.equal(retry.errorFlow.transfers.find(t=>t.kind==='retry')!.to,retry.nodes.find(n=>n.operation==='ERROR')!.id);
+ for(const [command,kind] of [['ON ERROR GOTO 0','rethrow'],['ERROR 6','nested'],['ON ERROR GOTO 200:ERROR 6','nested']] as const) {
+  const flow=analyzeControlFlow(`10 ON ERROR GOTO 100\n20 ERROR 5\n30 END\n100 ${command}:RESUME NEXT\n200 RESUME NEXT`);
+  assert.equal(flow.errorFlow.status,'covered'); assert.deepEqual(flow.errorFlow.transfers.map(t=>t.kind),['raise',kind]);
+  assert.equal(flow.errorFlow.transfers[1]!.to,null);
+ }
+});
+test('unsupported contexts discard deductions rather than publishing guessed states', () => {
+ for (const source of [
+  '10 ON ERROR GOTO 100:GOSUB 200\n20 ERROR 5\n30 END\n100 RESUME NEXT\n200 RETURN',
+  '10 ON ERROR GOTO 100:AFTER 1 GOSUB 200\n20 ERROR 5\n30 END\n100 RESUME NEXT\n200 RETURN',
+  '10 ON ERROR GOTO 100:FOR I=1 TO 2\n20 ERROR 5:NEXT I\n30 END\n100 RESUME NEXT',
+  '10 ON ERROR GOTO 100\n20 IF A THEN ERROR 5 ELSE ERROR 6\n30 END\n100 RESUME NEXT',
+  '10 ON ERROR GOTO 100\n20 ERROR n\n30 END\n100 RESUME NEXT',
+  '10 ON ERROR GOTO 100\n20 ERROR 256\n30 END\n100 RESUME NEXT',
+  '10 ON ERROR GOTO 100:CALL &BD19\n20 ERROR 5\n30 END\n100 RESUME NEXT',
+  '10 RESUME NEXT',
+ ]) {
+  const flow=analyzeControlFlow(source); assert.equal(flow.errorFlow.status,'unsupported',source);
+  assert.deepEqual(flow.errorFlow.transfers,[]); assert.deepEqual(flow.errorFlow.contexts,[]);
+ }
+ const normal=analyzeControlFlow('10 GOSUB 100:END\n100 RETURN'); assert.equal(normal.errorFlow.status,'not-needed'); assert.equal(normal.errorFlow.states,0);
+});
+test('state budgets remove partial contexts, preserve the graph and bound global work', () => {
+ const source='10 ON ERROR GOTO 100\n20 ERROR 5:PRINT 1\n30 END\n100 RESUME NEXT';
+ const bounded=analyzeControlFlow(source,FLOW_LIMITS.nodes,3);
+ assert.equal(bounded.errorFlow.status,'limited'); assert.equal(bounded.errorFlow.states,3);
+ assert.deepEqual(bounded.errorFlow.transfers,[]); assert.deepEqual(bounded.errorFlow.contexts,[]);
+ assert.ok(bounded.nodes.length>3); assert.deepEqual(bounded.unreachable,[]);
+ assert.equal(analyzeControlFlow(source,FLOW_LIMITS.nodes,NaN).errorFlow.status,'limited');
+ const truncated=analyzeControlFlow(source,5); assert.equal(truncated.errorFlow.status,'unsupported');
+});
+test('error context exports state their restricted scope and retain precise destinations', () => {
+ const report=analyzeQuality([{id:'errors',name:'errors.bas',source:'10 ON ERROR GOTO 100\n20 ERROR 5:PRINT "SECRET"\n30 END\n100 RESUME NEXT'}]);
+ const text=qualityMarkdown(report); assert.match(text,/Contextes des ERROR explicites/); assert.match(text,/erreurs implicites/); assert.match(text,/Instruction après ERROR/);
+ assert.ok(!text.includes('SECRET')); assert.ok(!JSON.stringify(report).includes('SECRET'));
+});
+
+
+test('quality reports share a global error-state budget across sources', () => {
+ const source='10 ON ERROR GOTO 1000\n20 IF A THEN ON ERROR GOTO 1010\n30 IF B THEN ON ERROR GOTO 1020\n35 IF C THEN ON ERROR GOTO 1030\n'+Array.from({length:60},(_,i)=>`${40+i} ERROR 5:PRINT 1`).join('\n')+'\n200 END\n1000 RESUME NEXT\n1010 RESUME NEXT\n1020 RESUME NEXT\n1030 RESUME NEXT';
+ const report=analyzeQuality(Array.from({length:60},(_,i)=>({id:String(i),name:`errors-${i}`,source})));
+ assert.equal(report.sources.reduce((total,s)=>total+s.flow.errorFlow.states,0),ERROR_FLOW_LIMITS.totalStates);
+ assert.ok(report.sources.some(s=>s.flow.errorFlow.status==='limited'));
+ assert.ok(report.sources.filter(s=>s.flow.errorFlow.status==='limited').every(s=>!s.flow.errorFlow.contexts.length && !s.flow.errorFlow.transfers.length));
+});
+
+test('transfer and transition budgets also remove incomplete error-context results', () => {
+ const manyErrors='1 ON ERROR GOTO 5000\n'+Array.from({length:21},(_,i)=>`${10+i} `+Array(100).fill('ERROR 5').join(':')).join('\n')+'\n100 END\n5000 RESUME NEXT';
+ const links=analyzeControlFlow(manyErrors).errorFlow;
+ assert.equal(links.status,'limited'); assert.match(links.reason!,/4096 transferts/); assert.deepEqual(links.contexts,[]); assert.deepEqual(links.transfers,[]);
+ const wide='1 ON ERROR GOTO 5000\n'+Array.from({length:150},(_,i)=>`${10+i} ERROR 5`).join('\n')+'\n1000 END\n5000 ON X GOTO '+Array(1000).fill('6000').join(',')+'\n6000 RESUME NEXT';
+ const steps=analyzeControlFlow(wide).errorFlow;
+ assert.equal(steps.status,'limited'); assert.match(steps.reason!,/131072 transitions/); assert.deepEqual(steps.contexts,[]); assert.deepEqual(steps.transfers,[]);
 });
