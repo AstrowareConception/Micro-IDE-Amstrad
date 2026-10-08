@@ -31,6 +31,13 @@ async function recipe(name, source, outcome, seconds = 3, probes = {}) {
 const longSymbol='a'.repeat(39);
 const symbolCases=[
  ['case','Score=7','SCORE=7 AND score=7'],
+ ['type-ranges','DEFINT a-c,e:alpha=2:beta=3:gamma=4:echo=5','alpha%=2 AND beta%=3 AND gamma!=4 AND echo%=5'],
+ ['type-overlap','DEFINT a-c:DEFSTR b:DEFREAL c:alpha=2:beta="ok":charlie=1.5','alpha%=2 AND beta$="ok" AND charlie!=1.5'],
+ ['type-explicit','DEFSTR a:alpha%=2:alpha!=3:alpha$="ok"','alpha%=2 AND alpha!=3 AND alpha$="ok"'],
+ ['type-skipped','IF 0 THEN DEFSTR a','alpha=0 AND alpha!=0'],
+ ['type-array','DEFINT a:DIM alpha(2):alpha(1)=7','alpha%(1)=7'],
+ ['type-later','alpha=1:DEFINT a:alpha=2:DEFSTR a:alpha="ok"','alpha!=1 AND alpha%=2 AND alpha$="ok"'],
+
  ['suffixes','value%=3:value!=4:value$="ok"','value%=3 AND value!=4 AND value$="ok"'],
  ['default-real','alpha=1:alpha!=2','alpha=2'],
  ['default-integer','DEFINT a:alpha=1:alpha%=2:alpha!=3','alpha=2 AND alpha!=3'],
