@@ -1,6 +1,6 @@
 # Explorer le flux d’un listing BASIC
 
-Ouvrir [main.bas](main.bas) dans CPCéleste 0.40.6, puis **BASIC → Rapport de qualité BASIC… → Générer le rapport** et déplier **Flux BASIC**.
+Ouvrir [main.bas](main.bas) dans CPCéleste 0.40.7, puis **BASIC → Rapport de qualité BASIC… → Générer le rapport** et déplier **Flux BASIC**.
 
 Le programme additionne 1, 2 et 3 dans la sous-routine 200, affiche le total via 300, puis le ramène à 3 dans une boucle WHILE. Le graphe conserve aussi les autres issues structurelles, sans évaluer les conditions.
 
@@ -31,3 +31,9 @@ Ouvrir [error-contexts.bas](error-contexts.bas) : résultat **11**. Déplier **C
 ## Reprises dans IF / THEN / ELSE
 
 Ouvrir [conditional-errors.bas](conditional-errors.bas) : résultat **1, 0, 98**. Les ERROR des lignes 30, 40 et 50 ont le IF comme instruction mémorisée. RESUME NEXT rejoint respectivement `x=1`, la ligne 50 et `z=98`, malgré la branche THEN ignorée à la ligne 50. La reprise ne se déduit donc pas du seul emplacement d’ERROR. Déplier les contextes et cliquer sur chaque destination pour comparer les colonnes. Avec RESUME sans NEXT, le IF mémorisé serait réévalué ; un ERROR après un deux-points exécuté serait lui-même réessayé. Le rapport n’évalue pas les conditions et reste globalement partiel.
+
+## Divisions et erreurs possibles
+
+Ouvrir [division-errors.bas](division-errors.bas) : **Quotient 5, Entier 5, Reste 0, Reprises 1**. La première division rencontre d=0 ; le gestionnaire remplace d par 2 et RESUME réessaie l’affectation. Les suivantes réussissent. Dans **Contextes d’erreur**, les trois origines restent pourtant signalées comme possibles : l’analyse ne calcule pas les valeurs. Elle conserve les issues normales et les chemins d’erreur, avec leurs reprises distinctes. Les liens d’origine et de destination rejoignent les colonnes exactes.
+
+Sans ON ERROR, `/ 0` poursuit l’évaluation après avertissement ; `\ 0` et `MOD 0` arrêtent le chemin fautif. Ce modèle n’analyse pas les autres erreurs implicites, ni les expressions composées, fonctions, tableaux ou divisions dans PRINT/IF. Consulter les limites avant d’interpréter un résultat ; aucune conclusion globale de complexité ou d’inaccessibilité n’est ajoutée.

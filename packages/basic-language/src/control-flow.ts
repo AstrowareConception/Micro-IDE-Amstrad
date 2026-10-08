@@ -1,4 +1,5 @@
-import { analyzeErrorFlow, emptyErrorFlow, ERROR_FLOW_LIMITS, type ErrorResumption, type ErrorFlowReport } from './error-flow.ts';
+import { simpleDivisionOperator } from './division-errors.ts';
+import { analyzeErrorFlow, emptyErrorFlow, ERROR_FLOW_LIMITS, type ErrorSite, type ErrorResumption, type ErrorFlowReport } from './error-flow.ts';
 import { parseFlowEvent, type FlowEventForm } from './flow-events.ts';
 import { tokenize, type Token } from './language.ts';
 import { analyzeEditor } from './syntax.ts';
@@ -16,11 +17,11 @@ export interface FlowCall { caller: number; callee: number; site: number }
 export interface FlowHandler extends FlowEventForm { site: number; target: number | null }
 export interface FlowCycle { nodes: number[]; hasExit: boolean; reachable: boolean }
 export interface FlowReport {
- version: 4; complete: boolean; reasons: string[]; omittedReasons: number; entry: number | null;
+ version: 5; complete: boolean; reasons: string[]; omittedReasons: number; entry: number | null;
  nodes: FlowNode[]; edges: FlowEdge[]; entries: FlowEntry[]; calls: FlowCall[]; handlers: FlowHandler[]; cycles: FlowCycle[];
  unreachable: number[]; reachable: number[]; errorFlow: ErrorFlowReport;
 }
-export const FLOW_METHOD = 'Les gestionnaires sont des déclarations, pas des sauts immédiats : leurs liaisons de déclaration sont exclues des parcours. Le modèle complémentaire des ERROR explicites suit ON ERROR et RESUME dans un périmètre borné ; les erreurs implicites et événements asynchrones ne sont pas simulés ; erreurs, événements et RESUME maintiennent le rapport partiel. Les reprises sans cible dépendent du contexte de l’erreur ; RESUME NEXT ne désigne pas la suite du gestionnaire. Graphe structurel depuis la première ligne, sans CONT ni RUN à une autre ligne. Les conditions ne sont pas évaluées ; les résumés recherchent un chemin fini vers RETURN, sans garantir son exécution. Une continuation GOSUB est retirée si sa cible ne possède aucun tel chemin ; ON conserve son issue hors liste. Une construction partielle conserve les continuations et rend les retours indéterminés. Les quotas de parcours ultérieurs peuvent limiter les métriques sans invalider ces résumés. La complexité locale vaut 1 + la somme des issues supplémentaires des décisions accessibles, en suivant la continuation des appels sans développer les sous-routines. Aucun total entre points d’entrée : leurs blocs peuvent se recouvrir. FOR/NEXT est normalisé avec un test en tête ; le retour au test ne réinitialise pas la variable. IF est limité à 16 niveaux. Les boucles dans IF doivent rester dans la même branche. Les fermetures intermédiaires de NEXT multiple exigent des bornes entières littérales garantissant l’entrée initiale. Les cycles ne prouvent pas une boucle infinie. Une forme opaque, une erreur de syntaxe ou un quota atteint suspend la complexité et les conclusions d’inaccessibilité. DATA reste lisible par READ même hors du chemin d’exécution. Ce modèle ne prouve ni la validité à l’exécution ni la terminaison.';
+export const FLOW_METHOD = 'Les gestionnaires sont des déclarations, pas des sauts immédiats : leurs liaisons de déclaration sont exclues des parcours. Le modèle complémentaire suit ON ERROR, ERROR et RESUME ainsi que les divisions simples potentiellement fautives ; les autres erreurs implicites et événements asynchrones ne sont pas simulés ; erreurs, événements et RESUME maintiennent le rapport partiel. Les reprises sans cible dépendent du contexte de l’erreur ; RESUME NEXT ne désigne pas la suite du gestionnaire. Graphe structurel depuis la première ligne, sans CONT ni RUN à une autre ligne. Les conditions ne sont pas évaluées ; les résumés recherchent un chemin fini vers RETURN, sans garantir son exécution. Une continuation GOSUB est retirée si sa cible ne possède aucun tel chemin ; ON conserve son issue hors liste. Une construction partielle conserve les continuations et rend les retours indéterminés. Les quotas de parcours ultérieurs peuvent limiter les métriques sans invalider ces résumés. La complexité locale vaut 1 + la somme des issues supplémentaires des décisions accessibles, en suivant la continuation des appels sans développer les sous-routines. Aucun total entre points d’entrée : leurs blocs peuvent se recouvrir. FOR/NEXT est normalisé avec un test en tête ; le retour au test ne réinitialise pas la variable. IF est limité à 16 niveaux. Les boucles dans IF doivent rester dans la même branche. Les fermetures intermédiaires de NEXT multiple exigent des bornes entières littérales garantissant l’entrée initiale. Les cycles ne prouvent pas une boucle infinie. Une forme opaque, une erreur de syntaxe ou un quota atteint suspend la complexité et les conclusions d’inaccessibilité. DATA reste lisible par READ même hors du chemin d’exécution. Ce modèle ne prouve ni la validité à l’exécution ni la terminaison.';
 
 const word = (token: Token | undefined) => token?.text.toUpperCase() ?? '';
 const isWord = (token: Token | undefined, name: string) => token?.kind === 'keyword' && word(token) === name;
@@ -68,7 +69,7 @@ function components(ids: number[], adjacency: Map<number, number[]>): number[][]
 }
 
 export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIMITS.nodes, errorStateBudget: number = ERROR_FLOW_LIMITS.states): FlowReport {
- const report: FlowReport = { version: 4, complete: true, reasons: [], omittedReasons: 0, entry: null, nodes: [], edges: [], entries: [], calls: [], handlers: [], cycles: [], unreachable: [], reachable: [], errorFlow: emptyErrorFlow() };
+ const report: FlowReport = { version: 5, complete: true, reasons: [], omittedReasons: 0, entry: null, nodes: [], edges: [], entries: [], calls: [], handlers: [], cycles: [], unreachable: [], reachable: [], errorFlow: emptyErrorFlow() };
  const reasons = new Set<string>();
  let structureComplete = true;
  function partial(reason: string, blocksContext = true) {
@@ -86,6 +87,7 @@ export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIM
  const lines: { location: FlowLocation; tokens: Token[]; anchor: number }[] = [], targets = new Map<number, number>();
  const pending: { from: number; number: number; kind: FlowEdgeKind; ordinal: number }[] = [];
  const loops: { node: number; name: string; variable: string; next: number | null; scope: number; followedByNext: boolean; enters: boolean }[] = [];
+ const errorSites = new Map<number, Omit<ErrorSite, 'node'>>();
  const errorResumptions = new Map<number, ErrorResumption>(), literalErrors = new Set<number>();
  let branchScope = 0;
  const outgoing = new Map<number, FlowEdge[]>();
@@ -125,24 +127,30 @@ export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIM
   const assignment = first.kind === 'identifier' && tokens.some(t => t.text === '=') || isWord(first, 'LET');
   const operation = assignment ? 'AFFECTATION' : first.kind === 'keyword' ? name : first.kind === 'number' ? 'GOTO' : 'INSTRUCTION';
   const id = node(loc, operation, name === 'DATA' ? 'data' : 'statement');
+  const division = simpleDivisionOperator(tokens);
+  if (division) {
+   errorSites.set(id, { kind: 'division-zero', operator: division }); errorResumptions.set(id, { retry: restart ?? id, next });
+   partial(`BASIC ${location.basicLine} : division simple potentiellement fautive ; voir les contextes d’erreur, sans évaluation du diviseur.`, false);
+  }
   const event = parseFlowEvent(tokens);
   if (event) {
    report.nodes[id]!.operation = name === 'ON' ? `ON ${word(tokens[1])}` : name;
    const target = event.targetLine === null ? null : targets.get(event.targetLine) ?? null;
    const handler: FlowHandler = { ...event, site: id, target }; report.handlers.push(handler);
    if (event.targetLine !== null && target === null) partial(`BASIC ${location.basicLine} : cible de gestionnaire ${event.targetLine} absente.`);
-   partial('Déclarations événementielles reconnues ; modèle global incomplet. Voir les contextes des ERROR explicites pour le périmètre calculé.', false);
+   partial('Déclarations événementielles reconnues ; modèle global incomplet. Voir les contextes d’erreur pour le périmètre calculé.', false);
    edge(id, next);
    return id;
   }
   if (isWord(first, 'ERROR')) {
+   errorSites.set(id, { kind: 'explicit' });
    errorResumptions.set(id, { retry: restart ?? id, next });
    if (args.length === 1 && args[0]!.kind === 'number' && /^\d+$/.test(args[0]!.text) && Number(args[0]!.text) >= 1 && Number(args[0]!.text) <= 255) literalErrors.add(id);
    partial(`BASIC ${location.basicLine} : ERROR explicite ; voir le calcul contextuel, erreurs implicites non simulées.`, false);
    edge(id, null, 'unknown'); return id;
   }
   if (isWord(first, 'RESUME')) {
-   partial(`BASIC ${location.basicLine} : reprise après erreur ; contexte couvert seulement dans le modèle des ERROR explicites.`, false);
+   partial(`BASIC ${location.basicLine} : reprise après erreur ; contexte couvert seulement dans le modèle d’erreurs couvertes.`, false);
    if (!args.length || args.length === 1 && isWord(args[0], 'NEXT')) {
     report.nodes[id]!.operation = args.length && isWord(args[0], 'NEXT') ? 'RESUME NEXT' : 'RESUME';
     edge(id, null, 'recovery');
@@ -245,7 +253,7 @@ export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIM
   }
  } catch (error) { partial(error instanceof Error ? error.message : 'Construction du graphe interrompue.'); }
  report.handlers.sort((a, b) => report.nodes[a.site]!.line - report.nodes[b.site]!.line || report.nodes[a.site]!.start - report.nodes[b.site]!.start);
- report.errorFlow = analyzeErrorFlow(report, errorResumptions, literalErrors, structureComplete, errorStateBudget);
+ report.errorFlow = analyzeErrorFlow(report, errorResumptions, literalErrors, errorSites, structureComplete, errorStateBudget);
  // Least fixed point of finite paths to RETURN. Each rule is an OR alternative;
  // its dependencies are ANDed (callee AND continuation for a simple GOSUB).
  // Each dependency is processed once: O(nodes + edges), no stack simulation.
