@@ -2,6 +2,8 @@
 
 Référence produit : 4 octobre 2026, état de départ alpha 0.14. Responsable : Térence FERUT / AstroWare Conception. Cette liste constitue le backlog produit à réaliser, pas une annonce de capacités futures déjà disponibles. La [feuille de route technique J0–J6/JG](12-feuille-de-route.md) reste la référence des dépendances d’architecture ; ce document précise les fonctionnalités et l’ordre de travail à la demande produit. Il remplace les listes succinctes « prochaine étape » des messages et guides historiques, sans effacer leurs preuves.
 
+**État à la pause du 8 octobre 2026 :** `main` contient la 0.41.1 (PR #60, `0152099bd6b74b87d58a9a567e6a03d41dbf1f7f`). Les types **possibles** et les déclarations `DEFINT`/`DEFREAL`/`DEFSTR` sont livrés, sans résolution des chemins ni fusion des alias. Reprendre par la qualification des fonctions `DEF FN` et de leurs portées, puis l’accès depuis le curseur, puis le renommage avec aperçu. Le [point de reprise](../reprise.md) donne les preuves, critères et étapes ; les tableaux ci-dessous gardent le backlog complet. Aucune PR ouverte au moment du constat ; vérifier à nouveau GitHub au retour.
+
 ## Qualification et priorités
 
 **L** : livré dans le périmètre étroit décrit, avec guide/test ; **P** : partiellement livré, travail restant explicité ; **N** : non réalisé ; **B** : réalisation/qualification dépendante d’un prérequis indisponible ou reporté. Aucun pourcentage global n’est déduit de ces états.
@@ -38,9 +40,9 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | --- | --- | --- | --- | --- | --- |
 | IDE-013 | Coloration, complétion contextuelle, aide sourcée | P | P0 | Corpus 15 | Fiches exhaustives et cas opaques/dialectes qualifiés ; sous-ensemble livré |
 | IDE-014 | Lexer/parser et diagnostics fiables avec provenance | P | P0 | IDE-013 | 0.34 : worker temporisé/révisionné, grammaire structurelle étendue, couverture opaque explicite et diagnostics multifichiers ; corpus/qualification ROM exhaustifs ouverts |
-| IDE-015 | Navigation définitions/cibles, usages et symboles BASIC | P | P1 | IDE-014 | 0.41 : index textuel variables/tableaux et rôles, navigation des occurrences à la demande ; F12 littéral/F8 livrés ; types, portées FN et navigation sémantique complète ouverts |
+| IDE-015 | Navigation définitions/cibles, usages et symboles BASIC | P | P1 | IDE-014 | 0.41.1 : index textuel variables/tableaux, rôles et occurrences à la demande ; suffixes/types possibles et directives de type navigables ; F12 littéral/F8 livrés ; identité sur les chemins, portées FN, accès depuis le curseur et navigation sémantique complète ouverts |
 | IDE-016 | Renumérotation sûre, plages et références | P | P0 | IDE-014 | Cibles couvertes réécrites ; formes ambiguës bloquées ; undo livré |
-| IDE-017 | Renommage sémantique de variables/fonctions | N | P1 | IDE-014 | Suffixes/types, portée et chaînes/DATA/commentaires préservés |
+| IDE-017 | Renommage sémantique de variables/fonctions | N | P1 | IDE-015 qualifié | Aperçu par source, identité et collisions vérifiées, suffixes/types et portée préservés, chaînes/DATA/commentaires intacts, sources modifiées refusées et undo ; aucun renommage livré en 0.41.1 |
 | IDE-018 | Templates/snippets, insertion de lignes et conventions | N | P1 | IDE-014 | Numéros sans collision ; génération minimale conforme au profil |
 | IDE-019 | Formatage optionnel et inspections/corrections ciblées | N | P2 | IDE-014 | Sémantique inchangée ; aperçu ; aucune casse/espacement opaque détruit |
 | IDE-076 | Rapport de qualité BASIC à la demande | P | P2 | IDE-014 | 0.40.9 : piles mixtes appels/FOR/WHILE contextuelles, divisions simples/erreurs possibles, reprises conditionnelles et contextes des ERROR explicites, cartographie événementielle et reprises, résumés GOSUB, graphe structurel, boucles contenues dans THEN/ELSE, sorties de NEXT qualifiées, appels/cycles et complexité locale ; fermetures intermédiaires sautées, portées traversées, événements et retours contextuels restent ouverts |
