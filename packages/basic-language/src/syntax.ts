@@ -1,6 +1,7 @@
 import { analyze, tokenize, type Analysis, type Diagnostic, type Token } from './language.ts';
 import { KEYWORDS } from './catalog.ts';
 import { inspectExpression } from './expression.ts';
+import { conditionalElse, CONDITIONAL_DEPTH_LIMIT } from './conditional.ts';
 
 export const ANALYSIS_LIMITS = { characters: 1_048_576, lines: 10_000, lineCharacters: 8192, lineTokens: 2048, diagnostics: 500, inspections: 100, variables: 4096, references: 10_000 } as const;
 export interface Inspection { line: number; start: number; end: number; reason: string }
@@ -77,7 +78,6 @@ export function analyzeEditor(source: string, lex: (line: string) => Token[] = t
    checkArguments(items.slice(2, -1), name, 1, Infinity);
   };
   const inspectSequence = (items: Token[], nesting = 0, branch = false) => {
-   if (nesting > 16) { if (items[0]) opaque(items[0], 'Imbrication de branches limitée.'); return; }
    for (let cursor = 0; cursor < items.length;) {
     if (upper(items[cursor]) === 'IF') { inspect(items.slice(cursor), nesting, branch); return; }
     let end = cursor;
@@ -103,13 +103,13 @@ export function analyzeEditor(source: string, lex: (line: string) => Token[] = t
     if (stack.length || unmatched) return;
    }
    if (name === 'IF') {
+    if (nesting >= CONDITIONAL_DEPTH_LIMIT) { opaque(first, 'Imbrication limitée à 16 niveaux IF.'); return; }
     const at = keyword(statement, ['THEN', 'GOTO']);
     if (at < 0) { report(physical, first, 'syntax-if', 'IF attend une condition suivie de THEN ou GOTO.'); return; }
     if (at === 1) report(physical, statement[at]!, 'syntax-if', 'Condition manquante après IF.'); else checkExpression(statement.slice(1, at), first);
     const body = statement.slice(at + 1);
     if (!body.length) { report(physical, statement[at]!, 'syntax-if', 'Instruction ou cible manquante après THEN/GOTO.'); return; }
-    if (body.some(token => upper(token) === 'IF')) { opaque(first, 'Branches IF imbriquées : association ELSE non qualifiée.'); return; }
-    const otherwise = keyword(body, ['ELSE']);
+    const otherwise = conditionalElse(body);
     const yes = otherwise < 0 ? body : body.slice(0, otherwise);
     if (!yes.length) report(physical, body[otherwise]!, 'syntax-if', 'Instruction manquante avant ELSE.'); else inspectSequence(yes, nesting + 1, true);
     if (otherwise >= 0) { const no = body.slice(otherwise + 1); if (!no.length) report(physical, body[otherwise]!, 'syntax-if', 'Instruction ou cible manquante après ELSE.'); else inspectSequence(no, nesting + 1, true); }
@@ -126,6 +126,7 @@ export function analyzeEditor(source: string, lex: (line: string) => Token[] = t
     if (args.length) for (const group of split(args, ',')) checkVariable(group, first, name === 'DIM');
    } else if (name === 'LET' || first.kind === 'identifier') {
     const equal = keyword(statement, ['=']);
+    if (equal < 0 && /^(GOTO|GOSUB)\d+$/.test(name)) { report(physical, first, 'syntax-branch', 'Séparer GOTO/GOSUB du numéro de ligne par un espace. Cette forme collée n’est pas un saut BASIC reconnu.'); return; }
     if (equal < 0 && first.kind === 'identifier' && compactKeywords.some(word => name.startsWith(word))) { opaque(first, 'Orthographe compacte non désambiguïsée.'); return; }
     if (equal < 0) report(physical, first, name === 'LET' ? 'syntax-assignment' : 'syntax-statement', name === 'LET' ? 'LET attend une variable suivie de = et d’une expression.' : `Instruction inconnue « ${first.text} » ou affectation sans signe =.`);
     else { checkVariable(statement.slice(name === 'LET' ? 1 : 0, equal), first); checkExpression(statement.slice(equal + 1), statement[equal]!); }

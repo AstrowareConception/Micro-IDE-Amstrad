@@ -20,9 +20,9 @@ test('negative corpus finds expression, assignment, branch and argument errors i
  }
 });
 test('opaque forms remain visible without inventing success or rejecting native output adjacency', () => {
- const result = analyzeEditor('10 DATA UNKNOWN,(,"A:B":|EXT,@A\n20 DEF FNx(A)=A+1\n30 PRINT "A" 2 "B";\n40 IF A THEN IF B THEN100 ELSE200\n100 END\n200 END');
- assert.deepEqual(result.diagnostics, []); assert.ok(result.coverage.opaque >= 5);
- assert.ok(result.inspections.some(item => item.reason.includes('imbriquées')));
+ const result = analyzeEditor('10 DATA UNKNOWN,(,"A:B":|EXT,@A\n20 DEF FNx(A)=A+1\n30 PRINT "A" 2 "B";\n40 IF A THEN IF B THEN 100 ELSE 200\n100 END\n200 END');
+ assert.deepEqual(result.diagnostics, []); assert.ok(result.coverage.opaque >= 4);
+ assert.ok(!result.inspections.some(item => item.reason.includes('imbriquées')));
 });
 test('resource and recursion limits give explicit partial coverage and bounded output', () => {
  for (const source of ['10 A=' + '('.repeat(400) + '1' + ')'.repeat(400), '10 A=' + '-'.repeat(800) + '1', '10 A=' + Array(500).fill('1').join('^')]) {

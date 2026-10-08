@@ -49,6 +49,47 @@ await recipe('flow-control-forms', `10 REM @CPCTEST 1 FOR
 700 x=94:GOTO 140
 800 x=93:GOTO 140
 `, 'passed');
+// 0.40.1: independent truth tables, not the analyser's own branch association.
+// Generated here to avoid 27 separate boots; each slot is still a native BASIC assertion.
+const branchCases = [];
+for (const a of [0, 1]) for (const b of [0, 1]) {
+ const setup = `a=${a}:b=${b}:x=0`;
+ branchCases.push({ name: `nested-${a}-${b}`, code: [setup, 'IF a THEN IF b THEN x=1 ELSE x=2 ELSE x=3:x=x+10'], expected: a ? b ? 1 : 2 : 13 });
+ branchCases.push({ name: `chain-${a}-${b}`, code: [setup, 'IF a THEN x=1 ELSE IF b THEN x=2 ELSE x=3:x=x+10'], expected: a ? 1 : b ? 2 : 13 });
+ branchCases.push({ name: `missing-outer-else-${a}-${b}`, code: [setup, 'IF a THEN IF b THEN x=1 ELSE x=2'], expected: a ? b ? 1 : 2 : 0 });
+ branchCases.push({ name: `literal-${a}-${b}`, code: [setup, 'GOSUB 5000'], expected: a ? b ? 1 : 2 : 3 });
+ for (const c of [0, 1]) branchCases.push({ name: `triple-${a}-${b}-${c}`, code: [setup + `:c=${c}`, 'IF a THEN IF b THEN IF c THEN x=1 ELSE x=2 ELSE x=3 ELSE x=4'], expected: a ? b ? c ? 1 : 2 : 3 : 4 });
+}
+branchCases.push({ name: 'next-pair', code: ['x=0:FOR i=1 TO 2:FOR j=1 TO 3:x=x+1:NEXT j,i'], expected: 6 });
+branchCases.push({ name: 'next-negative-step', code: ['x=0:FOR i=1 TO 2:FOR j=3 TO 1 STEP -1:FOR k=1 TO 1:x=x+1:NEXT k,j,i'], expected: 6 });
+branchCases.push({ name: 'next-separate-lines', code: ['x=0:FOR i=-2 TO -1', 'FOR j=0 TO 0', 'x=x+1', 'NEXT j,i'], expected: 2 });
+const branchLines = ['MEMORY &7FFF'];
+for (const [index, item] of branchCases.entries()) branchLines.push(`REM @CPCTEST ${index + 1} ${item.name}`, ...item.code, `IF x=${item.expected} THEN POKE &${(0x8004 + index).toString(16)},1 ELSE POKE &${(0x8004 + index).toString(16)},2`);
+branchLines.push('POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165', 'GOTO 4000');
+await recipe('flow-nested-forms', branchLines.map((line,index)=>`${(index+1)*10} ${line}`).join('\n') + '\n4000 GOTO 4000\n5000 IF a THEN IF b THEN 6000 ELSE 7000 ELSE 8000\n6000 x=1:RETURN\n7000 x=2:RETURN\n8000 x=3:RETURN\n', 'passed', 8);
+const nestedExample = await readFile('examples/control-flow/nested.bas', 'utf8');
+await recipe('flow-nested-example', nestedExample.replace('70 END', '70 IF total=21 THEN POKE &8004,1 ELSE POKE &8004,2') + '80 REM @CPCTEST 1 Total\n90 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165\n100 GOTO 100\n', 'passed');
+// Glued words are not equivalent to keyword + line number. In the false arm,
+// ELSE100 is skipped rather than recognised as ELSE; do not mask fall-through.
+for (const [index, form] of ['GOTO100', 'GOSUB100', 'IF 1 THEN100', 'IF 0 THEN 100 ELSE100', 'GOTO 100', 'GOSUB 100', 'IF 1 THEN 100', 'IF 0 THEN 100 ELSE 100'].entries()) {
+ const expected = index < 3 ? 'error' : index === 3 ? 'fallthrough' : 'target';
+ await recipe(`flow-spacing-${index}`, `10 REM @CPCTEST 1 Spacing
+20 MEMORY &7FFF:ON ERROR GOTO 900
+30 ${form}
+40 POKE &8004,${expected === 'fallthrough' ? 1 : 2}:GOTO 910
+100 POKE &8004,${expected === 'target' ? 1 : 2}:GOTO 910
+900 IF ERR=2 AND ${expected === 'error' ? 1 : 0} THEN POKE &8004,1 ELSE POKE &8004,2
+910 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165
+920 GOTO 920
+`, 'passed', 5);
+}
+await recipe('flow-keyword-like-variables', `10 REM @CPCTEST 1 Identifiers
+20 MEMORY &7FFF
+30 GOTO100=7:THEN100=9:x=GOTO100+THEN100
+40 IF x=16 THEN POKE &8004,1 ELSE POKE &8004,2
+50 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165
+60 GOTO 60
+`, 'passed');
 const failed = await recipe('score-failed', BASIC_TEST_EXAMPLE.replace('score=150 THEN', 'score=151 THEN'), 'failed'); assert.deepEqual(failed.cases.map(test => test.outcome), ['failed', 'passed']);
 await recipe('missing-assertion', BASIC_TEST_EXAMPLE.replace('70 IF score=100 THEN POKE &8005,1 ELSE POKE &8005,2', '70 REM assertion deliberately omitted'), 'incomplete');
 await recipe('infinite-loop', '10 REM @CPCTEST 1 Loop\n20 GOTO 20\n', 'timeout');

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { analyzeQuality, qualityMarkdown, QUALITY_LIMITS } from '../packages/basic-language/src/quality.ts';
 const inspect = (source: string) => analyzeQuality([{ id: 'main', name: 'src/main.bas', source }]).sources[0]!;
 test('quality metrics separate physical lines, BASIC code, comments and opaque values', () => {
- const source = '10 REM IF FOR WHILE GOTO\n20 PRINT "IF:FOR:GOTO"\n30 DATA IF,WHILE,"GOTO:FOR"\n40 IF A AND B THEN50\n50 FOR I=1 TO 2:NEXT I\n60 WHILE A:WEND\n\n';
+ const source = '10 REM IF FOR WHILE GOTO\n20 PRINT "IF:FOR:GOTO"\n30 DATA IF,WHILE,"GOTO:FOR"\n40 IF A AND B THEN 50\n50 FOR I=1 TO 2:NEXT I\n60 WHILE A:WEND\n\n';
  const result = inspect(source), m = result.metrics!;
  assert.equal(m.physicalLines, 7); assert.equal(m.codeLines, 5); assert.equal(m.commentLines, 1); assert.equal(m.blankLines, 1);
  assert.equal(m.statements, 7); assert.equal(m.ifs, 1); assert.equal(m.fors, 1); assert.equal(m.whiles, 1); assert.equal(m.gotos, 0);
@@ -11,7 +11,7 @@ test('quality metrics separate physical lines, BASIC code, comments and opaque v
  assert.deepEqual(inspect('').metrics?.estimatedCyclomatic, 0);
 });
 test('selector outcomes include fall-through; event handlers and AND/OR add no lexical branches', () => {
- const result = inspect('10 ON X GOTO 100,200,300\n20 ON Y GOSUB 100,200\n30 ON ERROR GOTO 0\n40 ON BREAK GOSUB 100\n50 ON SQ(1) GOSUB 100\n60 IF A AND B OR C THEN100');
+ const result = inspect('10 ON X GOTO 100,200,300\n20 ON Y GOSUB 100,200\n30 ON ERROR GOTO 0\n40 ON BREAK GOSUB 100\n50 ON SQ(1) GOSUB 100\n60 IF A AND B OR C THEN 100');
  assert.equal(result.metrics!.selectorBranches, 5); assert.equal(result.metrics!.estimatedCyclomatic, 7);
  assert.equal(result.metrics!.gotos, 2); assert.equal(result.metrics!.gosubs, 3);
  const partial = inspect('10 ON X GOTO A+1\n20 IF A THEN ON X GOSUB 100,200');
@@ -28,8 +28,8 @@ test('readability observations ignore colon/keywords inside strings, comments an
  assert.equal(long.basicLine, 60); assert.equal(long.line, 6); assert.equal(long.start, 3); assert.equal(long.confidence, 'observation');
 });
 test('unreachable-tail is restricted to unconditional literal GOTO/bare RETURN, preserving CONT and conditional cases', () => {
- const result = inspect('10 GOTO100:PRINT 1\n20 RETURN:PRINT 2\n30 END:PRINT 3\n40 STOP:PRINT 4\n50 IF A THEN GOTO100:PRINT 5\n60 ON X GOTO 100,200:PRINT 6\n70 GOTO X+1:PRINT 7\n80 GOTO100:DATA 1,2');
- assert.deepEqual(result.findings.filter(f => f.code === 'unreachable-tail').map(f => [f.basicLine, f.start]), [[10, 11], [20, 10]]);
+ const result = inspect('10 GOTO 100:PRINT 1\n20 RETURN:PRINT 2\n30 END:PRINT 3\n40 STOP:PRINT 4\n50 IF A THEN GOTO 100:PRINT 5\n60 ON X GOTO 100,200:PRINT 6\n70 GOTO X+1:PRINT 7\n80 GOTO 100:DATA 1,2');
+ assert.deepEqual(result.findings.filter(f => f.code === 'unreachable-tail').map(f => [f.basicLine, f.start]), [[10, 12], [20, 10]]);
 });
 test('duplicate blocks ignore numbering, whitespace, keyword case and comments but preserve strings and targets', () => {
  const result = inspect('10 A=A+1:B=B+2\n20 PRINT "SCORE";A;B\n30 REM separator\n40 a = a + 1 : b = b + 2\n50 print "SCORE";a;b\n60 A=A+1:B=B+2\n70 PRINT "score";A;B');

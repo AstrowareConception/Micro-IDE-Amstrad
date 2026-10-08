@@ -3,10 +3,16 @@ import assert from 'node:assert/strict';
 import { planRenumber, applyRenumber } from '../packages/basic-language/src/renumber.ts';
 const options = { start: 1000, step: 10, from: 1, to: 65535 };
 
+test('glued forms are refused rather than rewritten as invented line references', () => {
+ for (const body of ['GOTO100', 'GOSUB100', 'IF A THEN100 ELSE200', 'GOTO100=1:PRINT GOTO100']) {
+  assert.throws(()=>planRenumber(`10 ${body}\n100 END\n200 END`, options), /compacte/);
+ }
+});
+
 test('renumber preserves whitespace, blank lines, strings, DATA and comments while rewriting actual references', () => {
-  const source = ' 10 IF A THEN100 ELSE200:PRINT "100":DATA 100,"A:B":GOTO 200\n\n100 REM GOTO 10\n200 PRINT "100":\' GOTO 100\n';
+  const source = ' 10 IF A THEN 100 ELSE 200:PRINT "100":DATA 100,"A:B":GOTO 200\n\n100 REM GOTO 10\n200 PRINT "100":\' GOTO 100\n';
   const plan = planRenumber(source, options);
-  assert.equal(plan.after, ' 1000 IF A THEN1010 ELSE1020:PRINT "100":DATA 100,"A:B":GOTO 1020\n\n1010 REM GOTO 10\n1020 PRINT "100":\' GOTO 100\n');
+  assert.equal(plan.after, ' 1000 IF A THEN 1010 ELSE 1020:PRINT "100":DATA 100,"A:B":GOTO 1020\n\n1010 REM GOTO 10\n1020 PRINT "100":\' GOTO 100\n');
   assert.equal(plan.edits.filter(item => item.kind === 'reference').length, 3);
   assert.equal(source, plan.before);
   assert.equal(applyRenumber(plan, source), plan.after);

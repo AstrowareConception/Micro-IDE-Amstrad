@@ -5,7 +5,7 @@ export async function verifyBasicQuality(browser, errors) {
  const page = await browser.newPage({ viewport: { width: 1440, height: 960 }, acceptDownloads: true }); page.on('pageerror', error => errors.push(error.message));
  await page.addInitScript(() => {
   const sources = [{ id: 'main', path: 'src/main.bas', cpcName: 'MAIN.BAS' }, { id: 'util', path: 'src/util.bas', cpcName: 'UTIL.BAS' }];
-  const texts = ['10 A=1:B=2:C=3:D=4:E=5\n20 GOTO100:PRINT 1\n100 END', '10 A=A+1:B=B+2\n20 PRINT "SCORE";A;B\n30 REM pause\n40 A=A+1:B=B+2\n50 PRINT "SCORE";A;B\n60 IF A THEN IF B THEN IF C THEN PRINT 1\n70 PRINT "' + 'X'.repeat(130) + '"'];
+  const texts = ['10 A=1:B=2:C=3:D=4:E=5\n20 GOTO 100:PRINT 1\n100 END', '10 A=A+1:B=B+2\n20 PRINT "SCORE";A;B\n30 REM pause\n40 A=A+1:B=B+2\n50 PRINT "SCORE";A;B\n60 IF A THEN IF B THEN IF C THEN PRINT 1\n70 PRINT "' + 'X'.repeat(130) + '"'];
   window.qualityScope = 'quality';
   window.desktop = { setDirty() {}, project: { open: async () => ({ sessionId: window.qualityScope, manifest: { name: 'Quality', entryPoint: 'main', sources, documents: [] }, files: sources.map((s, i) => ({ ...s, source: texts[i] })) }) } };
   window.qualityRequests = 0; window.qualityStops = 0; window.qualityWorkers = [];

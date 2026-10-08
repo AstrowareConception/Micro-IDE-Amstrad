@@ -1,5 +1,6 @@
 import { tokenize, type Token } from './language.ts';
 import { analyzeEditor } from './syntax.ts';
+import { conditionalElse, CONDITIONAL_DEPTH_LIMIT } from './conditional.ts';
 
 export const FLOW_LIMITS = Object.freeze({ characters: 1_048_576, lines: 10_000, lineCharacters: 8192, tokens: 2048, nodes: 8192, totalNodes: 32768, edges: 32768, entries: 128, calls: 8192, visits: 500_000, reasons: 100 });
 export interface FlowLocation { line: number; basicLine: number; start: number; end: number }
@@ -14,13 +15,28 @@ export interface FlowReport {
  nodes: FlowNode[]; edges: FlowEdge[]; entries: FlowEntry[]; calls: FlowCall[]; cycles: FlowCycle[];
  unreachable: number[]; reachable: number[];
 }
-export const FLOW_METHOD = 'Graphe structurel depuis la première ligne, sans CONT ni RUN à une autre ligne. Les conditions ne sont pas évaluées ; les appels supposent un retour possible. La complexité locale vaut 1 + la somme des issues supplémentaires des décisions accessibles, en suivant la continuation des appels sans développer les sous-routines. Aucun total entre points d’entrée : leurs blocs peuvent se recouvrir. FOR/NEXT est normalisé avec un test en tête ; le retour au test ne réinitialise pas la variable. Les cycles ne prouvent pas une boucle infinie. Une forme opaque, une erreur de syntaxe ou un quota atteint suspend la complexité et les conclusions d’inaccessibilité. DATA reste lisible par READ même hors du chemin d’exécution. Ce modèle ne prouve ni la validité à l’exécution ni la terminaison.';
+export const FLOW_METHOD = 'Graphe structurel depuis la première ligne, sans CONT ni RUN à une autre ligne. Les conditions ne sont pas évaluées ; les appels supposent un retour possible. La complexité locale vaut 1 + la somme des issues supplémentaires des décisions accessibles, en suivant la continuation des appels sans développer les sous-routines. Aucun total entre points d’entrée : leurs blocs peuvent se recouvrir. FOR/NEXT est normalisé avec un test en tête ; le retour au test ne réinitialise pas la variable. IF est limité à 16 niveaux. NEXT multiple exige des bornes entières littérales garantissant l’entrée initiale. Les cycles ne prouvent pas une boucle infinie. Une forme opaque, une erreur de syntaxe ou un quota atteint suspend la complexité et les conclusions d’inaccessibilité. DATA reste lisible par READ même hors du chemin d’exécution. Ce modèle ne prouve ni la validité à l’exécution ni la terminaison.';
 
 const word = (token: Token | undefined) => token?.text.toUpperCase() ?? '';
 const isWord = (token: Token | undefined, name: string) => token?.kind === 'keyword' && word(token) === name;
 const literal = (tokens: Token[]) => tokens.length === 1 && tokens[0]!.kind === 'number' && /^\d+$/.test(tokens[0]!.text) && Number(tokens[0]!.text) >= 1 && Number(tokens[0]!.text) <= 65535 ? Number(tokens[0]!.text) : undefined;
 // Only known statements that cannot transfer control or replace BASIC/machine memory.
 const sequential = new Set('PRINT WRITE INPUT LINE READ RESTORE DIM ERASE DEFINT DEFREAL DEFSTR DEG RAD RANDOMIZE MODE INK BORDER PAPER PEN GRAPHICS CLS CLG LOCATE WINDOW ORIGIN MOVE MOVER DRAW DRAWR PLOT PLOTR FILL TAG TAGOFF MASK SYMBOL SOUND ENV ENT RELEASE DI EI FRAME WAIT OPENIN OPENOUT CLOSEIN CLOSEOUT SAVE CAT WIDTH ZONE KEY TRON TROFF DEF MID$'.split(' '));
+
+// Multiple NEXT is qualified only when its FORs enter initially. The ROM's search
+// for NEXT while skipping a nested FOR needs a separate model, not an invented edge.
+function entersLiteralFor(args: Token[]): boolean {
+ const integer = (items: Token[]) => {
+  const text = items.map(t => t.text).join('');
+  if (!/^[+-]?\d+$/.test(text)) return null;
+  const value = Number(text); return Math.abs(value) <= 32767 ? value : null;
+ };
+ const to = args.findIndex(t => isWord(t, 'TO')), stepAt = args.findIndex(t => isWord(t, 'STEP'));
+ if (args[0]?.kind !== 'identifier' || args[1]?.text !== '=' || to < 3) return false;
+ const start = integer(args.slice(2, to)), end = integer(args.slice(to + 1, stepAt < 0 ? undefined : stepAt));
+ const step = stepAt < 0 ? 1 : integer(args.slice(stepAt + 1));
+ return start !== null && end !== null && step !== null && (step > 0 && start <= end || step < 0 && start >= end);
+}
 
 /** Iterative Kosaraju: bounded graph size, no recursion proportional to listing length. */
 function components(ids: number[], adjacency: Map<number, number[]>): number[][] {
@@ -62,7 +78,7 @@ export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIM
  if (physical.length > FLOW_LIMITS.lines) { partial('Plus de 10000 lignes physiques : graphe non construit.'); return report; }
  const lines: { location: FlowLocation; tokens: Token[]; anchor: number }[] = [], targets = new Map<number, number>();
  const pending: { from: number; number: number; kind: FlowEdgeKind; ordinal: number }[] = [];
- const loops: { node: number; name: string; variable: string; next: number | null; conditional: boolean }[] = [];
+ const loops: { node: number; name: string; variable: string; next: number | null; multiple: boolean; enters: boolean }[] = [];
  const outgoing = new Map<number, FlowEdge[]>();
  function node(location: FlowLocation, operation: string, kind: FlowNode['kind'] = 'statement'): number {
   if (report.nodes.length >= maxNodes) throw new Error(`Budget de ${maxNodes} nœuds atteint : graphe tronqué, conclusions suspendues.`);
@@ -81,7 +97,7 @@ export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIM
   if (number === undefined) { partial(`BASIC ${report.nodes[id]!.basicLine} : cible non littérale ou invalide.`); edge(id, null, 'unknown'); }
   else pending.push({ from: id, number, kind, ordinal });
  }
- function sequence(tokens: Token[], next: number | null, location: FlowLocation, conditional = false): number | null {
+ function sequence(tokens: Token[], next: number | null, location: FlowLocation, depth = 0): number | null {
   const parts: Token[][] = [];
   for (let cursor = 0; cursor < tokens.length;) {
    if (tokens[cursor]!.kind === 'comment') break;
@@ -92,21 +108,22 @@ export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIM
    cursor = end + 1;
   }
   let continuation = next;
-  for (const part of parts.reverse()) continuation = statement(part, continuation, location, conditional);
+  for (const part of parts.reverse()) continuation = statement(part, continuation, location, depth);
   return continuation;
  }
- function statement(tokens: Token[], next: number | null, location: FlowLocation, conditional: boolean): number {
+ function statement(tokens: Token[], next: number | null, location: FlowLocation, depth: number): number {
   const first = tokens[0]!, name = word(first), args = tokens.slice(1), loc = { ...location, start: first.start, end: tokens.at(-1)!.end };
   const assignment = first.kind === 'identifier' && tokens.some(t => t.text === '=') || isWord(first, 'LET');
   const operation = assignment ? 'AFFECTATION' : first.kind === 'keyword' ? name : first.kind === 'number' ? 'GOTO' : 'INSTRUCTION';
   const id = node(loc, operation, name === 'DATA' ? 'data' : 'statement');
   if (name === 'IF' && first.kind === 'keyword') {
    const at = tokens.findIndex(t => isWord(t, 'THEN') || isWord(t, 'GOTO'));
-   if (at <= 1 || tokens.slice(1).some(t => isWord(t, 'IF'))) { unknown(id, 'IF imbriqué ou forme conditionnelle non couverte.', next); return id; }
-   const body = tokens.slice(at + 1), otherwise = body.findIndex(t => isWord(t, 'ELSE'));
+   if (depth >= CONDITIONAL_DEPTH_LIMIT) { unknown(id, 'Limite de 16 niveaux IF atteinte.', next); return id; }
+   if (at <= 1) { unknown(id, 'forme conditionnelle non couverte.', next); return id; }
+   const body = tokens.slice(at + 1), otherwise = conditionalElse(body);
    const yes = otherwise < 0 ? body : body.slice(0, otherwise), no = otherwise < 0 ? [] : body.slice(otherwise + 1);
-   edge(id, sequence(yes, next, location, true), 'true'); edge(id, sequence(no, next, location, true), 'false');
-  } else if (isWord(first, 'GOTO') || conditional && literal(tokens) !== undefined) jump(id, first.kind === 'number' ? tokens : args, 'jump');
+   edge(id, sequence(yes, next, location, depth + 1), 'true'); edge(id, sequence(no, next, location, depth + 1), 'false');
+  } else if (isWord(first, 'GOTO') || depth > 0 && literal(tokens) !== undefined) jump(id, first.kind === 'number' ? tokens : args, 'jump');
   else if (isWord(first, 'GOSUB')) { jump(id, args, 'call'); edge(id, next, 'resume'); }
   else if (isWord(first, 'ON')) {
    const at = tokens.findIndex(t => isWord(t, 'GOTO') || isWord(t, 'GOSUB'));
@@ -118,8 +135,14 @@ export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIM
    }
   } else if (['FOR', 'NEXT', 'WHILE', 'WEND'].includes(name) && first.kind === 'keyword') {
    const variable = name === 'FOR' || name === 'NEXT' ? word(args[0]) : '';
-   if (conditional || name === 'NEXT' && (args.length > 1 || args.length === 1 && args[0]!.kind !== 'identifier')) unknown(id, 'boucle dans IF ou NEXT multiple/non reconnu.', next);
-   else loops.push({ node: id, name, variable, next, conditional });
+   const validNext = !args.length || args.length % 2 === 1 && args.every((t, i) => i % 2 ? t.text === ',' : t.kind === 'identifier');
+   if (depth > 0 || name === 'NEXT' && !validNext) unknown(id, 'boucle dans IF ou NEXT non reconnu.', next);
+   else if (name === 'NEXT' && args.length > 1) {
+    const variables = args.filter((_, i) => i % 2 === 0);
+    const ids = variables.map((token, i) => i === 0 ? id : node({ ...location, start: token.start, end: token.end }, 'NEXT'));
+    report.nodes[id]!.end = variables[0]!.end;
+    variables.forEach((token, i) => loops.push({ node: ids[i]!, name, variable: word(token), next: ids[i + 1] ?? next, multiple: true, enters: false }));
+   } else loops.push({ node: id, name, variable, next, multiple: false, enters: name === 'FOR' && entersLiteralFor(args) });
   } else if (['RETURN', 'END', 'STOP'].includes(name) && !args.length) edge(id, null, 'exit');
   else if (assignment || name === 'DATA' || sequential.has(name) && first.kind === 'keyword') edge(id, next);
   else unknown(id, 'instruction à effets de contrôle inconnus (machine, événements, chargement ou forme non reconnue).', next);
@@ -156,6 +179,7 @@ export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIM
    const open = stack.at(-1);
    if (!open || (loop.name === 'NEXT' ? open.name !== 'FOR' || !!loop.variable && loop.variable !== open.variable : open.name !== 'WHILE')) { unknown(loop.node, 'fermeture de boucle sans ouverture structurée correspondante.', loop.next); continue; }
    stack.pop();
+   if (loop.multiple && !open.enters) partial(`BASIC ${report.nodes[loop.node]!.basicLine} : NEXT multiple avec entrée FOR non garantie par des bornes entières littérales (STEP non nul).`);
    // Normalised loop test: FOR can skip its body; NEXT returns to the test, not to initialisation.
    edge(open.node, open.next, 'true'); edge(open.node, loop.next, 'false'); edge(loop.node, open.node, 'loop');
   }

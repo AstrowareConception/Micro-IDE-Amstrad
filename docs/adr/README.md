@@ -76,3 +76,5 @@ Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou
 - [0046 — Packaging desktop précoce et qualifié](0046-packaging-desktop-preview.md).
 
 - [0049 — Graphe BASIC conservateur à la demande](0049-graphe-basic-conservateur.md).
+
+- [0050 — Branches BASIC qualifiées sur firmware](0050-branches-basic-qualifiees.md)
