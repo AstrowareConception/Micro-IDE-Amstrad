@@ -1,5 +1,6 @@
 // Explicit test input only: never distribute the supplied ROMs or embed them in reports.
 import assert from 'node:assert/strict';
+import { loopErrorCases } from './fixtures/loop-error-cases.ts';
 import { conditionalErrorCases } from './fixtures/conditional-error-cases.ts';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -26,6 +27,21 @@ async function recipe(name, source, outcome, seconds = 3, probes = {}) {
  assert.deepEqual(observed, probes, `${name}: RAM checkpoints before disposal`);
  results.push(result); console.log(`${name}: ${result.outcome} (${result.emulatedSeconds.toFixed(3)} s)`); return result;
 }
+// 0.40.9: ordered loop/call frames, pending handler loops and invalid closures.
+for (const {name,main,routine,handler,expected} of loopErrorCases) {
+ const source = `10 REM @CPCTEST 1 Error loop stack
+20 MEMORY &7FFF:ON ERROR GOTO 2000:x=0:n=0:i=0:POKE &8103,0
+${main}
+800 IF x=${expected.x} AND n=${expected.errors} AND i=${expected.counter} AND PEEK(&8103)=${expected.errorCode} THEN POKE &8004,1 ELSE POKE &8004,2
+900 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165
+910 GOTO 910
+${routine}
+${handler}`.split('\n').filter(Boolean).sort((a,b)=>parseInt(a)-parseInt(b)).join('\n')+'\n';
+ await recipe('error-loop-'+name,source,'passed');
+}
+const loopErrorExample=await readFile('examples/control-flow/loop-errors.bas','utf8');
+await recipe('error-loop-example',loopErrorExample.replace('10 REM Boucle appelante et boucle abandonnee par RETURN','10 REM @CPCTEST 1 Caller loop survives routine RETURN').replace('20 ON ERROR','15 MEMORY &7FFF\n20 ON ERROR').replace('60 PRINT "Total";total;"Erreurs";n','60 IF total=42 AND n=2 THEN POKE &8004,1 ELSE POKE &8004,2\n65 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165'),'passed');
+
 // 0.40.8: call-stack preservation through error handlers and resumptions.
 const stackFinish='900 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165\n910 GOTO 910\n';
 const stackCases = [

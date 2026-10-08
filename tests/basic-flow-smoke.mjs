@@ -63,7 +63,7 @@ export async function verifyBasicFlow(browser, errors) {
   const returnsDownload = page.waitForEvent('download'); await panel.getByRole('button', { name: 'Exporter JSON', exact: true }).click();
   const returnsChunks = []; for await (const chunk of await (await returnsDownload).createReadStream()) returnsChunks.push(chunk);
   const returnsGraph = JSON.parse(Buffer.concat(returnsChunks).toString('utf8')).report.sources[0].flow;
-  assert.equal(returnsGraph.version, 6); assert.equal(returnsGraph.complete, true);
+  assert.equal(returnsGraph.version, 7); assert.equal(returnsGraph.complete, true);
   const stopCall = returnsGraph.nodes.find(n=>n.basicLine===40 && n.operation==='GOSUB');
   assert.deepEqual(returnsGraph.edges.filter(e=>e.from===stopCall.id).map(e=>e.kind),['call']);
   await select.selectOption(String(stopCall.id));
@@ -120,7 +120,7 @@ export async function verifyBasicFlow(browser, errors) {
   const eventsDownload = page.waitForEvent('download'); await panel.getByRole('button', { name: 'Exporter JSON', exact: true }).click();
   const eventsChunks = []; for await (const chunk of await (await eventsDownload).createReadStream()) eventsChunks.push(chunk);
   const eventsGraph = JSON.parse(Buffer.concat(eventsChunks).toString('utf8')).report.sources[0].flow;
-  assert.equal(eventsGraph.version,6); assert.equal(eventsGraph.complete,false); assert.equal(eventsGraph.handlers.length,3);
+  assert.equal(eventsGraph.version,7); assert.equal(eventsGraph.complete,false); assert.equal(eventsGraph.handlers.length,3);
   assert.deepEqual(eventsGraph.calls,[]); assert.deepEqual(eventsGraph.unreachable,[]);
   assert.ok(eventsGraph.entries.every(e=>e.returnStatus==='unknown' && e.complexity===null));
   const timer = eventsGraph.handlers.find(h=>h.event==='after');
@@ -150,7 +150,7 @@ export async function verifyBasicFlow(browser, errors) {
   const contextDownload=page.waitForEvent('download'); await panel.getByRole('button',{name:'Exporter JSON',exact:true}).click();
   const contextChunks=[];for await(const chunk of await(await contextDownload).createReadStream())contextChunks.push(chunk);
   const contextGraph=JSON.parse(Buffer.concat(contextChunks).toString('utf8')).report.sources[0].flow;
-  assert.equal(contextGraph.version,6);assert.equal(contextGraph.complete,false);assert.equal(contextGraph.errorFlow.status,'covered');
+  assert.equal(contextGraph.version,7);assert.equal(contextGraph.complete,false);assert.equal(contextGraph.errorFlow.status,'covered');
   assert.deepEqual(contextGraph.errorFlow.transfers.filter(t=>t.kind==='raise').map(t=>contextGraph.nodes[t.to].basicLine),[100,200]);
   const firstResume=contextGraph.errorFlow.transfers.find(t=>t.kind==='next');
   const resumeDestination=contextGraph.nodes[firstResume.to];
@@ -202,7 +202,7 @@ export async function verifyBasicFlow(browser, errors) {
   const divisionDownload=page.waitForEvent('download');await panel.getByRole('button',{name:'Exporter JSON',exact:true}).click();
   const divisionChunks=[];for await(const chunk of await(await divisionDownload).createReadStream())divisionChunks.push(chunk);
   const divisionGraph=JSON.parse(Buffer.concat(divisionChunks).toString('utf8')).report.sources[0].flow;
-  assert.equal(divisionGraph.version,6);assert.equal(divisionGraph.errorFlow.version,3);assert.equal(divisionGraph.errorFlow.scope,'explicit-and-simple-division');
+  assert.equal(divisionGraph.version,7);assert.equal(divisionGraph.errorFlow.version,4);assert.equal(divisionGraph.errorFlow.scope,'explicit-and-simple-division');
   assert.equal(divisionGraph.complete,false);assert.deepEqual(divisionGraph.errorFlow.sites.map(s=>s.operator),['/','\\','MOD']);
   const divisionRetry=divisionGraph.errorFlow.transfers.find(t=>t.kind==='retry');
   assert.equal(divisionRetry.to,divisionRetry.fault);
@@ -224,7 +224,7 @@ export async function verifyBasicFlow(browser, errors) {
   const callErrorDownload=page.waitForEvent('download');await panel.getByRole('button',{name:'Exporter JSON',exact:true}).click();
   const callErrorChunks=[];for await(const chunk of await(await callErrorDownload).createReadStream())callErrorChunks.push(chunk);
   const callErrorGraph=JSON.parse(Buffer.concat(callErrorChunks).toString('utf8')).report.sources[0].flow;
-  assert.equal(callErrorGraph.version,6);assert.equal(callErrorGraph.errorFlow.version,3);assert.equal(callErrorGraph.complete,false);
+  assert.equal(callErrorGraph.version,7);assert.equal(callErrorGraph.errorFlow.version,4);assert.equal(callErrorGraph.complete,false);
   const callResumes=callErrorGraph.errorFlow.transfers.filter(t=>t.kind==='next');assert.equal(callResumes.length,2);
   assert.notDeepEqual(callResumes[0].calls,callResumes[1].calls);
   assert.deepEqual(callResumes.map(t=>t.calls.map(site=>callErrorGraph.nodes[site].basicLine)),[[30,100],[30,100]]);
@@ -239,6 +239,32 @@ export async function verifyBasicFlow(browser, errors) {
   await page.setViewportSize({width:1440,height:1050});await page.getByRole('button',{name:'Restaurer les sorties',exact:true}).click();
   await input.focus();await page.keyboard.press('Control+End');await page.keyboard.insertText('\n500 REM modification');
   await expect(panel).toContainText('Rapport obsolète');await expect(callerButton).toBeDisabled();
+  const loopSource=await readFile('examples/control-flow/loop-errors.bas','utf8');
+  await input.focus();await page.keyboard.press('Control+a');await page.keyboard.insertText(loopSource);
+  await panel.getByRole('button',{name:'Générer le rapport',exact:true}).click();
+  await expect(panel).toContainText('Rapport sur les sources inchangées.');await flow.locator(':scope > summary').click();await contextsPanel.locator(':scope > summary').click();
+  await expect(contextsPanel.locator(':scope > summary')).toHaveText('Contextes d’erreur · Calculés');
+  await expect(contextsPanel).toContainText('16 boucles actives');
+  await expect(contextsPanel.locator('.flow-error-transfers > li')).toHaveCount(15);
+  const loopDownload=page.waitForEvent('download');await panel.getByRole('button',{name:'Exporter JSON',exact:true}).click();
+  const loopChunks=[];for await(const chunk of await(await loopDownload).createReadStream())loopChunks.push(chunk);
+  const loopGraph=JSON.parse(Buffer.concat(loopChunks).toString('utf8')).report.sources[0].flow;
+  assert.equal(loopGraph.version,7);assert.equal(loopGraph.errorFlow.version,4);assert.equal(loopGraph.errorFlow.states,30);
+  const loopReturn=loopGraph.errorFlow.transfers.find(t=>t.kind==='return' && loopGraph.nodes[t.node].basicLine===110);
+  assert.deepEqual(loopReturn.stack.map(f=>[f.kind,loopGraph.nodes[f.node].basicLine]),[['for',30],['call',40],['while',100]]);
+  const loopContextAt=loopGraph.errorFlow.contexts.findIndex(c=>c.node===loopReturn.node);
+  const loopRow=contextsPanel.locator('.flow-error-states > li').nth(loopContextAt);
+  await loopRow.locator('.flow-call-stack > summary').click();
+  await expect(loopRow.locator('.flow-call-stack > summary')).toHaveText('Pile : 1 appel(s) · 2 boucle(s)');
+  const loopNode=loopGraph.nodes[loopReturn.stack[0].node];
+  const loopButton=loopRow.getByRole('button',{name:`Boucle FOR 1 · BASIC 30 · C${loopNode.start+1}`,exact:true});
+  await loopButton.click();await expect(page.locator('footer')).toContainText(`L3 · C${loopNode.end+1}`);
+  await expect(loopRow.getByRole('button',{name:/Boucle WHILE 3 · BASIC 100/})).toBeEnabled();
+  await page.getByRole('button',{name:'Agrandir les sorties',exact:true}).click();await page.setViewportSize({width:1440,height:2200});
+  await loopRow.scrollIntoViewIfNeeded();await contextsPanel.screenshot({path:'out/basic-error-loop-stacks-browser.png'});
+  await page.setViewportSize({width:1440,height:1050});await page.getByRole('button',{name:'Restaurer les sorties',exact:true}).click();
+  await input.focus();await page.keyboard.press('Control+End');await page.keyboard.insertText('\n500 REM modification');
+  await expect(panel).toContainText('Rapport obsolète');await expect(loopButton).toBeDisabled();
   console.log('BASIC flow UI: real worker, per-entry complexity, graph keyboard navigation, source location, source-free JSON, stale guard and opaque-control fallback passed.');
  } finally { await page.close(); }
 }

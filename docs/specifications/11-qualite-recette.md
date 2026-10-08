@@ -86,3 +86,8 @@ Aujourd'hui : liens locaux Markdown, parse JSON, conformité des exemples et coh
 Après J1 : lint, types, règles d'import, tests de domaine et codecs ; après J0 : harness WASM avec firmware autorisé dans l'environnement prévu ; après J2 : corpus et fiches de langage ; après J3 : parcours UI et artefacts DSK ; après J5 : fournisseurs simulés, missions agentiques, retries, interruptions, scope et mode Revue ; après J6 : builds et smoke tests Windows. Les appels IA réels sont volontaires, bornés et hors CI des PR publiques.
 
 Pour éviter les faux succès, le journal d'essai précise la commande, la plateforme, les entrées et le statut. Les tests bloqués par ROM, certificat ou accès fournisseur restent marqués bloqués. Un pourcentage de couverture global ne remplace pas la couverture des invariants critiques, du corpus disque et des scénarios utilisateur.
+
+
+### Complément ACC-36 — Piles de boucles (0.40.9)
+
+Vérifier FOR/NEXT et WHILE/WEND avec erreur et appel : ordre des trames, RETURN abandonnant les boucles de la sous-routine et conservant celles de l’appelant, trois reprises RESUME conservant la pile courante, NEXT/WEND abandonnant les boucles intermédiaires sans franchir GOSUB. L’exemple `loop-errors.bas` donne 42/deux erreurs ; la pile de son RETURN ligne 110 contient FOR 30, appel 40, WHILE 100. Contrôler les liens et leur obsolescence, exports flow 7/errorFlow 4 sans noms de compteurs, budgets 16 appels/16 boucles et retrait intégral sur exclusion/plafond. Les 36 assertions firmware comprennent les fermetures invalides avec ERR observé ; aucune qualification indépendante/matérielle ni clôture d’ACC-36 n’en découle. [Détails](../implementation/basic-control-flow-alpha.md#qualification-0409).

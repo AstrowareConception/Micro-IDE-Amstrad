@@ -1,6 +1,6 @@
 # Explorer le flux d’un listing BASIC
 
-Ouvrir [main.bas](main.bas) dans CPCéleste 0.40.8, puis **BASIC → Rapport de qualité BASIC… → Générer le rapport** et déplier **Flux BASIC**.
+Ouvrir [main.bas](main.bas) dans CPCéleste 0.40.9, puis **BASIC → Rapport de qualité BASIC… → Générer le rapport** et déplier **Flux BASIC**.
 
 Le programme additionne 1, 2 et 3 dans la sous-routine 200, affiche le total via 300, puis le ramène à 3 dans une boucle WHILE. Le graphe conserve aussi les autres issues structurelles, sans évaluer les conditions.
 
@@ -43,3 +43,12 @@ Sans ON ERROR, `/ 0` poursuit l’évaluation après avertissement ; `\ 0` et `M
 Ouvrir [call-errors.bas](call-errors.bas) : **Total 222, Erreurs 2**. La ligne 30 appelle deux fois 100, qui appelle 200. L’erreur volontaire rejoint 300 ; le gestionnaire appelle 400, puis RESUME NEXT retrouve la suite de 200. Les RETURN reviennent aux bons appelants. Le rapport contient 16 transferts contextuels et garde les deux sites de la ligne 30 distincts.
 
 Déplier **Pile : 2 appel(s)** sur une reprise : le premier lien rejoint l’un des GOSUB de la ligne 30, le second celui de la ligne 100. Dans l’auxiliaire 400, la pile contient aussi l’appel du gestionnaire. Les liens deviennent inactifs après modification du source. Le modèle explore jusqu’à 16 appels imbriqués ; un dépassement retire les résultats, sans déclarer un débordement réel du CPC.
+
+
+## Boucles et reprises d’erreur (0.40.9)
+
+[loop-errors.bas](loop-errors.bas) affiche **Total 42, Erreurs 2** sur le firmware CPC 6128 anglais qualifié. Le FOR principal appelle une routine dont le WHILE est quitté par RETURN ; le gestionnaire termine son propre FOR avant RESUME NEXT.
+
+Dans **Contextes d’erreur**, déplier la pile du RETURN de la ligne 110 : **1 appel et 2 boucles**, dans l’ordre FOR ligne 30 → GOSUB ligne 40 → WHILE ligne 100. Les liens rejoignent les ouvertures et sont désactivés après modification. Le FOR appelant est conservé, le WHILE interne abandonné. 30 états, 12 contextes et 15 transferts dans le modèle courant, sans évaluation des valeurs : même WHILE 1 garde une sortie abstraite possible.
+
+Budgets : 16 appels et 16 boucles, distincts des capacités du CPC. Réentrées ambiguës, fermetures sans ouverture active et autres erreurs implicites de pile restent hors périmètre. [Qualification et limites](../../docs/implementation/basic-control-flow-alpha.md#qualification-0409).

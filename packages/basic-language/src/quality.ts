@@ -1,4 +1,4 @@
-import { ERROR_SITE_LABELS, ERROR_FLOW_LIMITS, ERROR_FLOW_METHOD, ERROR_FLOW_STATUS_LABELS, ERROR_TRANSFER_LABELS } from './error-flow.ts';
+import { ERROR_SITE_LABELS, ERROR_FLOW_LIMITS, ERROR_FLOW_METHOD, ERROR_FLOW_STATUS_LABELS, ERROR_TRANSFER_LABELS, type ErrorStackFrame } from './error-flow.ts';
 import { FLOW_EVENT_LABELS, FLOW_EVENT_ACTION_LABELS } from './flow-events.ts';
 import { analyzeControlFlow, FLOW_LIMITS, FLOW_METHOD, FLOW_RETURN_LABELS, type FlowReport } from './control-flow.ts';
 import { tokenize, type Token } from './language.ts';
@@ -139,9 +139,9 @@ export function qualityMarkdown(report: QualityReport): string {
   if (flow.errorFlow.status !== 'not-needed') {
    lines.push('', `### Contextes d’erreur — ${ERROR_FLOW_STATUS_LABELS[flow.errorFlow.status]}`, '', ERROR_FLOW_METHOD, '', `${flow.errorFlow.states} états explorés. ${flow.errorFlow.reason ?? ''}`);
    for (const site of flow.errorFlow.sites) lines.push(`- Origine BASIC ${flow.nodes[site.node]!.basicLine}/C${flow.nodes[site.node]!.start + 1} : ${ERROR_SITE_LABELS[site.kind]}${site.operator ? ` (${site.operator})` : ''}.`);
-   const stackLabel = (calls: number[]) => calls.length ? calls.map(site => `BASIC ${flow.nodes[site]!.basicLine}/C${flow.nodes[site]!.start + 1}`).join(' → ') : 'vide';
-   for (const context of flow.errorFlow.contexts) lines.push(`- Contexte BASIC ${flow.nodes[context.node]!.basicLine}/C${flow.nodes[context.node]!.start + 1} : gestionnaire ${context.handler === null ? 'désactivé' : `BASIC ${flow.nodes[context.handler]!.basicLine}`} ; instruction interrompue ${context.fault === null ? 'aucun' : `BASIC ${flow.nodes[context.fault]!.basicLine}/C${flow.nodes[context.fault]!.start + 1}`} ; pile ${stackLabel(context.calls)}.`);
-   for (const transfer of flow.errorFlow.transfers) lines.push(`- ${ERROR_TRANSFER_LABELS[transfer.kind]} : n${transfer.node} → ${transfer.to === null ? 'arrêt du chemin' : `n${transfer.to}`} ; instruction interrompue ${transfer.fault === null ? 'aucun' : `n${transfer.fault}`} ; pile ${stackLabel(transfer.calls)}.`);
+   const stackLabel = (stack: ErrorStackFrame[]) => stack.length ? stack.map(frame => `${frame.kind === 'call' ? '' : frame.kind.toUpperCase() + ' '}BASIC ${flow.nodes[frame.node]!.basicLine}/C${flow.nodes[frame.node]!.start + 1}`).join(' → ') : 'vide';
+   for (const context of flow.errorFlow.contexts) lines.push(`- Contexte BASIC ${flow.nodes[context.node]!.basicLine}/C${flow.nodes[context.node]!.start + 1} : gestionnaire ${context.handler === null ? 'désactivé' : `BASIC ${flow.nodes[context.handler]!.basicLine}`} ; instruction interrompue ${context.fault === null ? 'aucun' : `BASIC ${flow.nodes[context.fault]!.basicLine}/C${flow.nodes[context.fault]!.start + 1}`} ; pile ${stackLabel(context.stack)}.`);
+   for (const transfer of flow.errorFlow.transfers) lines.push(`- ${ERROR_TRANSFER_LABELS[transfer.kind]} : n${transfer.node} → ${transfer.to === null ? 'arrêt du chemin' : `n${transfer.to}`} ; instruction interrompue ${transfer.fault === null ? 'aucun' : `n${transfer.fault}`} ; pile ${stackLabel(transfer.stack)}.`);
   }
   for (const call of flow.calls) lines.push(`- Appel : entrée BASIC ${flow.nodes[call.caller]!.basicLine} → BASIC ${flow.nodes[call.callee]!.basicLine}, site L${flow.nodes[call.site]!.line}/C${flow.nodes[call.site]!.start + 1}.`);
   for (const cycle of flow.cycles) lines.push(`- Cycle : ${cycle.nodes.map(id => `n${id}`).join(', ')} ; ${cycle.hasExit ? 'sortie structurelle présente' : 'sans sortie structurelle repérée'} ; ${cycle.reachable ? 'atteignable dans le graphe' : 'hors des chemins connus'}.`);

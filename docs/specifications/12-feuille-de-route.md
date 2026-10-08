@@ -273,3 +273,8 @@ Affectations scalaires simples avec /, division entière ou MOD : origine potent
 ## Avancement alpha 0.40.8 — Piles d’appels et erreurs
 
 GOSUB/ON GOSUB/RETURN rejoignent le modèle contextuel avec pile de sites bornée à 16 appels. Appelants distincts, auxiliaires de gestionnaire et reprises qui conservent les appels en attente ; RETURN conserve l’erreur active. Piles dépliables/navigables, exports flow 6 / errorFlow 3 et exemple 222/deux erreurs. [18 assertions et deux observations firmware](../implementation/basic-control-flow-alpha.md#qualification-0408), [ADR 0057](../adr/0057-piles-appels-contextes-erreur.md). Piles de boucles, autres erreurs implicites et événements restent ouverts ; dépassement d’un budget retire les résultats sans diagnostic de débordement réel. Symboles/usages 0.41 suivent ; IDE-076/J2 restent partiels.
+
+
+## Avancement alpha 0.40.9 — Boucles et contextes d’erreur
+
+Piles ordonnées FOR/WHILE/GOSUB, fermeture des boucles avec abandon des boucles intermédiaires, RETURN préservant les boucles appelantes et RESUME conservant la pile courante. Navigation vers chaque ouverture, exports flow 7 / errorFlow 4, budgets 16 appels et 16 boucles ; exemple 42/deux erreurs. [36 assertions firmware et limites](../implementation/basic-control-flow-alpha.md#qualification-0409), [ADR 0058](../adr/0058-piles-boucles-contextes-erreur.md). Réentrées, franchissements non structurés, autres erreurs implicites et événements restent ouverts ; aucun calcul de valeurs ni nouvelle conclusion globale. Prochaine tranche produit : **symboles/usages 0.41** sur ce socle borné. IDE-076/J2 demeurent partiels.
