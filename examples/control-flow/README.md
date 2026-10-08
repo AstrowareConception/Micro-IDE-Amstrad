@@ -1,6 +1,6 @@
 # Explorer le flux d’un listing BASIC
 
-Ouvrir [main.bas](main.bas) dans CPCéleste 0.40.2, puis **BASIC → Rapport de qualité BASIC… → Générer le rapport** et déplier **Flux BASIC**.
+Ouvrir [main.bas](main.bas) dans CPCéleste 0.40.3, puis **BASIC → Rapport de qualité BASIC… → Générer le rapport** et déplier **Flux BASIC**.
 
 Le programme additionne 1, 2 et 3 dans la sous-routine 200, affiche le total via 300, puis le ramène à 3 dans une boucle WHILE. Le graphe conserve aussi les autres issues structurelles, sans évaluer les conditions.
 
@@ -15,3 +15,7 @@ Ouvrir [nested.bas](nested.bas) pour explorer IF imbriqués, ELSE IF et NEXT j,i
 ## Boucles dans une branche
 
 Ouvrir [conditional-loops.bas](conditional-loops.bas). Le total affiché est **15** ; le rapport indique une complexité structurelle de **9** et quatre composantes cycliques. La boucle externe de la ligne 30 peut être sautée malgré NEXT j,i. Les boucles des lignes 40, 50 et 60 restent dans leur branche THEN ou ELSE, sans réévaluer le IF à chaque tour. Sélectionner le FOR de la ligne 40 : son issue Faux rejoint la ligne 50 et évite le ELSE de la ligne 40. Un FOR dans THEN fermé par un NEXT dans ELSE reste explicitement partiel.
+
+## Retours de sous-routines
+
+Ouvrir [returns.bas](returns.bas) : total affiché **6**, récursion mutuelle 100/200 avec RETURN possible. GOSUB 300 termine par END : sa continuation est retirée et les lignes 50/60 n’ont pas de chemin depuis le début. Le tableau distingue chemin possible, absent ou indéterminé ; il ne certifie pas que les conditions d’un chemin seront réalisées. Retirer le cas de base de la ligne 100 fait disparaître le chemin fini de retour des deux routines.

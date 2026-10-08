@@ -480,6 +480,8 @@ La **complexité de flux** porte sur les décisions accessibles depuis chaque en
 
 L’exemple [conditional-loops.bas](../examples/control-flow/conditional-loops.bas) affiche **15** et possède une complexité structurelle de **9**. Il combine boucle externe sautée et boucles dans THEN/ELSE. Le graphe montre leur continuation sans revenir au IF englobant ; un début et une fin de boucle placés dans des branches différentes restent signalés comme partiels.
 
+**Depuis la 0.40.3**, le tableau indique le **chemin vers RETURN** : Possible, Aucun chemin ou Indéterminé. Avec [returns.bas](../examples/control-flow/returns.bas), les routines récursives 100/200 ont un retour possible ; la routine 300 termine le programme, donc le graphe retire la suite du GOSUB 300. Le programme affiche 6 ; les lignes 50 et 60 sont sans chemin depuis le début. Un retour possible ne garantit pas que les conditions réelles le permettent ; une analyse de contrôle inconnue reste indéterminée.
+
 Une instruction sans chemin depuis le début est une piste de revue : CONT ou RUN avec un autre numéro peuvent lui donner un rôle. Les formes inconnues, notamment contrôle machine, événements, IF au-delà de 16 niveaux, boucles franchissant leur branche et fermetures intermédiaires de NEXT à entrée non garantie, rendent le graphe partiel et suspendent complexité et conclusions d’inaccessibilité. Les conditions ne sont pas évaluées ; les cycles ne prouvent pas que le programme boucle indéfiniment. [Détail des formes et limites](implementation/basic-control-flow-alpha.md).
 
 ### Six familles de remarques

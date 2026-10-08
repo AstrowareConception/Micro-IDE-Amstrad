@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { analyzeQuality } from '../packages/basic-language/src/quality.ts';
+import { analyzeQuality, qualityMarkdown } from '../packages/basic-language/src/quality.ts';
 import { analyzeControlFlow, FLOW_LIMITS } from '../packages/basic-language/src/control-flow.ts';
 const numbers = (source: string) => { const flow = analyzeControlFlow(source); return flow.unreachable.map(id => flow.nodes[id]!.basicLine); };
 const main = (source: string) => analyzeControlFlow(source).entries[0]!;
@@ -241,4 +241,67 @@ test('quality report shares one graph budget across sources while retaining lexi
  assert.equal(result.sources.at(-1)!.flow.complete, false);
  assert.ok(result.sources.every(s=>s.metrics?.codeLines === 2000));
  assert.ok(result.sources.filter(s=>!s.flow.complete).every(s=>!s.flow.unreachable.length));
+});
+
+test('non-returning callees remove only their own resume edges and refine local complexity', () => {
+ for (const ending of ['END', 'STOP', 'GOTO 200', 'PRINT 1']) {
+  const source = `10 GOSUB 100:IF A THEN PRINT 1\n20 END\n100 GOSUB 200:RETURN\n200 ${ending}`;
+  const flow = analyzeControlFlow(source);
+  assert.equal(flow.complete, true, flow.reasons.join('\n'));
+  assert.ok(flow.entries.every(e=>e.returnStatus==='absent'));
+  assert.ok(!flow.edges.some(e=>e.kind==='resume'));
+  assert.equal(flow.entries[0]!.complexity, 1);
+  assert.ok(flow.unreachable.some(id=>flow.nodes[id]!.operation==='IF'));
+  assert.ok(flow.unreachable.some(id=>flow.nodes[id]!.operation==='RETURN'));
+ }
+});
+test('finite return paths propagate through nested and mutually recursive calls, not through infinite recursion', () => {
+ for (const base of [false,true]) {
+  const flow = analyzeControlFlow(`10 GOSUB 100:END\n100 ${base ? 'IF A THEN RETURN ELSE ' : ''}GOSUB 200:RETURN\n200 GOSUB 100:RETURN`);
+  assert.equal(flow.complete,true,flow.reasons.join('\n'));
+  assert.deepEqual(flow.entries.slice(1).map(e=>e.returnStatus), [base?'possible':'absent',base?'possible':'absent']);
+  assert.deepEqual(flow.entries.map(e=>e.recursive),[false,true,true]);
+  assert.equal(flow.edges.filter(e=>e.kind==='resume').length,base?3:0);
+ }
+ const mixed = analyzeControlFlow('10 GOSUB 100:END\n100 IF A THEN END ELSE GOTO 200\n200 RETURN');
+ assert.equal(mixed.entries[1]!.returnStatus,'possible');
+ assert.ok(mixed.edges.some(e=>e.kind==='resume'));
+});
+test('ON GOSUB keeps its out-of-list path even when all selected routines stop', () => {
+ const flow = analyzeControlFlow('10 GOSUB 100:PRINT 1:END\n100 ON X GOSUB 200,300:RETURN\n200 END\n300 STOP');
+ assert.equal(flow.complete,true); assert.equal(flow.entries[1]!.returnStatus,'possible');
+ assert.deepEqual(flow.entries.slice(2).map(e=>e.returnStatus),['absent','absent']);
+ assert.deepEqual(flow.unreachable,[]); assert.equal(flow.entries[1]!.complexity,3);
+});
+test('return summaries protect shared continuations and distinguish missing caller stack from a path', () => {
+ const flow = analyzeControlFlow('10 IF A THEN GOSUB 100 ELSE GOTO 20\n20 PRINT 1:END\n100 END');
+ assert.equal(flow.complete,true); assert.deepEqual(flow.unreachable,[]);
+ assert.ok(!flow.edges.some(e=>e.kind==='resume'));
+ assert.equal(analyzeControlFlow('10 RETURN').entries[0]!.returnStatus,'possible', 'a structural RETURN is not proof of a valid call stack');
+ const same = analyzeControlFlow('10 GOSUB 20\n20 RETURN');
+ assert.equal(same.entries[0]!.returnStatus,'possible', 'callee and continuation may be the same node');
+});
+test('opaque construction never prunes a resume or concludes a return status', () => {
+ for (const suffix of ['200 CALL &BD19','200 ON ERROR GOTO 100','200 GOTO 999']) {
+  const flow=analyzeControlFlow('10 GOSUB 100:PRINT 1\n20 END\n100 END\n'+suffix);
+  assert.equal(flow.complete,false); assert.ok(flow.entries.every(e=>e.returnStatus==='unknown'));
+  assert.equal(flow.edges.filter(e=>e.kind==='resume').length,1); assert.deepEqual(flow.unreachable,[]);
+ }
+});
+test('return propagation remains iterative across a long chain and independent of entry display quotas', () => {
+ const source=Array.from({length:1000},(_,i)=>`${i+1} GOSUB ${i+2}:RETURN`).join('\n')+'\n1001 RETURN';
+ const flow=analyzeControlFlow(source);
+ assert.equal(flow.complete,false); assert.match(flow.reasons.join(' '),/128 points/);
+ assert.equal(flow.entries.length,128); assert.ok(flow.entries.every(e=>e.returnStatus==='possible' && e.complexity===null));
+ assert.equal(flow.edges.filter(e=>e.kind==='resume').length,1000);
+});
+
+
+test('Markdown and JSON export return summaries without source arguments', () => {
+ const report=analyzeQuality([{id:'returns',name:'returns.bas',source:'10 GOSUB 100:PRINT "PRIVATE RETURN TEXT"\n20 END\n100 END'}]);
+ assert.equal(report.sources[0]!.flow.version,2);
+ assert.equal(report.sources[0]!.flow.entries[1]!.returnStatus,'absent');
+ const markdown=qualityMarkdown(report);
+ assert.match(markdown,/chemin vers RETURN : Aucun chemin/);
+ assert.ok(!markdown.includes('PRIVATE RETURN TEXT')); assert.ok(!JSON.stringify(report).includes('PRIVATE RETURN TEXT'));
 });
