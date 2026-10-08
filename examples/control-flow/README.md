@@ -1,6 +1,6 @@
 # Explorer le flux d’un listing BASIC
 
-Ouvrir [main.bas](main.bas) dans CPCéleste 0.40.7, puis **BASIC → Rapport de qualité BASIC… → Générer le rapport** et déplier **Flux BASIC**.
+Ouvrir [main.bas](main.bas) dans CPCéleste 0.40.8, puis **BASIC → Rapport de qualité BASIC… → Générer le rapport** et déplier **Flux BASIC**.
 
 Le programme additionne 1, 2 et 3 dans la sous-routine 200, affiche le total via 300, puis le ramène à 3 dans une boucle WHILE. Le graphe conserve aussi les autres issues structurelles, sans évaluer les conditions.
 
@@ -37,3 +37,9 @@ Ouvrir [conditional-errors.bas](conditional-errors.bas) : résultat **1, 0, 98**
 Ouvrir [division-errors.bas](division-errors.bas) : **Quotient 5, Entier 5, Reste 0, Reprises 1**. La première division rencontre d=0 ; le gestionnaire remplace d par 2 et RESUME réessaie l’affectation. Les suivantes réussissent. Dans **Contextes d’erreur**, les trois origines restent pourtant signalées comme possibles : l’analyse ne calcule pas les valeurs. Elle conserve les issues normales et les chemins d’erreur, avec leurs reprises distinctes. Les liens d’origine et de destination rejoignent les colonnes exactes.
 
 Sans ON ERROR, `/ 0` poursuit l’évaluation après avertissement ; `\ 0` et `MOD 0` arrêtent le chemin fautif. Ce modèle n’analyse pas les autres erreurs implicites, ni les expressions composées, fonctions, tableaux ou divisions dans PRINT/IF. Consulter les limites avant d’interpréter un résultat ; aucune conclusion globale de complexité ou d’inaccessibilité n’est ajoutée.
+
+## Piles d’appels et erreurs
+
+Ouvrir [call-errors.bas](call-errors.bas) : **Total 222, Erreurs 2**. La ligne 30 appelle deux fois 100, qui appelle 200. L’erreur volontaire rejoint 300 ; le gestionnaire appelle 400, puis RESUME NEXT retrouve la suite de 200. Les RETURN reviennent aux bons appelants. Le rapport contient 16 transferts contextuels et garde les deux sites de la ligne 30 distincts.
+
+Déplier **Pile : 2 appel(s)** sur une reprise : le premier lien rejoint l’un des GOSUB de la ligne 30, le second celui de la ligne 100. Dans l’auxiliaire 400, la pile contient aussi l’appel du gestionnaire. Les liens deviennent inactifs après modification du source. Le modèle explore jusqu’à 16 appels imbriqués ; un dépassement retire les résultats, sans déclarer un débordement réel du CPC.

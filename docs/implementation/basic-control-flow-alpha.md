@@ -1,6 +1,6 @@
-# Analyse de flux BASIC — alpha 0.40.7
+# Analyse de flux BASIC — alpha 0.40.8
 
-Date : 8 octobre 2026. Huitième lot 0.40 ; REQ-EDT-008 / ACC-36, IDE-076 reste partiel. [ADR 0049](../adr/0049-graphe-basic-conservateur.md), [ADR 0050](../adr/0050-branches-basic-qualifiees.md), [ADR 0051](../adr/0051-boucles-et-portees-conditionnelles.md).
+Date : 8 octobre 2026. Neuvième lot 0.40 ; REQ-EDT-008 / ACC-36, IDE-076 reste partiel. [ADR 0049](../adr/0049-graphe-basic-conservateur.md), [ADR 0050](../adr/0050-branches-basic-qualifiees.md), [ADR 0051](../adr/0051-boucles-et-portees-conditionnelles.md).
 
 ## Essayer
 
@@ -172,3 +172,34 @@ Exports : **flow version 5**, **errorFlow version 2**, scope `explicit-and-simpl
 Tests de domaine : reconnaissance stricte, confidentialité, conservation des issues normales, reprise après réparation, gestionnaire partagé, erreurs imbriquées, continuations conditionnelles, avertissement sans piège, retrait sur quota/hors périmètre et exports. Le navigateur vérifie l’exemple [division-errors.bas](../../examples/control-flow/division-errors.bas), les trois opérateurs, les six transferts, les versions JSON, les destinations et l’obsolescence. [ADR 0056](../adr/0056-divisions-et-erreurs-possibles.md).
 
 Suite : piles d’appels/boucles et autres erreurs implicites encore ouvertes ; symboles/usages 0.41 suivent. IDE-076/J2 restent partiels.
+
+
+<a id="qualification-0408"></a>
+## Qualification 0.40.8 — Piles d’appels dans les contextes d’erreur
+
+Le produit fini ajoute la pile des sites GOSUB/ON GOSUB à l’instruction courante, au gestionnaire et à l’instruction fautive. Les appels d’une routine partagée restent distincts, même lorsque l’ERROR et le gestionnaire sont identiques. Chaque site possède une continuation structurelle : après GOSUB, ou après ON GOSUB. Un appel sélectionné empile son site et entre dans la cible ; GOSUB n’emprunte pas directement sa continuation. ON GOSUB conserve aussi une issue hors liste, sans empiler. Les valeurs du sélecteur restent ignorées.
+
+RETURN dépile le site le plus récent et rejoint sa continuation. ON ERROR ne pousse aucune trame d’appel ; un RETURN dans le gestionnaire peut donc dépiler l’appel interrompu. Ce RETURN ne supprime pas l’erreur active : une nouvelle erreur sur le chemin retourné reste imbriquée. RESUME, RESUME NEXT et RESUME ligne effacent l’erreur active mais conservent **la pile courante**, y compris les appels faits par le gestionnaire et qui n’ont pas encore exécuté RETURN. Il ne faut pas restaurer artificiellement une copie de la pile à l’instant de l’erreur.
+
+| Chemin | Effet vérifié |
+| --- | --- |
+| Erreur dans deux sous-routines imbriquées, RESUME NEXT | Retour dans la routine fautive, puis dépilement des deux appelants |
+| GOSUB auxiliaire dans le gestionnaire, RETURN puis RESUME | L’auxiliaire revient au gestionnaire ; la reprise conserve les appels antérieurs |
+| RESUME depuis l’auxiliaire sans son RETURN | Son appel reste empilé ; le prochain RETURN rejoint sa continuation dans le gestionnaire |
+| RETURN directement dans le gestionnaire | Dépile l’appel interrompu, conserve l’erreur active |
+| Changement de ON ERROR dans l’auxiliaire | Le nouveau gestionnaire demeure après RETURN et RESUME |
+| END, STOP ou cycle sans RETURN dans une routine | Aucune continuation directe inventée vers l’appelant |
+
+Le calcul démarre toujours depuis le début avec pile vide et piège désactivé. RETURN accessible sans appel rend le modèle hors périmètre : son erreur implicite n’est pas ajoutée. FOR/NEXT et événements asynchrones restent exclus ; une source combinant appels et WHILE/WEND est également refusée tant que leur interaction de pile n’est pas qualifiée. Les WHILE/WEND sans appel gardent le périmètre antérieur. Les divisions restent des alternatives possibles sans valeurs/types ; une réparation du diviseur n’est pas prouvée.
+
+**Budget de 16 appels imbriqués**, distinct de la capacité réelle du CPC. Dépasser ce budget retire sites, contextes et transferts. Une récursion avec cas de base peut atteindre cette borne car toutes les conditions sont explorées. Les autres limites restent 8192 états/4096 transferts/131072 transitions par source et 65536 états multisource. Les nouveaux appels et retours consomment le même budget de transferts. Piles immuables pendant le parcours, profondeur bornée, aucune récursion du moteur d’analyse.
+
+Exports : **flow version 6**, **errorFlow version 3**, scope `explicit-and-simple-division` inchangé. Chaque contexte/transfert contient `calls`, tableau de sites du plus ancien au plus récent, décrivant l’état **avant** le transfert. Types de transferts `call` et `return` ajoutés. Aucun argument, nom de variable ou valeur n’est exporté. Le graphe structurel et ses résumés ne sont pas recalculés à partir de ces piles : conclusions globales toujours suspendues.
+
+L’interface présente une pile dépliable par contexte/transfert, au plus 16 liens ; les plafonds de 100 origines/contextes/transferts restent explicites. Les liens rejoignent les colonnes exactes et suivent la garde d’obsolescence. Markdown donne l’ordre des sites, JSON leurs identifiants. [call-errors.bas](../../examples/control-flow/call-errors.bas) affiche **Total 222, Erreurs 2** : 43 états, 18 contextes, 16 transferts dans le modèle courant.
+
+**18 nouvelles assertions firmware positives** : appels imbriqués, auxiliaire rendu, RETURN direct du gestionnaire, RESUME ligne préservant la pile, auxiliaire sans appelant initial, réparation d’une division, trois reprises avec auxiliaire encore empilé, appels dans THEN/ELSE, récursion finie, quatre sélecteurs ON GOSUB, remplacement du gestionnaire et exemple complet. **Deux observations négatives bornées** vérifient l’erreur restée active après RETURN du gestionnaire et la non-réentrée après erreur dans son auxiliaire. Jeu CPC 6128 anglais identifié dans le moteur WASM intégré ; aucune qualification indépendante ou matérielle supplémentaire.
+
+Tests de domaine : séparation des appelants, contexte actif préservé, retours précis, ON hors liste, absence de continuation inventée, profondeur 16/17 et récursion, quotas, exclusions et confidentialité. Chromium vérifie les piles des deux reprises, le lien vers le premier site de la ligne 30, les formats et l’obsolescence. [ADR 0057](../adr/0057-piles-appels-contextes-erreur.md).
+
+Suite : interaction avec les piles de boucles et autres erreurs implicites encore ouvertes ; symboles/usages 0.41 suivent. IDE-076/J2 demeurent partiels.

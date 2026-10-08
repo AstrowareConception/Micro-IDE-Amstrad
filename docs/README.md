@@ -1,6 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.40.7
+# CPCéleste — Dossier de conception et réalisation — version 0.40.8
 
-**Flux BASIC 0.40.7** : divisions simples potentiellement fautives, issues normales et erreurs possibles, avec origines/reprises navigables. Différence entre division réelle sans gestionnaire et division entière/MOD qualifiée sur firmware. Autres erreurs implicites, piles et événements asynchrones exclus ; conclusions globales toujours suspendues. [Guide](implementation/basic-control-flow-alpha.md), [ADR 0056](adr/0056-divisions-et-erreurs-possibles.md).
+**Flux BASIC 0.40.8** : piles GOSUB/ON GOSUB/RETURN suivies dans les contextes d’erreur, appelants distincts et navigation vers les sites empilés. Reprises avec appels du gestionnaire en attente qualifiées sur firmware. Budget de 16 appels ; piles de boucles et autres erreurs implicites encore ouvertes, conclusions globales suspendues. [Guide](implementation/basic-control-flow-alpha.md), [ADR 0057](adr/0057-piles-appels-contextes-erreur.md).
 
 **Suites BASIC 0.39 — premier lot** : suites persistantes, lancement individuel/global, historique des dix derniers rapports et retour aux assertions. [Guide](implementation/basic-test-suites-alpha.md), [ADR 0047](adr/0047-suites-basic-et-historique.md). Le [deuxième lot 0.39.1](implementation/basic-scenarios-alpha.md) ajoute des scénarios clavier, fixtures ASCII et observations écran/fichier ([ADR 0048](adr/0048-scenarios-basic-reproductibles.md)).
 
@@ -12,7 +12,7 @@
 
 ## Vous cherchez le mode d’emploi ?
 
-**[Présentation commerciale et notice utilisateur illustrée de CPCéleste](guide-utilisateur.md)** : 25 chapitres, 23 captures, les parcours complétés par les suites/scénarios BASIC et l’analyse de flux 0.40.7, des premiers pas aux fonctions avancées.
+**[Présentation commerciale et notice utilisateur illustrée de CPCéleste](guide-utilisateur.md)** : 25 chapitres, 23 captures, les parcours complétés par les suites/scénarios BASIC et l’analyse de flux 0.40.8, des premiers pas aux fonctions avancées.
 
 Le dossier ci-dessous conserve les spécifications et les rapports des incréments successifs.
 

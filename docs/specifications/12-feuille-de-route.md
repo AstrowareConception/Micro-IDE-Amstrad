@@ -268,3 +268,8 @@ Les ERROR dans IF/THEN/ELSE imbriqués rejoignent le modèle contextuel. RESUME 
 ## Avancement alpha 0.40.7 — Divisions et erreurs possibles
 
 Affectations scalaires simples avec /, division entière ou MOD : origine potentielle, issue normale conservée et reprise contextualisée. Sans piège, l’avertissement / poursuit l’évaluation ; les divisions entières fautives arrêtent le chemin. Aucun calcul de valeurs ni de types. Panneau Contextes d’erreur, origines/opérateurs navigables, exports flow 5 / errorFlow 2 et exemple de réparation du diviseur. [52 assertions et neuf observations firmware bornées](../implementation/basic-control-flow-alpha.md#qualification-0407), [ADR 0056](../adr/0056-divisions-et-erreurs-possibles.md). Autres erreurs implicites, piles et événements restent ouverts ; symboles/usages 0.41 suivent. IDE-076/J2 restent partiels.
+
+
+## Avancement alpha 0.40.8 — Piles d’appels et erreurs
+
+GOSUB/ON GOSUB/RETURN rejoignent le modèle contextuel avec pile de sites bornée à 16 appels. Appelants distincts, auxiliaires de gestionnaire et reprises qui conservent les appels en attente ; RETURN conserve l’erreur active. Piles dépliables/navigables, exports flow 6 / errorFlow 3 et exemple 222/deux erreurs. [18 assertions et deux observations firmware](../implementation/basic-control-flow-alpha.md#qualification-0408), [ADR 0057](../adr/0057-piles-appels-contextes-erreur.md). Piles de boucles, autres erreurs implicites et événements restent ouverts ; dépassement d’un budget retire les résultats sans diagnostic de débordement réel. Symboles/usages 0.41 suivent ; IDE-076/J2 restent partiels.
