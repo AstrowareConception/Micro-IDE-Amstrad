@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.40.9
+# CPCéleste — Dossier de conception et réalisation — version 0.41.0
+
+**Symboles et usages 0.41** : index textuel des scalaires/tableaux, rôles et occurrences navigables, recherche par nom/source, exports dédiés. Travail local à la demande sur les buffers, avec limites et protection des liens obsolètes ; types implicites et renommage non résolus. [Guide](implementation/basic-symbols-alpha.md), [ADR 0059](adr/0059-symboles-usages-basic.md).
 
 **Flux BASIC 0.40.9** : piles ordonnées d’appels et de boucles FOR/WHILE dans les contextes d’erreur. RETURN abandonne les boucles de l’appel quitté, RESUME conserve les boucles courantes ; fermetures, navigation et budgets qualifiés. 16 appels et 16 boucles actives maximum dans l’analyse, sans prétendre à une limite matérielle. [Guide](implementation/basic-control-flow-alpha.md#qualification-0409), [ADR 0058](adr/0058-piles-boucles-contextes-erreur.md).
 
@@ -12,7 +14,7 @@
 
 ## Vous cherchez le mode d’emploi ?
 
-**[Présentation commerciale et notice utilisateur illustrée de CPCéleste](guide-utilisateur.md)** : 25 chapitres, 23 captures, les parcours complétés par les suites/scénarios BASIC et l’analyse de flux 0.40.9, des premiers pas aux fonctions avancées.
+**[Présentation commerciale et notice utilisateur illustrée de CPCéleste](guide-utilisateur.md)** : 25 chapitres, 24 captures, les parcours complétés par les suites/scénarios BASIC et l’analyse de flux 0.40.9, des premiers pas aux fonctions avancées.
 
 Le dossier ci-dessous conserve les spécifications et les rapports des incréments successifs.
 

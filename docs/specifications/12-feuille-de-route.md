@@ -278,3 +278,8 @@ GOSUB/ON GOSUB/RETURN rejoignent le modèle contextuel avec pile de sites borné
 ## Avancement alpha 0.40.9 — Boucles et contextes d’erreur
 
 Piles ordonnées FOR/WHILE/GOSUB, fermeture des boucles avec abandon des boucles intermédiaires, RETURN préservant les boucles appelantes et RESUME conservant la pile courante. Navigation vers chaque ouverture, exports flow 7 / errorFlow 4, budgets 16 appels et 16 boucles ; exemple 42/deux erreurs. [36 assertions firmware et limites](../implementation/basic-control-flow-alpha.md#qualification-0409), [ADR 0058](../adr/0058-piles-boucles-contextes-erreur.md). Réentrées, franchissements non structurés, autres erreurs implicites et événements restent ouverts ; aucun calcul de valeurs ni nouvelle conclusion globale. Prochaine tranche produit : **symboles/usages 0.41** sur ce socle borné. IDE-076/J2 demeurent partiels.
+
+
+## Avancement alpha 0.41.0 — Symboles et usages
+
+Premier index textuel à la demande des variables et tableaux par source : rôles syntaxiques, filtres, navigation précise et onglets chargés réouverts. Casse regroupée, suffixes/scalaires/tableaux distincts ; types implicites et portées FN non résolus. Worker borné, annulation/délai, snapshots obsolètes protégés et exports dédiés contenant les noms sans code/valeurs. [Guide et qualification](../implementation/basic-symbols-alpha.md), [ADR 0059](../adr/0059-symboles-usages-basic.md). IDE-015 reste partiel, IDE-017 non réalisé. Suite : types/portées et DEF FN, accès depuis le curseur, puis renommage sémantique avec aperçu ; limites de flux antérieures conservées au backlog.

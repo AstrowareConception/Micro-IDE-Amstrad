@@ -551,6 +551,16 @@ L’image de la zone observée peut être téléchargée en PNG pour examen. Les
 Le suivi de réactivité fonctionne seulement lorsque le panneau et la fenêtre sont visibles ; les données restent locales en mémoire. Il ne mesure pas l’intégralité du CPU ou de la mémoire Electron. L’analyse de qualité est séparée des diagnostics pendant la saisie : vous gardez la maîtrise du moment où vous demandez ce travail supplémentaire.
 
 <a id="git"></a>
+### Retrouver une variable et tous ses usages
+
+![Recherche de SCORE, distinction scalaire et tableau, et navigation entre les usages](images/guide-utilisateur/24-symboles.png)
+
+**BASIC → Symboles et usages BASIC…** ouvre l’onglet **Symboles**. Choisissez la source active ou toutes les sources chargées, puis **Actualiser l’index**. Recherchez un nom à gauche ; choisissez ensuite les lectures, écritures ou autres usages à droite. Chaque bouton rejoint la variable à sa ligne et sa colonne, même dans un onglet fermé dont le buffer reste chargé.
+
+L’exemple [variables et tableaux](../examples/symbols/README.md) permet de suivre JOUEUR depuis le FOR jusqu’au NEXT, ou SCORES entre dimensionnement, écriture et lecture. Les chaînes, commentaires et DATA ne brouillent pas la liste. La casse est ignorée ; suffixes et scalaires/tableaux restent distincts. **Un nom sans suffixe n’a pas de type résolu** : TOTAL et TOTAL! restent deux entrées, même lorsqu’ils désignent la même variable sur CPC.
+
+Modifier une source rend les liens obsolètes : actualisez pour naviguer de nouveau. L’index ne se relance pas pendant la frappe. Les limites et segments omis sont consultables par source. Les exports dédiés contiennent les noms et emplacements, sans valeurs ni code. Ce premier lot ne renomme aucune variable et ne prétend pas résoudre les types ou les fonctions DEF FN. [Guide détaillé](implementation/basic-symbols-alpha.md).
+
 ## 15. Construire un historique choisi avec Git
 
 L’historique local accompagne les sauvegardes ; Git vous permet de choisir les étapes significatives de votre projet, de les nommer et de les partager. Installez Git séparément, puis ouvrez son panneau avec **Git** ou `Ctrl/Cmd + Maj + G`.
