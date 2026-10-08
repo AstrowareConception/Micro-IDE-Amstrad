@@ -26,6 +26,60 @@ async function recipe(name, source, outcome, seconds = 3, probes = {}) {
  assert.deepEqual(observed, probes, `${name}: RAM checkpoints before disposal`);
  results.push(result); console.log(`${name}: ${result.outcome} (${result.emulatedSeconds.toFixed(3)} s)`); return result;
 }
+// 0.40.7: three division operators, trapped and untrapped behavior.
+const divisionOperators = ['/',String.fromCharCode(92),'MOD'];
+for (const mode of ['retry','next','line']) for (const branch of ['plain','then','else','prefix','nested']) {
+ const listing = ['10 REM @CPCTEST 1 Real division','11 REM @CPCTEST 2 Integer division','12 REM @CPCTEST 3 Modulo division'];
+ const handlers = [];
+ divisionOperators.forEach((operator,index) => {
+  const base=20+index*100, handler=1000+index*100, expression=`q=10 ${operator} d`;
+  const code=branch==='plain'?`${expression}:x=x+1`:branch==='then'?`IF a THEN ${expression}:x=x+1 ELSE x=99`:branch==='else'?`IF a THEN x=99 ELSE ${expression}:x=x+1`:branch==='prefix'?`IF a THEN x=x+10:${expression}:x=x+1 ELSE x=99`:`IF a THEN IF b THEN ${expression}:x=x+1 ELSE x=98 ELSE x=99`;
+  const expectedX=mode==='line'?(branch==='prefix'?10:0):mode==='next'?(branch==='else'?0:branch==='prefix'?11:1):branch==='plain'?1:branch==='prefix'?11:99;
+  const expectedQ=mode==='retry'&&(branch==='plain'||branch==='prefix')?(operator==='MOD'?0:5):-1;
+  listing.push(`${base} MEMORY &7FFF:ON ERROR GOTO ${handler}:q=-1:x=0:n=0:d=0:a=${branch==='else'?0:1}:b=1`,`${base+10} ${code}`,`${base+20} IF x=${expectedX} AND q=${expectedQ} AND n=1 AND e=11 AND l=${base+10} THEN POKE &${(0x8004+index).toString(16)},1 ELSE POKE &${(0x8004+index).toString(16)},2`);
+  handlers.push(`${handler} n=n+1:e=ERR:l=ERL:d=2:a=1-a:RESUME ${mode==='retry'?'':mode==='next'?'NEXT':base+20}`);
+ });
+ listing.push('900 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165','910 GOTO 910',...handlers);
+ await recipe(`division-${mode}-${branch}`,listing.join('\n')+'\n','passed');
+}
+await recipe('division-normal-types', `10 REM @CPCTEST 1 Integer suffix
+11 REM @CPCTEST 2 Real suffix
+12 REM @CPCTEST 3 LET modulo
+20 MEMORY &7FFF:d%=2:q%=10/d%
+30 IF q%=5 THEN POKE &8004,1 ELSE POKE &8004,2
+40 d!=2:q!=10${String.fromCharCode(92)}d!
+50 IF q!=5 THEN POKE &8005,1 ELSE POKE &8005,2
+60 d=2:LET q=10 MOD d
+70 IF q=0 THEN POKE &8006,1 ELSE POKE &8006,2
+900 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165
+910 GOTO 910
+`,'passed');
+for(const [name,a,code] of [['then',1,'IF a THEN q=10/d:x=1 ELSE x=99'],['else',0,'IF a THEN x=99 ELSE q=10/d:x=1'],['prefix',1,'IF a THEN x=10:q=10/d:x=1 ELSE x=99']]) {
+ await recipe('division-warning-'+name,`10 REM @CPCTEST 1 Real division warns and continues in same arm
+20 MEMORY &7FFF:ON ERROR GOTO 0:d=0:a=${a}:x=0
+30 ${code}
+40 IF x=1 AND q>1E30 THEN POKE &8004,1 ELSE POKE &8004,2
+900 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165
+910 GOTO 910
+`,'passed');
+}
+for(const operator of divisionOperators) for(const [name,setup,handler] of [['unhandled','ON ERROR GOTO 0',''],['nested','ON ERROR GOTO 1000',`1000 POKE &8100,1:q=10 ${operator} d:POKE &8101,2:RESUME NEXT`],['rethrow','ON ERROR GOTO 1000','1000 POKE &8100,1:ON ERROR GOTO 0:POKE &8101,2']]) {
+ if(operator==='/' && name==='unhandled') continue;
+ await recipe(`division-${operator.charCodeAt(0)}-${name}`,`10 REM @CPCTEST 1 Observe failure stop
+20 MEMORY &7FFF:POKE &8100,0:POKE &8101,0:d=0:${setup}
+30 q=10 ${operator} d:POKE &8101,1
+40 GOTO 40
+${handler}
+`,'timeout',3,{[0x8100]:name==='unhandled'?0:1,[0x8101]:0});
+}
+await recipe('division-explicit-eleven', `10 REM @CPCTEST 1 ERROR eleven stops without a trap
+20 MEMORY &7FFF:POKE &8100,0:ON ERROR GOTO 0
+30 ERROR 11:POKE &8100,1
+40 GOTO 40
+`, 'timeout',3,{[0x8100]:0});
+const divisionExample = await readFile('examples/control-flow/division-errors.bas','utf8');
+await recipe('division-example',divisionExample.replace('10 REM Reparer un diviseur avant de reprendre','10 REM @CPCTEST 1 Division repair example').replace('20 ON ERROR','15 MEMORY &7FFF\n20 ON ERROR').replace('50 PRINT "Quotient";q;"Entier";r;"Reste";m;"Reprises";n','50 IF q=5 AND r=5 AND m=0 AND n=1 THEN POKE &8004,1 ELSE POKE &8004,2\n55 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165'),'passed');
+
 // 0.40.6: saved statement boundaries, including skipped colons in another arm.
 for (const mode of ['next', 'retry']) for (const specimen of conditionalErrorCases) {
  const [x, n] = specimen[mode];

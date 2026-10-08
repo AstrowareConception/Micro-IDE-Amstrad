@@ -301,7 +301,7 @@ test('return propagation remains iterative across a long chain and independent o
 
 test('Markdown and JSON export return summaries without source arguments', () => {
  const report=analyzeQuality([{id:'returns',name:'returns.bas',source:'10 GOSUB 100:PRINT "PRIVATE RETURN TEXT"\n20 END\n100 END'}]);
- assert.equal(report.sources[0]!.flow.version,4);
+ assert.equal(report.sources[0]!.flow.version,5);
  assert.equal(report.sources[0]!.flow.entries[1]!.returnStatus,'absent');
  const markdown=qualityMarkdown(report);
  assert.match(markdown,/chemin vers RETURN : Aucun chemin/);
@@ -310,7 +310,7 @@ test('Markdown and JSON export return summaries without source arguments', () =>
 
 test('event declarations have navigable targets without immediate calls, reachability or control cycles', () => {
  const flow=analyzeControlFlow('10 ON ERROR GOTO 100:ON BREAK GOSUB 200:ON SQ(1) GOSUB 200\n20 AFTER 50 GOSUB 200:EVERY t,2 GOSUB 200\n30 END\n100 RESUME NEXT\n200 RETURN');
- assert.equal(flow.version,4); assert.equal(flow.complete,false);
+ assert.equal(flow.version,5); assert.equal(flow.complete,false);
  assert.deepEqual(flow.handlers.map(h=>[h.event,h.action,h.targetLine]),[['error','register',100],['break','register',200],['sound','register',200],['after','register',200],['every','register',200]]);
  assert.equal(flow.edges.filter(e=>e.kind==='handler').length,5); assert.deepEqual(flow.calls,[]); assert.deepEqual(flow.cycles,[]);
  assert.deepEqual(flow.entries.map(e=>[flow.nodes[e.node]!.basicLine,e.kind]),[[10,'main'],[100,'handler'],[200,'handler']]);
@@ -437,7 +437,7 @@ test('state budgets remove partial contexts, preserve the graph and bound global
 });
 test('error context exports state their restricted scope and retain precise destinations', () => {
  const report=analyzeQuality([{id:'errors',name:'errors.bas',source:'10 ON ERROR GOTO 100\n20 ERROR 5:PRINT "SECRET"\n30 END\n100 RESUME NEXT'}]);
- const text=qualityMarkdown(report); assert.match(text,/Contextes des ERROR explicites/); assert.match(text,/erreurs implicites/); assert.match(text,/Suite de l’instruction mémorisée/);
+ const text=qualityMarkdown(report); assert.match(text,/Contextes d’erreur/); assert.match(text,/erreurs implicites/); assert.match(text,/Suite de l’instruction mémorisée/);
  assert.ok(!text.includes('SECRET')); assert.ok(!JSON.stringify(report).includes('SECRET'));
 });
 
@@ -505,4 +505,89 @@ test('conditional resumption scanning protects strings, DATA, comments and empty
  assert.equal(empty.errorFlow.status,'covered');
  assert.equal(empty.nodes[empty.errorFlow.transfers.find(t=>t.kind==='retry')!.to!]!.operation,'ERROR');
  assert.equal(empty.nodes[empty.errorFlow.transfers.find(t=>t.kind==='next')!.to!]!.operation,'AFFECTATION');
+});
+
+test('simple scalar divisions have typed sites without evaluating or exporting operands', () => {
+ for(const statement of ['q=secretNumerator/secretDivisor','LET q=10/d','q%=10\\d%','q!=10 MOD d!','q=-32767/+0','q=0/2']) {
+  const flow=analyzeControlFlow(`10 ${statement}\n20 END`);
+  assert.equal(flow.errorFlow.status,'covered',statement);
+  assert.equal(flow.errorFlow.version,2); assert.equal(flow.errorFlow.scope,'explicit-and-simple-division');
+  assert.deepEqual(flow.errorFlow.sites.map(s=>s.kind),['division-zero']);
+  assert.equal(flow.errorFlow.transfers[0]!.kind,statement.includes('/')?'warning':'unhandled');
+  assert.equal(flow.complete,false); assert.deepEqual(flow.unreachable,[]);
+  assert.ok(!JSON.stringify(flow).includes('secret'));
+ }
+ for(const statement of ['q$=a/b','q=a$/b','q=a/b$','q(1)=a/b','q=a(1)/b','q=(a/b)','q=a/b+1','q=ABS(a)/b','q=1.5/b','q=&10/b','q=32768/b','q=-a/b','PRINT a/b','IF a/b THEN PRINT 1','DATA a/b','PRINT "q=a/b"','REM q=a/b']) {
+  assert.deepEqual(analyzeControlFlow(`10 ${statement}\n20 END`).errorFlow.sites,[],statement);
+ }
+});
+test('a possible division preserves the normal path and the correlated error path', () => {
+ const flow=analyzeControlFlow('10 ON ERROR GOTO 100\n20 q=n/d:ERROR 5\n30 END\n100 RESUME NEXT');
+ const result=flow.errorFlow; assert.equal(result.status,'covered');
+ assert.deepEqual(result.sites.map(s=>s.kind),['division-zero','explicit']);
+ const division=result.sites[0]!.node, explicit=result.sites[1]!.node;
+ assert.ok(result.transfers.some(t=>t.kind==='raise' && t.node===division));
+ assert.ok(result.transfers.some(t=>t.kind==='next' && t.fault===division && t.to===explicit));
+ assert.ok(result.transfers.some(t=>t.kind==='raise' && t.node===explicit));
+ const normal=analyzeControlFlow('10 q=n/d\n20 ON ERROR GOTO 100\n30 ERROR 5\n40 END\n100 RESUME NEXT');
+ assert.deepEqual(normal.errorFlow.transfers.filter(t=>t.kind==='raise'||t.kind==='warning').map(t=>t.kind),['warning','raise']);
+});
+test('implicit retry reaches a fixed point and keeps a normal continuation after repair', () => {
+ const flow=analyzeControlFlow('10 ON ERROR GOTO 100\n20 q=10/d:ON ERROR GOTO 200\n30 ERROR 5\n40 END\n100 d=2:RESUME\n200 RESUME NEXT');
+ assert.equal(flow.errorFlow.status,'covered');
+ const division=flow.errorFlow.sites.find(s=>s.kind==='division-zero')!.node;
+ assert.ok(flow.errorFlow.transfers.some(t=>t.kind==='retry' && t.fault===division && t.to===division));
+ assert.ok(flow.errorFlow.transfers.some(t=>t.kind==='raise' && flow.nodes[t.to!]!.basicLine===200));
+ assert.ok(flow.errorFlow.states<40);
+});
+test('division in a handler may stop for nested error or continue normally to RESUME', () => {
+ const flow=analyzeControlFlow('10 ON ERROR GOTO 100\n20 ERROR 5\n30 END\n100 q=n/d:RESUME NEXT');
+ assert.equal(flow.errorFlow.status,'covered');
+ assert.ok(flow.errorFlow.transfers.some(t=>t.kind==='nested' && t.to===null));
+ assert.ok(flow.errorFlow.transfers.some(t=>t.kind==='next' && flow.nodes[t.to!]!.basicLine===30));
+ const rethrow=analyzeControlFlow('10 ON ERROR GOTO 100\n20 q=n/d\n30 END\n100 ON ERROR GOTO 0');
+ assert.equal(rethrow.errorFlow.status,'covered'); assert.ok(rethrow.errorFlow.transfers.some(t=>t.kind==='rethrow'));
+});
+test('implicit conditional sites preserve the qualified saved instruction boundaries', () => {
+ for(const [line,retryAt,nextAt,nextLine] of [
+  ['20 IF A THEN q=10/d:x=1 ELSE x=99','IF','x=1',20],
+  ['20 IF A THEN x=99 ELSE q=10/d:x=2','IF','',30],
+  ['20 IF A THEN x=99:x=98 ELSE q=10/d:x=2','IF','x=98',20],
+  ['20 IF A THEN x=10:q=10/d:x=1 ELSE x=99','q=10/d','x=1',20],
+  ['20 IF A THEN x=10:IF B THEN q=10/d:x=1 ELSE x=99','IF B','x=1',20],
+ ] as const) {
+  const flow=analyzeControlFlow(`10 ON ERROR GOTO 100\n${line}\n30 END\n100 IF B THEN RESUME ELSE RESUME NEXT`);
+  assert.equal(flow.errorFlow.status,'covered');
+  const retry=flow.nodes[flow.errorFlow.transfers.find(t=>t.kind==='retry')!.to!]!;
+  const next=flow.nodes[flow.errorFlow.transfers.find(t=>t.kind==='next')!.to!]!;
+  assert.equal(retry.start,line.indexOf(retryAt)); assert.equal(next.basicLine,nextLine);
+  if(nextAt) assert.equal(next.start,line.lastIndexOf(nextAt));
+ }
+});
+test('implicit error results discard all deductions on unsupported or exhausted analysis', () => {
+ const source='10 ON ERROR GOTO 100\n20 q=n/d\n30 END\n100 RESUME NEXT';
+ for(const flow of [analyzeControlFlow(source,FLOW_LIMITS.nodes,3), analyzeControlFlow(source,5),analyzeControlFlow(source+'\n200 RETURN')]) {
+  assert.ok(['limited','unsupported'].includes(flow.errorFlow.status));
+  assert.deepEqual(flow.errorFlow.sites,[]); assert.deepEqual(flow.errorFlow.contexts,[]); assert.deepEqual(flow.errorFlow.transfers,[]);
+ }
+ const unpaired=analyzeControlFlow('10 q=n/d:RESUME NEXT');
+ assert.equal(unpaired.errorFlow.status,'unsupported'); assert.deepEqual(unpaired.errorFlow.sites,[]);
+});
+test('implicit error exports distinguish possible origins and keep all private expressions out', () => {
+ const report=analyzeQuality([{id:'divisions',name:'divisions.bas',source:'10 ON ERROR GOTO 100\n20 privateResult=privateNumerator/privateDivisor\n30 END\n100 RESUME NEXT'}]);
+ const markdown=qualityMarkdown(report); assert.match(markdown,/Division par zéro possible/); assert.match(markdown,/sans calculer son diviseur/);
+ assert.ok(!markdown.includes('private')); assert.ok(!JSON.stringify(report).includes('private'));
+ assert.equal(report.sources[0]!.flow.version,5);
+});
+
+test('untrapped real division warns and continues in its own arm; integer division stops', () => {
+ for(const operator of ['/','\\','MOD']) {
+  const line=`10 IF A THEN x=99 ELSE q=10 ${operator} d:x=2`;
+  const flow=analyzeControlFlow(`${line}\n20 END`), result=flow.errorFlow;
+  assert.equal(result.status,'covered'); assert.equal(result.sites[0]!.operator,operator);
+  const transfer=result.transfers[0]!;
+  assert.equal(transfer.kind,operator==='/'?'warning':'unhandled');
+  if(operator==='/') assert.equal(flow.nodes[transfer.to!]!.start,line.indexOf('x=2'));
+  else assert.equal(transfer.to,null);
+ }
 });

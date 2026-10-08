@@ -1,6 +1,6 @@
-# Analyse de flux BASIC — alpha 0.40.6
+# Analyse de flux BASIC — alpha 0.40.7
 
-Date : 8 octobre 2026. Septième lot 0.40 ; REQ-EDT-008 / ACC-36, IDE-076 reste partiel. [ADR 0049](../adr/0049-graphe-basic-conservateur.md), [ADR 0050](../adr/0050-branches-basic-qualifiees.md), [ADR 0051](../adr/0051-boucles-et-portees-conditionnelles.md).
+Date : 8 octobre 2026. Huitième lot 0.40 ; REQ-EDT-008 / ACC-36, IDE-076 reste partiel. [ADR 0049](../adr/0049-graphe-basic-conservateur.md), [ADR 0050](../adr/0050-branches-basic-qualifiees.md), [ADR 0051](../adr/0051-boucles-et-portees-conditionnelles.md).
 
 ## Essayer
 
@@ -144,3 +144,31 @@ Les destinations sont calculées pendant la construction à partir des frontièr
 [conditional-errors.bas](../../examples/control-flow/conditional-errors.bas) affiche **1, 0, 98**. Le navigateur vérifie le vrai worker, les six transferts, les destinations JSON exactes et la navigation vers z=98 ; modifier le source bloque le lien. Les tests de domaine confrontent les destinations aux mêmes cas firmware, vérifient les reprises partagées et conservent les plafonds de la 0.40.5. [ADR 0055](../adr/0055-reprises-erreurs-conditionnelles.md).
 
 Suite : erreurs implicites et piles encore à qualifier ; symboles/usages 0.41 ensuite. IDE-076/J2 restent partiels.
+
+
+<a id="qualification-0407"></a>
+## Qualification 0.40.7 — Divisions et erreurs possibles
+
+Le modèle des erreurs suit désormais les divisions simples dans une affectation scalaire, en plus des ERROR explicites et des reprises conditionnelles. Une origine indique son type (`explicit` ou `division-zero`) et, pour une division, son opérateur. Le nom des variables, valeurs et expressions ne sont jamais conservés dans le rapport. Le panneau s’appelle **Contextes d’erreur** ; les liens utilisent **Instruction interrompue** pour ne pas assimiler une affectation à la commande ERROR.
+
+Grammaire couverte : `[LET] scalaire = opérande opérateur opérande`, avec scalaire/variable non suffixé `$`, opérande variable ou entier décimal signé de valeur absolue ≤ 32767, et opérateur `/`, `\` ou `MOD`. Aucun calcul de valeurs, inférence de type ou propagation des affectations. Les suffixes `%`/`!` sont reconnus lexicalement. Les expressions composées, parenthèses, fonctions, tableaux, littéraux réels/hexadécimaux, variables précédées d’un signe, divisions dans PRINT/IF et autres commandes ne créent pas d’origine dans ce premier lot. Ces exclusions ne certifient pas l’absence d’erreur ; autres erreurs implicites et conversions restent ignorées.
+
+Chaque division possède une issue normale **et** une erreur 11 possible, même avec diviseur littéral. Un diviseur réparé dans un gestionnaire n’est pas mémorisé par l’analyse ; le point fixe représente donc la reprise et une réussite possible sans prouver le nombre d’itérations. Le défaut actif reste corrélé au gestionnaire et aux destinations de RESUME/RESUME NEXT/RESUME ligne.
+
+| Contexte de la division par zéro | Chemin fautif représenté |
+| --- | --- |
+| Gestionnaire actif, aucune erreur déjà traitée | Entrée dans le gestionnaire |
+| `/` sans gestionnaire | Avertissement possible, puis suite normale de l’affectation |
+| `\` ou `MOD` sans gestionnaire | Arrêt du chemin fautif |
+| Nouvelle division fautive pendant le gestionnaire | Arrêt sans réentrée ; l’issue normale reste également possible |
+| ON ERROR GOTO 0 pendant le traitement | Relance et arrêt du chemin |
+
+La continuation après avertissement `/` suit la branche où l’affectation s’exécute. Elle ne cherche pas la suite du IF mémorisé comme RESUME NEXT. Poursuivre l’évaluation n’exclut pas une autre erreur, par exemple une conversion vers une variable entière. `ERROR 11` explicite sans piège arrête le chemin : il n’est pas assimilé à l’avertissement d’une division réelle.
+
+Exports : **flow version 5**, **errorFlow version 2**, scope `explicit-and-simple-division`, liste `sites` et transfert `warning`. Le rapport englobant reste en version 2. Les bornes 8192 états/4096 transferts/131072 transitions et 65536 états multisource demeurent. Sites, contextes et transferts sont retirés ensemble en cas d’abandon après exploration ; 100 origines, 100 contextes et 100 transferts maximum sont affichés. Les sites sont bornés par le quota de nœuds. Le graphe global reste partiel sur ces divisions : complexité, retours et inaccessibilité globale non conclus.
+
+**52 nouvelles assertions firmware positives** : 45 combinaisons de trois opérateurs, trois reprises et cinq formes conditionnelles ; trois affectations sans erreur avec suffixes/LET ; trois avertissements `/` sans gestionnaire dans THEN/ELSE/après préfixe ; un exemple complet. **Neuf observations négatives bornées** : division entière/MOD sans piège, erreur imbriquée et désactivation pour les trois opérateurs, ERROR 11 explicite sans piège. Les observations négatives contrôlent les marqueurs RAM après trois secondes ; elles ne prouvent pas une propriété temporelle illimitée. Recettes sur le jeu CPC 6128 anglais identifié dans le moteur WASM intégré, sans ROM publiée ni qualification indépendante/matérielle supplémentaire.
+
+Tests de domaine : reconnaissance stricte, confidentialité, conservation des issues normales, reprise après réparation, gestionnaire partagé, erreurs imbriquées, continuations conditionnelles, avertissement sans piège, retrait sur quota/hors périmètre et exports. Le navigateur vérifie l’exemple [division-errors.bas](../../examples/control-flow/division-errors.bas), les trois opérateurs, les six transferts, les versions JSON, les destinations et l’obsolescence. [ADR 0056](../adr/0056-divisions-et-erreurs-possibles.md).
+
+Suite : piles d’appels/boucles et autres erreurs implicites encore ouvertes ; symboles/usages 0.41 suivent. IDE-076/J2 restent partiels.

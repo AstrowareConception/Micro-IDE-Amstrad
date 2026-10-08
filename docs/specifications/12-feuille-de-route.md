@@ -263,3 +263,8 @@ Parcours borné des triplets instruction/gestionnaire/ERROR interrompu ; activat
 ## Avancement alpha 0.40.6 — Reprises conditionnelles
 
 Les ERROR dans IF/THEN/ELSE imbriqués rejoignent le modèle contextuel. RESUME cible l’instruction mémorisée, parfois le IF englobant ; RESUME NEXT cherche sa suite depuis ce début, y compris dans une branche précédemment ignorée. Frontières de deux-points exécutés, destinations navigables et exemple 1/0/98. [51 assertions firmware](../implementation/basic-control-flow-alpha.md#qualification-0406), [ADR 0055](../adr/0055-reprises-erreurs-conditionnelles.md). Erreurs implicites, piles et événements asynchrones restent ouverts ; symboles/usages 0.41 suivent. IDE-076/J2 demeurent partiels.
+
+
+## Avancement alpha 0.40.7 — Divisions et erreurs possibles
+
+Affectations scalaires simples avec /, division entière ou MOD : origine potentielle, issue normale conservée et reprise contextualisée. Sans piège, l’avertissement / poursuit l’évaluation ; les divisions entières fautives arrêtent le chemin. Aucun calcul de valeurs ni de types. Panneau Contextes d’erreur, origines/opérateurs navigables, exports flow 5 / errorFlow 2 et exemple de réparation du diviseur. [52 assertions et neuf observations firmware bornées](../implementation/basic-control-flow-alpha.md#qualification-0407), [ADR 0056](../adr/0056-divisions-et-erreurs-possibles.md). Autres erreurs implicites, piles et événements restent ouverts ; symboles/usages 0.41 suivent. IDE-076/J2 restent partiels.
