@@ -299,9 +299,78 @@ test('return propagation remains iterative across a long chain and independent o
 
 test('Markdown and JSON export return summaries without source arguments', () => {
  const report=analyzeQuality([{id:'returns',name:'returns.bas',source:'10 GOSUB 100:PRINT "PRIVATE RETURN TEXT"\n20 END\n100 END'}]);
- assert.equal(report.sources[0]!.flow.version,2);
+ assert.equal(report.sources[0]!.flow.version,3);
  assert.equal(report.sources[0]!.flow.entries[1]!.returnStatus,'absent');
  const markdown=qualityMarkdown(report);
  assert.match(markdown,/chemin vers RETURN : Aucun chemin/);
  assert.ok(!markdown.includes('PRIVATE RETURN TEXT')); assert.ok(!JSON.stringify(report).includes('PRIVATE RETURN TEXT'));
+});
+
+test('event declarations have navigable targets without immediate calls, reachability or control cycles', () => {
+ const flow=analyzeControlFlow('10 ON ERROR GOTO 100:ON BREAK GOSUB 200:ON SQ(1) GOSUB 200\n20 AFTER 50 GOSUB 200:EVERY t,2 GOSUB 200\n30 END\n100 RESUME NEXT\n200 RETURN');
+ assert.equal(flow.version,3); assert.equal(flow.complete,false);
+ assert.deepEqual(flow.handlers.map(h=>[h.event,h.action,h.targetLine]),[['error','register',100],['break','register',200],['sound','register',200],['after','register',200],['every','register',200]]);
+ assert.equal(flow.edges.filter(e=>e.kind==='handler').length,5); assert.deepEqual(flow.calls,[]); assert.deepEqual(flow.cycles,[]);
+ assert.deepEqual(flow.entries.map(e=>[flow.nodes[e.node]!.basicLine,e.kind]),[[10,'main'],[100,'handler'],[200,'handler']]);
+ assert.ok(flow.entries.every(e=>e.complexity===null && e.returnStatus==='unknown')); assert.deepEqual(flow.unreachable,[]);
+ assert.ok(flow.handlers.every(h=>!flow.reachable.includes(h.target!)));
+ for (const h of flow.handlers) { assert.equal(flow.nodes[h.site]!.kind,'statement'); assert.ok(flow.edges.some(e=>e.from===h.site && e.kind==='next')); }
+ const self=analyzeControlFlow('10 AFTER 1 GOSUB 10:END'); assert.deepEqual(self.cycles,[], 'a self-registration is not a control loop');
+});
+test('handler mode changes and repeated registrations preserve source order, without claiming active state', () => {
+ const source='10 ON ERROR GOTO 100:ON ERROR GOTO 0:ON BREAK CONT:ON BREAK STOP\n20 END\n30 ON ERROR GOTO 100\n100 RETURN';
+ const flow=analyzeControlFlow(source);
+ assert.deepEqual(flow.handlers.map(h=>h.action),['register','disable','continue','stop','register']);
+ assert.deepEqual(flow.handlers.slice(1,4).map(h=>h.target),[null,null,null]);
+ assert.equal(flow.handlers.at(-1)!.targetLine,100, 'declarations outside known paths are inventoried');
+ assert.ok(flow.handlers.slice(0,4).every((h,i,all)=>!i || flow.nodes[h.site]!.start>flow.nodes[all[i-1]!.site]!.start));
+});
+test('ERROR and RESUME never fall through the handler; explicit resume targets remain contextual', () => {
+ for (const command of ['RESUME','RESUME NEXT','RESUME 20','ERROR 5']) {
+  const flow=analyzeControlFlow(`10 ${command}:PRINT 99\n20 END`), control=flow.nodes.find(n=>n.operation.startsWith('RESUME') || n.operation==='ERROR')!;
+  const links=flow.edges.filter(e=>e.from===control.id);
+  assert.equal(flow.complete,false); assert.equal(links.length,1); assert.ok(!links.some(e=>e.kind==='next'));
+  if(command==='RESUME 20') assert.equal(flow.nodes[links[0]!.to!]!.basicLine,20); else assert.equal(links[0]!.to,null);
+  assert.deepEqual(flow.unreachable,[]);
+ }
+ const zero=analyzeControlFlow('10 RESUME 0\n20 END'); assert.match(zero.reasons.join(' '),/cible RESUME/); assert.ok(!zero.edges.some(e=>e.kind==='recovery'));
+});
+test('malformed event declarations and computed targets do not invent handlers', () => {
+ for (const code of ['ON ERROR GOSUB 100','ON ERROR GOTO x','ON BREAK GOTO 100','ON BREAK GOSUB 0','ON SQ() GOSUB 100','ON SQ(1,2) GOSUB 100','ON SQ(1+) GOSUB 100','ON SQ(1) GOSUB 100,200','AFTER GOSUB 100','AFTER 1, GOSUB 100','EVERY 1,2,3 GOSUB 100','AFTER 1 GOTO 100','EVERY t GOSUB x','AFTER 1 GOSUB 0']) {
+  const flow=analyzeControlFlow(`10 ${code}\n100 RETURN\n200 END`);
+  assert.equal(flow.complete,false,code); assert.deepEqual(flow.handlers,[],code); assert.deepEqual(flow.unreachable,[]);
+ }
+ const absent=analyzeControlFlow('10 AFTER 1 GOSUB 100:END');
+ assert.equal(absent.handlers[0]!.targetLine,100); assert.equal(absent.handlers[0]!.target,null); assert.match(absent.reasons.join(' '),/cible de gestionnaire 100 absente/);
+});
+test('conditional handlers and nested expression commas preserve locations without exporting expressions', () => {
+ const source='10 IF a THEN AFTER MAX(delay,2),timer GOSUB 100 ELSE ON SQ(channel) GOSUB 200\n20 PRINT "PRIVATE"\n30 END\n100 RETURN\n200 RETURN';
+ const flow=analyzeControlFlow(source);
+ assert.equal(flow.handlers.length,2); assert.equal(flow.nodes[flow.handlers[0]!.site]!.start,source.indexOf('AFTER'));
+ assert.equal(flow.nodes[flow.handlers[1]!.site]!.start,source.indexOf('ON SQ'));
+ const exported=JSON.stringify(flow); for(const text of ['delay','timer','channel','PRIVATE']) assert.ok(!exported.includes(text));
+ const protectedFlow=analyzeControlFlow('10 DATA "AFTER 1 GOSUB 100",ON,ERROR\n20 PRINT "ON SQ(1) GOSUB 100"\n30 REM EVERY 1 GOSUB 100\n40 END');
+ assert.deepEqual(protectedFlow.handlers,[]); assert.equal(protectedFlow.complete,true);
+});
+test('shared GOSUB and handler entries retain ordinary calls and bounded summaries', () => {
+ const flow=analyzeControlFlow('10 ON BREAK GOSUB 100:GOSUB 100:END\n100 RETURN');
+ assert.equal(flow.handlers.length,1); assert.equal(flow.calls.length,1); assert.equal(flow.entries[1]!.kind,'subroutine');
+ assert.ok(flow.edges.some(e=>e.kind==='resume')); assert.ok(flow.entries.every(e=>e.returnStatus==='unknown'));
+ const many=analyzeControlFlow('1 END\n'+Array.from({length:129},(_,i)=>`${i+10} AFTER 1 GOSUB ${i+1000}`).join('\n')+'\n'+Array.from({length:129},(_,i)=>`${i+1000} RETURN`).join('\n'));
+ assert.equal(many.handlers.length,129); assert.equal(many.entries.length,128); assert.match(many.reasons.join(' '),/128 points/); assert.deepEqual(many.unreachable,[]);
+});
+test('event Markdown and JSON exports identify declarations and missing targets without code', () => {
+ const report=analyzeQuality([{id:'events',name:'events.bas',source:'10 AFTER secretDelay GOSUB 100:ON ERROR GOTO 0\n20 END'}]);
+ const text=qualityMarkdown(report); assert.match(text,/Minuteur unique · Déclaration/); assert.match(text,/cible BASIC 100 absente/); assert.match(text,/Erreur · Désactivation/);
+ assert.ok(!text.includes('secretDelay')); assert.ok(!JSON.stringify(report).includes('secretDelay'));
+});
+
+
+test('a truncated graph keeps event targets already known and declarations in source order', () => {
+ const source='10 ON ERROR GOTO 100:AFTER 1 GOSUB 100\n20 PRINT 1\n100 RETURN';
+ const flow=analyzeControlFlow(source,5);
+ assert.equal(flow.complete,false); assert.equal(flow.handlers.length,2);
+ assert.deepEqual(flow.handlers.map(h=>h.event),['error','after']);
+ assert.ok(flow.handlers.every(h=>h.target!==null && flow.nodes[h.target]!.basicLine===100));
+ assert.ok(!flow.reasons.some(r=>r.includes('cible de gestionnaire'))); assert.deepEqual(flow.unreachable,[]);
 });

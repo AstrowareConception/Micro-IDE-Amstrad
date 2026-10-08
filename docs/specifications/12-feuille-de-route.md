@@ -248,3 +248,8 @@ FOR/NEXT et WHILE/WEND dans une même branche THEN/ELSE ; appariements entre bra
 ## Avancement alpha 0.40.3 — Résumés des retours GOSUB
 
 Chemins finis vers RETURN calculés par point fixe borné, y compris appels imbriqués et récursifs. Les continuations des GOSUB sans retour structurel sont retirées ; ON garde son issue hors liste. Tableau et exports distinguent retour possible, absent ou indéterminé ; sous-format flow JSON 2. Exemple `returns.bas`, six assertions firmware et trois observations négatives bornées, tests de domaine et navigateur. [Qualification](../implementation/basic-control-flow-alpha.md#qualification-0403), [ADR 0052](../adr/0052-resumes-retours-basic.md). Suite : erreurs/événements, puis symboles/usages 0.41. IDE-076/J2 restent partiels ; pile contextuelle et cas NEXT/portées non qualifiés toujours ouverts.
+
+
+## Avancement alpha 0.40.4 — Cartographie des erreurs et événements
+
+ON ERROR/BREAK/SQ, AFTER/EVERY et changements de mode reconnus, cibles navigables et associations en pointillés distinctes des appels immédiats. ERROR/RESUME gardent des reprises contextuelles explicites ; sous-format flow JSON 3. Exemple `events.bas`, dix assertions firmware positives et deux observations négatives bornées ; tests de domaine et navigateur. [Qualification](../implementation/basic-control-flow-alpha.md#qualification-0404), [ADR 0053](../adr/0053-cartographie-evenements-basic.md). Les listings événementiels restent partiels : état actif, annulations, priorités et reprises dynamiques ne sont pas simulés. Prochain lot : propagation bornée de cet état, puis symboles/usages 0.41 ; IDE-076/J2 restent ouverts.

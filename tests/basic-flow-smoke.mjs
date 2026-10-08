@@ -63,7 +63,7 @@ export async function verifyBasicFlow(browser, errors) {
   const returnsDownload = page.waitForEvent('download'); await panel.getByRole('button', { name: 'Exporter JSON', exact: true }).click();
   const returnsChunks = []; for await (const chunk of await (await returnsDownload).createReadStream()) returnsChunks.push(chunk);
   const returnsGraph = JSON.parse(Buffer.concat(returnsChunks).toString('utf8')).report.sources[0].flow;
-  assert.equal(returnsGraph.version, 2); assert.equal(returnsGraph.complete, true);
+  assert.equal(returnsGraph.version, 3); assert.equal(returnsGraph.complete, true);
   const stopCall = returnsGraph.nodes.find(n=>n.basicLine===40 && n.operation==='GOSUB');
   assert.deepEqual(returnsGraph.edges.filter(e=>e.from===stopCall.id).map(e=>e.kind),['call']);
   await select.selectOption(String(stopCall.id));
@@ -108,6 +108,37 @@ export async function verifyBasicFlow(browser, errors) {
   await expect(panel).toContainText('Rapport sur les sources inchangées.'); await flow.locator(':scope > summary').click();
   await expect(flow).toContainText('fermeture intermédiaire de NEXT multiple avec entrée FOR non garantie');
   await expect(flow.locator('.flow-routines tbody tr').first().locator('td').nth(2)).toHaveText('Indisponible');
+  const events = await readFile('examples/control-flow/events.bas', 'utf8');
+  await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText(events);
+  await panel.getByRole('button', { name: 'Générer le rapport', exact: true }).click();
+  await expect(panel).toContainText('Rapport sur les sources inchangées.'); await flow.locator(':scope > summary').click();
+  await expect(flow).toContainText('Déclarations événementielles reconnues');
+  const handlers = flow.locator('.flow-handlers'); await handlers.locator('summary').click();
+  await expect(handlers.locator('li')).toHaveCount(3);
+  await expect(handlers).toContainText('Erreur · Désactivation · BASIC 80');
+  await expect(flow.locator('.flow-routines')).toContainText('Gestionnaire · BASIC 300');
+  const eventsDownload = page.waitForEvent('download'); await panel.getByRole('button', { name: 'Exporter JSON', exact: true }).click();
+  const eventsChunks = []; for await (const chunk of await (await eventsDownload).createReadStream()) eventsChunks.push(chunk);
+  const eventsGraph = JSON.parse(Buffer.concat(eventsChunks).toString('utf8')).report.sources[0].flow;
+  assert.equal(eventsGraph.version,3); assert.equal(eventsGraph.complete,false); assert.equal(eventsGraph.handlers.length,3);
+  assert.deepEqual(eventsGraph.calls,[]); assert.deepEqual(eventsGraph.unreachable,[]);
+  assert.ok(eventsGraph.entries.every(e=>e.returnStatus==='unknown' && e.complexity===null));
+  const timer = eventsGraph.handlers.find(h=>h.event==='after');
+  await select.selectOption(String(timer.site));
+  const diagram = flow.getByRole('group', { name: 'Graphe de contrôle — flux.bas', exact: true });
+  await expect(diagram).toContainText('Déclaration'); await expect(diagram.locator('path[stroke-dasharray="5 4"]')).toHaveCount(1);
+  await expect(diagram).not.toContainText('Retour possible');
+  await page.getByRole('button', { name: 'Agrandir les sorties', exact: true }).click();
+  await page.setViewportSize({ width: 1440, height: 1800 }); await flow.scrollIntoViewIfNeeded();
+  await flow.screenshot({ path: 'out/basic-events-browser.png' });
+  await page.setViewportSize({ width: 1440, height: 1050 });
+  await page.getByRole('button', { name: 'Restaurer les sorties', exact: true }).click();
+  await handlers.getByRole('button', { name: 'Gestionnaire BASIC 200', exact: true }).click();
+  const timerTarget=eventsGraph.nodes[timer.target];
+  await expect(page.locator('footer')).toContainText(`L${timerTarget.line} · C${timerTarget.end+1}`);
+  await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('\n400 REM modification');
+  await expect(panel).toContainText('Rapport obsolète');
+  await expect(handlers.getByRole('button', { name: 'Gestionnaire BASIC 200', exact: true })).toBeDisabled();
   console.log('BASIC flow UI: real worker, per-entry complexity, graph keyboard navigation, source location, source-free JSON, stale guard and opaque-control fallback passed.');
  } finally { await page.close(); }
 }
