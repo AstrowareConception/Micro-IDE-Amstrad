@@ -1,6 +1,6 @@
-# Analyse de flux BASIC — alpha 0.40.5
+# Analyse de flux BASIC — alpha 0.40.6
 
-Date : 8 octobre 2026. Sixième lot 0.40 ; REQ-EDT-008 / ACC-36, IDE-076 reste partiel. [ADR 0049](../adr/0049-graphe-basic-conservateur.md), [ADR 0050](../adr/0050-branches-basic-qualifiees.md), [ADR 0051](../adr/0051-boucles-et-portees-conditionnelles.md).
+Date : 8 octobre 2026. Septième lot 0.40 ; REQ-EDT-008 / ACC-36, IDE-076 reste partiel. [ADR 0049](../adr/0049-graphe-basic-conservateur.md), [ADR 0050](../adr/0050-branches-basic-qualifiees.md), [ADR 0051](../adr/0051-boucles-et-portees-conditionnelles.md).
 
 ## Essayer
 
@@ -118,3 +118,29 @@ Bornes par source : **8192 états**, **131072 transitions parcourues**, **4096 t
 Subtilité détectée : pour `IF a THEN ERROR 5:x=1 ELSE x=99` avec a=1, RESUME NEXT atteint x=1 ; pour `IF a THEN x=99 ELSE ERROR 5:x=2` avec a=0, le même gestionnaire RESUME NEXT laisse x=0 dans la recette. Le saut lexical vers x=2 serait donc faux. Par prudence, tout ERROR à l’intérieur d’une branche IF reste hors calcul contextuel, même si certaines formes THEN sont qualifiées ; aucune généralisation aux branches imbriquées n’est annoncée.
 
 Tests du domaine : remplacements, branches avec piège désactivé, gestionnaire partagé avec deux erreurs distinctes, reprise cyclique, relance, gardes et tous les plafonds locaux/globaux. Chromium vérifie calcul/exports, destination de la seconde erreur, obsolescence puis passage hors périmètre après ajout d’un événement asynchrone. Suite : qualifier les erreurs implicites, les reprises conditionnelles et les piles avant d’élargir les conclusions ; symboles/usages 0.41 ensuite. IDE-076/J2 restent partiels.
+
+
+<a id="qualification-0406"></a>
+## Qualification 0.40.6 — Reprises conditionnelles
+
+Ce lot lève la garde « ERROR hors IF » de la 0.40.5 pour les formes structurelles couvertes, jusqu’à 16 niveaux. Le code ERROR reste un entier décimal littéral de 1 à 255. Les exclusions des erreurs implicites, appels/RETURN, FOR/NEXT, événements asynchrones et sources opaques demeurent, ainsi que tous les budgets. Aucune nouvelle complexité, preuve de retour ni inaccessibilité globale n’est produite.
+
+Le firmware mémorise le début d’une instruction avant d’entrer dans IF/THEN/ELSE. La première instruction d’une branche conserve ce début ; un deux-points **exécuté** commence une nouvelle instruction. Les séparateurs d’une branche ignorée ne changent pas ce début mémorisé. RESUME réessaie cette instruction, qui peut être un IF englobant ou imbriqué, au lieu de toujours viser ERROR. Les changements de condition faits par le gestionnaire prennent donc effet lors de cette réévaluation.
+
+RESUME NEXT cherche le premier deux-points, ELSE ou fin de ligne depuis ce début mémorisé. Un ELSE ou une fin de ligne mène à la ligne suivante ; un deux-points mène à l’instruction qui suit, même dans une branche précédemment ignorée. Les chaînes, DATA et commentaires sont protégés. Les deux-points consécutifs sont franchis. Une destination non reconnue suspend le calcul. RESUME ligne conserve sa cible explicite et abandonne la reprise conditionnelle.
+
+| Source interrompue | Destination de RESUME | Destination de RESUME NEXT |
+| --- | --- | --- |
+| `IF a THEN ERROR 5:x=1 ELSE x=99` | IF a | x=1 |
+| `IF a THEN x=99 ELSE ERROR 5:x=2` | IF a | ligne suivante |
+| `IF a THEN x=99:x=98 ELSE ERROR 5:x=2` | IF a | x=98 |
+| `IF a THEN x=10:ERROR 5:x=1` | ERROR 5 | x=1 |
+| `IF a THEN x=10:IF b THEN ERROR 5:x=1` | IF b | x=1 |
+
+Les destinations sont calculées pendant la construction à partir des frontières d’instruction ; le parcours contextuel garde les triplets et corrélations de la 0.40.5. Les libellés deviennent **Reprendre l’instruction mémorisée** et **Suite de l’instruction mémorisée**, car « Réessayer ERROR » serait faux pour certains IF. DTO inchangés : flow 4, errorFlow 1. Les arguments et conditions ne sont pas exportés.
+
+**51 nouvelles assertions firmware** : 23 formes avec RESUME puis RESUME NEXT (46), quatre branches imbriquées reprises à une ligne explicite et l’exemple. Les conditions changent dans les gestionnaires ; les compteurs vérifient les instructions exécutées et le nombre d’erreurs. Couverture : THEN/ELSE, imbrications et ELSE IF, préfixes exécutés/ignorés, deux erreurs sur une ligne, DATA/chaînes, séparateurs vides, retour à un IF interne. Jeu CPC 6128 anglais identifié dans le moteur WASM intégré ; aucune nouvelle qualification indépendante ou matérielle.
+
+[conditional-errors.bas](../../examples/control-flow/conditional-errors.bas) affiche **1, 0, 98**. Le navigateur vérifie le vrai worker, les six transferts, les destinations JSON exactes et la navigation vers z=98 ; modifier le source bloque le lien. Les tests de domaine confrontent les destinations aux mêmes cas firmware, vérifient les reprises partagées et conservent les plafonds de la 0.40.5. [ADR 0055](../adr/0055-reprises-erreurs-conditionnelles.md).
+
+Suite : erreurs implicites et piles encore à qualifier ; symboles/usages 0.41 ensuite. IDE-076/J2 restent partiels.

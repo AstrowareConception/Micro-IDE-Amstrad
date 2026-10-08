@@ -1,4 +1,4 @@
-import { analyzeErrorFlow, emptyErrorFlow, ERROR_FLOW_LIMITS, type ErrorFlowReport } from './error-flow.ts';
+import { analyzeErrorFlow, emptyErrorFlow, ERROR_FLOW_LIMITS, type ErrorResumption, type ErrorFlowReport } from './error-flow.ts';
 import { parseFlowEvent, type FlowEventForm } from './flow-events.ts';
 import { tokenize, type Token } from './language.ts';
 import { analyzeEditor } from './syntax.ts';
@@ -86,7 +86,7 @@ export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIM
  const lines: { location: FlowLocation; tokens: Token[]; anchor: number }[] = [], targets = new Map<number, number>();
  const pending: { from: number; number: number; kind: FlowEdgeKind; ordinal: number }[] = [];
  const loops: { node: number; name: string; variable: string; next: number | null; scope: number; followedByNext: boolean; enters: boolean }[] = [];
- const errorContinuations = new Map<number, number | null>(), literalErrors = new Set<number>();
+ const errorResumptions = new Map<number, ErrorResumption>(), literalErrors = new Set<number>();
  let branchScope = 0;
  const outgoing = new Map<number, FlowEdge[]>();
  function node(location: FlowLocation, operation: string, kind: FlowNode['kind'] = 'statement'): number {
@@ -106,21 +106,21 @@ export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIM
   if (number === undefined) { partial(`BASIC ${report.nodes[id]!.basicLine} : cible non littérale ou invalide.`); edge(id, null, 'unknown'); }
   else pending.push({ from: id, number, kind, ordinal });
  }
- function sequence(tokens: Token[], next: number | null, location: FlowLocation, depth = 0, scope = 0): number | null {
-  const parts: Token[][] = [];
+ function sequence(tokens: Token[], next: number | null, location: FlowLocation, depth = 0, scope = 0, restart: number | null = null): number | null {
+  const parts: { tokens: Token[]; restart: number | null }[] = [];
   for (let cursor = 0; cursor < tokens.length;) {
    if (tokens[cursor]!.kind === 'comment') break;
-   if (isWord(tokens[cursor], 'IF')) { parts.push(tokens.slice(cursor)); break; }
+   if (isWord(tokens[cursor], 'IF')) { parts.push({ tokens: tokens.slice(cursor), restart: cursor === 0 ? restart : null }); break; }
    let end = cursor; while (end < tokens.length && tokens[end]!.kind !== 'comment' && !(tokens[end]!.kind === 'operator' && tokens[end]!.text === ':')) end++;
-   if (end > cursor) parts.push(tokens.slice(cursor, end));
+   if (end > cursor) parts.push({ tokens: tokens.slice(cursor, end), restart: cursor === 0 ? restart : null });
    if (tokens[end]?.kind === 'comment') break;
    cursor = end + 1;
   }
   let continuation = next;
-  for (const part of parts.reverse()) continuation = statement(part, continuation, location, depth, scope);
+  for (const part of parts.reverse()) continuation = statement(part.tokens, continuation, location, depth, scope, part.restart);
   return continuation;
  }
- function statement(tokens: Token[], next: number | null, location: FlowLocation, depth: number, scope: number): number {
+ function statement(tokens: Token[], next: number | null, location: FlowLocation, depth: number, scope: number, restart: number | null): number {
   const first = tokens[0]!, name = word(first), args = tokens.slice(1), loc = { ...location, start: first.start, end: tokens.at(-1)!.end };
   const assignment = first.kind === 'identifier' && tokens.some(t => t.text === '=') || isWord(first, 'LET');
   const operation = assignment ? 'AFFECTATION' : first.kind === 'keyword' ? name : first.kind === 'number' ? 'GOTO' : 'INSTRUCTION';
@@ -136,8 +136,8 @@ export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIM
    return id;
   }
   if (isWord(first, 'ERROR')) {
-   errorContinuations.set(id, next);
-   if (depth === 0 && args.length === 1 && args[0]!.kind === 'number' && /^\d+$/.test(args[0]!.text) && Number(args[0]!.text) >= 1 && Number(args[0]!.text) <= 255) literalErrors.add(id);
+   errorResumptions.set(id, { retry: restart ?? id, next });
+   if (args.length === 1 && args[0]!.kind === 'number' && /^\d+$/.test(args[0]!.text) && Number(args[0]!.text) >= 1 && Number(args[0]!.text) <= 255) literalErrors.add(id);
    partial(`BASIC ${location.basicLine} : ERROR explicite ; voir le calcul contextuel, erreurs implicites non simulées.`, false);
    edge(id, null, 'unknown'); return id;
   }
@@ -158,7 +158,7 @@ export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIM
    const yes = otherwise < 0 ? body : body.slice(0, otherwise), no = otherwise < 0 ? [] : body.slice(otherwise + 1);
    // Distinct branch identities, not just nesting depth: THEN and ELSE must
    // never pair each other's loop openers/closers, even at the same depth.
-   edge(id, sequence(yes, next, location, depth + 1, ++branchScope), 'true'); edge(id, sequence(no, next, location, depth + 1, ++branchScope), 'false');
+   edge(id, sequence(yes, next, location, depth + 1, ++branchScope, restart ?? id), 'true'); edge(id, sequence(no, next, location, depth + 1, ++branchScope, restart ?? id), 'false');
   } else if (isWord(first, 'GOTO') || depth > 0 && literal(tokens) !== undefined) jump(id, first.kind === 'number' ? tokens : args, 'jump');
   else if (isWord(first, 'GOSUB')) { jump(id, args, 'call'); edge(id, next, 'resume'); }
   else if (isWord(first, 'ON')) {
@@ -205,6 +205,22 @@ export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIM
    const line = lines[index]!, next = lines[index + 1]?.anchor ?? null;
    edge(line.anchor, sequence(line.tokens, next, line.location));
   }
+  // BASIC saves the statement before entering IF/THEN/ELSE. An executed
+  // colon starts a new statement; skipped colons in another arm do not.
+  // RESUME NEXT scans from that saved start to the first colon or ELSE,
+  // even when the colon belongs to an arm that did not raise the error.
+  const starts = new Map(report.nodes.filter(n => n.kind !== 'line').map(n => [`${n.line}/${n.start}`, n.id]));
+  const sourceLines = new Map(lines.map((line, index) => [line.location.line, { ...line, next: lines[index + 1]?.anchor ?? null }]));
+  for (const resumption of errorResumptions.values()) {
+   const saved = report.nodes[resumption.retry]!, line = sourceLines.get(saved.line)!;
+   const at = line.tokens.findIndex(t => t.start === saved.start);
+   let cursor = at + 1;
+   while (cursor < line.tokens.length && line.tokens[cursor]!.text !== ':' && !isWord(line.tokens[cursor], 'ELSE') && line.tokens[cursor]!.kind !== 'comment') cursor++;
+   while (line.tokens[cursor]?.text === ':') cursor++;
+   const token = line.tokens[cursor];
+   resumption.next = !token || token.kind === 'comment' || isWord(token, 'ELSE') ? line.next : starts.get(`${saved.line}/${token.start}`) ?? null;
+   if (token && token.kind !== 'comment' && !isWord(token, 'ELSE') && resumption.next === null) partial(`BASIC ${saved.basicLine} : destination RESUME NEXT non reconnue.`);
+  }
   const stack: typeof loops = [];
   loops.sort((a, b) => report.nodes[a.node]!.line - report.nodes[b.node]!.line || report.nodes[a.node]!.start - report.nodes[b.node]!.start);
   for (const loop of loops) {
@@ -229,7 +245,7 @@ export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIM
   }
  } catch (error) { partial(error instanceof Error ? error.message : 'Construction du graphe interrompue.'); }
  report.handlers.sort((a, b) => report.nodes[a.site]!.line - report.nodes[b.site]!.line || report.nodes[a.site]!.start - report.nodes[b.site]!.start);
- report.errorFlow = analyzeErrorFlow(report, errorContinuations, literalErrors, structureComplete, errorStateBudget);
+ report.errorFlow = analyzeErrorFlow(report, errorResumptions, literalErrors, structureComplete, errorStateBudget);
  // Least fixed point of finite paths to RETURN. Each rule is an OR alternative;
  // its dependencies are ANDed (callee AND continuation for a simple GOSUB).
  // Each dependency is processed once: O(nodes + edges), no stack simulation.

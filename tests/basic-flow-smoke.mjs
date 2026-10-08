@@ -168,6 +168,29 @@ export async function verifyBasicFlow(browser, errors) {
   await expect(panel).toContainText('Rapport sur les sources inchangées.');await flow.locator(':scope > summary').click();await contextsPanel.locator('summary').click();
   await expect(contextsPanel.locator('summary')).toHaveText('Contextes des ERROR explicites · Hors périmètre');
   await expect(contextsPanel.locator('.flow-error-transfers li')).toHaveCount(0);
+  const conditionalErrorSource=await readFile('examples/control-flow/conditional-errors.bas','utf8');
+  await input.focus();await page.keyboard.press('Control+a');await page.keyboard.insertText(conditionalErrorSource);
+  await panel.getByRole('button',{name:'Générer le rapport',exact:true}).click();
+  await expect(panel).toContainText('Rapport sur les sources inchangées.');await flow.locator(':scope > summary').click();await contextsPanel.locator('summary').click();
+  await expect(contextsPanel.locator('summary')).toHaveText('Contextes des ERROR explicites · Calculés');
+  await expect(contextsPanel).toContainText('RESUME peut réévaluer le IF mémorisé');
+  await expect(contextsPanel.locator('.flow-error-transfers li')).toHaveCount(6);
+  const conditionalErrorDownload=page.waitForEvent('download');await panel.getByRole('button',{name:'Exporter JSON',exact:true}).click();
+  const conditionalErrorChunks=[];for await(const chunk of await(await conditionalErrorDownload).createReadStream())conditionalErrorChunks.push(chunk);
+  const conditionalErrorGraph=JSON.parse(Buffer.concat(conditionalErrorChunks).toString('utf8')).report.sources[0].flow;
+  assert.equal(conditionalErrorGraph.errorFlow.status,'covered');assert.equal(conditionalErrorGraph.complete,false);
+  const conditionalErrorNext=conditionalErrorGraph.errorFlow.transfers.filter(t=>t.kind==='next');
+  assert.deepEqual(conditionalErrorNext.map(t=>[conditionalErrorGraph.nodes[t.fault].basicLine,conditionalErrorGraph.nodes[t.to].basicLine]),[[30,30],[40,50],[50,50]]);
+  const conditionalErrorDestination=conditionalErrorGraph.nodes[conditionalErrorNext.at(-1).to];
+  assert.equal(conditionalErrorDestination.start,conditionalErrorSource.split('\n')[4].indexOf('z=98'));
+  const conditionalErrorButton=contextsPanel.getByRole('button',{name:`Destination BASIC 50 · C${conditionalErrorDestination.start+1}`,exact:true});
+  await conditionalErrorButton.click();await expect(page.locator('footer')).toContainText(`L5 · C${conditionalErrorDestination.end+1}`);
+  await page.getByRole('button',{name:'Agrandir les sorties',exact:true}).click();
+  await page.setViewportSize({width:1440,height:2200});await contextsPanel.scrollIntoViewIfNeeded();
+  await contextsPanel.screenshot({path:'out/basic-conditional-errors-browser.png'});
+  await page.setViewportSize({width:1440,height:1050});await page.getByRole('button',{name:'Restaurer les sorties',exact:true}).click();
+  await input.focus();await page.keyboard.press('Control+End');await page.keyboard.insertText('\n300 REM modification');
+  await expect(panel).toContainText('Rapport obsolète');await expect(conditionalErrorButton).toBeDisabled();
   console.log('BASIC flow UI: real worker, per-entry complexity, graph keyboard navigation, source location, source-free JSON, stale guard and opaque-control fallback passed.');
  } finally { await page.close(); }
 }
