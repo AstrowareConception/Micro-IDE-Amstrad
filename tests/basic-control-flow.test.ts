@@ -104,9 +104,8 @@ test('multiple NEXT expands in source order and pairs each named FOR once', () =
 });
 test('multiple NEXT refuses uncertain initial entry, malformed lists and non-structured pairing', () => {
  for (const [header, close] of [
-  ['FOR I=1 TO N:FOR J=1 TO 3', 'NEXT J,I'],
   ['FOR I=1 TO 2:FOR J=2 TO 1', 'NEXT J,I'],
-  ['FOR I=1 TO 2 STEP 0:FOR J=1 TO 3', 'NEXT J,I'],
+  ['FOR I=1 TO 2:FOR J=1 TO 3 STEP 0', 'NEXT J,I'],
   ['FOR I=1 TO 2:FOR J=1 TO 3', 'NEXT I,J'],
   ['FOR I=1 TO 2:FOR J=1 TO 3', 'NEXT J,,I'],
   ['FOR I=1 TO 2:FOR J=1 TO 3', 'NEXT J,J'],
@@ -116,6 +115,66 @@ test('multiple NEXT refuses uncertain initial entry, malformed lists and non-str
   assert.equal(flow.complete, false, header+' / '+close); assert.deepEqual(flow.unreachable, []);
   assert.ok(flow.entries.every(e=>e.complexity === null));
  }
+});
+test('complete loops in THEN and ELSE keep their own continuation without reevaluating the enclosing IF', () => {
+ const source = '10 IF A THEN FOR I=1 TO N:A=0:NEXT I:PRINT 1 ELSE WHILE B:B=B-1:WEND:PRINT 2\n20 END';
+ const flow = analyzeControlFlow(source);
+ assert.equal(flow.complete, true, flow.reasons.join('\n')); assert.equal(flow.entries[0]!.complexity, 4);
+ const condition = flow.nodes.find(n=>n.operation==='IF')!;
+ const loopHeaders = flow.edges.filter(e=>e.from===condition.id).map(e=>flow.nodes[e.to!]!.operation);
+ assert.deepEqual(loopHeaders, ['FOR', 'WHILE']);
+ for (const [closeName, openName, print] of [['NEXT','FOR','PRINT 1'],['WEND','WHILE','PRINT 2']]) {
+  const close = flow.nodes.find(n=>n.operation===closeName)!, open = flow.nodes.find(n=>n.operation===openName)!;
+  assert.equal(flow.edges.find(e=>e.from===close.id && e.kind==='loop')!.to, open.id);
+  assert.equal(flow.nodes[flow.edges.find(e=>e.from===open.id && e.kind==='false')!.to!]!.start, source.indexOf(print!));
+ }
+ assert.equal(flow.cycles.length, 2); assert.ok(flow.cycles.every(c=>!c.nodes.includes(condition.id)));
+});
+test('nested conditional scopes support self-contained loops and repeated variables in alternative arms', () => {
+ for (const source of [
+  '10 IF A THEN FOR I=1 TO 2:NEXT I ELSE FOR I=3 TO 4:NEXT I\n20 END',
+  '10 IF A THEN IF B THEN FOR I=1 TO 2:WHILE C:C=C-1:WEND:NEXT I ELSE FOR J=1 TO 3:NEXT J ELSE WHILE D:D=D-1:WEND\n20 END',
+  '10 FOR I=1 TO 2\n20 IF A THEN WHILE B:B=B-1:WEND\n30 NEXT I\n40 END',
+ ]) assert.equal(analyzeControlFlow(source).complete, true, source);
+});
+test('loop pairing cannot cross alternative arms, another IF or a physical line boundary of a branch', () => {
+ for (const source of [
+  '10 IF A THEN FOR I=1 TO 2 ELSE NEXT I\n20 END',
+  '10 IF A THEN WHILE B ELSE WEND\n20 END',
+  '10 IF A THEN FOR I=1 TO 2\n20 NEXT I\n30 END',
+  '10 FOR I=1 TO 2\n20 IF A THEN NEXT I\n30 END',
+  '10 IF A THEN FOR I=1 TO 2:IF B THEN NEXT I\n20 END',
+  '10 IF A THEN WHILE B:IF C THEN WEND ELSE PRINT 1\n20 END',
+  '10 IF A THEN FOR I=1 TO 2 ELSE IF B THEN NEXT I\n20 END',
+ ]) {
+  const flow = analyzeControlFlow(source);
+  assert.equal(flow.complete, false, source); assert.deepEqual(flow.unreachable, []);
+  assert.ok(flow.entries.every(e=>e.complexity===null)); assert.match(flow.reasons.join(' '), /branches IF/);
+ }
+});
+test('last NEXT variable permits a skipped or dynamic outer FOR, intermediate closures still require guaranteed entry', () => {
+ for (const header of ['FOR I=2 TO 1','FOR I=1 TO N','FOR I=A TO B STEP S']) {
+  for (const prefix of ['', 'IF X THEN ']) {
+   const flow = analyzeControlFlow(`10 ${prefix}${header}:FOR J=1 TO 3:PRINT I:NEXT J,I:PRINT 9\n20 END`);
+   assert.equal(flow.complete, true, flow.reasons.join('\n'));
+   assert.equal(flow.entries[0]!.complexity, prefix ? 4 : 3);
+   const outer = flow.nodes.filter(n=>n.operation==='FOR').sort((a,b)=>a.start-b.start)[0]!;
+   const exit = flow.nodes[flow.edges.find(e=>e.from===outer.id && e.kind==='false')!.to!]!;
+   assert.equal(exit.operation,'PRINT'); assert.equal(exit.start, flow.nodes.filter(n=>n.operation==='PRINT').sort((a,b)=>b.start-a.start)[0]!.start);
+  }
+ }
+ for (const code of ['FOR I=1 TO N:FOR J=1 TO N:NEXT J,I', 'FOR I=1 TO N:FOR J=1 TO N:FOR K=1 TO 2:NEXT K,J,I']) {
+  const flow = analyzeControlFlow('10 '+code+'\n20 END');
+  assert.equal(flow.complete,false); assert.match(flow.reasons.join(' '), /fermeture intermédiaire/);
+ }
+});
+test('separate NEXT and WEND keep structural skip edges inside conditional loops', () => {
+ const source = '10 IF A THEN FOR I=1 TO N:FOR J=2 TO 1:PRINT 1:NEXT J:NEXT I ELSE WHILE B:WHILE C:PRINT 2:WEND:WEND\n20 END';
+ const flow=analyzeControlFlow(source); assert.equal(flow.complete,true,flow.reasons.join('\n'));
+ assert.equal(flow.entries[0]!.complexity,6); assert.equal(flow.unreachable.length,0);
+ const fors=flow.nodes.filter(n=>n.operation==='FOR').sort((a,b)=>a.start-b.start);
+ const afterInner=flow.nodes[flow.edges.find(e=>e.from===fors[1]!.id && e.kind==='false')!.to!]!;
+ assert.equal(afterInner.operation,'NEXT'); assert.equal(flow.edges.find(e=>e.from===afterInner.id && e.kind==='loop')!.to,fors[0]!.id);
 });
 test('ON GOTO and ON GOSUB include out-of-list continuation and all selector outcomes', () => {
  for (const instruction of ['GOTO', 'GOSUB']) {

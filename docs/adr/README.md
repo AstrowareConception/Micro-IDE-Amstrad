@@ -78,3 +78,5 @@ Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou
 - [0049 — Graphe BASIC conservateur à la demande](0049-graphe-basic-conservateur.md).
 
 - [0050 — Branches BASIC qualifiées sur firmware](0050-branches-basic-qualifiees.md)
+
+- [0051 — Boucles et portées conditionnelles](0051-boucles-et-portees-conditionnelles.md).
