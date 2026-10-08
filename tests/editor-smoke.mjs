@@ -1,3 +1,4 @@
+import { verifyBasicSymbols } from './basic-symbols-smoke.mjs';
 import { verifyBasicFlow } from './basic-flow-smoke.mjs';
 import { verifyBasicDiagnostics } from './basic-diagnostics-smoke.mjs';
 import { verifyBasicQuality } from './basic-quality-smoke.mjs';
@@ -347,6 +348,7 @@ try {
   await verifyPersonalization(browser, errors);
   await verifyNotifications(browser, errors);
   await verifyBasicDiagnostics(browser, errors);
+  await verifyBasicSymbols(browser, errors);
   await verifyBasicQuality(browser, errors);
   await verifyBasicFlow(browser, errors);
   await verifyBasicTests(browser, errors);

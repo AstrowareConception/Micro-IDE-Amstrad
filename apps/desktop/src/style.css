@@ -333,3 +333,14 @@ select{font:inherit;width:100%;margin:8px 0;background:var(--input);color:inheri
 .flow-link { stroke: var(--accent); stroke-width: 1.5; fill: none; }
 .flow-edge-label { fill: var(--muted); font-size: 10px; }
 .flow-column-label { fill: var(--label); font-size: 10px; letter-spacing: .4px; }
+.symbols-panel { padding: 12px; }
+.symbols-panel > details { margin: 8px 0; }
+.symbols-columns { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(280px, 2fr); gap: 20px; margin-top: 16px; }
+.symbols-columns label { display: grid; gap: 5px; }
+.symbols-list, .symbol-occurrences { max-height: 420px; overflow: auto; margin: 8px 0; padding-left: 22px; }
+.symbols-list { list-style: none; padding: 0; }
+.symbols-list li, .symbol-occurrences li { margin: 6px 0; }
+.symbols-list button { width: 100%; display: flex; flex-direction: column; align-items: start; text-align: left; }
+.symbols-list small { color: var(--muted); }
+.symbols-list button, .symbol-occurrences button { white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 800px) { .symbols-columns { grid-template-columns: minmax(0, 1fr); } }

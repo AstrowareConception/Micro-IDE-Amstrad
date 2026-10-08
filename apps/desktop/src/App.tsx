@@ -13,6 +13,8 @@ import { appendNotification, canRevealNotification, LEVEL_LABELS, SOURCE_LABELS,
 import { useBasicAnalysis } from './useBasicAnalysis.ts';
 import { ProblemsPanel } from './ProblemsPanel.tsx';
 import { PerformancePanel } from './PerformancePanel.tsx';
+import { SymbolsPanel } from './SymbolsPanel.tsx';
+import type { SymbolOccurrence } from '../../../packages/basic-language/src/symbols.ts';
 import { QualityPanel } from './QualityPanel.tsx';
 import { BasicTestsPanel } from './BasicTestsPanel.tsx';
 import type { QualityFinding } from '../../../packages/basic-language/src/quality.ts';
@@ -156,6 +158,7 @@ export function App() {
   }, [documents]);
   const basicTestSources = useMemo(() => documents.map(doc => ({ id: doc.sourceId, name: doc.name, source: doc.source })), [documents]);
   const revealQuality = useCallback((id: string, finding: QualityFinding) => revealProblem(id, { ...finding, severity: 'warning' }), [revealProblem]);
+  const revealSymbol = useCallback((id: string, occurrence: SymbolOccurrence) => revealProblem(id, { ...occurrence, severity: 'warning', code: 'symbol-use', message: 'Occurrence de variable BASIC' }), [revealProblem]);
   function nextProblem(reverse: boolean, line: number, column: number) {
     if (!allProblems.length) return;
     const order = reverse ? [...allProblems].reverse() : allProblems;
@@ -431,6 +434,7 @@ export function App() {
     { id: 'focus-mode', label: focused ? 'Quitter le mode Concentration' : 'Activer le mode Concentration', run: toggleFocus },
     { id: 'problems', label: 'Afficher les problèmes', run: () => showOutput('problems') },
     { id: 'performance', label: 'Afficher les mesures de performance', run: () => showOutput('performance') },
+    { id: 'symbols', label: 'Symboles et usages BASIC…', run: () => showOutput('symbols') },
     { id: 'quality', label: 'Rapport de qualité BASIC…', run: () => showOutput('quality') },
     { id: 'basic-tests', label: 'Tests BASIC à la demande…', run: () => showOutput('basic-tests') },
     { id: 'notifications', label: 'Centre de notifications', run: () => setNotificationsOpen(true) },
@@ -471,7 +475,7 @@ export function App() {
     <WorkbenchMenus groups={[
       ['Fichier', ['open', 'project', 'recent-projects', 'clone', 'create-project', 'save', 'save-all', 'save-as', 'local-history', 'export']],
       ['Édition', ['undo', 'redo', 'find', 'replace', 'search-sources', 'line', 'basic-comment', 'editor.action.copyLinesDownAction', 'editor.action.moveLinesUpAction', 'editor.action.moveLinesDownAction', 'editor.action.deleteLines', 'editor.action.addSelectionToNextFindMatch', 'next-tab', 'previous-tab', 'close-tab']],
-      ['BASIC', ['run', 'basic-tests', 'quality', 'renumber', 'complete', 'editor.action.revealDefinition', 'editor.action.marker.next', 'editor.action.marker.prev', 'reference']],
+      ['BASIC', ['run', 'basic-tests', 'symbols', 'quality', 'renumber', 'complete', 'editor.action.revealDefinition', 'editor.action.marker.next', 'editor.action.marker.prev', 'reference']],
       ['Git', ['git', 'git-refresh', 'git-init', 'git-commit', 'git-ai-message', 'git-history', 'git-branches', 'git-create-branch', 'git-remotes', 'git-fetch', 'git-pull', 'git-push', 'clone', 'github', 'git-prs']],
       ['Projet', ['explorer', 'source-rename', 'source-move', 'source-delete', 'source-restore', 'source-archive', 'documents', 'recovery']],
       ['Affichage', ['sidebar', 'agent', 'output', 'problems', 'performance', 'notifications', 'terminal', 'git-history', 'reset-layout', 'layout-edit', 'layout-run', 'layout-agent', 'focus-mode', 'minimap', 'zoom-in', 'zoom-out', 'palette', 'quick-sources']],
@@ -566,8 +570,9 @@ export function App() {
           onPosition={(line, column) => setPosition({ line, column })}
           onSave={() => void save()} onReady={value => { editor.current = value; }} onPalette={() => setPalette('all')} onRenumber={() => setRenumberOpen(true)} onExport={() => void exportDisk()} />
         <ResizeHandle label="Hauteur des sorties" orientation="horizontal" reverse value={Math.min(preferences.outputHeight, Math.max(120, workspaceSize.height - 180))} min={120} max={Math.min(1200, workspaceSize.height - 180)} hidden={!outputOpen || panels.output.floating} onChange={outputHeight => setPreferences(previous => ({ ...previous, outputHeight }))} />
-        <DockPanel className="output-dock" label="Sorties de l’atelier" name="les sorties" hidden={!outputOpen} layout={panels.output} onLayout={value => updatePanel('output', value)} onHide={() => setOutputOpen(false)} tabs={<nav className="output-tabs" aria-label="Panneaux de sortie"><Button aria-pressed={outputTab === 'problems'} onClick={() => showOutput('problems')} icon="warning">Problèmes {allProblems.length}</Button><Button aria-pressed={outputTab === 'emulator'} onClick={() => showOutput('emulator')} icon="chip">CPC</Button><Button aria-pressed={outputTab === 'terminal'} onClick={() => showOutput('terminal')} icon="terminal">Terminal</Button><Button aria-pressed={outputTab === 'quality'} onClick={() => showOutput('quality')} icon="warning">Qualité</Button><Button aria-pressed={outputTab === 'basic-tests'} onClick={() => showOutput('basic-tests')} icon="chip">Tests BASIC</Button><Button aria-pressed={outputTab === 'performance'} onClick={() => showOutput('performance')} icon="settings">Performance</Button><Button aria-pressed={outputTab === 'git-log'} onClick={() => showOutput('git-log')} icon="git">Git</Button></nav>}><div hidden={outputTab !== 'problems'}><ProblemsPanel documents={documents} entries={analysis.entries} onReveal={revealProblem} onRetry={analysis.retry} /></div>
+        <DockPanel className="output-dock" label="Sorties de l’atelier" name="les sorties" hidden={!outputOpen} layout={panels.output} onLayout={value => updatePanel('output', value)} onHide={() => setOutputOpen(false)} tabs={<nav className="output-tabs" aria-label="Panneaux de sortie"><Button aria-pressed={outputTab === 'problems'} onClick={() => showOutput('problems')} icon="warning">Problèmes {allProblems.length}</Button><Button aria-pressed={outputTab === 'emulator'} onClick={() => showOutput('emulator')} icon="chip">CPC</Button><Button aria-pressed={outputTab === 'terminal'} onClick={() => showOutput('terminal')} icon="terminal">Terminal</Button><Button aria-pressed={outputTab === 'symbols'} onClick={() => showOutput('symbols')} icon="search">Symboles</Button><Button aria-pressed={outputTab === 'quality'} onClick={() => showOutput('quality')} icon="warning">Qualité</Button><Button aria-pressed={outputTab === 'basic-tests'} onClick={() => showOutput('basic-tests')} icon="chip">Tests BASIC</Button><Button aria-pressed={outputTab === 'performance'} onClick={() => showOutput('performance')} icon="settings">Performance</Button><Button aria-pressed={outputTab === 'git-log'} onClick={() => showOutput('git-log')} icon="git">Git</Button></nav>}><div hidden={outputTab !== 'problems'}><ProblemsPanel documents={documents} entries={analysis.entries} onReveal={revealProblem} onRetry={analysis.retry} /></div>
         {outputOpen && outputTab === 'performance' && <PerformancePanel visible snapshot={analysis} documents={documents} />}
+        <div hidden={outputTab !== 'symbols'}><SymbolsPanel documents={documents} activeId={activeId} scopeId={project?.sessionId ?? 'standalone'} onReveal={revealSymbol} /></div>
         <div hidden={outputTab !== 'quality'}><QualityPanel documents={documents} activeId={activeId} scopeId={project?.sessionId ?? 'standalone'} onReveal={revealQuality} /></div>
         <div hidden={outputTab !== 'basic-tests'}><BasicTestsPanel documents={basicTestSources} activeId={active.sourceId} scopeId={project?.sessionId ?? 'standalone'} sessionId={project?.sessionId} visible={outputTab === 'basic-tests'} onConfigure={() => showTool('firmware')} onReveal={(id, line) => revealProblem(documents.find(doc => doc.sourceId === id)?.id ?? '', { line, start: 0, end: 1, severity: 'warning', code: 'test-declaration', message: 'Déclaration du test BASIC' })} /></div>
         <div className="emulator-output" hidden={outputTab !== 'emulator'}>{emulatorLaunch ? <EmulatorPanel key={emulatorLaunch.id} launch={emulatorLaunch} onNotify={notify} onClose={() => setEmulatorLaunch(undefined)} onConfigure={() => showTool('firmware')} /> : <div className="empty-tool"><Icon name="chip" /><p>Exécutez le listing avec le bouton Exécuter pour ouvrir le CPC.</p></div>}</div>

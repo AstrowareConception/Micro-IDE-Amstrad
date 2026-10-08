@@ -27,6 +27,29 @@ async function recipe(name, source, outcome, seconds = 3, probes = {}) {
  assert.deepEqual(observed, probes, `${name}: RAM checkpoints before disposal`);
  results.push(result); console.log(`${name}: ${result.outcome} (${result.emulatedSeconds.toFixed(3)} s)`); return result;
 }
+// 0.41.0: names, suffixes and scalar/array identities used by the text index.
+const longSymbol='a'.repeat(39);
+const symbolCases=[
+ ['case','Score=7','SCORE=7 AND score=7'],
+ ['suffixes','value%=3:value!=4:value$="ok"','value%=3 AND value!=4 AND value$="ok"'],
+ ['default-real','alpha=1:alpha!=2','alpha=2'],
+ ['default-integer','DEFINT a:alpha=1:alpha%=2:alpha!=3','alpha=2 AND alpha!=3'],
+ ['default-string','DEFSTR a:alpha="x":alpha$="y"','alpha="y"'],
+ ['scalar-array','DIM score(2):score=5:score(1)=7','score=5 AND score(1)=7'],
+ ['read-indices','DIM score(2):i=1:READ score(i),value%:DATA 7,8','score(1)=7 AND value%=8'],
+ ['long-names',`${longSymbol}b=3:${longSymbol}c=4`,`${longSymbol}b=3 AND ${longSymbol}c=4`],
+ ['erase','DIM score(2):score(1)=7:ERASE score:DIM score(3):score(1)=9','score(1)=9'],
+];
+for(const [name,body,expected] of symbolCases) await recipe('symbols-'+name,`10 REM @CPCTEST 1 Symbol identity
+20 MEMORY &7FFF
+30 ${body}
+40 IF ${expected} THEN POKE &8004,1 ELSE POKE &8004,2
+50 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165
+60 GOTO 60
+`,'passed');
+const symbolExample=await readFile('examples/symbols/main.bas','utf8');
+await recipe('symbols-example',symbolExample.replace('10 REM Variables, tableaux et occurrences','10 REM @CPCTEST 1 Variables arrays and occurrences\n15 MEMORY &7FFF').replace('90 END','90 IF total=60 AND total%=60 AND total!=60 AND joueur=4 THEN POKE &8004,1 ELSE POKE &8004,2\n100 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165\n110 GOTO 110'),'passed');
+
 // 0.40.9: ordered loop/call frames, pending handler loops and invalid closures.
 for (const {name,main,routine,handler,expected} of loopErrorCases) {
  const source = `10 REM @CPCTEST 1 Error loop stack
