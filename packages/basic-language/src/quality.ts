@@ -1,3 +1,4 @@
+import { FLOW_EVENT_LABELS, FLOW_EVENT_ACTION_LABELS } from './flow-events.ts';
 import { analyzeControlFlow, FLOW_LIMITS, FLOW_METHOD, FLOW_RETURN_LABELS, type FlowReport } from './control-flow.ts';
 import { tokenize, type Token } from './language.ts';
 
@@ -132,7 +133,8 @@ export function qualityMarkdown(report: QualityReport): string {
   lines.push(`### Flux structurel — ${flow.complete ? 'formes couvertes' : 'partiel'}`, '', `${flow.nodes.length} nœuds ; ${flow.edges.length} liaisons ; ${flow.entries.length} points d’entrée ; ${flow.cycles.length} cycles.`, '');
   for (const reason of flow.reasons) lines.push(`- Limite de flux : ${escape(reason)}`);
   if (flow.omittedReasons) lines.push(`- ${flow.omittedReasons} autres limites omises.`);
-  for (const entry of flow.entries) lines.push(`- ${entry.kind === 'main' ? 'Programme principal' : 'Entrée GOSUB'} BASIC ${flow.nodes[entry.node]!.basicLine} : ${entry.nodes} instructions locales ; complexité ${entry.complexity ?? 'indisponible'}${entry.recursive ? ' ; appels récursifs' : ''} ; chemin vers RETURN : ${FLOW_RETURN_LABELS[entry.returnStatus]}.`);
+  for (const entry of flow.entries) lines.push(`- ${entry.kind === 'main' ? 'Programme principal' : entry.kind === 'handler' ? 'Gestionnaire' : 'Entrée GOSUB'} BASIC ${flow.nodes[entry.node]!.basicLine} : ${entry.nodes} instructions locales ; complexité ${entry.complexity ?? 'indisponible'}${entry.recursive ? ' ; appels récursifs' : ''} ; chemin vers RETURN : ${FLOW_RETURN_LABELS[entry.returnStatus]}.`);
+  for (const handler of flow.handlers) lines.push(`- ${FLOW_EVENT_LABELS[handler.event]} · ${FLOW_EVENT_ACTION_LABELS[handler.action]} · BASIC ${flow.nodes[handler.site]!.basicLine} : ${handler.target !== null ? `gestionnaire BASIC ${flow.nodes[handler.target]!.basicLine}` : handler.targetLine !== null ? `cible BASIC ${handler.targetLine} absente` : 'sans cible'} ; état actif et déclenchement non déterminés.`);
   for (const call of flow.calls) lines.push(`- Appel : entrée BASIC ${flow.nodes[call.caller]!.basicLine} → BASIC ${flow.nodes[call.callee]!.basicLine}, site L${flow.nodes[call.site]!.line}/C${flow.nodes[call.site]!.start + 1}.`);
   for (const cycle of flow.cycles) lines.push(`- Cycle : ${cycle.nodes.map(id => `n${id}`).join(', ')} ; ${cycle.hasExit ? 'sortie structurelle présente' : 'sans sortie structurelle repérée'} ; ${cycle.reachable ? 'atteignable dans le graphe' : 'hors des chemins connus'}.`);
   lines.push('', 'Nœuds et liaisons (sans extraits de source) :', '');

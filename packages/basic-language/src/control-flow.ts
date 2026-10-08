@@ -1,3 +1,4 @@
+import { parseFlowEvent, type FlowEventForm } from './flow-events.ts';
 import { tokenize, type Token } from './language.ts';
 import { analyzeEditor } from './syntax.ts';
 import { conditionalElse, CONDITIONAL_DEPTH_LIMIT } from './conditional.ts';
@@ -5,19 +6,20 @@ import { conditionalElse, CONDITIONAL_DEPTH_LIMIT } from './conditional.ts';
 export const FLOW_LIMITS = Object.freeze({ characters: 1_048_576, lines: 10_000, lineCharacters: 8192, tokens: 2048, nodes: 8192, totalNodes: 32768, edges: 32768, entries: 128, calls: 8192, visits: 500_000, reasons: 100 });
 export interface FlowLocation { line: number; basicLine: number; start: number; end: number }
 export interface FlowNode extends FlowLocation { id: number; operation: string; kind: 'line' | 'data' | 'statement' | 'opaque' }
-export type FlowEdgeKind = 'next' | 'true' | 'false' | 'jump' | 'case' | 'call' | 'resume' | 'loop' | 'exit' | 'unknown';
+export type FlowEdgeKind = 'next' | 'true' | 'false' | 'jump' | 'case' | 'call' | 'resume' | 'loop' | 'exit' | 'unknown' | 'handler' | 'recovery';
 export interface FlowEdge { from: number; to: number | null; kind: FlowEdgeKind; ordinal: number }
 export type FlowReturnStatus = 'possible' | 'absent' | 'unknown';
 export const FLOW_RETURN_LABELS: Record<FlowReturnStatus, string> = { possible: 'Possible', absent: 'Aucun chemin', unknown: 'Indéterminé' };
-export interface FlowEntry { node: number; kind: 'main' | 'subroutine'; nodes: number; complexity: number | null; recursive: boolean; returnStatus: FlowReturnStatus }
+export interface FlowEntry { node: number; kind: 'main' | 'subroutine' | 'handler'; nodes: number; complexity: number | null; recursive: boolean; returnStatus: FlowReturnStatus }
 export interface FlowCall { caller: number; callee: number; site: number }
+export interface FlowHandler extends FlowEventForm { site: number; target: number | null }
 export interface FlowCycle { nodes: number[]; hasExit: boolean; reachable: boolean }
 export interface FlowReport {
- version: 2; complete: boolean; reasons: string[]; omittedReasons: number; entry: number | null;
- nodes: FlowNode[]; edges: FlowEdge[]; entries: FlowEntry[]; calls: FlowCall[]; cycles: FlowCycle[];
+ version: 3; complete: boolean; reasons: string[]; omittedReasons: number; entry: number | null;
+ nodes: FlowNode[]; edges: FlowEdge[]; entries: FlowEntry[]; calls: FlowCall[]; handlers: FlowHandler[]; cycles: FlowCycle[];
  unreachable: number[]; reachable: number[];
 }
-export const FLOW_METHOD = 'Graphe structurel depuis la première ligne, sans CONT ni RUN à une autre ligne. Les conditions ne sont pas évaluées ; les résumés recherchent un chemin fini vers RETURN, sans garantir son exécution. Une continuation GOSUB est retirée si sa cible ne possède aucun tel chemin ; ON conserve son issue hors liste. Une construction partielle conserve les continuations et rend les retours indéterminés. Les quotas de parcours ultérieurs peuvent limiter les métriques sans invalider ces résumés. La complexité locale vaut 1 + la somme des issues supplémentaires des décisions accessibles, en suivant la continuation des appels sans développer les sous-routines. Aucun total entre points d’entrée : leurs blocs peuvent se recouvrir. FOR/NEXT est normalisé avec un test en tête ; le retour au test ne réinitialise pas la variable. IF est limité à 16 niveaux. Les boucles dans IF doivent rester dans la même branche. Les fermetures intermédiaires de NEXT multiple exigent des bornes entières littérales garantissant l’entrée initiale. Les cycles ne prouvent pas une boucle infinie. Une forme opaque, une erreur de syntaxe ou un quota atteint suspend la complexité et les conclusions d’inaccessibilité. DATA reste lisible par READ même hors du chemin d’exécution. Ce modèle ne prouve ni la validité à l’exécution ni la terminaison.';
+export const FLOW_METHOD = 'Les gestionnaires sont des déclarations, pas des sauts immédiats : leurs liaisons de déclaration sont exclues des parcours. Leur activation, remplacement, annulation et déclenchement ne sont pas simulés ; erreurs, événements et RESUME maintiennent le rapport partiel. Les reprises sans cible dépendent du contexte de l’erreur ; RESUME NEXT ne désigne pas la suite du gestionnaire. Graphe structurel depuis la première ligne, sans CONT ni RUN à une autre ligne. Les conditions ne sont pas évaluées ; les résumés recherchent un chemin fini vers RETURN, sans garantir son exécution. Une continuation GOSUB est retirée si sa cible ne possède aucun tel chemin ; ON conserve son issue hors liste. Une construction partielle conserve les continuations et rend les retours indéterminés. Les quotas de parcours ultérieurs peuvent limiter les métriques sans invalider ces résumés. La complexité locale vaut 1 + la somme des issues supplémentaires des décisions accessibles, en suivant la continuation des appels sans développer les sous-routines. Aucun total entre points d’entrée : leurs blocs peuvent se recouvrir. FOR/NEXT est normalisé avec un test en tête ; le retour au test ne réinitialise pas la variable. IF est limité à 16 niveaux. Les boucles dans IF doivent rester dans la même branche. Les fermetures intermédiaires de NEXT multiple exigent des bornes entières littérales garantissant l’entrée initiale. Les cycles ne prouvent pas une boucle infinie. Une forme opaque, une erreur de syntaxe ou un quota atteint suspend la complexité et les conclusions d’inaccessibilité. DATA reste lisible par READ même hors du chemin d’exécution. Ce modèle ne prouve ni la validité à l’exécution ni la terminaison.';
 
 const word = (token: Token | undefined) => token?.text.toUpperCase() ?? '';
 const isWord = (token: Token | undefined, name: string) => token?.kind === 'keyword' && word(token) === name;
@@ -65,7 +67,7 @@ function components(ids: number[], adjacency: Map<number, number[]>): number[][]
 }
 
 export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIMITS.nodes): FlowReport {
- const report: FlowReport = { version: 2, complete: true, reasons: [], omittedReasons: 0, entry: null, nodes: [], edges: [], entries: [], calls: [], cycles: [], unreachable: [], reachable: [] };
+ const report: FlowReport = { version: 3, complete: true, reasons: [], omittedReasons: 0, entry: null, nodes: [], edges: [], entries: [], calls: [], handlers: [], cycles: [], unreachable: [], reachable: [] };
  const reasons = new Set<string>();
  function partial(reason: string) {
   report.complete = false;
@@ -119,6 +121,29 @@ export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIM
   const assignment = first.kind === 'identifier' && tokens.some(t => t.text === '=') || isWord(first, 'LET');
   const operation = assignment ? 'AFFECTATION' : first.kind === 'keyword' ? name : first.kind === 'number' ? 'GOTO' : 'INSTRUCTION';
   const id = node(loc, operation, name === 'DATA' ? 'data' : 'statement');
+  const event = parseFlowEvent(tokens);
+  if (event) {
+   report.nodes[id]!.operation = name === 'ON' ? `ON ${word(tokens[1])}` : name;
+   const target = event.targetLine === null ? null : targets.get(event.targetLine) ?? null;
+   const handler: FlowHandler = { ...event, site: id, target }; report.handlers.push(handler);
+   if (event.targetLine !== null && target === null) partial(`BASIC ${location.basicLine} : cible de gestionnaire ${event.targetLine} absente.`);
+   partial('Déclarations événementielles reconnues ; état actif et déclenchement non modélisés.');
+   edge(id, next);
+   return id;
+  }
+  if (isWord(first, 'ERROR')) {
+   partial(`BASIC ${location.basicLine} : erreur déclenchée ; gestionnaire actif non déterminé.`);
+   edge(id, null, 'unknown'); return id;
+  }
+  if (isWord(first, 'RESUME')) {
+   partial(`BASIC ${location.basicLine} : reprise après erreur ; contexte et point interrompu non déterminés.`);
+   if (!args.length || args.length === 1 && isWord(args[0], 'NEXT')) {
+    report.nodes[id]!.operation = args.length && isWord(args[0], 'NEXT') ? 'RESUME NEXT' : 'RESUME';
+    edge(id, null, 'recovery');
+   } else if (literal(args) !== undefined) jump(id, args, 'recovery');
+   else unknown(id, 'cible RESUME non littérale ou forme non reconnue.', null);
+   return id;
+  }
   if (name === 'IF' && first.kind === 'keyword') {
    const at = tokens.findIndex(t => isWord(t, 'THEN') || isWord(t, 'GOTO'));
    if (depth >= CONDITIONAL_DEPTH_LIMIT) { unknown(id, 'Limite de 16 niveaux IF atteinte.', next); return id; }
@@ -190,12 +215,14 @@ export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIM
    edge(open.node, open.next, 'true'); edge(open.node, loop.next, 'false'); edge(loop.node, open.node, 'loop');
   }
   for (const open of stack) unknown(open.node, 'boucle non refermée dans le listing.', open.next);
+  for (const handler of report.handlers) if (handler.target !== null) edge(handler.site, handler.target, 'handler');
   for (const transfer of pending) {
    const target = targets.get(transfer.number);
    if (target === undefined) { partial(`BASIC ${report.nodes[transfer.from]!.basicLine} : cible ${transfer.number} absente.`); edge(transfer.from, null, 'unknown'); }
    else edge(transfer.from, target, transfer.kind, transfer.ordinal);
   }
  } catch (error) { partial(error instanceof Error ? error.message : 'Construction du graphe interrompue.'); }
+ report.handlers.sort((a, b) => report.nodes[a.site]!.line - report.nodes[b.site]!.line || report.nodes[a.site]!.start - report.nodes[b.site]!.start);
  // Least fixed point of finite paths to RETURN. Each rule is an OR alternative;
  // its dependencies are ANDed (callee AND continuation for a simple GOSUB).
  // Each dependency is processed once: O(nodes + edges), no stack simulation.
@@ -236,20 +263,22 @@ export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIM
    const current = stack.pop()!; if (seen.has(current)) continue;
    if (++visits > FLOW_LIMITS.visits) { partial('Budget de parcours atteint : 500000 visites maximum.'); break; }
    seen.add(current);
-   for (const link of outgoing.get(current) ?? []) if (link.to !== null && (includeCalls || link.kind !== 'call')) stack.push(link.to);
+   for (const link of outgoing.get(current) ?? []) if (link.kind !== 'handler' && link.to !== null && (includeCalls || link.kind !== 'call')) stack.push(link.to);
   }
   return seen;
  }
  const reached = report.entry === null ? new Set<number>() : walk(report.entry, true);
  report.reachable = [...reached].sort((a, b) => a - b);
  const entries = new Set<number>(); if (report.entry !== null) entries.add(report.entry);
- for (const link of report.edges) if (link.kind === 'call' && link.to !== null) entries.add(link.to);
+ const subroutines = new Set<number>();
+ for (const link of report.edges) if (link.kind === 'call' && link.to !== null) { entries.add(link.to); subroutines.add(link.to); }
+ for (const handler of report.handlers) if (handler.target !== null) entries.add(handler.target);
  if (entries.size > FLOW_LIMITS.entries) partial('Plus de 128 points d’entrée : résumés limités aux 128 premiers.');
  for (const entry of [...entries].slice(0, FLOW_LIMITS.entries)) {
   const body = walk(entry, false); let decisions = 0, statements = 0;
   for (const id of body) {
    if (report.nodes[id]!.kind === 'statement' || report.nodes[id]!.kind === 'opaque') statements++;
-   const links = outgoing.get(id) ?? [], calls = links.filter(e => e.kind === 'call');
+   const links = (outgoing.get(id) ?? []).filter(e => e.kind !== 'handler'), calls = links.filter(e => e.kind === 'call');
    // ON GOSUB has N possible callees plus selector fall-through; simple GOSUB has one continuation.
    decisions += Math.max(0, links.filter(e => e.kind !== 'call').length - 1) + (report.nodes[id]!.operation === 'ON' ? calls.length : 0);
    for (const call of calls) if (call.to !== null) {
@@ -257,14 +286,14 @@ export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIM
     else partial('Plus de 8192 relations d’appel : graphe des appels tronqué.');
    }
   }
-  report.entries.push({ node: entry, kind: entry === report.entry ? 'main' : 'subroutine', nodes: statements, complexity: statements ? 1 + decisions : 0, recursive: false, returnStatus: returnsKnown ? canReturn.has(entry) ? 'possible' : 'absent' : 'unknown' });
+  report.entries.push({ node: entry, kind: entry === report.entry ? 'main' : subroutines.has(entry) ? 'subroutine' : 'handler', nodes: statements, complexity: statements ? 1 + decisions : 0, recursive: false, returnStatus: returnsKnown ? canReturn.has(entry) ? 'possible' : 'absent' : 'unknown' });
  }
  const local = new Map(report.nodes.map(n => [n.id, [] as number[]]));
- for (const e of report.edges) if (e.to !== null && e.kind !== 'call') local.get(e.from)!.push(e.to);
+ for (const e of report.edges) if (e.to !== null && e.kind !== 'call' && e.kind !== 'handler') local.get(e.from)!.push(e.to);
  for (const group of components(report.nodes.map(n => n.id), local)) {
   if (group.length === 1 && !local.get(group[0]!)!.includes(group[0]!)) continue;
   const members = new Set(group);
-  const hasExit = group.some(id => (outgoing.get(id) ?? []).some(e => e.to === null || e.kind !== 'call' && !members.has(e.to)));
+  const hasExit = group.some(id => (outgoing.get(id) ?? []).some(e => e.kind !== 'handler' && (e.to === null || e.kind !== 'call' && !members.has(e.to))));
   report.cycles.push({ nodes: group, hasExit, reachable: group.some(id => reached.has(id)) });
  }
  const calls = new Map(report.entries.map(e => [e.node, [] as number[]]));

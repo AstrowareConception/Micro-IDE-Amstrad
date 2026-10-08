@@ -25,6 +25,90 @@ async function recipe(name, source, outcome, seconds = 3, probes = {}) {
  assert.deepEqual(observed, probes, `${name}: RAM checkpoints before disposal`);
  results.push(result); console.log(`${name}: ${result.outcome} (${result.emulatedSeconds.toFixed(3)} s)`); return result;
 }
+// 0.40.4: qualified error resumes and asynchronous declarations.
+const eventFinish = '900 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165\n910 GOTO 910\n';
+await recipe('flow-error-retry', `10 REM @CPCTEST 1 Retry statement
+20 MEMORY &7FFF:ON ERROR GOTO 1000
+30 a=0:x=0
+40 x=x+1:y=10/a:x=x+10
+50 IF x=11 AND y=5 AND e=11 AND l=40 THEN POKE &8004,1 ELSE POKE &8004,2
+60 GOTO 900
+${eventFinish}1000 e=ERR:l=ERL:a=2:RESUME
+`, 'passed');
+await recipe('flow-error-next', `10 REM @CPCTEST 1 Next statement
+20 MEMORY &7FFF:ON ERROR GOTO 1000
+30 x=0
+40 ERROR 5:x=11
+50 IF x=11 AND e=5 AND l=40 THEN POKE &8004,1 ELSE POKE &8004,2
+60 GOTO 900
+${eventFinish}1000 e=ERR:l=ERL:RESUME NEXT
+`, 'passed');
+await recipe('flow-error-target', `10 REM @CPCTEST 1 Explicit target
+20 MEMORY &7FFF:ON ERROR GOTO 1000
+30 x=0
+40 ERROR 5:x=99
+50 x=98
+60 IF x=0 THEN POKE &8004,1 ELSE POKE &8004,2
+70 GOTO 900
+${eventFinish}1000 RESUME 60
+`, 'passed');
+await recipe('flow-timer-sound-events', `10 REM @CPCTEST 1 AFTER once
+11 REM @CPCTEST 2 EVERY cancel
+12 REM @CPCTEST 3 DI defers
+13 REM @CPCTEST 4 EI resumes
+14 REM @CPCTEST 5 SQ once
+20 MEMORY &7FFF:n=0
+30 AFTER 1 GOSUB 1000
+40 WHILE n=0:WEND
+50 t=TIME+30:WHILE TIME<t:WEND
+60 IF n=1 THEN POKE &8004,1 ELSE POKE &8004,2
+70 n=0:EVERY 1,1 GOSUB 1100
+80 WHILE n<3:WEND
+90 t=TIME+30:WHILE TIME<t:WEND
+100 IF n=3 THEN POKE &8005,1 ELSE POKE &8005,2
+110 n=0:DI:AFTER 1,2 GOSUB 1000
+120 t=TIME+30:WHILE TIME<t:WEND
+130 IF n=0 THEN POKE &8006,1 ELSE POKE &8006,2
+140 EI:WHILE n=0:WEND
+150 IF n=1 THEN POKE &8007,1 ELSE POKE &8007,2
+160 n=0:ON SQ(1) GOSUB 1000
+170 WHILE n=0:WEND
+180 t=TIME+30:WHILE TIME<t:WEND
+190 IF n=1 THEN POKE &8008,1 ELSE POKE &8008,2
+200 GOTO 900
+${eventFinish}1000 n=n+1:RETURN
+1100 n=n+1:IF n=3 THEN r=REMAIN(1)
+1110 RETURN
+`, 'passed', 5);
+
+await recipe('flow-break-declarations', `10 REM @CPCTEST 1 Break modes are declarations
+20 MEMORY &7FFF:n=0
+30 ON BREAK GOSUB 1000
+40 ON BREAK CONT
+50 ON BREAK STOP
+60 IF n=0 THEN POKE &8004,1 ELSE POKE &8004,2
+70 GOTO 900
+${eventFinish}1000 n=n+1:RETURN
+`, 'passed');
+await recipe('flow-error-disabled', `10 REM @CPCTEST 1 Disabled trap
+20 MEMORY &7FFF:POKE &8100,0:POKE &8101,0
+30 ON ERROR GOTO 1000
+40 ON ERROR GOTO 0:POKE &8100,165
+50 ERROR 5
+60 GOTO 60
+1000 POKE &8101,1:RESUME NEXT
+`, 'timeout', 3, { [0x8100]: 165, [0x8101]: 0 });
+await recipe('flow-resume-zero-unqualified', `10 REM @CPCTEST 1 Zero is not assumed to retry
+20 MEMORY &7FFF:POKE &8100,0:POKE &8101,0:ON ERROR GOTO 1000
+30 a=0
+40 x=10/a:POKE &8101,1
+50 GOTO 50
+1000 POKE &8100,165:a=2:RESUME 0
+`, 'timeout', 3, { [0x8100]: 165, [0x8101]: 0 });
+
+const eventExample = await readFile('examples/control-flow/events.bas', 'utf8');
+await recipe('flow-event-example', eventExample.replace("10 REM Gestion d'erreur et minuteur unique", '10 REM @CPCTEST 1 Event example').replace('20 ON ERROR', '15 MEMORY &7FFF\n20 ON ERROR').replace('70 PRINT "Minuteur";ticks;"Suite";suite', '70 IF ticks=1 AND suite=1 THEN POKE &8004,1 ELSE POKE &8004,2\n75 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165'), 'passed');
+
 // 0.40.3: execute real nested/recursive calls and selectors, independently of the graph.
 await recipe('flow-returns', `10 REM @CPCTEST 1 Nested returns
 11 REM @CPCTEST 2 Mutual recursion

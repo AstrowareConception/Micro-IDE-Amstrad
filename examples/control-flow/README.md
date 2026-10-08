@@ -1,6 +1,6 @@
 # Explorer le flux d’un listing BASIC
 
-Ouvrir [main.bas](main.bas) dans CPCéleste 0.40.3, puis **BASIC → Rapport de qualité BASIC… → Générer le rapport** et déplier **Flux BASIC**.
+Ouvrir [main.bas](main.bas) dans CPCéleste 0.40.4, puis **BASIC → Rapport de qualité BASIC… → Générer le rapport** et déplier **Flux BASIC**.
 
 Le programme additionne 1, 2 et 3 dans la sous-routine 200, affiche le total via 300, puis le ramène à 3 dans une boucle WHILE. Le graphe conserve aussi les autres issues structurelles, sans évaluer les conditions.
 
@@ -19,3 +19,7 @@ Ouvrir [conditional-loops.bas](conditional-loops.bas). Le total affiché est **1
 ## Retours de sous-routines
 
 Ouvrir [returns.bas](returns.bas) : total affiché **6**, récursion mutuelle 100/200 avec RETURN possible. GOSUB 300 termine par END : sa continuation est retirée et les lignes 50/60 n’ont pas de chemin depuis le début. Le tableau distingue chemin possible, absent ou indéterminé ; il ne certifie pas que les conditions d’un chemin seront réalisées. Retirer le cas de base de la ligne 100 fait disparaître le chemin fini de retour des deux routines.
+
+## Erreurs et événements
+
+Ouvrir [events.bas](events.bas) : AFTER déclenche une fois la routine 200 ; l’erreur volontaire 5 à la ligne 60 passe par 300 puis RESUME NEXT rejoint l’instruction suivante de la même ligne. Résultat : **Minuteur 1 Suite 1**. Le rapport recense trois opérations événementielles, dont ON ERROR GOTO 0. Déplier **Erreurs et événements**, rejoindre les cibles et explorer les associations en pointillés. Elles décrivent les déclarations, pas des sauts immédiats ; le rapport reste partiel, sans complexité ni verdict d’inaccessibilité.
