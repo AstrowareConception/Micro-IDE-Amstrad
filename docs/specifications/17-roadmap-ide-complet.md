@@ -43,7 +43,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-017 | Renommage sémantique de variables/fonctions | N | P1 | IDE-014 | Suffixes/types, portée et chaînes/DATA/commentaires préservés |
 | IDE-018 | Templates/snippets, insertion de lignes et conventions | N | P1 | IDE-014 | Numéros sans collision ; génération minimale conforme au profil |
 | IDE-019 | Formatage optionnel et inspections/corrections ciblées | N | P2 | IDE-014 | Sémantique inchangée ; aperçu ; aucune casse/espacement opaque détruit |
-| IDE-076 | Rapport de qualité BASIC à la demande | P | P2 | IDE-014 | 0.40.0 : graphe structurel exploratoire, appels/cycles, complexité locale et inaccessibilité conditionnelle ; formes imbriquées/événementielles, pile contextuelle et revue IA restent ouvertes |
+| IDE-076 | Rapport de qualité BASIC à la demande | P | P2 | IDE-014 | 0.40.1 : graphe structurel, IF imbriqués, NEXT multiples à entrée littérale garantie, appels/cycles et complexité locale ; boucles sautées/conditionnelles, événements, pile contextuelle et revue IA restent ouverts |
 | IDE-077 | Tests de programmes BASIC à la demande | P | P1 | IDE-050, FW | 0.39.1 : suites persistantes, assertions natives, clavier programmé, fixtures ASCII, observations exactes écran/fichier et rapports conservés ; couverture, fixtures binaires, scénarios sans signature et génération IA restent ouverts |
 | IDE-020 | Multi-curseurs, pliage, signets, navigation retour/avance | P | P1 | Monaco | Gestes repris explicitement en recette, sessions conservées ; capacité Monaco seule insuffisante |
 
@@ -284,4 +284,8 @@ Retour utilisateur traité avant la 0.40 : parcours clé → modèle → budget,
 
 [Graphe structurel et exploration](../implementation/basic-control-flow-alpha.md), [ADR 0049](../adr/0049-graphe-basic-conservateur.md) : instructions et branches, cibles GOSUB, cycles/récursion possible, complexité par point d’entrée et remarques d’inaccessibilité depuis le début. Le worker à la demande conserve quotas, annulation, snapshots et exports sans code. Les formes opaques ou erreurs suspendent les conclusions globales. Trois assertions firmware qualifient FOR hors bornes, IF/ON/GOSUB et WHILE sur le jeu 6128 anglais identifié. IDE-076 reste P.
 
-**Prochain lot 0.40** : réduire les cas partiels (IF imbriqués, NEXT multiples et formes compactes) avec recettes firmware, puis mieux représenter les retours et événements. La compréhension des symboles/usages 0.41 suit ce socle ; aucune qualification globale J2 ni analyse exacte tous programmes n’est annoncée.
+## Avancement alpha 0.40.1 — Branches et boucles qualifiées
+
+IF imbriqués et ELSE IF jusqu’à 16 niveaux, syntaxe des branches inspectée, NEXT multiples structurés avec entrée FOR garantie par bornes entières littérales et STEP non nul. Exemple `nested.bas`, exploration/navigations et exports vérifiés ; 37 nouvelles assertions firmware. Les mots collés tels que GOTO100 ne produisent plus de fausses cibles ni de renumérotation. [Réalisation et limites](../implementation/basic-control-flow-alpha.md#qualification-0401), [ADR 0050](../adr/0050-branches-basic-qualifiees.md).
+
+**Prochain lot 0.40** : qualifier la recherche de NEXT pour les boucles initialement sautées et les boucles conditionnelles, puis représenter les retours/événements. La compréhension des symboles/usages 0.41 suit ce socle. IDE-076/J2 restent partiels ; aucune analyse exacte tous programmes n’est annoncée.

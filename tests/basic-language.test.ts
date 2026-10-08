@@ -14,12 +14,13 @@ test('editorial cards retain the exact source digest and valid source locations'
   for (const card of COMMANDS) assert.ok(lines[card.line - 1]?.startsWith(card.name), `${card.name}:${card.line}`);
   assert.ok(!COMMANDS.some(c => ['INTRS', 'GET', 'PUT'].includes(c.name)));
 });
-test('CPC literals, variables, case and compact targets are tokenized', () => {
+test('CPC literals, variables and keyword-like identifiers retain their lexical identity', () => {
   const tokens = tokenize('10 if score%= &X101 THEN100:print "GOTO 999":x!=&hFF:a$="OK"');
   assert.ok(tokens.some(t => t.text === 'score%' && t.kind === 'identifier'));
   assert.ok(tokens.some(t => t.text === '&X101' && t.kind === 'number'));
   assert.ok(tokens.some(t => t.text === '&hFF' && t.kind === 'number'));
-  assert.ok(tokens.some(t => t.text.toUpperCase() === 'THEN' && t.kind === 'keyword'));
+  assert.ok(tokens.some(t => t.text.toUpperCase() === 'THEN100' && t.kind === 'identifier'));
+  assert.deepEqual(analyze('10 GOTO100=1:PRINT GOTO100\n100 END').references, []);
   assert.equal(analyze('10 IF A THEN100\n100 END').diagnostics.length, 0);
 });
 test('DATA, REM, apostrophes and strings are opaque to reference analysis', () => {
@@ -38,7 +39,7 @@ test('diagnostics are limited to certain errors and export constraints', () => {
   assert.equal(analyze('10 UNKNOWN X\n20 GOTO N+1\n30 ON ERROR GOTO 0\n40 CHAIN "OTHER",500').diagnostics.length, 0);
 });
 test('ON lists and THEN/ELSE targets navigate physical lines, not numeric positions', () => {
-  const result = analyze('10 ON N GOTO 100,200\n20 IF A THEN100 ELSE200\n\n100 RETURN\n200 END');
+  const result = analyze('10 ON N GOTO 100,200\n20 IF A THEN 100 ELSE 200\n\n100 RETURN\n200 END');
   assert.equal(result.diagnostics.length, 0);
   assert.deepEqual(result.references.map(r => r.number), [100, 200, 100, 200]);
   assert.equal(result.targets.find(t => t.number === 100)?.line, 4);
@@ -46,6 +47,7 @@ test('ON lists and THEN/ELSE targets navigate physical lines, not numeric positi
 test('completion excludes non-code and proposes target context', () => {
   for (const line of ['10 REM PRINT', "10 'PRINT", '10 DATA PRINT', '10 PRINT "GOTO']) assert.equal(completionContext(line, line.length), 'none');
   assert.equal(completionContext('10 GOTO 10', 10), 'target');
+  assert.equal(completionContext('10 GOTO100', 10), 'code');
   assert.equal(completionContext('10 DATA "A:B":PRI', 17), 'code');
   assert.equal(completionContext('10 PRINT "OK":PRI', 17), 'code');
 });

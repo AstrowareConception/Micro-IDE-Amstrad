@@ -221,7 +221,7 @@ Les contrôles couvrent notamment :
 | Sortie texte et saisie | Certaines formes de PRINT, WRITE et INPUT |
 | Export | Contraintes d’encodage ASCII identifiées séparément |
 
-Dépliez **Zones non couvertes et couverture par source** pour connaître les limites. Des constructions restent partielles ou opaques, notamment certains IF imbriqués, types, arités de fonctions, flux complexes, RSX et cibles calculées. **Zéro diagnostic signifie qu’aucun problème n’a été détecté par les contrôles disponibles ; le CPC reste l’épreuve d’exécution.** En cas d’échec du worker, **Réessayer l’analyse** conserve vos buffers et leur undo.
+Dépliez **Zones non couvertes et couverture par source** pour connaître les limites. Des constructions restent partielles ou opaques, notamment les IF au-delà de 16 niveaux, types, arités de fonctions, flux complexes, RSX et cibles calculées. **Zéro diagnostic signifie qu’aucun problème n’a été détecté par les contrôles disponibles ; le CPC reste l’épreuve d’exécution.** En cas d’échec du worker, **Réessayer l’analyse** conserve vos buffers et leur undo.
 
 <a id="transformations"></a>
 ## 8. Retrouver et transformer votre code
@@ -476,7 +476,9 @@ Dépliez **Flux BASIC** pour découvrir les branchements du listing. Filtrez les
 
 La **complexité de flux** porte sur les décisions accessibles depuis chaque entrée, sans développer ses sous-routines. Elle complète le comptage lexical ci-dessus ; les blocs partagés interdisent d’additionner les routines. L’[exemple fourni](../examples/control-flow/README.md) permet d’essayer immédiatement le parcours.
 
-Une instruction sans chemin depuis le début est une piste de revue : CONT ou RUN avec un autre numéro peuvent lui donner un rôle. Les formes inconnues, notamment contrôle machine, événements, IF imbriqués et NEXT multiples, rendent le graphe partiel et suspendent complexité et conclusions d’inaccessibilité. Les conditions ne sont pas évaluées ; les cycles ne prouvent pas que le programme boucle indéfiniment. [Détail des formes et limites](implementation/basic-control-flow-alpha.md).
+**Depuis la 0.40.1**, les branches IF imbriquées et ELSE IF sont explorables, ainsi que les NEXT multiples dont les bornes littérales garantissent l’entrée. Essayez [nested.bas](../examples/control-flow/nested.bas) : le programme affiche 21 et son graphe présente une complexité de 6. Chaque fermeture de `NEXT j,i` possède son emplacement dans le code. Écrivez `GOTO 100` ou `THEN 100` avec un espace : les mots collés ne sont pas assimilés à ces commandes.
+
+Une instruction sans chemin depuis le début est une piste de revue : CONT ou RUN avec un autre numéro peuvent lui donner un rôle. Les formes inconnues, notamment contrôle machine, événements, IF au-delà de 16 niveaux et NEXT multiples à bornes non garanties, rendent le graphe partiel et suspendent complexité et conclusions d’inaccessibilité. Les conditions ne sont pas évaluées ; les cycles ne prouvent pas que le programme boucle indéfiniment. [Détail des formes et limites](implementation/basic-control-flow-alpha.md).
 
 ### Six familles de remarques
 

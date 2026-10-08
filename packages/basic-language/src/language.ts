@@ -29,9 +29,8 @@ export function tokenize(line: string, tokenLimit = Infinity): Token[] {
       if (number) { text = number[0]; kind = 'number'; }
       else if (word) {
         text = word[0];
-        // Legal compact literal targets (THEN100, GOTO100), without splitting arbitrary identifiers.
-        const compact = /^(GOTO|GOSUB|THEN|ELSE)(\d+)$/i.exec(text);
-        if (compact) text = compact[1]!;
+        // Keep identifiers whole: GOTO100/THEN100 are not keyword + target on
+        // the qualified BASIC 1.1. Splitting would invent references and edits.
         const upper = text.toUpperCase();
         kind = KEYWORDS.has(upper) ? 'keyword' : 'identifier';
         if (upper === 'REM') { text = rest; kind = 'comment'; }
@@ -125,7 +124,7 @@ export function completionContext(line: string, offset: number): 'none' | 'targe
   if (last?.kind === 'keyword' && last.text.toUpperCase() === 'DATA') return 'none';
   if (last && ['comment', 'data'].includes(last.kind)) return 'none';
   if (last?.kind === 'string' && (last.text.length === 1 || !last.text.endsWith('"'))) return 'none';
-  if (/\b(?:GOTO|GOSUB|THEN|ELSE|RESTORE|RUN)\s*\d*$/i.test(line.slice(0, offset))) return 'target';
+  if (/\b(?:GOTO|GOSUB|THEN|ELSE|RESTORE|RUN)\s+\d*$/i.test(line.slice(0, offset))) return 'target';
   return 'code';
 }
 

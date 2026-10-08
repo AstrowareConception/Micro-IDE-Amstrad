@@ -23,7 +23,7 @@ Les signatures sont confrontées au corpus fourni et au chapitre BASIC du manuel
 | Numéros, ordre, cibles littérales | Diagnostic et index physique/BASIC, cibles absentes par listing | Expressions de cible et chargement d’un autre fichier non résolus |
 | Expressions ordinaires | Opérateurs, valeurs, groupement, virgules, opérateur manquant ; mots-clés d’instruction refusés comme valeurs | Types et arité des fonctions non vérifiés ; FN séparé, adresse/flux et profondeur bornée partiels |
 | Affectation/LET, tableaux, DIM, READ, NEXT | Cible, signe égal, dimensions et expressions/liste de variables | MID$ à gauche et DEF FN opaques ; aucune preuve de boucle terminée |
-| IF simple | Condition, THEN/GOTO, corps après THEN/ELSE et instructions séparées par deux-points | IF imbriqué laissé partiel pour l’association ELSE |
+| IF simple et imbriqué (0.40.1) | Condition, THEN/GOTO, corps après THEN/ELSE, association des ELSE et instructions séparées par deux-points | Limite de 16 niveaux ; types/effets d’exécution non déduits |
 | FOR, WHILE | Borne initiale/finale, STEP, expression de condition | Pas de pile d’exécution ni d’analyse complète de contrôle calculé |
 | ON, AFTER/EVERY | Sélecteur, GOTO/GOSUB, listes et arguments ; ON ERROR GOTO 0 préservé | ON SQ/BREAK événementiels partiels |
 | MODE/MEMORY/ERROR, graphisme, mémoire/I/O, SOUND, WAIT, KEY, fichiers simples | Nombres d’arguments, groupes et expressions ; LOCATE avec flux ; ORIGIN à 2/6 arguments | Valeurs matérielles et options complexes non qualifiées ; paramètres omis autorisés dans graphisme/SOUND |
@@ -43,4 +43,6 @@ La recette navigateur vérifie sources/filtres/plages, F8 entre sources, undo/re
 
 ## Suite
 
-Aide des paramètres, fiches natives exhaustives, types/arité, IF imbriqués qualifiés, renommage sémantique et coûts sur grands projets/matériel cible restent ouverts. Le [plan de débogueur BASIC](basic-debugger-plan.md) distingue trace native, hooks réels, points d’arrêt et variables ; aucun état BASIC n’est simulé dans cette tranche.
+Aide des paramètres, fiches natives exhaustives, types/arité, renommage sémantique et coûts sur grands projets/matériel cible restent ouverts. Le [plan de débogueur BASIC](basic-debugger-plan.md) distingue trace native, hooks réels, points d’arrêt et variables ; aucun état BASIC n’est simulé dans cette tranche.
+
+Extension 0.40.1 : [qualification des IF et limites du flux](basic-control-flow-alpha.md#qualification-0401). Les noms GOTO100/THEN100 restent des identifiants ; un GOTO100 employé comme instruction reçoit un diagnostic demandant l’espace.

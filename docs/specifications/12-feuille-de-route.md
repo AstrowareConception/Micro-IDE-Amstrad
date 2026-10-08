@@ -235,3 +235,7 @@ La demande utilisateur priorise [Git et GitHub intégrés](../implementation/git
 ## Avancement alpha 0.40.0 — Analyse de flux à la demande
 
 La [première tranche de graphe structurel](../implementation/basic-control-flow-alpha.md) enrichit le rapport Qualité : exploration des instructions, appels GOSUB, cycles, complexité par entrée et inaccessibilité depuis le début. Les formes inconnues suspendent les conclusions globales ; worker, quotas, navigation protégée et exports sans code restent communs au socle 0.36. REQ-EDT-008 / ACC-36 et IDE-076 restent partiels : formes imbriquées, événements et pile contextuelle suivent avant une prétention d’analyse globale exacte.
+
+## Avancement alpha 0.40.1 — Branches imbriquées et NEXT multiples
+
+IF imbriqués/ELSE IF inspectés jusqu’à 16 niveaux, NEXT multiples structurés à entrée FOR littérale garantie, suppression des cibles inventées dans les mots collés. [Guide et 37 nouvelles assertions firmware](../implementation/basic-control-flow-alpha.md#qualification-0401), [ADR 0050](../adr/0050-branches-basic-qualifiees.md). Exemple et navigation dans le vrai worker vérifiés. Prochain lot : recherche de NEXT lors d’un saut initial, boucles conditionnelles, puis retours/événements ; symboles/usages 0.41 ensuite. REQ-EDT-008 / ACC-36 et IDE-076 restent partiels.

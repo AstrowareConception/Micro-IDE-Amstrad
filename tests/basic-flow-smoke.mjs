@@ -50,6 +50,25 @@ export async function verifyBasicFlow(browser, errors) {
   await expect(panel).toContainText('Rapport sur les sources inchangées.'); await flow.locator(':scope > summary').click();
   await expect(flow).toContainText('analyse partielle'); await expect(flow).toContainText('inaccessibilité et complexité non conclues');
   await expect(flow.locator('.flow-routines tbody tr').first().locator('td').nth(2)).toHaveText('Indisponible');
+  const nested = await readFile('examples/control-flow/nested.bas', 'utf8');
+  await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText(nested);
+  await panel.getByRole('button', { name: 'Générer le rapport', exact: true }).click();
+  await expect(panel).toContainText('Rapport sur les sources inchangées.'); await flow.locator(':scope > summary').click();
+  await expect(flow).toContainText('formes couvertes');
+  await expect(flow.locator('.flow-routines tbody tr').first().locator('td').nth(2)).toHaveText('6');
+  const nestedDownload = page.waitForEvent('download'); await panel.getByRole('button', { name: 'Exporter JSON', exact: true }).click();
+  const nestedChunks = []; for await (const chunk of await (await nestedDownload).createReadStream()) nestedChunks.push(chunk);
+  const nestedGraph = JSON.parse(Buffer.concat(nestedChunks).toString('utf8')).report.sources[0].flow;
+  assert.equal(nestedGraph.complete, true); assert.equal(nestedGraph.nodes.filter(n=>n.operation==='IF').length, 3);
+  const nextNodes = nestedGraph.nodes.filter(n=>n.operation==='NEXT'); assert.equal(nextNodes.length, 2);
+  await select.selectOption(String(nextNodes[1].id));
+  await flow.getByRole('button', { name: 'Voir cette instruction dans le code', exact: true }).click();
+  await expect(page.locator('footer')).toContainText(`L${nextNodes[1].line} · C${nextNodes[1].end + 1}`);
+  await input.focus(); await page.keyboard.press('Control+a'); await page.keyboard.insertText(nested.replace('j=1 TO 3', 'j=1 TO n'));
+  await panel.getByRole('button', { name: 'Générer le rapport', exact: true }).click();
+  await expect(panel).toContainText('Rapport sur les sources inchangées.'); await flow.locator(':scope > summary').click();
+  await expect(flow).toContainText('NEXT multiple avec entrée FOR non garantie');
+  await expect(flow.locator('.flow-routines tbody tr').first().locator('td').nth(2)).toHaveText('Indisponible');
   console.log('BASIC flow UI: real worker, per-entry complexity, graph keyboard navigation, source location, source-free JSON, stale guard and opaque-control fallback passed.');
  } finally { await page.close(); }
 }
