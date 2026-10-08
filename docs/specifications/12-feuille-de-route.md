@@ -288,3 +288,17 @@ Premier index textuel à la demande des variables et tableaux par source : rôle
 ## Avancement alpha 0.41.1 — Types possibles des symboles
 
 Types explicites par suffixe, union conservatrice des types par première lettre et déclarations DEFINT/DEFREAL/DEFSTR navigables. Les segments omis et effets opaques empêchent une conclusion implicite ; aucun ordre lexical assimilé à une exécution, aucun alias fusionné. Rapports Symboles version 2, budgets et calcul à la demande conservés. [Guide](../implementation/basic-symbols-alpha.md#types-0411), [ADR 0060](../adr/0060-types-possibles-symboles-basic.md), [point de reprise](../reprise.md). Suite : qualifier DEF FN et les identités/portées, accès depuis le curseur, puis renommage avec aperçu. IDE-015 reste partiel ; IDE-017 non réalisé.
+
+## Arrêt et ordre de reprise — 8 octobre 2026
+
+`main` est au merge **`0152099bd6b74b87d58a9a567e6a03d41dbf1f7f`** (PR #60, 0.41.1) ; les cinq contrôles de la tête de PR étaient verts et aucune PR n’était ouverte lors du constat. Ce point remplace les indications « prochain lot 0.41 » des comptes rendus historiques ci-dessus. Vérifier à nouveau le dépôt après la pause. [État, limites, preuves et consigne de reprise](../reprise.md).
+
+| Ordre | Lot technique et dépendance | Preuve requise avant d’annoncer la sortie |
+| --- | --- | --- |
+| 1 | `DEF FN` : établir sur le firmware 6128 qualifié les formes de déclaration/appel, paramètres, types, homonymies, variables libres et redéfinitions. Partir du corpus et des documents 14/15. | Matrice positive et négative, contre-exemples et formes inconnues consignés. Aucune portée inférée de la seule proximité textuelle. |
+| 2 | Index FN/portées : prolonger le domaine TypeScript, les quotas et le worker jetable ; fonctions/paramètres/globals distingués ; contrat d’export et ADR révisés si nécessaire. | Tests de domaine + firmware pour les identités retenues ; navigation UI, annulation, snapshots obsolètes et exports vérifiés. Segments non prouvés signalés comme partiels. IDE-015 demeure P. |
+| 3 | Accès depuis le curseur : point d’entrée explicite vers les usages/définitions justifiés, sans analyse à chaque frappe. | Coordonnées et source exactes ; chaînes, DATA, commentaires et ambiguïtés écartés ; aucun lien périmé activable. |
+| 4 | Renommage sémantique (IDE-017) : aperçu du diff de toutes les sources, collisions, identités et types contrôlés ; changement réversible avec undo. Dépend d’un index suffisamment qualifié. | Aucun cas opaque transformé ; préconditions de révision, brouillons et annulation testés ; revue humaine avant mutation. |
+| 5 | Profiler 0.42 : mesures réelles et bornées sur CPC, mapping et surcoût observé ; puis agent CPC 0.43 utilisant exécution, observations et tests autorisés avec checkpoints. | Recettes firmware/worker/UI et limites matérielles explicites pour le profiler ; pour l’agent, permissions, budgets, provenance, diff et revérification sur CPC réel de l’application. |
+
+Les suites BASIC 0.39.1, le debugger 0.38 et le flux 0.40.9 sont des fondations **partielles** ; couverture, variables/piles du debugger, erreurs/événements non qualifiés et autres exigences J0–J6/JG restent au backlog du [document 17](17-roadmap-ide-complet.md). La pause ne déclenche aucun nouveau lot, packaging ou programme de CI supplémentaire.
