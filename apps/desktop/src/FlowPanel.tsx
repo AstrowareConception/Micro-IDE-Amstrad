@@ -1,3 +1,4 @@
+import { ERROR_FLOW_METHOD, ERROR_FLOW_STATUS_LABELS, ERROR_TRANSFER_LABELS } from '../../../packages/basic-language/src/error-flow.ts';
 import { FLOW_EVENT_LABELS, FLOW_EVENT_ACTION_LABELS } from '../../../packages/basic-language/src/flow-events.ts';
 import { useId, useMemo, useState } from 'react';
 import { Button } from './Icon.tsx';
@@ -48,6 +49,23 @@ export function FlowPanel({ name, report, stale, onReveal }: Props) {
     </svg></div>
     <p className="muted">{incoming.length} liaison(s) entrante(s), {outgoing.length} sortante(s) ; cinq par côté affichées. « Retour possible » reste une hypothèse structurelle. Sans chemin vers RETURN dans la cible, la suite du GOSUB est retirée. Un retour indéterminé la conserve ; aucune pile d’appels n’est simulée. Une liaison « Déclaration » en pointillés désigne un gestionnaire, sans saut immédiat ni preuve de déclenchement. Le graphe complet figure dans les exports.</p>
    </>}
+   {report.errorFlow.status !== 'not-needed' && <details className="flow-error-contexts"><summary>Contextes des ERROR explicites · {ERROR_FLOW_STATUS_LABELS[report.errorFlow.status]}</summary>
+    <p>{ERROR_FLOW_METHOD}</p><p>{report.errorFlow.states} états explorés.{report.errorFlow.reason && ` ${report.errorFlow.reason}`}</p>
+    {report.errorFlow.status === 'covered' && <>
+     <h4>Gestionnaires possibles aux instructions de contrôle</h4>
+     <ul className="flow-error-states">{report.errorFlow.contexts.slice(0, 100).map((context, i) => <li key={i}>
+      <Button disabled={stale} onClick={() => onReveal(index.get(context.node)!)}>Instruction BASIC {index.get(context.node)!.basicLine} · C{index.get(context.node)!.start + 1}</Button>
+      {context.handler === null ? ' · piège désactivé' : <> · <Button disabled={stale} onClick={() => onReveal(index.get(context.handler!)!)}>Gestionnaire possible BASIC {index.get(context.handler)!.basicLine}</Button></>}
+      {context.fault === null ? ' · aucun ERROR en traitement' : <> · <Button disabled={stale} onClick={() => onReveal(index.get(context.fault!)!)}>ERROR interrompu BASIC {index.get(context.fault)!.basicLine} · C{index.get(context.fault)!.start + 1}</Button></>}
+     </li>)}</ul>{report.errorFlow.contexts.length > 100 && <p>100 contextes affichés ; suite dans les exports.</p>}
+     <h4>Déclenchements et reprises dans ce modèle</h4>
+     <ul className="flow-error-transfers">{report.errorFlow.transfers.slice(0, 100).map((transfer, i) => <li key={i}>
+      {ERROR_TRANSFER_LABELS[transfer.kind]} · <Button disabled={stale} onClick={() => onReveal(index.get(transfer.node)!)}>Départ BASIC {index.get(transfer.node)!.basicLine} · C{index.get(transfer.node)!.start + 1}</Button>
+      {transfer.to === null ? ' → arrêt du chemin' : <> → <Button disabled={stale} onClick={() => onReveal(index.get(transfer.to!)!)}>Destination BASIC {index.get(transfer.to)!.basicLine} · C{index.get(transfer.to)!.start + 1}</Button></>}
+      {transfer.fault !== null && <> · <Button disabled={stale} onClick={() => onReveal(index.get(transfer.fault!)!)}>ERROR interrompu BASIC {index.get(transfer.fault)!.basicLine} · C{index.get(transfer.fault)!.start + 1}</Button></>}
+     </li>)}</ul>{report.errorFlow.transfers.length > 100 && <p>100 transferts affichés ; suite dans les exports.</p>}
+    </>}
+   </details>}
    {report.handlers.length > 0 && <details className="flow-handlers"><summary>Erreurs et événements ({report.handlers.length})</summary>
     <p>Déclarations et changements de mode repérés dans le source, y compris hors des chemins connus. Ce tableau ne décrit pas les gestionnaires actifs ; priorités, temporisation, DI/EI et REMAIN ne sont pas simulés.</p>
     <ul>{report.handlers.slice(0, 100).map(handler => <li key={handler.site}>

@@ -25,6 +25,56 @@ async function recipe(name, source, outcome, seconds = 3, probes = {}) {
  assert.deepEqual(observed, probes, `${name}: RAM checkpoints before disposal`);
  results.push(result); console.log(`${name}: ${result.outcome} (${result.emulatedSeconds.toFixed(3)} s)`); return result;
 }
+// 0.40.5: explicit error contexts, state changes and guarded conditional resumes.
+const contextFinish = '900 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165\n910 GOTO 910\n';
+await recipe('error-context-replace', `10 REM @CPCTEST 1 Replacement in handler
+20 MEMORY &7FFF:n=0:ON ERROR GOTO 1000
+30 ERROR 5:ERROR 6
+40 IF n=11 THEN POKE &8004,1 ELSE POKE &8004,2
+50 GOTO 900
+${contextFinish}1000 n=n+1:ON ERROR GOTO 1100:RESUME NEXT
+1100 n=n+10:RESUME NEXT
+`, 'passed');
+await recipe('error-context-retry', `10 REM @CPCTEST 1 Retry same ERROR
+20 MEMORY &7FFF:n=0:ON ERROR GOTO 1000
+30 ERROR 5
+40 IF n=2 THEN POKE &8004,1 ELSE POKE &8004,2
+50 GOTO 900
+${contextFinish}1000 n=n+1:IF n=1 THEN RESUME ELSE RESUME 40
+`, 'passed');
+for (const [name, setup, expression, expected] of [['then','a=1','IF a THEN ERROR 5:x=1 ELSE x=99',1],['else','a=0','IF a THEN x=99 ELSE ERROR 5:x=2',0]]) {
+ await recipe('error-context-'+name, `10 REM @CPCTEST 1 Conditional continuation
+20 MEMORY &7FFF:ON ERROR GOTO 1000:${setup}:x=0
+30 ${expression}
+40 IF x=${expected} THEN POKE &8004,1 ELSE POKE &8004,2
+50 GOTO 900
+${contextFinish}1000 RESUME NEXT
+`, 'passed');
+}
+for (const [name, command] of [['disable','ON ERROR GOTO 0'],['nested-error','ERROR 6'],['nested-replaced','ON ERROR GOTO 1100:ERROR 6']]) {
+ await recipe('error-context-'+name, `10 REM @CPCTEST 1 Handler stops on rethrow or nested error
+20 MEMORY &7FFF:POKE &8100,0:POKE &8101,0:ON ERROR GOTO 1000
+30 ERROR 5:POKE &8101,1
+40 GOTO 40
+1000 POKE &8100,PEEK(&8100)+1:${command}:POKE &8101,2:RESUME NEXT
+1100 POKE &8101,3:RESUME NEXT
+`, 'timeout',3,{[0x8100]:1,[0x8101]:0});
+}
+
+for (const a of [0,1]) {
+ await recipe('error-context-branch-'+a, `10 REM @CPCTEST 1 Conditional handler registration
+20 MEMORY &7FFF:a=${a}:n=0
+30 IF a THEN ON ERROR GOTO 1000 ELSE ON ERROR GOTO 1100
+40 ERROR 5
+50 IF n=${a ? 1 : 10} THEN POKE &8004,1 ELSE POKE &8004,2
+60 GOTO 900
+${contextFinish}1000 n=1:RESUME NEXT
+1100 n=10:RESUME NEXT
+`, 'passed');
+}
+const contextExample=await readFile('examples/control-flow/error-contexts.bas','utf8');
+await recipe('error-context-example',contextExample.replace('10 REM Deux erreurs et remplacement du gestionnaire','10 REM @CPCTEST 1 Error contexts example').replace('20 total=0','15 MEMORY &7FFF\n20 total=0').replace('40 PRINT "Total";total','40 IF total=11 THEN POKE &8004,1 ELSE POKE &8004,2\n45 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165'),'passed');
+
 // 0.40.4: qualified error resumes and asynchronous declarations.
 const eventFinish = '900 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165\n910 GOTO 910\n';
 await recipe('flow-error-retry', `10 REM @CPCTEST 1 Retry statement

@@ -43,7 +43,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-017 | Renommage sémantique de variables/fonctions | N | P1 | IDE-014 | Suffixes/types, portée et chaînes/DATA/commentaires préservés |
 | IDE-018 | Templates/snippets, insertion de lignes et conventions | N | P1 | IDE-014 | Numéros sans collision ; génération minimale conforme au profil |
 | IDE-019 | Formatage optionnel et inspections/corrections ciblées | N | P2 | IDE-014 | Sémantique inchangée ; aperçu ; aucune casse/espacement opaque détruit |
-| IDE-076 | Rapport de qualité BASIC à la demande | P | P2 | IDE-014 | 0.40.4 : cartographie événementielle et reprises, résumés GOSUB, graphe structurel, boucles contenues dans THEN/ELSE, sorties de NEXT qualifiées, appels/cycles et complexité locale ; fermetures intermédiaires sautées, portées traversées, événements et retours contextuels restent ouverts |
+| IDE-076 | Rapport de qualité BASIC à la demande | P | P2 | IDE-014 | 0.40.5 : contextes des ERROR explicites, cartographie événementielle et reprises, résumés GOSUB, graphe structurel, boucles contenues dans THEN/ELSE, sorties de NEXT qualifiées, appels/cycles et complexité locale ; fermetures intermédiaires sautées, portées traversées, événements et retours contextuels restent ouverts |
 | IDE-077 | Tests de programmes BASIC à la demande | P | P1 | IDE-050, FW | 0.39.1 : suites persistantes, assertions natives, clavier programmé, fixtures ASCII, observations exactes écran/fichier et rapports conservés ; couverture, fixtures binaires, scénarios sans signature et génération IA restent ouverts |
 | IDE-020 | Multi-curseurs, pliage, signets, navigation retour/avance | P | P1 | Monaco | Gestes repris explicitement en recette, sessions conservées ; capacité Monaco seule insuffisante |
 
@@ -292,7 +292,7 @@ IF imbriqués et ELSE IF jusqu’à 16 niveaux, syntaxe des branches inspectée,
 
 Boucles FOR/NEXT et WHILE/WEND entièrement contenues dans une branche THEN/ELSE, avec identité de portée empêchant les appariements entre branches. Dernière variable de NEXT multiple ouverte aux bornes/pas variables et au saut initial ; fermetures intermédiaires conservatrices. Exemple `conditional-loops.bas` (15, complexité 9), 26 nouvelles assertions firmware, tests de graphe et parcours navigateur. [Réalisation](../implementation/basic-control-flow-alpha.md#qualification-0402), [ADR 0051](../adr/0051-boucles-et-portees-conditionnelles.md).
 
-**Prochain lot 0.40** : état actif des gestionnaires et reprises contextuelles après la cartographie 0.40.4. Le saut initial d’une fermeture intermédiaire de NEXT et les boucles franchissant une branche restent des limites explicites à qualifier. La compréhension des symboles/usages 0.41 suit ce socle. IDE-076/J2 restent partiels ; aucune analyse exacte tous programmes n’est annoncée.
+**Prochain lot 0.40** : reprises conditionnelles et erreurs implicites après les contextes explicites de la 0.40.5. Le saut initial d’une fermeture intermédiaire de NEXT et les boucles franchissant une branche restent des limites explicites à qualifier. La compréhension des symboles/usages 0.41 suit ce socle. IDE-076/J2 restent partiels ; aucune analyse exacte tous programmes n’est annoncée.
 
 
 ## Avancement alpha 0.40.3 — Résumés des retours GOSUB
@@ -303,3 +303,8 @@ Chemins finis vers RETURN calculés par point fixe borné, y compris appels imbr
 ## Avancement alpha 0.40.4 — Cartographie des erreurs et événements
 
 ON ERROR/BREAK/SQ, AFTER/EVERY et changements de mode reconnus, cibles navigables et associations en pointillés distinctes des appels immédiats. ERROR/RESUME gardent des reprises contextuelles explicites ; sous-format flow JSON 3. Exemple `events.bas`, dix assertions firmware positives et deux observations négatives bornées ; tests de domaine et navigateur. [Qualification](../implementation/basic-control-flow-alpha.md#qualification-0404), [ADR 0053](../adr/0053-cartographie-evenements-basic.md). Les listings événementiels restent partiels : état actif, annulations, priorités et reprises dynamiques ne sont pas simulés. Prochain lot : propagation bornée de cet état, puis symboles/usages 0.41 ; IDE-076/J2 restent ouverts.
+
+
+## Avancement alpha 0.40.5 — Contextes des ERROR explicites
+
+Parcours borné des triplets instruction/gestionnaire/ERROR interrompu ; activations, remplacements, désactivations et reprises contextualisées, sans confondre les continuations d’un gestionnaire partagé. Liste navigable, garde d’obsolescence et exports flow 4. [Exemple, sept assertions firmware et trois observations négatives](../implementation/basic-control-flow-alpha.md#qualification-0405), [ADR 0054](../adr/0054-contextes-erreurs-explicites.md). Modèle limité aux ERROR littéraux hors IF : erreurs implicites, piles d’appels/boucles et événements asynchrones restent ouverts. Les essais ELSE imposent une garde explicite sur ERROR conditionnel. Prochain lot : qualifier ces reprises et les erreurs implicites avant élargissement ; symboles/usages 0.41 ensuite. IDE-076/J2 restent partiels.

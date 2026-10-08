@@ -1,6 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.40.4
+# CPCéleste — Dossier de conception et réalisation — version 0.40.5
 
-**Flux BASIC 0.40.4** : cartographie des gestionnaires ON ERROR/BREAK/SQ et AFTER/EVERY, changements de mode et reprises RESUME. Déclarations navigables, état actif non simulé et conclusions globales suspendues. [Guide](implementation/basic-control-flow-alpha.md), [ADR 0053](adr/0053-cartographie-evenements-basic.md).
+**Flux BASIC 0.40.5** : contextes bornés des ERROR explicites, activations/remplacements/désactivations de ON ERROR et reprises navigables. Erreurs implicites, ERROR conditionnels, piles et événements asynchrones exclus ; conclusions globales toujours suspendues. [Guide](implementation/basic-control-flow-alpha.md), [ADR 0054](adr/0054-contextes-erreurs-explicites.md).
 
 **Suites BASIC 0.39 — premier lot** : suites persistantes, lancement individuel/global, historique des dix derniers rapports et retour aux assertions. [Guide](implementation/basic-test-suites-alpha.md), [ADR 0047](adr/0047-suites-basic-et-historique.md). Le [deuxième lot 0.39.1](implementation/basic-scenarios-alpha.md) ajoute des scénarios clavier, fixtures ASCII et observations écran/fichier ([ADR 0048](adr/0048-scenarios-basic-reproductibles.md)).
 
@@ -12,7 +12,7 @@
 
 ## Vous cherchez le mode d’emploi ?
 
-**[Présentation commerciale et notice utilisateur illustrée de CPCéleste](guide-utilisateur.md)** : 25 chapitres, 23 captures, les parcours complétés par les suites/scénarios BASIC et l’analyse de flux 0.40.4, des premiers pas aux fonctions avancées.
+**[Présentation commerciale et notice utilisateur illustrée de CPCéleste](guide-utilisateur.md)** : 25 chapitres, 23 captures, les parcours complétés par les suites/scénarios BASIC et l’analyse de flux 0.40.5, des premiers pas aux fonctions avancées.
 
 Le dossier ci-dessous conserve les spécifications et les rapports des incréments successifs.
 

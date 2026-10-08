@@ -253,3 +253,8 @@ Chemins finis vers RETURN calculés par point fixe borné, y compris appels imbr
 ## Avancement alpha 0.40.4 — Cartographie des erreurs et événements
 
 ON ERROR/BREAK/SQ, AFTER/EVERY et changements de mode reconnus, cibles navigables et associations en pointillés distinctes des appels immédiats. ERROR/RESUME gardent des reprises contextuelles explicites ; sous-format flow JSON 3. Exemple `events.bas`, dix assertions firmware positives et deux observations négatives bornées ; tests de domaine et navigateur. [Qualification](../implementation/basic-control-flow-alpha.md#qualification-0404), [ADR 0053](../adr/0053-cartographie-evenements-basic.md). Les listings événementiels restent partiels : état actif, annulations, priorités et reprises dynamiques ne sont pas simulés. Prochain lot : propagation bornée de cet état, puis symboles/usages 0.41 ; IDE-076/J2 restent ouverts.
+
+
+## Avancement alpha 0.40.5 — Contextes des ERROR explicites
+
+Parcours borné des triplets instruction/gestionnaire/ERROR interrompu ; activations, remplacements, désactivations et reprises contextualisées, sans confondre les continuations d’un gestionnaire partagé. Liste navigable, garde d’obsolescence et exports flow 4. [Exemple, sept assertions firmware et trois observations négatives](../implementation/basic-control-flow-alpha.md#qualification-0405), [ADR 0054](../adr/0054-contextes-erreurs-explicites.md). Modèle limité aux ERROR littéraux hors IF : erreurs implicites, piles d’appels/boucles et événements asynchrones restent ouverts. Les essais ELSE imposent une garde explicite sur ERROR conditionnel. Prochain lot : qualifier ces reprises et les erreurs implicites avant élargissement ; symboles/usages 0.41 ensuite. IDE-076/J2 restent partiels.

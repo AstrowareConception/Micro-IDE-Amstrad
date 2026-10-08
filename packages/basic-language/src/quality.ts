@@ -1,3 +1,4 @@
+import { ERROR_FLOW_LIMITS, ERROR_FLOW_METHOD, ERROR_FLOW_STATUS_LABELS, ERROR_TRANSFER_LABELS } from './error-flow.ts';
 import { FLOW_EVENT_LABELS, FLOW_EVENT_ACTION_LABELS } from './flow-events.ts';
 import { analyzeControlFlow, FLOW_LIMITS, FLOW_METHOD, FLOW_RETURN_LABELS, type FlowReport } from './control-flow.ts';
 import { tokenize, type Token } from './language.ts';
@@ -118,8 +119,8 @@ function inspectSource(input: QualitySource, flow: FlowReport): SourceQuality {
 }
 export function analyzeQuality(sources: QualitySource[]): QualityReport {
  if (sources.length > QUALITY_LIMITS.sources || sources.reduce((sum, s) => sum + s.source.length, 0) > QUALITY_LIMITS.totalCharacters) throw new Error('Rapport limité à 100 sources et 4 Mio de caractères au total.');
- let nodeBudget = FLOW_LIMITS.totalNodes;
- const results = sources.map(source => { const flow = analyzeControlFlow(source.source, nodeBudget); nodeBudget -= flow.nodes.length; return inspectSource(source, flow); });
+ let nodeBudget = FLOW_LIMITS.totalNodes, errorBudget = ERROR_FLOW_LIMITS.totalStates;
+ const results = sources.map(source => { const flow = analyzeControlFlow(source.source, nodeBudget, errorBudget); nodeBudget -= flow.nodes.length; errorBudget -= flow.errorFlow.states; return inspectSource(source, flow); });
  return { version: 2, method: QUALITY_METHOD + ' ' + FLOW_METHOD, thresholds: QUALITY_THRESHOLDS, sources: results };
 }
 export function qualityMarkdown(report: QualityReport): string {
@@ -135,6 +136,11 @@ export function qualityMarkdown(report: QualityReport): string {
   if (flow.omittedReasons) lines.push(`- ${flow.omittedReasons} autres limites omises.`);
   for (const entry of flow.entries) lines.push(`- ${entry.kind === 'main' ? 'Programme principal' : entry.kind === 'handler' ? 'Gestionnaire' : 'Entrée GOSUB'} BASIC ${flow.nodes[entry.node]!.basicLine} : ${entry.nodes} instructions locales ; complexité ${entry.complexity ?? 'indisponible'}${entry.recursive ? ' ; appels récursifs' : ''} ; chemin vers RETURN : ${FLOW_RETURN_LABELS[entry.returnStatus]}.`);
   for (const handler of flow.handlers) lines.push(`- ${FLOW_EVENT_LABELS[handler.event]} · ${FLOW_EVENT_ACTION_LABELS[handler.action]} · BASIC ${flow.nodes[handler.site]!.basicLine} : ${handler.target !== null ? `gestionnaire BASIC ${flow.nodes[handler.target]!.basicLine}` : handler.targetLine !== null ? `cible BASIC ${handler.targetLine} absente` : 'sans cible'} ; état actif et déclenchement non déterminés.`);
+  if (flow.errorFlow.status !== 'not-needed') {
+   lines.push('', `### Contextes des ERROR explicites — ${ERROR_FLOW_STATUS_LABELS[flow.errorFlow.status]}`, '', ERROR_FLOW_METHOD, '', `${flow.errorFlow.states} états explorés. ${flow.errorFlow.reason ?? ''}`);
+   for (const context of flow.errorFlow.contexts) lines.push(`- Contexte BASIC ${flow.nodes[context.node]!.basicLine}/C${flow.nodes[context.node]!.start + 1} : gestionnaire ${context.handler === null ? 'désactivé' : `BASIC ${flow.nodes[context.handler]!.basicLine}`} ; ERROR interrompu ${context.fault === null ? 'aucun' : `BASIC ${flow.nodes[context.fault]!.basicLine}/C${flow.nodes[context.fault]!.start + 1}`}.`);
+   for (const transfer of flow.errorFlow.transfers) lines.push(`- ${ERROR_TRANSFER_LABELS[transfer.kind]} : n${transfer.node} → ${transfer.to === null ? 'arrêt du chemin' : `n${transfer.to}`} ; ERROR interrompu ${transfer.fault === null ? 'aucun' : `n${transfer.fault}`}.`);
+  }
   for (const call of flow.calls) lines.push(`- Appel : entrée BASIC ${flow.nodes[call.caller]!.basicLine} → BASIC ${flow.nodes[call.callee]!.basicLine}, site L${flow.nodes[call.site]!.line}/C${flow.nodes[call.site]!.start + 1}.`);
   for (const cycle of flow.cycles) lines.push(`- Cycle : ${cycle.nodes.map(id => `n${id}`).join(', ')} ; ${cycle.hasExit ? 'sortie structurelle présente' : 'sans sortie structurelle repérée'} ; ${cycle.reachable ? 'atteignable dans le graphe' : 'hors des chemins connus'}.`);
   lines.push('', 'Nœuds et liaisons (sans extraits de source) :', '');

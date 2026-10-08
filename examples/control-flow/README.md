@@ -1,6 +1,6 @@
 # Explorer le flux d’un listing BASIC
 
-Ouvrir [main.bas](main.bas) dans CPCéleste 0.40.4, puis **BASIC → Rapport de qualité BASIC… → Générer le rapport** et déplier **Flux BASIC**.
+Ouvrir [main.bas](main.bas) dans CPCéleste 0.40.5, puis **BASIC → Rapport de qualité BASIC… → Générer le rapport** et déplier **Flux BASIC**.
 
 Le programme additionne 1, 2 et 3 dans la sous-routine 200, affiche le total via 300, puis le ramène à 3 dans une boucle WHILE. Le graphe conserve aussi les autres issues structurelles, sans évaluer les conditions.
 
@@ -23,3 +23,7 @@ Ouvrir [returns.bas](returns.bas) : total affiché **6**, récursion mutuelle 10
 ## Erreurs et événements
 
 Ouvrir [events.bas](events.bas) : AFTER déclenche une fois la routine 200 ; l’erreur volontaire 5 à la ligne 60 passe par 300 puis RESUME NEXT rejoint l’instruction suivante de la même ligne. Résultat : **Minuteur 1 Suite 1**. Le rapport recense trois opérations événementielles, dont ON ERROR GOTO 0. Déplier **Erreurs et événements**, rejoindre les cibles et explorer les associations en pointillés. Elles décrivent les déclarations, pas des sauts immédiats ; le rapport reste partiel, sans complexité ni verdict d’inaccessibilité.
+
+## Contextes des erreurs explicites
+
+Ouvrir [error-contexts.bas](error-contexts.bas) : résultat **11**. Déplier **Contextes des ERROR explicites** ; la première erreur de la ligne 30 rejoint 100, la seconde rejoint 200 après remplacement du piège. Chaque reprise possède sa destination et son ERROR interrompu. Les liens rejoignent les bonnes colonnes. Ajouter AFTER rend ce calcul hors périmètre ; le graphe global reste partiel dans les deux cas, car le modèle ne couvre pas les erreurs implicites.
