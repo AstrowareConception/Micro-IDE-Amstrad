@@ -11,16 +11,58 @@ if (!root) throw new Error('CPC_TEST_ROM_DIR requis : jeu 6128 anglais identifiÃ
 const roms = Object.fromEntries(await Promise.all(['os', 'basic', 'amsdos'].map(async role => [role, new Uint8Array(await readFile(join(root, `cpc6128_${role}.bin`)))])));
 const wasmBinary = await readFile('out/cpc.wasm');
 const results = [];
-async function recipe(name, source, outcome, seconds = 3) {
+async function recipe(name, source, outcome, seconds = 3, probes = {}) {
  const disk = buildListingDisk(source), image = { disk, entry: 'MAIN.BAS', label: name, sha256: await basicTestHash(disk), roms, firmware: BASIC_TEST_FIRMWARE };
  const before = disk.slice(), cpc = await createCpc({ wasmBinary });
+ const observed = {}, dispose = cpc._cpc_bridge_dispose;
+ cpc._cpc_bridge_dispose = () => { for (const address of Object.keys(probes)) observed[address] = cpc._cpc_bridge_peek(Number(address)); dispose(); };
  const result = await executeBasicTests(cpc, image, basicTestPlan({ id: name, name, source }), seconds, async () => {});
  assert.ok(validBasicTestResult(result, basicTestPlan({ id: name, name, source })), `${name}: invalid result`);
  if (result.outcome !== outcome) console.error(name, result.cases);
  assert.equal(result.outcome, outcome, `${name}: ${result.message}`); assert.deepEqual(image.disk, before, 'Immutable DSK input');
  assert.equal(result.sourceSha256, await basicTestHash(new TextEncoder().encode(source)));
  assert.equal(cpc._cpc_bridge_step(20000), -2, 'Machine disposed on completion');
+ assert.deepEqual(observed, probes, `${name}: RAM checkpoints before disposal`);
  results.push(result); console.log(`${name}: ${result.outcome} (${result.emulatedSeconds.toFixed(3)} s)`); return result;
+}
+// 0.40.3: execute real nested/recursive calls and selectors, independently of the graph.
+await recipe('flow-returns', `10 REM @CPCTEST 1 Nested returns
+11 REM @CPCTEST 2 Mutual recursion
+12 REM @CPCTEST 3 ON zero
+13 REM @CPCTEST 4 ON past list
+14 REM @CPCTEST 5 ON selected return
+15 REM @CPCTEST 6 Conditional return
+20 MEMORY &7FFF
+30 x=0:GOSUB 1000
+40 IF x=11 THEN POKE &8004,1 ELSE POKE &8004,2
+50 n=3:x=0:GOSUB 2000
+60 IF x=6 THEN POKE &8005,1 ELSE POKE &8005,2
+70 ON 0 GOSUB 4000,4100:POKE &8006,1
+80 ON 3 GOSUB 4000,4100:POKE &8007,1
+90 x=0:ON 1 GOSUB 1000,4000
+100 IF x=11 THEN POKE &8008,1 ELSE POKE &8008,2
+110 a=0:GOSUB 3000:POKE &8009,1
+120 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165
+130 GOTO 130
+1000 x=x+1:GOSUB 1100:RETURN
+1100 x=x+10:RETURN
+2000 IF n=0 THEN RETURN
+2010 x=x+n:n=n-1:GOSUB 2100:RETURN
+2100 GOSUB 2000:RETURN
+3000 IF a THEN END ELSE RETURN
+4000 END
+4100 STOP
+`, 'passed', 5);
+for (const [name, ending] of [['end','END'],['stop','STOP'],['cycle','GOTO 210']]) {
+ await recipe(`flow-no-return-${name}`, `10 REM @CPCTEST 1 Continuation must not run
+20 MEMORY &7FFF:POKE &8100,0:POKE &8101,0
+30 GOSUB 100:POKE &8101,1
+40 POKE &8004,1:POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165
+50 GOTO 50
+100 GOSUB 200:RETURN
+200 POKE &8100,165
+210 ${ending}
+`, 'timeout', 3, { [0x8100]: 165, [0x8101]: 0 });
 }
 const passed = await recipe('score-passed', BASIC_TEST_EXAMPLE, 'passed'); assert.deepEqual(passed.cases.map(test => test.outcome), ['passed', 'passed']);
 // 0.40: qualify the control forms independently of the structural analyser.

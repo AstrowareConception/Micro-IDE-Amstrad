@@ -7,15 +7,17 @@ export interface FlowLocation { line: number; basicLine: number; start: number; 
 export interface FlowNode extends FlowLocation { id: number; operation: string; kind: 'line' | 'data' | 'statement' | 'opaque' }
 export type FlowEdgeKind = 'next' | 'true' | 'false' | 'jump' | 'case' | 'call' | 'resume' | 'loop' | 'exit' | 'unknown';
 export interface FlowEdge { from: number; to: number | null; kind: FlowEdgeKind; ordinal: number }
-export interface FlowEntry { node: number; kind: 'main' | 'subroutine'; nodes: number; complexity: number | null; recursive: boolean }
+export type FlowReturnStatus = 'possible' | 'absent' | 'unknown';
+export const FLOW_RETURN_LABELS: Record<FlowReturnStatus, string> = { possible: 'Possible', absent: 'Aucun chemin', unknown: 'Indéterminé' };
+export interface FlowEntry { node: number; kind: 'main' | 'subroutine'; nodes: number; complexity: number | null; recursive: boolean; returnStatus: FlowReturnStatus }
 export interface FlowCall { caller: number; callee: number; site: number }
 export interface FlowCycle { nodes: number[]; hasExit: boolean; reachable: boolean }
 export interface FlowReport {
- version: 1; complete: boolean; reasons: string[]; omittedReasons: number; entry: number | null;
+ version: 2; complete: boolean; reasons: string[]; omittedReasons: number; entry: number | null;
  nodes: FlowNode[]; edges: FlowEdge[]; entries: FlowEntry[]; calls: FlowCall[]; cycles: FlowCycle[];
  unreachable: number[]; reachable: number[];
 }
-export const FLOW_METHOD = 'Graphe structurel depuis la première ligne, sans CONT ni RUN à une autre ligne. Les conditions ne sont pas évaluées ; les appels supposent un retour possible. La complexité locale vaut 1 + la somme des issues supplémentaires des décisions accessibles, en suivant la continuation des appels sans développer les sous-routines. Aucun total entre points d’entrée : leurs blocs peuvent se recouvrir. FOR/NEXT est normalisé avec un test en tête ; le retour au test ne réinitialise pas la variable. IF est limité à 16 niveaux. Les boucles dans IF doivent rester dans la même branche. Les fermetures intermédiaires de NEXT multiple exigent des bornes entières littérales garantissant l’entrée initiale. Les cycles ne prouvent pas une boucle infinie. Une forme opaque, une erreur de syntaxe ou un quota atteint suspend la complexité et les conclusions d’inaccessibilité. DATA reste lisible par READ même hors du chemin d’exécution. Ce modèle ne prouve ni la validité à l’exécution ni la terminaison.';
+export const FLOW_METHOD = 'Graphe structurel depuis la première ligne, sans CONT ni RUN à une autre ligne. Les conditions ne sont pas évaluées ; les résumés recherchent un chemin fini vers RETURN, sans garantir son exécution. Une continuation GOSUB est retirée si sa cible ne possède aucun tel chemin ; ON conserve son issue hors liste. Une construction partielle conserve les continuations et rend les retours indéterminés. Les quotas de parcours ultérieurs peuvent limiter les métriques sans invalider ces résumés. La complexité locale vaut 1 + la somme des issues supplémentaires des décisions accessibles, en suivant la continuation des appels sans développer les sous-routines. Aucun total entre points d’entrée : leurs blocs peuvent se recouvrir. FOR/NEXT est normalisé avec un test en tête ; le retour au test ne réinitialise pas la variable. IF est limité à 16 niveaux. Les boucles dans IF doivent rester dans la même branche. Les fermetures intermédiaires de NEXT multiple exigent des bornes entières littérales garantissant l’entrée initiale. Les cycles ne prouvent pas une boucle infinie. Une forme opaque, une erreur de syntaxe ou un quota atteint suspend la complexité et les conclusions d’inaccessibilité. DATA reste lisible par READ même hors du chemin d’exécution. Ce modèle ne prouve ni la validité à l’exécution ni la terminaison.';
 
 const word = (token: Token | undefined) => token?.text.toUpperCase() ?? '';
 const isWord = (token: Token | undefined, name: string) => token?.kind === 'keyword' && word(token) === name;
@@ -63,7 +65,7 @@ function components(ids: number[], adjacency: Map<number, number[]>): number[][]
 }
 
 export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIMITS.nodes): FlowReport {
- const report: FlowReport = { version: 1, complete: true, reasons: [], omittedReasons: 0, entry: null, nodes: [], edges: [], entries: [], calls: [], cycles: [], unreachable: [], reachable: [] };
+ const report: FlowReport = { version: 2, complete: true, reasons: [], omittedReasons: 0, entry: null, nodes: [], edges: [], entries: [], calls: [], cycles: [], unreachable: [], reachable: [] };
  const reasons = new Set<string>();
  function partial(reason: string) {
   report.complete = false;
@@ -194,6 +196,39 @@ export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIM
    else edge(transfer.from, target, transfer.kind, transfer.ordinal);
   }
  } catch (error) { partial(error instanceof Error ? error.message : 'Construction du graphe interrompue.'); }
+ // Least fixed point of finite paths to RETURN. Each rule is an OR alternative;
+ // its dependencies are ANDed (callee AND continuation for a simple GOSUB).
+ // Each dependency is processed once: O(nodes + edges), no stack simulation.
+ const returnsKnown = report.complete, canReturn = new Set<number>();
+ if (returnsKnown) {
+  const dependents = new Map<number, { from: number; remaining: number }[]>(), queue: number[] = [];
+  for (const current of report.nodes) {
+   if (current.operation === 'RETURN') { canReturn.add(current.id); queue.push(current.id); }
+   const links = outgoing.get(current.id) ?? [];
+   const call = links.find(e => e.kind === 'call'), resume = links.find(e => e.kind === 'resume');
+   const alternatives = current.operation === 'GOSUB'
+    ? call?.to != null && resume?.to != null ? [[call.to, resume.to]] : []
+    : links.filter(e => e.kind !== 'call' && e.to !== null).map(e => [e.to!]);
+   for (const dependencies of alternatives) {
+    const rule = { from: current.id, remaining: dependencies.length };
+    for (const target of dependencies) {
+     const list = dependents.get(target) ?? []; list.push(rule); dependents.set(target, list);
+    }
+   }
+  }
+  for (let cursor = 0; cursor < queue.length; cursor++) {
+   for (const rule of dependents.get(queue[cursor]!) ?? []) {
+    if (--rule.remaining === 0 && !canReturn.has(rule.from)) { canReturn.add(rule.from); queue.push(rule.from); }
+   }
+  }
+  const suppressed = new Set<FlowEdge>();
+  for (const links of outgoing.values()) {
+   const call = links.find(e => e.kind === 'call');
+   if (call?.to != null && !canReturn.has(call.to)) for (const link of links) if (link.kind === 'resume') suppressed.add(link);
+  }
+  report.edges = report.edges.filter(link => !suppressed.has(link));
+  for (const [id, links] of outgoing) outgoing.set(id, links.filter(link => !suppressed.has(link)));
+ }
  let visits = 0;
  function walk(start: number, includeCalls: boolean): Set<number> {
   const seen = new Set<number>(), stack = [start];
@@ -222,7 +257,7 @@ export function analyzeControlFlow(source: string, nodeBudget: number = FLOW_LIM
     else partial('Plus de 8192 relations d’appel : graphe des appels tronqué.');
    }
   }
-  report.entries.push({ node: entry, kind: entry === report.entry ? 'main' : 'subroutine', nodes: statements, complexity: statements ? 1 + decisions : 0, recursive: false });
+  report.entries.push({ node: entry, kind: entry === report.entry ? 'main' : 'subroutine', nodes: statements, complexity: statements ? 1 + decisions : 0, recursive: false, returnStatus: returnsKnown ? canReturn.has(entry) ? 'possible' : 'absent' : 'unknown' });
  }
  const local = new Map(report.nodes.map(n => [n.id, [] as number[]]));
  for (const e of report.edges) if (e.to !== null && e.kind !== 'call') local.get(e.from)!.push(e.to);
