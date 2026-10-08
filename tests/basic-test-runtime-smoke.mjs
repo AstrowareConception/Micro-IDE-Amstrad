@@ -1,5 +1,6 @@
 // Explicit test input only: never distribute the supplied ROMs or embed them in reports.
 import assert from 'node:assert/strict';
+import { conditionalErrorCases } from './fixtures/conditional-error-cases.ts';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import createCpc from '../out/cpc.mjs';
@@ -25,6 +26,32 @@ async function recipe(name, source, outcome, seconds = 3, probes = {}) {
  assert.deepEqual(observed, probes, `${name}: RAM checkpoints before disposal`);
  results.push(result); console.log(`${name}: ${result.outcome} (${result.emulatedSeconds.toFixed(3)} s)`); return result;
 }
+// 0.40.6: saved statement boundaries, including skipped colons in another arm.
+for (const mode of ['next', 'retry']) for (const specimen of conditionalErrorCases) {
+ const [x, n] = specimen[mode];
+ await recipe(`conditional-error-${mode}-${specimen.name}`, `10 REM @CPCTEST 1 Saved statement resume
+20 MEMORY &7FFF:ON ERROR GOTO 1000:x=0:n=0:${specimen.setup}
+30 ${specimen.code}
+40 IF x=${x} AND n=${n} THEN POKE &8004,1 ELSE POKE &8004,2
+50 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165
+60 GOTO 60
+1000 n=n+1:a=1-a:b=1-b:IF n>1 THEN RESUME 40
+1010 RESUME ${mode === 'next' ? 'NEXT' : ''}
+`, 'passed');
+}
+for (const [a,b] of [[1,1],[1,0],[0,1],[0,0]]) {
+ await recipe(`conditional-error-target-${a}-${b}`, `10 REM @CPCTEST 1 Explicit target leaves nested IF
+20 MEMORY &7FFF:a=${a}:b=${b}:x=0:n=0:ON ERROR GOTO 1000
+30 IF a THEN IF b THEN ERROR 5:x=99 ELSE ERROR 6:x=98 ELSE IF b THEN ERROR 7:x=97 ELSE ERROR 8:x=96
+40 IF x=0 AND n=1 THEN POKE &8004,1 ELSE POKE &8004,2
+50 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165
+60 GOTO 60
+1000 n=n+1:RESUME 40
+`, 'passed');
+}
+const conditionalErrorExample = await readFile('examples/control-flow/conditional-errors.bas','utf8');
+await recipe('conditional-error-example', conditionalErrorExample.replace('10 REM Reprises conditionnelles', '10 REM @CPCTEST 1 Conditional error example').replace('20 ON ERROR', '15 MEMORY &7FFF\n20 ON ERROR').replace('90 PRINT "Resultat";x;y;z', '90 IF x=1 AND y=0 AND z=98 THEN POKE &8004,1 ELSE POKE &8004,2\n95 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165'), 'passed');
+
 // 0.40.5: explicit error contexts, state changes and guarded conditional resumes.
 const contextFinish = '900 POKE &8000,67:POKE &8001,80:POKE &8002,67:POKE &8003,165\n910 GOTO 910\n';
 await recipe('error-context-replace', `10 REM @CPCTEST 1 Replacement in handler

@@ -1,5 +1,6 @@
 import { ERROR_FLOW_LIMITS } from '../packages/basic-language/src/error-flow.ts';
 import test from 'node:test';
+import { conditionalErrorCases } from './fixtures/conditional-error-cases.ts';
 import assert from 'node:assert/strict';
 import { analyzeQuality, qualityMarkdown } from '../packages/basic-language/src/quality.ts';
 import { analyzeControlFlow, FLOW_LIMITS } from '../packages/basic-language/src/control-flow.ts';
@@ -415,7 +416,6 @@ test('unsupported contexts discard deductions rather than publishing guessed sta
   '10 ON ERROR GOTO 100:GOSUB 200\n20 ERROR 5\n30 END\n100 RESUME NEXT\n200 RETURN',
   '10 ON ERROR GOTO 100:AFTER 1 GOSUB 200\n20 ERROR 5\n30 END\n100 RESUME NEXT\n200 RETURN',
   '10 ON ERROR GOTO 100:FOR I=1 TO 2\n20 ERROR 5:NEXT I\n30 END\n100 RESUME NEXT',
-  '10 ON ERROR GOTO 100\n20 IF A THEN ERROR 5 ELSE ERROR 6\n30 END\n100 RESUME NEXT',
   '10 ON ERROR GOTO 100\n20 ERROR n\n30 END\n100 RESUME NEXT',
   '10 ON ERROR GOTO 100\n20 ERROR 256\n30 END\n100 RESUME NEXT',
   '10 ON ERROR GOTO 100:CALL &BD19\n20 ERROR 5\n30 END\n100 RESUME NEXT',
@@ -437,7 +437,7 @@ test('state budgets remove partial contexts, preserve the graph and bound global
 });
 test('error context exports state their restricted scope and retain precise destinations', () => {
  const report=analyzeQuality([{id:'errors',name:'errors.bas',source:'10 ON ERROR GOTO 100\n20 ERROR 5:PRINT "SECRET"\n30 END\n100 RESUME NEXT'}]);
- const text=qualityMarkdown(report); assert.match(text,/Contextes des ERROR explicites/); assert.match(text,/erreurs implicites/); assert.match(text,/Instruction après ERROR/);
+ const text=qualityMarkdown(report); assert.match(text,/Contextes des ERROR explicites/); assert.match(text,/erreurs implicites/); assert.match(text,/Suite de l’instruction mémorisée/);
  assert.ok(!text.includes('SECRET')); assert.ok(!JSON.stringify(report).includes('SECRET'));
 });
 
@@ -457,4 +457,52 @@ test('transfer and transition budgets also remove incomplete error-context resul
  const wide='1 ON ERROR GOTO 5000\n'+Array.from({length:150},(_,i)=>`${10+i} ERROR 5`).join('\n')+'\n1000 END\n5000 ON X GOTO '+Array(1000).fill('6000').join(',')+'\n6000 RESUME NEXT';
  const steps=analyzeControlFlow(wide).errorFlow;
  assert.equal(steps.status,'limited'); assert.match(steps.reason!,/131072 transitions/); assert.deepEqual(steps.contexts,[]); assert.deepEqual(steps.transfers,[]);
+});
+
+test('conditional ERROR resumes use firmware-qualified saved starts and scan destinations', () => {
+ for (const specimen of conditionalErrorCases) for (const mode of ['next','retry'] as const) {
+  const line=`30 ${specimen.code}`;
+  const flow=analyzeControlFlow(`10 ON ERROR GOTO 1000\n${line}\n40 END\n1000 RESUME ${mode==='next'?'NEXT':''}`);
+  assert.equal(flow.errorFlow.status,'covered',specimen.name+': '+flow.errorFlow.reason);
+  const fault=flow.nodes.find(n=>n.basicLine===30 && n.start===line.indexOf('ERROR 5'))!;
+  const transfer=flow.errorFlow.transfers.find(t=>t.kind===mode && t.fault===fault.id)!;
+  assert.ok(transfer,specimen.name+' '+mode);
+  const at=mode==='next'?specimen.nextAt:specimen.retryAt;
+  const destination=flow.nodes[transfer.to!]!;
+  assert.equal(destination.basicLine,at===null?40:30,specimen.name+' '+mode);
+  if(at!==null) assert.equal(destination.start,mode==='next'?line.lastIndexOf(at):line.indexOf(at),specimen.name+' '+mode);
+  assert.equal(flow.complete,false); assert.deepEqual(flow.unreachable,[]);
+ }
+});
+test('one handler preserves different conditional retry boundaries and targets', () => {
+ const line='20 IF A THEN ERROR 5:x=1:ERROR 6 ELSE x=2:ERROR 7';
+ const flow=analyzeControlFlow(`10 ON ERROR GOTO 100\n${line}\n30 END\n100 IF B THEN RESUME ELSE RESUME NEXT`);
+ assert.equal(flow.errorFlow.status,'covered');
+ const retries=flow.errorFlow.transfers.filter(t=>t.kind==='retry'); assert.equal(retries.length,3);
+ for(const transfer of retries) {
+  const fault=flow.nodes[transfer.fault!]!, target=flow.nodes[transfer.to!]!;
+  assert.equal(target.start,fault.start===line.indexOf('ERROR 5')?line.indexOf('IF'):fault.start);
+ }
+ const explicit=analyzeControlFlow('10 ON ERROR GOTO 100\n20 IF A THEN IF B THEN ERROR 5 ELSE ERROR 6 ELSE ERROR 7\n30 END\n100 RESUME 30');
+ assert.equal(explicit.errorFlow.status,'covered');
+ assert.equal(explicit.errorFlow.transfers.filter(t=>t.kind==='line').length,3);
+ assert.ok(explicit.errorFlow.transfers.filter(t=>t.kind==='line').every(t=>explicit.nodes[t.to!]!.basicLine===30));
+});
+test('conditional resumption scanning protects strings, DATA, comments and empty separators', () => {
+ for(const prefix of ['PRINT "ELSE:IF"','DATA "ELSE:IF",4']) {
+  const line=`20 IF A THEN ${prefix}:x=98 ELSE ERROR 5:x=2`;
+  const flow=analyzeControlFlow(`10 ON ERROR GOTO 100\n${line}\n30 END\n100 RESUME NEXT`);
+  assert.equal(flow.errorFlow.status,'covered');
+  assert.equal(flow.nodes[flow.errorFlow.transfers.find(t=>t.kind==='next')!.to!]!.start,line.indexOf('x=98'));
+  assert.ok(!JSON.stringify(flow).includes('ELSE:IF'));
+ }
+ for(const tail of ["REM : ELSE IF", "' : ELSE IF", '']) {
+  const flow=analyzeControlFlow(`10 ON ERROR GOTO 100\n20 IF A THEN ERROR 5:${tail}\n30 END\n100 RESUME NEXT`);
+  assert.equal(flow.errorFlow.status,'covered');
+  assert.equal(flow.nodes[flow.errorFlow.transfers.find(t=>t.kind==='next')!.to!]!.basicLine,30);
+ }
+ const empty=analyzeControlFlow('10 ON ERROR GOTO 100\n20 IF A THEN ::ERROR 5::x=1\n30 END\n100 IF B THEN RESUME ELSE RESUME NEXT');
+ assert.equal(empty.errorFlow.status,'covered');
+ assert.equal(empty.nodes[empty.errorFlow.transfers.find(t=>t.kind==='retry')!.to!]!.operation,'ERROR');
+ assert.equal(empty.nodes[empty.errorFlow.transfers.find(t=>t.kind==='next')!.to!]!.operation,'AFFECTATION');
 });

@@ -1,6 +1,6 @@
 # Explorer le flux d’un listing BASIC
 
-Ouvrir [main.bas](main.bas) dans CPCéleste 0.40.5, puis **BASIC → Rapport de qualité BASIC… → Générer le rapport** et déplier **Flux BASIC**.
+Ouvrir [main.bas](main.bas) dans CPCéleste 0.40.6, puis **BASIC → Rapport de qualité BASIC… → Générer le rapport** et déplier **Flux BASIC**.
 
 Le programme additionne 1, 2 et 3 dans la sous-routine 200, affiche le total via 300, puis le ramène à 3 dans une boucle WHILE. Le graphe conserve aussi les autres issues structurelles, sans évaluer les conditions.
 
@@ -27,3 +27,7 @@ Ouvrir [events.bas](events.bas) : AFTER déclenche une fois la routine 200 ; l�
 ## Contextes des erreurs explicites
 
 Ouvrir [error-contexts.bas](error-contexts.bas) : résultat **11**. Déplier **Contextes des ERROR explicites** ; la première erreur de la ligne 30 rejoint 100, la seconde rejoint 200 après remplacement du piège. Chaque reprise possède sa destination et son ERROR interrompu. Les liens rejoignent les bonnes colonnes. Ajouter AFTER rend ce calcul hors périmètre ; le graphe global reste partiel dans les deux cas, car le modèle ne couvre pas les erreurs implicites.
+
+## Reprises dans IF / THEN / ELSE
+
+Ouvrir [conditional-errors.bas](conditional-errors.bas) : résultat **1, 0, 98**. Les ERROR des lignes 30, 40 et 50 ont le IF comme instruction mémorisée. RESUME NEXT rejoint respectivement `x=1`, la ligne 50 et `z=98`, malgré la branche THEN ignorée à la ligne 50. La reprise ne se déduit donc pas du seul emplacement d’ERROR. Déplier les contextes et cliquer sur chaque destination pour comparer les colonnes. Avec RESUME sans NEXT, le IF mémorisé serait réévalué ; un ERROR après un deux-points exécuté serait lui-même réessayé. Le rapport n’évalue pas les conditions et reste globalement partiel.

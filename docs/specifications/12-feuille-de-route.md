@@ -258,3 +258,8 @@ ON ERROR/BREAK/SQ, AFTER/EVERY et changements de mode reconnus, cibles navigable
 ## Avancement alpha 0.40.5 — Contextes des ERROR explicites
 
 Parcours borné des triplets instruction/gestionnaire/ERROR interrompu ; activations, remplacements, désactivations et reprises contextualisées, sans confondre les continuations d’un gestionnaire partagé. Liste navigable, garde d’obsolescence et exports flow 4. [Exemple, sept assertions firmware et trois observations négatives](../implementation/basic-control-flow-alpha.md#qualification-0405), [ADR 0054](../adr/0054-contextes-erreurs-explicites.md). Modèle limité aux ERROR littéraux hors IF : erreurs implicites, piles d’appels/boucles et événements asynchrones restent ouverts. Les essais ELSE imposent une garde explicite sur ERROR conditionnel. Prochain lot : qualifier ces reprises et les erreurs implicites avant élargissement ; symboles/usages 0.41 ensuite. IDE-076/J2 restent partiels.
+
+
+## Avancement alpha 0.40.6 — Reprises conditionnelles
+
+Les ERROR dans IF/THEN/ELSE imbriqués rejoignent le modèle contextuel. RESUME cible l’instruction mémorisée, parfois le IF englobant ; RESUME NEXT cherche sa suite depuis ce début, y compris dans une branche précédemment ignorée. Frontières de deux-points exécutés, destinations navigables et exemple 1/0/98. [51 assertions firmware](../implementation/basic-control-flow-alpha.md#qualification-0406), [ADR 0055](../adr/0055-reprises-erreurs-conditionnelles.md). Erreurs implicites, piles et événements asynchrones restent ouverts ; symboles/usages 0.41 suivent. IDE-076/J2 demeurent partiels.
