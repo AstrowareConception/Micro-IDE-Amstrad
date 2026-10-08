@@ -283,3 +283,8 @@ Piles ordonnées FOR/WHILE/GOSUB, fermeture des boucles avec abandon des boucles
 ## Avancement alpha 0.41.0 — Symboles et usages
 
 Premier index textuel à la demande des variables et tableaux par source : rôles syntaxiques, filtres, navigation précise et onglets chargés réouverts. Casse regroupée, suffixes/scalaires/tableaux distincts ; types implicites et portées FN non résolus. Worker borné, annulation/délai, snapshots obsolètes protégés et exports dédiés contenant les noms sans code/valeurs. [Guide et qualification](../implementation/basic-symbols-alpha.md), [ADR 0059](../adr/0059-symboles-usages-basic.md). IDE-015 reste partiel, IDE-017 non réalisé. Suite : types/portées et DEF FN, accès depuis le curseur, puis renommage sémantique avec aperçu ; limites de flux antérieures conservées au backlog.
+
+
+## Avancement alpha 0.41.1 — Types possibles des symboles
+
+Types explicites par suffixe, union conservatrice des types par première lettre et déclarations DEFINT/DEFREAL/DEFSTR navigables. Les segments omis et effets opaques empêchent une conclusion implicite ; aucun ordre lexical assimilé à une exécution, aucun alias fusionné. Rapports Symboles version 2, budgets et calcul à la demande conservés. [Guide](../implementation/basic-symbols-alpha.md#types-0411), [ADR 0060](../adr/0060-types-possibles-symboles-basic.md), [point de reprise](../reprise.md). Suite : qualifier DEF FN et les identités/portées, accès depuis le curseur, puis renommage avec aperçu. IDE-015 reste partiel ; IDE-017 non réalisé.

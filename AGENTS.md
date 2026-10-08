@@ -4,6 +4,10 @@
 
 Le dépôt contient les spécifications, un prototype J0 et une alpha d'édition desktop. Lire `README.md`, `docs/README.md`, les rapports dans `docs/implementation` et le jalon demandé dans `docs/specifications/12-feuille-de-route.md` avant de coder. L'édition peut avancer indépendamment selon l'ADR 0009 ; cela ne qualifie ni le moteur ni l'ensemble de J1/J2.
 
+## Continuité entre sessions
+
+Lire `docs/reprise.md` au début d’une reprise, puis confronter son état à Git et aux PR. Mettre à jour ce fichier à chaque incrément avec la base, la branche, les changements, les vérifications réellement terminées, les limites et la prochaine étape. Le conserver dans le même commit que le travail ; ne pas dépendre d’un historique de discussion pour reconstituer l’avancement. Ne jamais y placer de secrets, de ROM ou de conversation privée.
+
 ## Architecture
 
 - TypeScript strict pour les domaines et l'application ; C/WebAssembly pour l'adaptateur d'émulation.

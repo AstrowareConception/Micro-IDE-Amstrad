@@ -14,7 +14,7 @@ import { useBasicAnalysis } from './useBasicAnalysis.ts';
 import { ProblemsPanel } from './ProblemsPanel.tsx';
 import { PerformancePanel } from './PerformancePanel.tsx';
 import { SymbolsPanel } from './SymbolsPanel.tsx';
-import type { SymbolOccurrence } from '../../../packages/basic-language/src/symbols.ts';
+import type { SymbolLocation } from '../../../packages/basic-language/src/symbols.ts';
 import { QualityPanel } from './QualityPanel.tsx';
 import { BasicTestsPanel } from './BasicTestsPanel.tsx';
 import type { QualityFinding } from '../../../packages/basic-language/src/quality.ts';
@@ -158,7 +158,7 @@ export function App() {
   }, [documents]);
   const basicTestSources = useMemo(() => documents.map(doc => ({ id: doc.sourceId, name: doc.name, source: doc.source })), [documents]);
   const revealQuality = useCallback((id: string, finding: QualityFinding) => revealProblem(id, { ...finding, severity: 'warning' }), [revealProblem]);
-  const revealSymbol = useCallback((id: string, occurrence: SymbolOccurrence) => revealProblem(id, { ...occurrence, severity: 'warning', code: 'symbol-use', message: 'Occurrence de variable BASIC' }), [revealProblem]);
+  const revealSymbol = useCallback((id: string, occurrence: SymbolLocation) => revealProblem(id, { ...occurrence, severity: 'warning', code: 'symbol-use', message: 'Symbole ou déclaration de type BASIC' }), [revealProblem]);
   function nextProblem(reverse: boolean, line: number, column: number) {
     if (!allProblems.length) return;
     const order = reverse ? [...allProblems].reverse() : allProblems;

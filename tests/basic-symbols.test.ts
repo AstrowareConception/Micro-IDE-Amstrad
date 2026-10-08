@@ -43,9 +43,10 @@ test('function scopes addresses RSX and opaque options are omitted explicitly',(
  assert.equal(r.status,'partial');assert.deepEqual(r.symbols.map(s=>s.name),['OK']);assert.equal(r.skippedStatements,6);
  assert.ok(!JSON.stringify(r).includes('outside'));
 });
-test('DEF type ranges are not variables and untyped names are not falsely merged',()=>{
+test('DEF type ranges are indexed separately and untyped names are not falsely merged',()=>{
  const r=scan('10 DEFINT a-z:a=1:a%=2:a!=3\n20 DEFSTR b:DEFREAL c:b="s"');
- assert.equal(r.status,'partial');assert.deepEqual(r.symbols.map(s=>s.name),['A','A!','A%','B']);
+ assert.equal(r.status,'indexed');assert.deepEqual(r.symbols.map(s=>s.name),['A','A!','A%','B']);
+ assert.deepEqual(r.typeDeclarations.map(d=>[d.command,d.letters]),[['DEFINT','ABCDEFGHIJKLMNOPQRSTUVWXYZ'],['DEFSTR','B'],['DEFREAL','C']]);
  assert.equal(r.symbols.find(s=>s.name==='A')!.suffix,'');assert.ok(!r.symbols.some(s=>s.name==='Z'||s.name==='C'));
 });
 test('malformed targets parentheses long names and compact commands stay partial',()=>{
@@ -92,4 +93,49 @@ test('exports contain names and locations but no source strings values or commen
 test('the shipped example indexes all six symbol spellings and isolates array indices',()=>{
  const r=scan(readFileSync('examples/symbols/main.bas','utf8'));assert.equal(r.status,'indexed');assert.equal(r.symbols.length,6);
  assert.deepEqual(r.symbols.find(s=>s.name==='JOUEUR')!.occurrences.map(o=>o.role),['write','read','read','read','read-write']);
+});
+
+// Type information is conservative across the complete source, never a lexical execution trace.
+test('explicit suffixes fix types while a standalone default is real',()=>{
+ const r=scan('10 a=1:a!=2:a%=3:a$="x":DIM b(2)');
+ assert.deepEqual(r.symbols.find(s=>s.name==='A')!.type,{basis:'standalone-default',candidates:['real']});
+ for(const [name,type] of [['A!','real'],['A%','integer'],['A$','string']])assert.deepEqual(r.symbols.find(s=>s.name===name)!.type,{basis:'suffix',candidates:[type]});
+ assert.equal(r.symbols.find(s=>s.name==='B')!.type.basis,'standalone-default');
+});
+test('branches backward jumps and later declarations retain all possible defaults',()=>{
+ const r=scan('10 alpha=1:beta=2:gamma!=3\n20 IF flag THEN DEFINT a-b ELSE DEFSTR a\n30 DEFREAL a:DEFINT c-e,g\n40 GOTO 10');
+ assert.equal(r.status,'indexed');
+ assert.deepEqual(r.symbols.find(s=>s.name==='ALPHA')!.type,{basis:'declarations',candidates:['real','integer','string']});
+ assert.deepEqual(r.symbols.find(s=>s.name==='BETA')!.type.candidates,['real','integer']);
+ assert.equal(r.symbols.find(s=>s.name==='FLAG')!.type.basis,'standalone-default');
+ assert.deepEqual(r.symbols.find(s=>s.name==='GAMMA!')!.type,{basis:'suffix',candidates:['real']});
+ assert.equal(r.typeDeclarations[3]!.letters,'CDEG');
+});
+test('omitted or opaque statements invalidate implicit type conclusions source-wide',()=>{
+ for(const command of ['CALL &1234','|disc','LOAD "next"','RUN "next"','DEF FNf(x)=x','POKE 100,0','OUT 100,0','DEFINT z-a','DEFSTR aa','DEFREAL a,','DEFINT','DEFREAL a--c','READ a+b']) {
+  const r=scan(`10 alpha=1:alpha%=2\n20 ${command}`);
+  assert.deepEqual(r.symbols.find(s=>s.name==='ALPHA')!.type,{basis:'unknown',candidates:['real','integer','string']},command);
+  assert.deepEqual(r.symbols.find(s=>s.name==='ALPHA%')!.type,{basis:'suffix',candidates:['integer']},command);
+ }
+});
+test('comments DATA and strings cannot create type directives or opaque effects',()=>{
+ const r=scan('10 PRINT "DEFSTR a:POKE":DATA DEFINT,a-z:REM CALL\n20 alpha=1');
+ assert.deepEqual(r.typeDeclarations,[]);assert.equal(r.symbols[0]!.type.basis,'standalone-default');
+});
+test('declaration locations select exactly the original directive and never invent variables',()=>{
+ const text='10 REM début\r\n20 IF x THEN defint a-c, e ELSE DEFSTR z';
+ const r=scan(text);assert.equal(r.typeDeclarations.length,2);assert.deepEqual(r.symbols.map(s=>s.name),['X']);
+ assert.deepEqual(r.typeDeclarations.map(d=>text.split('\n')[d.location.line-1]!.slice(d.location.start,d.location.end)),['defint a-c, e','DEFSTR z']);
+ assert.equal(r.typeDeclarations[0]!.letters,'ABCE');assert.equal(r.typeDeclarations[0]!.location.basicLine,20);
+});
+test('declaration budget removes all source results instead of hiding defaults',()=>{
+ const source=Array.from({length:SYMBOL_LIMITS.typeDeclarations},(_,i)=>`${i+1} DEFINT a`).join('\n');
+ assert.equal(scan(source).status,'indexed');
+ const r=scan(source+'\n300 a=1\n400 DEFSTR a');assert.equal(r.status,'limited');assert.deepEqual(r.symbols,[]);assert.deepEqual(r.typeDeclarations,[]);
+});
+test('types remain independent across sources and exported without code or values',()=>{
+ const report=analyzeSymbols([{id:'a',name:'one.bas',source:'10 DEFSTR a:alpha="PRIVATE"'},{id:'b',name:'two.bas',source:'10 alpha=12345'}]);
+ assert.equal(report.version,2);assert.deepEqual(report.sources.map(s=>s.symbols[0]!.type.basis),['declarations','standalone-default']);
+ const md=symbolsMarkdown(report);assert.match(md,/Types possibles : réel, chaîne/);assert.match(md,/DEFSTR · lettres A · BASIC 10/);
+ for(const hidden of ['PRIVATE','12345','alpha='])assert.ok(!md.includes(hidden)&&!JSON.stringify(report).includes(hidden));
 });

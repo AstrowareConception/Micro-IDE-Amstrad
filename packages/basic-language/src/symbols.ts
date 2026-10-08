@@ -1,14 +1,25 @@
 import { tokenize, type Token } from './language.ts';
 
-export const SYMBOL_LIMITS = Object.freeze({ sources: 100, totalCharacters: 4_194_304, characters: 1_048_576, lines: 10_000, lineCharacters: 8192, tokens: 2048, symbols: 4096, occurrences: 20_000, totalOccurrences: 50_000, reasons: 100 });
+export const SYMBOL_LIMITS = Object.freeze({ sources: 100, totalCharacters: 4_194_304, characters: 1_048_576, lines: 10_000, lineCharacters: 8192, tokens: 2048, symbols: 4096, occurrences: 20_000, totalOccurrences: 50_000, reasons: 100, typeDeclarations: 256 });
 export type SymbolRole = 'read' | 'write' | 'read-write' | 'dimension' | 'erase';
-export interface SymbolOccurrence { line: number; basicLine: number; start: number; end: number; role: SymbolRole }
-export interface BasicSymbol { key: string; name: string; kind: 'scalar' | 'array'; suffix: '' | '$' | '%' | '!'; occurrences: SymbolOccurrence[] }
+export interface SymbolLocation { line: number; basicLine: number; start: number; end: number }
+export interface SymbolOccurrence extends SymbolLocation { role: SymbolRole }
+export type BasicValueType = 'real' | 'integer' | 'string';
+export interface SymbolType { basis: 'suffix' | 'standalone-default' | 'declarations' | 'unknown'; candidates: BasicValueType[] }
+export interface TypeDeclaration { command: 'DEFINT' | 'DEFREAL' | 'DEFSTR'; letters: string; type: BasicValueType; location: SymbolLocation }
+export const SYMBOL_TYPE_LABELS: Record<BasicValueType, string> = { real: 'réel', integer: 'entier', string: 'chaîne' };
+export function symbolTypeLabel(type: SymbolType): string {
+ if (type.basis === 'unknown') return 'Type indéterminé · contexte incomplet';
+ if (type.basis === 'suffix') return `Type explicite : ${SYMBOL_TYPE_LABELS[type.candidates[0]!]}`;
+ if (type.basis === 'standalone-default') return 'Réel par défaut · RUN autonome';
+ return `Types possibles : ${type.candidates.map(value => SYMBOL_TYPE_LABELS[value]).join(', ')}`;
+}
+export interface BasicSymbol { key: string; name: string; kind: 'scalar' | 'array'; suffix: '' | '$' | '%' | '!'; type: SymbolType; occurrences: SymbolOccurrence[] }
 export interface SymbolSource { id: string; name: string; source: string }
-export interface SymbolIndex { id: string; name: string; status: 'indexed' | 'partial' | 'limited'; symbols: BasicSymbol[]; inspectedOccurrences: number; skippedStatements: number; reasons: string[]; omittedReasons: number }
-export interface SymbolReport { version: 1; method: string; sources: SymbolIndex[] }
+export interface SymbolIndex { id: string; name: string; status: 'indexed' | 'partial' | 'limited'; symbols: BasicSymbol[]; typeDeclarations: TypeDeclaration[]; inspectedOccurrences: number; skippedStatements: number; reasons: string[]; omittedReasons: number }
+export interface SymbolReport { version: 2; method: string; sources: SymbolIndex[] }
 export const SYMBOL_ROLE_LABELS: Record<SymbolRole, string> = { read: 'Lecture', write: 'Écriture', 'read-write': 'Lecture/écriture', dimension: 'Dimensionnement', erase: 'Suppression' };
-export const SYMBOL_METHOD = 'Index textuel des variables et tableaux, séparé pour chaque source. La casse est ignorée ; les suffixes $, % et ! sont conservés. Un nom sans suffixe reste de type non résolu : A et A! ne sont pas fusionnés, même s’ils peuvent désigner la même variable à l’exécution. Les indices d’un tableau sont des lectures distinctes de son accès. Les rôles décrivent la syntaxe, pas les chemins réellement exécutés ni une preuve de définition ou d’initialisation. Chaînes, DATA et commentaires sont exclus. DEF FN/appels FN, RSX, CALL, adresses, MID$ en écriture et commandes non couvertes sont signalés comme omis. DEFINT/DEFREAL/DEFSTR ne résolvent pas les types. Aucun renommage ou modification du code. Les exports contiennent les noms des symboles et des sources, mais pas les lignes de code ni leurs valeurs.';
+export const SYMBOL_METHOD = 'Index textuel par source : casse ignorée, suffixes et scalaires/tableaux séparés. Les suffixes fixent le type explicite. Pour un RUN autonome démarrant avec les réglages BASIC standards, le type implicite possible comprend le réel initial et tous les DEFINT/DEFREAL/DEFSTR visant la première lettre, sans présumer leur exécution ou leur ordre. Un segment omis, un accès machine, CONT ou RUN externe rend ce contexte incomplet. Aucun rapprochement des alias A/A!/A%, aucune preuve de définition, de chemin exécuté ou de type à une occurrence donnée. Chaînes, DATA et commentaires exclus ; DEF FN/appels FN, RSX, CALL, adresses, MID$ en écriture et commandes non couvertes omis. Aucun renommage ni modification du code. Les exports incluent noms, types possibles, plages alphabétiques et positions, sans code ni valeurs.';
 const upper = (token: Token | undefined) => token?.text.toUpperCase() ?? '';
 const readCommands = new Set('PRINT WRITE IF WHILE ON AFTER EVERY MODE MEMORY ERROR BORDER INK LOCATE MOVE MOVER DRAW DRAWR PLOT PLOTR POKE OUT ORIGIN SOUND WAIT KEY OPENIN OPENOUT RANDOMIZE FILL WIDTH ZONE RELEASE SYMBOL SPEED'.split(' '));
 const emptyCommands = new Set('END STOP RETURN WEND TRON TROFF FRAME DI EI DEG RAD NEW CAT CONT CLOSEIN CLOSEOUT CLEAR GOTO GOSUB RESTORE RUN RESUME'.split(' '));
@@ -28,15 +39,26 @@ function target(items: Token[]): { token: Token; array: boolean; indices: Token[
  for (let i=1;i<items.length;i++) { if(items[i]!.text==='(') depth++; else if(items[i]!.text===')') depth--; if(depth===0 && i<items.length-1) return null; }
  return { token: items[0], array: true, indices: items.slice(2,-1) };
 }
+/** Type directives describe possible source-wide defaults, not execution order. */
+function typeLetters(items: Token[]): string | null {
+ const letters = new Set<string>();
+ for (const group of split(items, new Set([',']))) {
+  const first = upper(group[0]), last = group.length === 1 ? first : upper(group[2]);
+  if (!/^[A-Z]$/.test(first) || !/^[A-Z]$/.test(last) ||
+      !(group.length === 1 || group.length === 3 && group[1]?.text === '-') || first > last) return null;
+  for (let code = first.charCodeAt(0); code <= last.charCodeAt(0); code++) letters.add(String.fromCharCode(code));
+ }
+ return [...letters].sort().join('');
+}
 export function indexSymbols(input: SymbolSource, occurrenceBudget: number = SYMBOL_LIMITS.occurrences): SymbolIndex {
- const result: SymbolIndex = { id: input.id, name: input.name, status: 'indexed', symbols: [], inspectedOccurrences: 0, skippedStatements: 0, reasons: [], omittedReasons: 0 };
+ const result: SymbolIndex = { id: input.id, name: input.name, status: 'indexed', symbols: [], typeDeclarations: [], inspectedOccurrences: 0, skippedStatements: 0, reasons: [], omittedReasons: 0 };
  const isLimited=()=>result.status==='limited';
  const symbols = new Map<string, BasicSymbol>(), reasons = new Set<string>();
  const budget = Math.max(0,Math.min(SYMBOL_LIMITS.occurrences,Math.floor(occurrenceBudget)||0));
  function reason(text: string, limited = false) { if(limited) result.status='limited'; else if(!isLimited()) result.status='partial'; if(reasons.has(text)) return; reasons.add(text); if(result.reasons.length<SYMBOL_LIMITS.reasons) result.reasons.push(text); else result.omittedReasons++; }
  if (input.source.length > SYMBOL_LIMITS.characters) { reason('Source supérieure à 1 Mio de caractères : index retiré.',true);return result; }
  const lines=input.source.split('\n');if(lines.length>SYMBOL_LIMITS.lines) { reason('Plus de 10 000 lignes : index retiré.',true);return result; }
- let previous=0;
+ let previous=0, opaqueTypeEffects=false;
  for (let line=1;line<=lines.length && !isLimited();line++) {
   const text=lines[line-1]!;if(!text.trim()) continue;
   const prefix=/^\s*(\d+)(?=\s|[a-zA-Z?'&]|$)/.exec(text), basicLine=Number(prefix?.[1]);
@@ -52,7 +74,7 @@ export function indexSymbols(input: SymbolSource, occurrenceBudget: number = SYM
    const key=`${array?'array':'scalar'}:${name}`;
    let symbol=symbols.get(key);
    if(result.inspectedOccurrences>=budget || !symbol && symbols.size>=SYMBOL_LIMITS.symbols) { reason(`Budget atteint (${budget} occurrences ou 4096 symboles) : index de cette source retiré.`,true);return; }
-   if(!symbol) { symbol={key,name,kind:array?'array':'scalar',suffix,occurrences:[]};symbols.set(key,symbol); }
+   if(!symbol) { symbol={key,name,kind:array?'array':'scalar',suffix,type:{basis:'unknown',candidates:['real','integer','string']},occurrences:[]};symbols.set(key,symbol); }
    symbol.occurrences.push({line,basicLine,start:token.start,end:token.end,role});result.inspectedOccurrences++;
   }
   function reads(items:Token[]) { items.forEach((token,i)=>{ if(token.kind==='identifier')add(token,items[i+1]?.text==='(','read'); }); }
@@ -67,7 +89,15 @@ export function indexSymbols(input: SymbolSource, occurrenceBudget: number = SYM
    if(depth || invalid || items.some(t=>t.kind==='string' && (t.text.length<2 || !t.text.endsWith('"')))) { skip('parenthèses ou chaîne non fermées : segment omis.');continue; }
    if(items.some(t=>t.text==='@' || upper(t)==='FN' || t.kind==='identifier' && /^FN/i.test(t.text))) { skip('FN ou adresse : portée/effets non qualifiés, segment omis.');continue; }
    if(items.some(t=>t.kind==='identifier' && t.text.replace(/[$%!]$/,'').length>40)) { skip('identifiant supérieur à 40 caractères : segment omis.');continue; }
-   if(['DEFINT','DEFREAL','DEFSTR','DEF'].includes(command)) { skip('déclaration de type ou fonction : résolution sémantique non réalisée.');continue; }
+   if(['DEFINT','DEFREAL','DEFSTR'].includes(command)) {
+    const letters=typeLetters(args);
+    if(!letters) { skip('plage DEFINT/DEFREAL/DEFSTR non reconnue : contexte de type incomplet.');continue; }
+    if(result.typeDeclarations.length>=SYMBOL_LIMITS.typeDeclarations) { reason('Plus de 256 déclarations de type : index de cette source retiré.',true);continue; }
+    result.typeDeclarations.push({command:command as TypeDeclaration['command'],letters,type:command==='DEFINT'?'integer':command==='DEFSTR'?'string':'real',location:{line,basicLine,start:items[0]!.start,end:items.at(-1)!.end}});
+    continue;
+   }
+   if(command==='DEF') { skip('fonction : résolution des portées non réalisée.');continue; }
+   if(command==='POKE' || command==='OUT' || command==='CONT' || command==='RUN' && args.some(token=>token.kind==='string')) opaqueTypeEffects=true;
    const assignment=command==='LET'?args:items;
    if(assignment[0]?.kind==='identifier') {
     let nesting=0;const equals=assignment.findIndex(t=>{if(t.text==='(')nesting++;else if(t.text===')')nesting--;return !nesting && t.text==='=';});
@@ -97,13 +127,29 @@ export function indexSymbols(input: SymbolSource, occurrenceBudget: number = SYM
    skip('commande hors du périmètre des usages : segment omis.');
   }
  }
- if(!isLimited()) result.symbols=[...symbols.values()].sort((a,b)=>a.name.localeCompare(b.name)||a.kind.localeCompare(b.kind));
+ if(!isLimited()) {
+  // At most 26 * 3 defaults; do not multiply declarations by every occurrence.
+  const defaults=new Map<string,Set<BasicValueType>>();
+  for(const declaration of result.typeDeclarations) for(const letter of declaration.letters) {
+   if(!defaults.has(letter)) defaults.set(letter,new Set<BasicValueType>(['real']));
+   defaults.get(letter)!.add(declaration.type);
+  }
+  for(const symbol of symbols.values()) {
+   const explicit=symbol.suffix==='%'?'integer':symbol.suffix==='$'?'string':symbol.suffix==='!'?'real':undefined;
+   const possible=defaults.get(symbol.name[0]!);
+   symbol.type=explicit?{basis:'suffix',candidates:[explicit]}:
+    result.skippedStatements || opaqueTypeEffects?{basis:'unknown',candidates:['real','integer','string']}:
+    possible?{basis:'declarations',candidates:(['real','integer','string'] as const).filter(type=>possible.has(type))}:
+    {basis:'standalone-default',candidates:['real']};
+  }
+  result.symbols=[...symbols.values()].sort((a,b)=>a.name.localeCompare(b.name)||a.kind.localeCompare(b.kind));
+ } else result.typeDeclarations=[];
  return result;
 }
 export function analyzeSymbols(inputs:SymbolSource[]):SymbolReport {
  if(inputs.length>SYMBOL_LIMITS.sources || inputs.reduce((n,s)=>n+s.source.length,0)>SYMBOL_LIMITS.totalCharacters) throw new Error('Index limité à 100 sources et 4 Mio de caractères au total. Choisissez la source active.');
  let remaining=SYMBOL_LIMITS.totalOccurrences;
- return {version:1,method:SYMBOL_METHOD,sources:inputs.map(input=>{const result=indexSymbols(input,remaining);remaining-=result.inspectedOccurrences;return result;})};
+ return {version:2,method:SYMBOL_METHOD,sources:inputs.map(input=>{const result=indexSymbols(input,remaining);remaining-=result.inspectedOccurrences;return result;})};
 }
 export function symbolsMarkdown(report:SymbolReport):string {
  const escape=(text:string)=>text.replace(/[\\`*_[\]<>#|]/g,'\\$&').replace(/[\r\n]/g,' ');
@@ -111,7 +157,8 @@ export function symbolsMarkdown(report:SymbolReport):string {
  for(const source of report.sources) {
   lines.push(`## ${escape(source.name)}`, '', `État : ${source.status} ; ${source.symbols.length} symboles ; ${source.skippedStatements} segments omis.`, ...source.reasons.map(r=>`- ${r}`));
   if(source.omittedReasons)lines.push(`- ${source.omittedReasons} autres limites omises.`);
-  for(const symbol of source.symbols) { lines.push('',`### ${escape(symbol.name)} · ${symbol.kind==='array'?'tableau':'scalaire'}`); for(const use of symbol.occurrences)lines.push(`- ${SYMBOL_ROLE_LABELS[use.role]} · BASIC ${use.basicLine} · L${use.line} · C${use.start+1}–${use.end+1}`); }
+  for(const declaration of source.typeDeclarations) lines.push(`- ${declaration.command} · lettres ${declaration.letters} · BASIC ${declaration.location.basicLine} · L${declaration.location.line} · C${declaration.location.start+1}`);
+  for(const symbol of source.symbols) { lines.push('',`### ${escape(symbol.name)} · ${symbol.kind==='array'?'tableau':'scalaire'}`,symbolTypeLabel(symbol.type)); for(const use of symbol.occurrences)lines.push(`- ${SYMBOL_ROLE_LABELS[use.role]} · BASIC ${use.basicLine} · L${use.line} · C${use.start+1}–${use.end+1}`); }
  }
  return lines.join('\n')+'\n';
 }
