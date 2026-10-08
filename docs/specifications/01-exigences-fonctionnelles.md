@@ -20,7 +20,7 @@ Chaque ligne est une exigence normative identifiable. **MVP** signifie attendue 
 | REQ-EDT-005 | Afficher le numéro physique et le numéro BASIC ; cliquer un diagnostic rejoint le bon document et la bonne plage. | MVP | ACC-04 |
 | REQ-EDT-006 | Avertir sur les usages mémoire ou matériels qui limitent la portabilité sans interdire arbitrairement CALL, POKE, OUT ou les RSX. | MVP | ACC-04 |
 | REQ-EDT-007 | Importer et exporter le BASIC tokenisé avec tests différentiels sur ROM, sans annoncer une compilation Z80. | Suite | ACC-16 |
-| REQ-EDT-008 | Produire à la demande un rapport local de qualité sur les buffers : métriques de longueur, complexité estimée avec méthode/limites, remarques localisées distinctes des erreurs syntaxiques, quotas et annulation. Les sources modifiées bloquent la navigation ; exports sans code source et sans correction automatique. | Suite | ACC-36 |
+| REQ-EDT-008 | Produire à la demande un rapport local de qualité sur les buffers : métriques de longueur, complexité estimée et graphe structurel avec méthode/limites, appels/cycles et résumés par entrée, remarques localisées distinctes des erreurs syntaxiques, quotas et annulation. Les sources modifiées bloquent la navigation ; exports sans code source et sans correction automatique. | Suite | ACC-36 |
 
 ## Construction, émulation et livraison
 

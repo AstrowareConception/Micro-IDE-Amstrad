@@ -1,0 +1,55 @@
+import assert from 'node:assert/strict';
+import { expect } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
+export async function verifyBasicFlow(browser, errors) {
+ const page = await browser.newPage({ viewport: { width: 1440, height: 1050 }, acceptDownloads: true });
+ page.on('pageerror', error => errors.push(error.message));
+ const source = await readFile('examples/control-flow/main.bas', 'utf8');
+ await page.addInitScript(source => { window.desktop = { setDirty() {}, open: async () => ({ name: 'flux.bas', source }) }; }, source);
+ try {
+  await page.goto('http://127.0.0.1:5173'); await page.locator('.view-lines').first().waitFor();
+  await page.getByRole('button', { name: 'Ouvrir', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Menus de l’atelier', exact: true }).getByRole('button', { name: 'BASIC', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Rapport de qualité BASIC…', exact: true }).click();
+  const panel = page.getByRole('region', { name: 'Qualité du code BASIC', exact: true });
+  await page.getByRole('button', { name: 'Agrandir les sorties', exact: true }).click();
+  await panel.getByRole('button', { name: 'Générer le rapport', exact: true }).click();
+  await expect(panel).toContainText('Rapport sur les sources inchangées.');
+  const flow = panel.locator('.flow-details'); await flow.locator(':scope > summary').click();
+  await expect(flow).toContainText('formes couvertes'); await expect(flow).toContainText('1 instruction(s) sans chemin depuis le début');
+  const rows = flow.locator('.flow-routines tbody tr'); await expect(rows).toHaveCount(3);
+  await expect(rows.nth(0).locator('td').nth(2)).toHaveText('6');
+  await expect(rows.nth(1).locator('td').nth(2)).toHaveText('1');
+  await expect(rows.nth(2).locator('td').nth(2)).toHaveText('1');
+  const pending = page.waitForEvent('download'); await panel.getByRole('button', { name: 'Exporter JSON', exact: true }).click();
+  const downloaded = await pending, chunks = []; for await (const chunk of await downloaded.createReadStream()) chunks.push(chunk);
+  const exported = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  assert.equal(exported.report.version, 2); const data = exported.report.sources[0].flow;
+  assert.equal(data.complete, true); assert.equal(data.cycles.length, 2); assert.equal(data.calls.length, 2);
+  assert.ok(!JSON.stringify(exported).includes('Total avant reduction'));
+  const select = flow.getByLabel('Nœud à explorer — flux.bas', { exact: true });
+  const condition = data.nodes.find(node => node.basicLine === 60 && node.operation === 'IF');
+  await select.selectOption(String(condition.id));
+  await expect(flow.getByRole('group', { name: 'Graphe de contrôle — flux.bas', exact: true })).toContainText('Vrai');
+  await expect(flow.getByRole('group', { name: 'Graphe de contrôle — flux.bas', exact: true })).toContainText('Faux');
+  await page.setViewportSize({ width: 1440, height: 1500 }); await flow.scrollIntoViewIfNeeded();
+  await flow.screenshot({ path: 'out/basic-flow-browser.png' });
+  await page.setViewportSize({ width: 1440, height: 1050 });
+  const call = data.nodes.find(node => node.basicLine === 40 && node.operation === 'GOSUB');
+  await select.selectOption(String(call.id));
+  const target = flow.getByRole('button', { name: 'Explorer BASIC 200, LIGNE, colonne 4', exact: true });
+  await target.focus(); await page.keyboard.press('Enter');
+  await expect(select).toHaveValue(String(data.nodes.find(node => node.basicLine === 200 && node.kind === 'line').id));
+  await flow.getByRole('button', { name: 'Voir cette instruction dans le code', exact: true }).click();
+  await page.getByRole('button', { name: 'Restaurer les sorties', exact: true }).click();
+  const destination = data.nodes.find(node => node.basicLine === 200 && node.kind === 'line');
+  await expect(page.locator('footer')).toContainText(`L${destination.line} · C${destination.end + 1}`);
+  const input = page.locator('.listing .monaco-editor textarea'); await input.focus(); await page.keyboard.press('Control+End'); await page.keyboard.insertText('\n520 CALL &BD19');
+  await expect(panel).toContainText('Rapport obsolète'); await expect(flow.getByRole('button', { name: 'Voir cette instruction dans le code', exact: true })).toBeDisabled();
+  await panel.getByRole('button', { name: 'Générer le rapport', exact: true }).click();
+  await expect(panel).toContainText('Rapport sur les sources inchangées.'); await flow.locator(':scope > summary').click();
+  await expect(flow).toContainText('analyse partielle'); await expect(flow).toContainText('inaccessibilité et complexité non conclues');
+  await expect(flow.locator('.flow-routines tbody tr').first().locator('td').nth(2)).toHaveText('Indisponible');
+  console.log('BASIC flow UI: real worker, per-entry complexity, graph keyboard navigation, source location, source-free JSON, stale guard and opaque-control fallback passed.');
+ } finally { await page.close(); }
+}

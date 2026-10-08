@@ -208,6 +208,16 @@
       "sha256": "de4f5338bcb9e6f68a8d5e1e50a53d935847ad937812fb6b9b99c6ca40e8c729",
       "origin": "local-browser-controlled-agent",
       "scenario": "tests/agent-workbench-smoke.mjs"
+    },
+    {
+      "file": "23-flux-basic.png",
+      "version": "0.40.0",
+      "baseCommit": "2a35c6596400367574f21a95aa6041f4e88fff9d",
+      "width": 1398,
+      "height": 992,
+      "sha256": "55c2c987e5cf0cab137525f1c8c313bc4c66d81d60f73a7d8e4d1bde48a056c7",
+      "origin": "local-browser-real-quality-worker",
+      "scenario": "tests/basic-flow-smoke.mjs"
     }
   ]
 }

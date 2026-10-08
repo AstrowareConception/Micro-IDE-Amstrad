@@ -1,3 +1,4 @@
+import { analyzeControlFlow, FLOW_LIMITS, FLOW_METHOD, type FlowReport } from './control-flow.ts';
 import { tokenize, type Token } from './language.ts';
 
 export const QUALITY_LIMITS = Object.freeze({ sources: 100, totalCharacters: 4_194_304, characters: 1_048_576, lines: 10_000, lineCharacters: 8192, tokens: 2048, findings: 500 });
@@ -5,7 +6,7 @@ export const QUALITY_THRESHOLDS = Object.freeze({ lineLength: 120, statementsPer
 export interface QualitySource { id: string; name: string; source: string }
 export interface QualityLocation { line: number; basicLine: number; start: number; end: number }
 export interface QualityFinding extends QualityLocation {
- code: 'long-line' | 'dense-line' | 'conditional-density' | 'duplicate-block' | 'unreachable-tail';
+ code: 'long-line' | 'dense-line' | 'conditional-density' | 'duplicate-block' | 'unreachable-tail' | 'unreachable-flow';
  message: string; suggestion: string; confidence: 'observation' | 'heuristic'; related: QualityLocation[];
 }
 export interface QualityMetrics {
@@ -14,11 +15,11 @@ export interface QualityMetrics {
  selectorBranches: number; gotos: number; gosubs: number; estimatedCyclomatic: number;
 }
 export interface SourceQuality {
- id: string; name: string; metrics: QualityMetrics | null; findings: QualityFinding[];
+ id: string; name: string; metrics: QualityMetrics | null; findings: QualityFinding[]; flow: FlowReport;
  coverage: { limited: boolean; skippedLines: number; omittedFindings: number; reasons: string[] };
 }
-export interface QualityReport { version: 1; method: string; thresholds: typeof QUALITY_THRESHOLDS; sources: SourceQuality[] }
-export const QUALITY_METHOD = 'Longueurs du texte source en unités UTF-16 ; segments séparés par deux-points hors chaînes, REM et DATA. Estimation lexicale par listing : 1 + IF + FOR + WHILE + cibles des ON sélecteurs. Aucun graphe de contrôle ni découpage fiable en sous-programmes. AND/OR, GOTO simples et gestionnaires d’événements ne sont pas des décisions ajoutées. CALL/RSX, événements, erreurs, RUN/CHAIN, sauts calculés et syntaxe invalide peuvent changer les chemins réels. Les remarques sont des pistes de revue, pas des erreurs ni des corrections automatiques.';
+export interface QualityReport { version: 2; method: string; thresholds: typeof QUALITY_THRESHOLDS; sources: SourceQuality[] }
+export const QUALITY_METHOD = 'Longueurs du texte source en unités UTF-16 ; segments séparés par deux-points hors chaînes, REM et DATA. Estimation lexicale par listing : 1 + IF + FOR + WHILE + cibles des ON sélecteurs. Ce comptage lexical reste distinct de l’analyse de flux par point d’entrée. AND/OR, GOTO simples et gestionnaires d’événements ne sont pas des décisions ajoutées. CALL/RSX, événements, erreurs, RUN/CHAIN, sauts calculés et syntaxe invalide peuvent changer les chemins réels. Les remarques sont des pistes de revue, pas des erreurs ni des corrections automatiques.';
 
 const upper = (token: Token | undefined) => token?.text.toUpperCase();
 const canonical = (tokens: Token[]) => JSON.stringify(tokens.map(t => [t.kind, t.kind === 'string' ? t.text : t.text.toUpperCase()]));
@@ -27,9 +28,9 @@ const segments = (tokens: Token[]) => {
  for (const token of tokens) { if (token.text === ':' && token.kind === 'operator') result.push([]); else result.at(-1)!.push(token); }
  return result.filter(part => part.length);
 };
-function inspectSource(input: QualitySource): SourceQuality {
+function inspectSource(input: QualitySource, flow: FlowReport): SourceQuality {
  const coverage: SourceQuality['coverage'] = { limited: false, skippedLines: 0, omittedFindings: 0, reasons: [] };
- const result: SourceQuality = { id: input.id, name: input.name, metrics: null, findings: [], coverage };
+ const result: SourceQuality = { id: input.id, name: input.name, metrics: null, findings: [], coverage, flow };
  const reason = (text: string) => { if (!coverage.reasons.includes(text)) coverage.reasons.push(text); };
  if (input.source.length > QUALITY_LIMITS.characters) { coverage.limited = true; reason('Source supérieure à 1 Mio de caractères : non analysée.'); return result; }
  const lines = input.source ? input.source.split('\n') : [];
@@ -107,12 +108,18 @@ function inspectSource(input: QualitySource): SourceQuality {
  coverage.limited ||= coverage.skippedLines > 0 || coverage.reasons.length > 0;
  m.averageCodeLineLength = m.codeLines ? Math.round(codeLength / m.codeLines * 10) / 10 : 0;
  m.estimatedCyclomatic = m.codeLines ? 1 + m.ifs + m.fors + m.whiles + m.selectorBranches : 0;
+ for (const id of flow.unreachable) {
+  const { line, basicLine, start, end } = flow.nodes[id]!;
+  add({ line, basicLine, start, end }, 'unreachable-flow', 'Aucun chemin structurel depuis la première ligne du listing.', 'Examiner les sauts et les points d’entrée avant toute suppression. CONT, RUN avec une autre ligne et les accès READ aux DATA sont hors de cette conclusion.');
+ }
  result.findings.sort((a, b) => a.line - b.line || a.start - b.start || a.code.localeCompare(b.code));
  return result;
 }
 export function analyzeQuality(sources: QualitySource[]): QualityReport {
  if (sources.length > QUALITY_LIMITS.sources || sources.reduce((sum, s) => sum + s.source.length, 0) > QUALITY_LIMITS.totalCharacters) throw new Error('Rapport limité à 100 sources et 4 Mio de caractères au total.');
- return { version: 1, method: QUALITY_METHOD, thresholds: QUALITY_THRESHOLDS, sources: sources.map(inspectSource) };
+ let nodeBudget = FLOW_LIMITS.totalNodes;
+ const results = sources.map(source => { const flow = analyzeControlFlow(source.source, nodeBudget); nodeBudget -= flow.nodes.length; return inspectSource(source, flow); });
+ return { version: 2, method: QUALITY_METHOD + ' ' + FLOW_METHOD, thresholds: QUALITY_THRESHOLDS, sources: results };
 }
 export function qualityMarkdown(report: QualityReport): string {
  const escape = (value: string) => value.replace(/[\\`*_{}[\]<>#|]/g, '\\$&').replace(/[\r\n]/g, ' ');
@@ -121,6 +128,17 @@ export function qualityMarkdown(report: QualityReport): string {
   lines.push(`## ${escape(source.name)}`, '');
   const m = source.metrics;
   if (m) lines.push(`Lignes physiques : ${m.physicalLines} ; inspectées : ${m.inspectedLines} ; code : ${m.codeLines} ; commentaires seuls : ${m.commentLines} ; vides : ${m.blankLines}.`, '', `Caractères : ${m.characters} ; longueur maximale inspectée : ${m.maxLineLength} ; moyenne des lignes de code : ${m.averageCodeLineLength} ; segments : ${m.statements}.`, '', `Complexité cyclomatique estimée : ${m.estimatedCyclomatic} (IF ${m.ifs}, FOR ${m.fors}, WHILE ${m.whiles}, branches ON ${m.selectorBranches}). GOTO ${m.gotos} ; GOSUB ${m.gosubs}.`, '');
+  const flow = source.flow;
+  lines.push(`### Flux structurel — ${flow.complete ? 'formes couvertes' : 'partiel'}`, '', `${flow.nodes.length} nœuds ; ${flow.edges.length} liaisons ; ${flow.entries.length} points d’entrée ; ${flow.cycles.length} cycles.`, '');
+  for (const reason of flow.reasons) lines.push(`- Limite de flux : ${escape(reason)}`);
+  if (flow.omittedReasons) lines.push(`- ${flow.omittedReasons} autres limites omises.`);
+  for (const entry of flow.entries) lines.push(`- ${entry.kind === 'main' ? 'Programme principal' : 'Entrée GOSUB'} BASIC ${flow.nodes[entry.node]!.basicLine} : ${entry.nodes} instructions locales ; complexité ${entry.complexity ?? 'indisponible'}${entry.recursive ? ' ; appels récursifs' : ''}.`);
+  for (const call of flow.calls) lines.push(`- Appel : entrée BASIC ${flow.nodes[call.caller]!.basicLine} → BASIC ${flow.nodes[call.callee]!.basicLine}, site L${flow.nodes[call.site]!.line}/C${flow.nodes[call.site]!.start + 1}.`);
+  for (const cycle of flow.cycles) lines.push(`- Cycle : ${cycle.nodes.map(id => `n${id}`).join(', ')} ; ${cycle.hasExit ? 'sortie structurelle présente' : 'sans sortie structurelle repérée'} ; ${cycle.reachable ? 'atteignable dans le graphe' : 'hors des chemins connus'}.`);
+  lines.push('', 'Nœuds et liaisons (sans extraits de source) :', '');
+  for (const node of flow.nodes) lines.push(`- n${node.id} · L${node.line}/C${node.start + 1} · BASIC ${node.basicLine} · ${node.operation}`);
+  for (const edge of flow.edges) lines.push(`- n${edge.from} → ${edge.to === null ? (edge.kind === 'unknown' ? 'inconnu' : 'sortie') : `n${edge.to}`} · ${edge.kind}${edge.ordinal ? ` ${edge.ordinal}` : ''}`);
+  lines.push('');
   if (source.coverage.limited) lines.push(`Rapport partiel : ${source.coverage.skippedLines} ligne(s) ignorée(s), ${source.coverage.omittedFindings} remarque(s)/occurrence(s) omise(s).`, '');
   for (const reason of source.coverage.reasons) lines.push(`- Couverture : ${escape(reason)}`);
   lines.push('');

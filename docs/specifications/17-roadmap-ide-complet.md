@@ -43,7 +43,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-017 | Renommage sémantique de variables/fonctions | N | P1 | IDE-014 | Suffixes/types, portée et chaînes/DATA/commentaires préservés |
 | IDE-018 | Templates/snippets, insertion de lignes et conventions | N | P1 | IDE-014 | Numéros sans collision ; génération minimale conforme au profil |
 | IDE-019 | Formatage optionnel et inspections/corrections ciblées | N | P2 | IDE-014 | Sémantique inchangée ; aperçu ; aucune casse/espacement opaque détruit |
-| IDE-076 | Rapport de qualité BASIC à la demande | P | P2 | IDE-014 | 0.36 : métriques lexicales, complexité estimée, cinq règles, navigation protégée et exports ; graphe de contrôle, sous-programmes et revue IA contextuelle restent ouverts |
+| IDE-076 | Rapport de qualité BASIC à la demande | P | P2 | IDE-014 | 0.40.0 : graphe structurel exploratoire, appels/cycles, complexité locale et inaccessibilité conditionnelle ; formes imbriquées/événementielles, pile contextuelle et revue IA restent ouvertes |
 | IDE-077 | Tests de programmes BASIC à la demande | P | P1 | IDE-050, FW | 0.39.1 : suites persistantes, assertions natives, clavier programmé, fixtures ASCII, observations exactes écran/fichier et rapports conservés ; couverture, fixtures binaires, scénarios sans signature et génération IA restent ouverts |
 | IDE-020 | Multi-curseurs, pliage, signets, navigation retour/avance | P | P1 | Monaco | Gestes repris explicitement en recette, sessions conservées ; capacité Monaco seule insuffisante |
 
@@ -278,3 +278,10 @@ Les lots 0.39.0 et 0.39.1 livrent suites persistantes par IDs de sources, lancem
 ## Correctif 0.39.2 — Ergonomie des réglages IA
 
 Retour utilisateur traité avant la 0.40 : parcours clé → modèle → budget, regroupement des champs/actions, détail tarifaire dépliable, petites fenêtres et navigation clavier. Message tarifaire effacé et réponses périmées invalidées après oubli/remplacement de clé. [Réalisation et recette](../implementation/agent-missions-alpha.md#reglages-0392). La priorité suivante reste l’analyse de flux BASIC à la demande de la 0.40.
+
+
+## Avancement alpha 0.40.0 — Analyse de flux, premier lot
+
+[Graphe structurel et exploration](../implementation/basic-control-flow-alpha.md), [ADR 0049](../adr/0049-graphe-basic-conservateur.md) : instructions et branches, cibles GOSUB, cycles/récursion possible, complexité par point d’entrée et remarques d’inaccessibilité depuis le début. Le worker à la demande conserve quotas, annulation, snapshots et exports sans code. Les formes opaques ou erreurs suspendent les conclusions globales. Trois assertions firmware qualifient FOR hors bornes, IF/ON/GOSUB et WHILE sur le jeu 6128 anglais identifié. IDE-076 reste P.
+
+**Prochain lot 0.40** : réduire les cas partiels (IF imbriqués, NEXT multiples et formes compactes) avec recettes firmware, puis mieux représenter les retours et événements. La compréhension des symboles/usages 0.41 suit ce socle ; aucune qualification globale J2 ni analyse exacte tous programmes n’est annoncée.

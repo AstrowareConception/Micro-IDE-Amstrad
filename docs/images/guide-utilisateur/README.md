@@ -1,4 +1,4 @@
-# Provenance des captures — CPCéleste 0.36.0 à 0.39.2
+# Provenance des captures — CPCéleste 0.36.0 à 0.40.0
 
 [Notice utilisateur](../../guide-utilisateur.md) · [README du produit](../../../README.md)
 
@@ -55,3 +55,8 @@ Le fichier [manifest.json](manifest.json) fournit chemin, dimensions, origine et
 ## Capture 22 — Réglages IA 0.39.2
 
 `22-reglages-ia.png` est une copie octet pour octet de `out/agent-settings-unconfigured.png`, produite par `tests/agent-workbench-smoke.mjs` sur le renderer 0.39.2, base `c6fc8d4ebf65e6073bf30ccf87b82ce5c7bd9fae`. Chromium sous Linux, fenêtre 854 × 973, projet et port agent contrôlés. Elle montre le dialogue avant configuration : aucune clé ni réponse d’un fournisseur réel. Reproduction : `npm run build:renderer` puis `npm run test:editor`. Le libellé alpha 0.36 de la barre principale est un ancien texte d’interface, distinct de la version du paquet.
+
+
+## Capture 23 — Flux BASIC 0.40.0
+
+`23-flux-basic.png` est une copie octet pour octet de `out/basic-flow-browser.png`, capture directe du panneau Flux BASIC produite par `tests/basic-flow-smoke.mjs`. Chromium sous Linux, renderer 0.40.0, base `2a35c6596400367574f21a95aa6041f4e88fff9d`. Le vrai worker analyse `examples/control-flow/main.bas` ; seul le port d’ouverture du fichier est contrôlé. Le graphe du IF 60, les métriques et les liaisons sont calculés par l’application, sans montage ni appel IA. Reproduction : `npm run build:renderer` puis `npm run test:editor`.
