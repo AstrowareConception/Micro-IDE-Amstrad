@@ -9,6 +9,8 @@ import { parseProject, buildProjectDisk } from '../../packages/workspace/src/pro
 import { feedbackReport } from './feedback.ts';
 import { RecentProjectsStore } from './recent-projects-store.ts';
 import { ProjectStore } from './project-store.ts';
+import { DiskImportSession } from './disk-import.ts';
+import type { DiskImportRequest } from '../../packages/cpc-disk/src/import-disk.ts';
 import { ProjectExplorer } from './project-explorer.ts';
 import { decodeImage } from './image-document.ts';
 import { extractPdf } from './pdf-document.ts';
@@ -35,6 +37,7 @@ let window: BrowserWindow;
 let current: { path: string; hash: string } | undefined;
 let dirty = false;
 let project: ProjectStore | undefined;
+let diskImport: DiskImportSession | undefined;
 let inFlight = false;
 let agent: AgentController;
 let gitSession: { id: string; inspector: GitInspection; operations: GitOperations } | undefined;
@@ -223,6 +226,23 @@ route('project:create', async payload => {
   if (selection.canceled || !selection.filePaths[0]) return null;
   const created = await ProjectStore.create(selection.filePaths[0], payload, decodeImage, extractPdf);
   project = created.store; current = undefined; return { ...created.snapshot, recentProjectsNotice: await rememberProject(created.store) };
+});
+route('disk-import:inspect', async () => {
+  diskImport = undefined;
+  const selection = await dialog.showOpenDialog(window, { properties: ['openFile'], filters: [{ name: 'Disquette CPC DATA', extensions: ['dsk'] }] });
+  if (selection.canceled || !selection.filePaths[0]) return null;
+  diskImport = await DiskImportSession.prepare(selection.filePaths[0]); return diskImport.preview;
+});
+route('disk-import:create', async payload => {
+  if (!diskImport || !payload || typeof payload !== 'object' || Array.isArray(payload)) throw new Error('Analysez une disquette avant de créer le projet.');
+  const request = payload as DiskImportRequest;
+  if (request.id !== diskImport.preview.id) throw new Error('Aperçu DSK périmé.');
+  const selection = await dialog.showOpenDialog(window, { title: 'Choisir le dossier parent du nouveau projet importé', properties: ['openDirectory', 'createDirectory'] });
+  if (selection.canceled || !selection.filePaths[0]) return null;
+  const root = await diskImport.create(selection.filePaths[0], request);
+  diskImport = undefined;
+  const opened = await openProjectFolder(root);
+  return opened ? { ...opened, recentProjectsNotice: 'Projet importé. Seuls les listings ASCII sélectionnés sont inclus dans le build ; consultez import-report.json pour les fichiers conservés et dépendances à reprendre.' } : null;
 });
 function projectRequest(payload: unknown): { store: ProjectStore; value: Record<string, unknown> } {
   if (!project || !payload || typeof payload !== 'object') throw new Error('Aucun projet ouvert.');

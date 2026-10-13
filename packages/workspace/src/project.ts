@@ -74,7 +74,7 @@ export function parseProject(value: unknown): ProjectManifest {
   const sources = root.sources.map(value => {
     const source = object(value, ['id', 'path', 'cpcName']);
     const id = string(source.id, ID); const path = string(source.path, PATH); validateSourcePath(path);
-    return { id, path, cpcName: string(source.cpcName, /^[A-Z0-9_]{1,8}\.BAS$/) };
+    return { id, path, cpcName: string(source.cpcName, /^[A-Z0-9_]{1,8}(?:\.[A-Z0-9_]{1,3})?$/) };
   });
   for (const field of ['id', 'path', 'cpcName'] as const) {
     if (new Set(sources.map(source => source[field].toLowerCase())).size !== sources.length) throw new Error(`Collision de ${field} dans les sources.`);

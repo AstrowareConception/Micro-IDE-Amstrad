@@ -14,6 +14,7 @@ import type { TerminalPort } from '../../../packages/workspace/src/terminal.ts';
 import type { HistoryPort } from '../../../packages/workspace/src/history.ts';
 import type { DraftPort } from '../../../packages/workspace/src/drafts.ts';
 import type { ExternalPort } from '../../../packages/workspace/src/external.ts';
+import type { DiskImportPreview, DiskImportRequest } from '../../../packages/cpc-disk/src/import-disk.ts';
 export interface FileResult { name: string; source?: string }
 export interface Failure { error: string }
 export interface DesktopPort {
@@ -21,6 +22,10 @@ export interface DesktopPort {
   save(source: string, saveAs?: boolean): Promise<FileResult | Failure | null>;
   exportDisk(source: string): Promise<FileResult | Failure | null>;
   setDirty(dirty: boolean): void;
+  diskImport?: {
+    inspect(): Promise<DiskImportPreview | Failure | null>;
+    create(request: DiskImportRequest): Promise<ProjectSnapshot | Failure | null>;
+  };
   feedback?: { open(input: FeedbackInput): Promise<{ url: string; prefilled: boolean } | Failure> };
   agent?: AgentPort;
   firmware?: FirmwarePort;

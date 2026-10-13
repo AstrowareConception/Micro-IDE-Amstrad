@@ -1,4 +1,4 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.41.1
+# CPCéleste — Dossier de conception et réalisation — version 0.41.2
 
 [Point de reprise du développement](reprise.md) : état, preuves et suite immédiate.
 
@@ -13,6 +13,8 @@
 **Debugger BASIC 0.38** : breakpoints de lignes et pas statement ancrés sur le firmware Locomotive BASIC 1.1 qualifié. [Guide](implementation/basic-debugger-alpha.md), [ADR 0045](adr/0045-debugger-basic-firmware-qualifie.md).
 
 **Tests BASIC 0.37** : listings autonomes sur machines isolées, assertions natives et rapport borné à la demande. [Guide et limites](implementation/basic-tests-alpha.md), [ADR 0044](adr/0044-tests-basic-isoles.md).
+
+**Import DSK ASCII 0.41.2** : catalogue, aperçu, sélection, projet portable et originaux conservés. [Guide](implementation/dsk-import-alpha.md), [ADR 0061](adr/0061-import-dsk-ascii.md). Détection par contenu, noms CPC préservés ; tokenisé/protégé, ressources exécutables et Extended restent ouverts.
 
 ## Vous cherchez le mode d’emploi ?
 
@@ -114,6 +116,7 @@ La tranche [dépôt/index Git 0.13](implementation/git-local-index-alpha.md) ajo
 | [19 — Expérience et consommation agent](specifications/19-agent-experience-consommation.md) | Comment comprendre une mission, reprendre et suivre son coût ? |
 | [20 — Import DSK vers projet](specifications/20-import-dsk-projet.md) | Comment récupérer les BASIC et ressources d'une disquette pour les modifier dans l'IDE ? |
 | [21 — Récupération de sources et Z80](specifications/21-retro-ingenierie-z80.md) | Que peut-on retrouver depuis un fichier tokenisé, compilé ou assemblé, et comment le modifier ? |
+| [22 — Obfuscation BASIC](specifications/22-obfuscation-basic.md) | Quelles protections historiques et quel export obfusqué pourrait-on ajouter ? |
 | [Glossaire](reference/glossaire.md) | Quel vocabulaire partager ? |
 | [Sources](reference/sources.md) | Sur quelles références reposent les décisions ? |
 | [ADR](adr/README.md) | Pourquoi les options principales ont-elles été retenues ? |

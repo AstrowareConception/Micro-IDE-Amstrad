@@ -4,6 +4,7 @@ Une ADR explique une décision durable et ses conséquences. **Acceptée** signi
 
 | ADR | Décision | Statut |
 | --- | --- | --- |
+| [0061](0061-import-dsk-ascii.md) | Import DSK ASCII, noms CPC préservés et originaux locaux | Acceptée pour la tranche 0.41.2 |
 | [0001](0001-desktop-electron.md) | Bureau Electron avec React/TypeScript | Acceptée |
 | [0002](0002-monolithe-ddd.md) | Monolithe modulaire DDD et ports/adaptateurs | Acceptée |
 | [0003](0003-emulation-cpc-wasm.md) | Émulation CPC native en WASM avec `chips` | Conditionnelle à J0 |

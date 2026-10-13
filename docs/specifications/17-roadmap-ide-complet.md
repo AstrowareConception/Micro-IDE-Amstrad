@@ -23,7 +23,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-003 | Ajouter, renommer, déplacer, supprimer des sources proprement | P | P1 | DUR | 0.31 : renommer/déplacer/supprimer avec aperçu, journal/reprise et copie du brouillon ; ajout durable, import/duplication et plateformes restent ouverts |
 | IDE-004 | Onglets, fermeture individuelle/tout/autres et fichiers épinglés | P | P1 | DUR | Brouillon arbitrable ; ordre et vue conservés ; onglets chargés déjà livrés |
 | IDE-005 | Projets récents, modèles hello/graphismes/jeu et assistant de démarrage | P | P1 | IDE-001 | 0.27 : vingt projets récents privés, filtre/réouverture/retrait, dossiers périmés et projet remplacé contrôlés ; modèles et assistant de démarrage à construire |
-| IDE-006 | Récupérer les sources ASCII/tokenisées par contenu et importer les projets anciens | N | P1 proposé | Codecs/DUR | [Parcours DSK](20-import-dsk-projet.md) : BASIC éditable même nommé BIN, originaux préservés, conversion sans perte ou refus explicite ; pas de récupération universelle du BASIC compilé |
+| IDE-006 | Récupérer les sources ASCII/tokenisées par contenu et importer les projets anciens | P | P1 | Codecs/DUR | 0.41.2 : ASCII depuis DSK livré ; tokenisé à réaliser. [Parcours DSK](20-import-dsk-projet.md) : BASIC éditable même nommé BIN, originaux préservés, conversion sans perte ou refus explicite ; pas de récupération universelle du BASIC compilé |
 
 ## 2. Sauvegarde, récupération et historique local
 
@@ -46,6 +46,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-016 | Renumérotation sûre, plages et références | P | P0 | IDE-014 | Cibles couvertes réécrites ; formes ambiguës bloquées ; undo livré |
 | IDE-017 | Renommage sémantique de variables/fonctions | N | P1 | IDE-015 qualifié | Aperçu par source, identité et collisions vérifiées, suffixes/types et portée préservés, chaînes/DATA/commentaires intacts, sources modifiées refusées et undo ; aucun renommage livré en 0.41.1 |
 | IDE-018 | Templates/snippets, insertion de lignes et conventions | N | P1 | IDE-014 | Numéros sans collision ; génération minimale conforme au profil |
+| IDE-078 | Export BASIC obfusqué, protégé ou combiné, source claire conservée | N | P2 | IDE-015/017 et codec protégé qualifiés | [Fonctionnalité retenue](22-obfuscation-basic.md) : trois modes, obfuscation avant protection, correspondance privée hors DSK, tests comparatifs ; aucune confidentialité absolue |
 | IDE-019 | Formatage optionnel et inspections/corrections ciblées | N | P2 | IDE-014 | Sémantique inchangée ; aperçu ; aucune casse/espacement opaque détruit |
 | IDE-076 | Rapport de qualité BASIC à la demande | P | P2 | IDE-014 | 0.40.9 : piles mixtes appels/FOR/WHILE contextuelles, divisions simples/erreurs possibles, reprises conditionnelles et contextes des ERROR explicites, cartographie événementielle et reprises, résumés GOSUB, graphe structurel, boucles contenues dans THEN/ELSE, sorties de NEXT qualifiées, appels/cycles et complexité locale ; fermetures intermédiaires sautées, portées traversées, événements et retours contextuels restent ouverts |
 | IDE-077 | Tests de programmes BASIC à la demande | P | P1 | IDE-050, FW | 0.39.1 : suites persistantes, assertions natives, clavier programmé, fixtures ASCII, observations exactes écran/fichier et rapports conservés ; couverture, fixtures binaires, scénarios sans signature et génération IA restent ouverts |
@@ -100,7 +101,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | --- | --- | --- | --- | --- | --- |
 | IDE-044 | DSK DATA déterministe multifichier depuis buffers | P | P0 | J0/J3 | Codec/export livré ; résultat dans émulateur indépendant encore requis |
 | IDE-045 | Rapport build, catalogue, capacité/noms 8.3 et erreurs | P | P0 | IDE-044 | Rapports visibles et source révisionnée ; quotas et erreur sans artefact ancien |
-| IDE-046 | Import/inspection DSK standard/Extended et extraction | P | P1 | Codecs/DUR | Reader standard DATA 40 pistes/une face/utilisateur 0 livré ; [assistant DSK vers projet](20-import-dsk-projet.md), import durable et Extended à réaliser |
+| IDE-046 | Import/inspection DSK standard/Extended et extraction | P | P1 | Codecs/DUR | 0.41.2 : [assistant DSK ASCII vers nouveau projet](../implementation/dsk-import-alpha.md), originaux/provenance ; reader standard DATA 40 pistes/une face/utilisateur 0 ; reprise automatique, tokenisé, ressources et Extended à réaliser |
 | IDE-047 | BASIC tokenisé, binaires AMSDOS et ressources CPC | P | P1 | Codecs/J4 | ASCII strict et codec binaire type 2 limités livrés ; détokenisation, caractères CPC et intégration des ressources importées à construire selon le [document 20](20-import-dsk-projet.md) |
 | IDE-048 | Export dossier/ZIP projet, paquet CPC et README de lancement | N | P1 | J3/J4 | Projet complet avec originaux autorisés ; confidentialité ; RUN et profil exacts |
 | IDE-049 | Tests reproductibles de programmes, captures de référence | P | P1 | FW | Builds sur révisions, attentes écran/sorties, limite temps et seeds |
@@ -342,3 +343,7 @@ Premier index textuel à la demande des variables et tableaux par source : rôle
 ## Avancement alpha 0.41.1 — Types possibles des symboles
 
 Types explicites par suffixe, union conservatrice des types par première lettre et déclarations DEFINT/DEFREAL/DEFSTR navigables. Les segments omis et effets opaques empêchent une conclusion implicite ; aucun ordre lexical assimilé à une exécution, aucun alias fusionné. Rapports Symboles version 2, budgets et calcul à la demande conservés. [Guide](../implementation/basic-symbols-alpha.md#types-0411), [ADR 0060](../adr/0060-types-possibles-symboles-basic.md), [point de reprise](../reprise.md). Suite : qualifier DEF FN et les identités/portées, accès depuis le curseur, puis renommage avec aperçu. IDE-015 reste partiel ; IDE-017 non réalisé.
+
+## Avancement alpha 0.41.2 — Premier import DSK
+
+[Parcours ASCII](../implementation/dsk-import-alpha.md), [ADR 0061](../adr/0061-import-dsk-ascii.md) : analyse bornée en worker, catalogue et aperçu, choix des listings/entrée, création dans un nouveau sous-dossier, fichiers bruts et image intégrale conservés. Reconnaissance par contenu même sous BIN, noms CPC préservés, aperçu périmé refusé et brouillons arbitrés. 400 tests locaux, TypeScript, builds main/renderer et parcours Chromium avec vrai worker/stockage réussis. IPC Electron/Windows et qualification firmware/externe non revendiqués localement. IDE-006/046/047 demeurent partiels : prochain lot détokenisation, puis ressources au build ; obfuscation reste une proposition P2.

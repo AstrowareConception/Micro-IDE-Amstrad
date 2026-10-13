@@ -12,7 +12,21 @@ Les deux roadmaps et les sommaires sont actualisés. La séquence FN/portées ci
 
 Validation de ce complément : `python scripts/check_specs.py --schemas` réussi (145 Markdown, 20 JSON, 84 exigences, 37 scénarios, cinq schémas et six exemples) et `git diff --check` réussi. Aucun test fonctionnel d'import ou de désassemblage annoncé. Les preuves 0.41.1 ci-dessous restent historiques.
 
-## Base vérifiée
+## Incrément du 13 octobre — import ASCII 0.41.2
+
+Autorisation explicite de publier et de commencer le développement. Le cadrage est fusionné dans `main` par la [PR #62](https://github.com/AstrowareConception/Micro-IDE-Amstrad/pull/62), commit `2bb4732d10eb3bd0dcc93c3f605384265b2907b1`. Développement sur `feat/dsk-project-import`, version 0.41.2 : [guide](implementation/dsk-import-alpha.md), [ADR 0061](adr/0061-import-dsk-ascii.md). Vérifier la PR de cette branche et son état avant de déclarer le code intégré à `main`.
+
+Réalisé : catalogue DATA strict, aperçu, sélection ASCII et entrée, création d'un nouveau dossier projet, noms CPC conservés indépendamment de l'extension, original DSK et enregistrements bruts conservés, rapport portable, garde d'empreinte et arbitrage des brouillons. L'agent existant peut travailler sur les sources importées. Les fichiers tokenisés/protégés/binaires sont classifiés et conservés, pas convertis ni réintégrés au build.
+
+Preuves locales : 400 tests réussis, TypeScript, builds renderer/main et contrôle syntaxique des scripts réussis. Parcours Chromium avec vrai worker/stockage réussi, capture inspectée (`out/dsk-import-alpha.png`) ; une étiquette de sélection a été corrigée pendant cette recette. Les dialogues natifs et IPC disposent d'une recette ajoutée à la suite Electron, à vérifier en CI. Aucun nouveau test CPC/ROM/émulateur indépendant ni build installable local revendiqué.
+
+Prochaine tranche demandée : **DSK-B, détokenisation BASIC non protégé**, puis DSK-C (ressources exécutables et parcours multifichier complet). Qualifier tokens, nombres, chaînes/DATA/commentaires, RSX et caractères CPC avant le codec ; ne pas utiliser l'IA pour deviner les octets. Extended, autres géométries et protection SAVE P suivent. La [récupération de sources/Z80](specifications/21-retro-ingenierie-z80.md) vient ensuite. L'[obfuscation BASIC](specifications/22-obfuscation-basic.md), question complémentaire, est une proposition P2 non implémentée dépendant notamment du renommage sémantique.
+
+Limites de reprise de l'import : staging conservé en cas d'échec, pas de reprise automatique ni qualification panne électrique/Windows ; sauvegarder tout le dossier pour garder les originaux `.microide/imports/`. Ne pas assimiler les tests synthétiques à une compatibilité universelle des anciennes disquettes.
+
+Précision utilisateur ajoutée pendant la réalisation : IDE-078 est retenu avec trois modes **obfuscation seule / BASIC protégé seul / combinaison des deux**, appliqués uniquement à une copie de distribution. Ordre : obfuscation, validation puis format protégé qualifié. Source claire et table de correspondance restent hors DSK ; aucune promesse d'inviolabilité. Fonctionnalité spécifiée, non implémentée, après ses prérequis de renommage/codec et sans interrompre l'import DSK.
+
+## Base historique de la pause
 
 - Dépôt : `AstrowareConception/Micro-IDE-Amstrad`.
 - `main` au commit **`0152099bd6b74b87d58a9a567e6a03d41dbf1f7f`** : alpha desktop **0.41.1**, [PR #60](https://github.com/AstrowareConception/Micro-IDE-Amstrad/pull/60) fusionnée après la [PR #59](https://github.com/AstrowareConception/Micro-IDE-Amstrad/pull/59). Aucune PR ouverte au moment de ce constat. Une ancienne branche locale ne remplace pas `main` distant.
@@ -33,7 +47,7 @@ Types explicites par suffixe, types implicites possibles par première lettre, d
 
 Les ROM privées sont hors Git. La qualification reste celle du jeu CPC 6128 anglais identifié dans le moteur intégré, sans nouvelle preuve sur matériel ou émulateur indépendant. La version de [GitHub Releases](https://github.com/AstrowareConception/Micro-IDE-Amstrad/releases) peut être plus ancienne que le code ; aucune nouvelle préversion binaire n’est annoncée ici.
 
-## Première tranche à reprendre : fonctions DEF FN et portées
+## Tranche intelligence IDE conservée : fonctions DEF FN et portées
 
 **But :** faire progresser IDE-015 sans confondre paramètre, variable libre et globale. La 0.41.1 omet explicitement définitions et appels FN. La concordance du nom ne suffit pas à prouver une identité.
 
@@ -67,7 +81,7 @@ Ne pas déclarer J0–J6, R1–R9 ou la version 1.0 achevés sur la seule base d
 ## Méthode de continuité
 
 1. Lire ce document, `AGENTS.md`, les deux roadmaps et le guide du lot. Vérifier `main` distant, les PR, contrôles et la version des Releases. Si `main` a dépassé `0152099…`, prendre ses changements comme état courant et actualiser ce document. Ne pas repartir automatiquement d’une ancienne branche locale.
-2. Choisir une seule tranche cohérente (FN d’abord selon la décision actuelle), créer sa branche depuis `main`, puis fixer la matrice de preuves et les limites. Regrouper code, exemples, tests utiles, ADR/guide/roadmap et nouveau point de reprise dans une PR. Vérifier les contrôles adaptés au diff et lire la première erreur réelle avant toute relance.
+2. Choisir une seule tranche cohérente (détokenisation DSK selon la demande du 13 octobre), créer sa branche depuis `main`, puis fixer la matrice de preuves et les limites. Regrouper code, exemples, tests utiles, ADR/guide/roadmap et nouveau point de reprise dans une PR. Vérifier les contrôles adaptés au diff et lire la première erreur réelle avant toute relance.
 3. Avant la prochaine pause, inscrire ici commit de `main`, PR, preuves effectivement observées, limites et prochaine action. Les fichiers temporaires et logs locaux ne remplacent pas un commit publié. Ne jamais y copier clé API, ROM, document personnel ou conversation privée.
 
-**Instruction de reprise courte :** « Reprends CPCéleste depuis `main` après lecture de `AGENTS.md` et `docs/reprise.md`. Compare leur état à GitHub, puis attaque la qualification `DEF FN`/portées prévue par la roadmap ; conserve les limites explicites et mets à jour le point de reprise à la fin. »
+**Instruction de reprise courte :** « Reprends CPCéleste depuis `main` après lecture de `AGENTS.md` et `docs/reprise.md`. Vérifie d'abord la PR `feat/dsk-project-import` et ses contrôles, puis poursuis la récupération des anciens programmes par la détokenisation BASIC DSK-B. Garde FN/portées au backlog et mets à jour le point de reprise. »

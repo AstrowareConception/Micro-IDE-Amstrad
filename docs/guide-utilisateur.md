@@ -319,6 +319,10 @@ La préparation encode les listings ASCII ; elle n’effectue ni compilation Z80
 
 L’export ne remplace pas la sauvegarde des sources et ne marque pas les buffers comme enregistrés. Les pièces jointes, les ROM, la clé IA et les historiques ne sont pas intégrés au DSK. Le disque vise un usage extérieur à l’IDE ; la relecture indépendante et la qualification complète sur matériels et émulateurs tiers restent à mener selon la recette du projet.
 
+### Reprendre une ancienne disquette (0.41.2)
+
+**Fichier → Importer une disquette DSK…** affiche le catalogue et l’aperçu des listings ASCII. Choisissez les sources, le programme à lancer et le dossier parent : un nouveau projet est créé, avec une copie intégrale du DSK et des fichiers bruts. Les noms CPC sont préservés, y compris pour un BASIC ASCII nommé `.BIN`. Les programmes tokenisés/protégés, binaires et données sont conservés mais ne sont pas encore convertis ou réintégrés au build ; Extended reste non pris en charge. Consultez le rapport d’import à la racine et le [guide détaillé](implementation/dsk-import-alpha.md). Sauvegardez le dossier complet pour garder les originaux.
+
 <a id="sauvegardes"></a>
 ## 11. Expérimenter avec plusieurs chemins de retour
 

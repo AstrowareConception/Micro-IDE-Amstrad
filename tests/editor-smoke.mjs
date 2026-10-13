@@ -1,4 +1,5 @@
 import { verifyBasicSymbols } from './basic-symbols-smoke.mjs';
+import { verifyDiskImport } from './disk-import-smoke.mjs';
 import { verifyBasicFlow } from './basic-flow-smoke.mjs';
 import { verifyBasicDiagnostics } from './basic-diagnostics-smoke.mjs';
 import { verifyBasicQuality } from './basic-quality-smoke.mjs';
@@ -341,6 +342,7 @@ try {
   await expect(modelsPage.getByRole('tab', { name: /modifié/ })).toHaveCount(0);
   await modelsPage.close();
   await verifyRecentProjects(browser, errors);
+  await verifyDiskImport(browser);
   await verifyGitWorkbench(browser, errors);
   await verifyAgentWorkbench(browser, errors);
   await verifyProjectExplorer(browser, errors);
