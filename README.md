@@ -1,5 +1,7 @@
 # CPCéleste
 
+**Agent Z80 0.41.6 :** explication et annotation des zones, modifications assembleur contrôlées, checkpoint restaurable et comparaison des octets. Une interface plus lisible accompagne ce parcours ; [guide illustré](docs/implementation/binary-agent-alpha.md). Les tests CPC restent distincts de la vérification IA.
+
 **Vos idées prennent vie en BASIC.** Retrouvez le plaisir de créer sur Amstrad CPC dans un atelier moderne : éditeur intelligent, exécution intégrée avec F5, agent IA, projets multifichiers, Git/GitHub et outils de qualité du code.
 
 ## Télécharger CPCéleste — previews Windows et Linux

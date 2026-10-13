@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.41.5
+# CPCéleste — Dossier de conception et réalisation — version 0.41.6
+
+**Agent Z80 0.41.6 :** explication et annotation des zones, modifications assembleur contrôlées, checkpoint restaurable et comparaison des octets. Une interface plus lisible accompagne ce parcours ; [guide illustré](implementation/binary-agent-alpha.md). Les tests CPC restent distincts de la vérification IA.
 
 **Atelier Z80 0.41.5 :** [guide](implementation/binary-workbench-alpha.md), [ADR 0063](adr/0063-atelier-projets-binaires.md). Projets sans BASIC, annotations liées aux empreintes, réassemblage de copies et test/export à taille constante. Lots B/D partiels, IA et relocalisation hors périmètre.
 

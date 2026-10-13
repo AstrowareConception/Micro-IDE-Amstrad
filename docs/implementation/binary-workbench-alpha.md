@@ -1,5 +1,7 @@
 # Atelier Z80 et projets binaires — alpha 0.41.5
 
+**Complément 0.41.6 :** [agent Z80, comparaison des octets et guide illustré](binary-agent-alpha.md). Les capacités et limites ci-dessous décrivent la base 0.41.5.
+
 ## Utiliser l’atelier
 
 Dans **Fichier → Importer une disquette DSK…** ou **Récupérer un fichier CPC…**, cocher **Créer un projet binaire**. Ce mode est proposé automatiquement si aucun BASIC convertible n'est reconnu. Tous les fichiers deviennent des ressources préservées ; choisir explicitement le fichier à lancer. L'import ne prétend pas que tous les binaires soient des programmes.

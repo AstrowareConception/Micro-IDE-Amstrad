@@ -1,4 +1,4 @@
-# Provenance des captures — CPCéleste 0.36.0 à 0.40.0
+# Provenance des captures — CPCéleste 0.36.0 à 0.41.6
 
 [Notice utilisateur](../../guide-utilisateur.md) · [README du produit](../../../README.md)
 
@@ -60,3 +60,9 @@ Le fichier [manifest.json](manifest.json) fournit chemin, dimensions, origine et
 ## Capture 23 — Flux BASIC 0.40.0
 
 `23-flux-basic.png` est une copie octet pour octet de `out/basic-flow-browser.png`, capture directe du panneau Flux BASIC produite par `tests/basic-flow-smoke.mjs`. Chromium sous Linux, renderer 0.40.0, base `2a35c6596400367574f21a95aa6041f4e88fff9d`. Le vrai worker analyse `examples/control-flow/main.bas` ; seul le port d’ouverture du fichier est contrôlé. Le graphe du IF 60, les métriques et les liaisons sont calculés par l’application, sans montage ni appel IA. Reproduction : `npm run build:renderer` puis `npm run test:editor`.
+
+## Atelier et agent Z80 — 0.41.6
+
+Les captures [25-agent-z80.png](25-agent-z80.png) et [26-comparaison-z80.png](26-comparaison-z80.png) proviennent du parcours [binary-workbench-smoke](../../../tests/binary-workbench-smoke.mjs), le 13 octobre 2026, renderer 0.41.6 construit sur la base `11bd3f817b8118f862f1a726855dae0613714393`. Chromium, viewport 1440 × 1000 ; pixels réels sans retouche. Contrôleur, worker d’import, stockage, assembleur et restauration réellement exécutés ; réponses OpenAI et modèle affiché contrôlés par le scénario, sans appel réseau facturé. Programme témoin original, aucune image commerciale ni ROM incluse. Le manifeste conserve les empreintes des PNG.
+
+Reproduction : `npm run build:renderer`, puis `npm run test:editor` (Playwright Chromium installé). Les deux captures sont produites dans `out/` ; leurs copies versionnées illustrent le [guide de l’agent Z80](../../implementation/binary-agent-alpha.md).

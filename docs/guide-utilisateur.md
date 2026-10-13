@@ -1,6 +1,8 @@
 # CPCéleste — Vos idées prennent vie en BASIC
 
-**Nouveau — atelier Z80 0.41.5 :** pour les DSK sans BASIC, cocher **Créer un projet binaire** à l’import. L’atelier conserve les fichiers, vos zones code/données et vos annotations ; il vérifie le réassemblage et permet de tester/exporter une copie modifiée. [Parcours complet et limites](implementation/binary-workbench-alpha.md).
+**Nouveau — agent Z80 0.41.6 :** expliquer une zone, annoter ses hypothèses, modifier une copie assembleur et comparer ses octets, avec restauration du checkpoint. [Guide illustré pas à pas](implementation/binary-agent-alpha.md).
+
+**Atelier Z80 0.41.5 :** pour les DSK sans BASIC, cocher **Créer un projet binaire** à l’import. L’atelier conserve les fichiers, vos zones code/données et vos annotations ; il vérifie le réassemblage et permet de tester/exporter une copie modifiée. [Parcours complet et limites](implementation/binary-workbench-alpha.md).
 
 **Nouveauté 0.41.3 — récupération et distribution.** Le menu Fichier propose « Importer une disquette DSK… », « Récupérer un fichier CPC… » et « Exporter avec protection… ». BASIC tokenisé/protégé reconnu par son contenu, ressources incluses dans le build, aperçu Z80 et trois modes de distribution sur copie. [Guide détaillé et limites](implementation/recovery-protection-alpha.md).
 
@@ -14,7 +16,7 @@ Il suffit parfois d’un `MODE 1`, de quelques couleurs et d’une idée pour re
 
 Le fil conducteur est simple : **garder la création au centre, raccourcir le chemin entre une idée et son résultat, et vous laisser comprendre ce que l’outil fait.** Le BASIC reste du BASIC, vos sources restent des fichiers texte et votre projet reste un dossier que vous pouvez conserver, déplacer et versionner.
 
-Cette notice présente les fonctions livrées dans **CPCéleste 0.39.1, alpha desktop**, au **7 octobre 2026**. Elle réunit découverte du produit et mode d’emploi. Les captures représentent l’interface réelle ; celles issues des recettes automatisées utilisent des données de démonstration. Leur [provenance détaillée](images/guide-utilisateur/README.md) distingue captures locales, Electron et services distants simulés. Cliquez sur une image pour l’ouvrir en grand dans GitHub.
+Cette notice rassemble les fonctions livrées jusqu’à **CPCéleste 0.41.6, alpha desktop**, au **13 octobre 2026**. Les captures antérieures gardent leur version et leur provenance propres. Elle réunit découverte du produit et mode d’emploi. Les captures représentent l’interface réelle ; celles issues des recettes automatisées utilisent des données de démonstration. Leur [provenance détaillée](images/guide-utilisateur/README.md) distingue captures locales, Electron et services distants simulés. Cliquez sur une image pour l’ouvrir en grand dans GitHub.
 
 <a id="sommaire"></a>
 ## Votre parcours dans la notice

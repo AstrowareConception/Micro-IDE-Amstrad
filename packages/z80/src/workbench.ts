@@ -3,12 +3,13 @@ import { assembleZ80 } from './assemble.ts';
 export interface BinaryRegion { id: string; assetId: string; sha256: string; offset: number; length: number; origin: number; kind: 'code' | 'data'; note: string; listing: string }
 export interface BinaryAnalysis { revision: string | null; regions: BinaryRegion[] }
 export interface BinaryFileView { id: string; name: string; sha256: string; size: number; payloadBytes: number; loadAddress?: number; entryAddress?: number; hex: string }
+export interface BinaryComparison { changedBytes: number; regions: number; changes: { assetId: string; offset: number; address: number; before: number; after: number }[]; truncated: boolean }
 export interface BinaryWorkbenchPort {
   load(sessionId: string): Promise<BinaryAnalysis | { error: string }>;
   inspect(sessionId: string, assetId: string): Promise<BinaryFileView | { error: string }>;
   generate(sessionId: string, assetId: string, offset: number, length: number, origin: number, kind: 'code' | 'data'): Promise<{ listing: string } | { error: string }>;
   save(sessionId: string, revision: string | null, regions: BinaryRegion[]): Promise<BinaryAnalysis | { error: string }>;
-  verify(sessionId: string, revision: string | null): Promise<{ changedBytes: number; regions: number } | { error: string }>;
+  verify(sessionId: string, revision: string | null): Promise<BinaryComparison | { error: string }>;
   exportDisk(sessionId: string, revision: string | null): Promise<{ name: string } | { error: string } | null>;
 }
 export function validateRegions(value: unknown, assets: ProjectAsset[]): BinaryRegion[] {

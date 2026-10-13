@@ -4,6 +4,8 @@ Une ADR explique une décision durable et ses conséquences. **Acceptée** signi
 
 | ADR | Décision | Statut |
 | --- | --- | --- |
+| [0064](0064-agent-z80-et-comparaison.md) | Agent Z80 sur zones enregistrées, comparaison et restauration | Acceptée pour 0.41.6 |
+| [0063](0063-atelier-projets-binaires.md) | Projets binaires, annotations et réassemblage | Acceptée pour 0.41.5 |
 | [0062](0062-recuperation-distribution-basic.md) | Codec BASIC, ressources, trois modes de distribution et lecture Z80 | Acceptée pour 0.41.3 |
 | [0061](0061-import-dsk-ascii.md) | Import DSK ASCII, noms CPC préservés et originaux locaux | Acceptée pour la tranche 0.41.2 |
 | [0001](0001-desktop-electron.md) | Bureau Electron avec React/TypeScript | Acceptée |

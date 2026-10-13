@@ -116,6 +116,8 @@ jobs:
           path: |
             out/binary-workbench-qualification.json
             out/binary-workbench-alpha.png
+            out/binary-agent-alpha.png
+            out/binary-comparison-alpha.png
             out/basic-analysis-benchmark.json
             out/basic-diagnostics-alpha.png
             out/basic-diagnostics-failure.png

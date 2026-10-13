@@ -94,7 +94,7 @@ export async function runAgent(options: {
               output = [{ type: 'input_text', text: JSON.stringify(image.metadata) }, { type: 'input_image', image_url: image.dataUrl, detail: 'low' }];
             } else output = JSON.stringify(value);
             const record = value && typeof value === 'object' ? value as Record<string, unknown> : {};
-            const detail = record.saved === true ? `Source enregistrée : ${String(record.path ?? record.id ?? '')}` : call.name === 'build_project' ? 'DSK construit et relu ; aucun CPC exécuté.' : 'Résultat transmis au modèle.';
+            const detail = record.saved === true ? `Source enregistrée : ${String(record.path ?? record.id ?? '')}` : ['build_project', 'binary_build'].includes(call.name) ? 'DSK construit et relu ; aucun CPC exécuté.' : 'Résultat transmis au modèle.';
             emit({ kind: 'tool-result', tool: call.name, success: true, text: detail });
           } catch (error) {
             const message = error instanceof Error ? error.message : 'tool-failed';

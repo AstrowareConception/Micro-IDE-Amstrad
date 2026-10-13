@@ -218,6 +218,28 @@
       "sha256": "55c2c987e5cf0cab137525f1c8c313bc4c66d81d60f73a7d8e4d1bde48a056c7",
       "origin": "local-browser-real-quality-worker",
       "scenario": "tests/basic-flow-smoke.mjs"
+    },
+    {
+      "file": "25-agent-z80.png",
+      "version": "0.41.6",
+      "baseCommit": "11bd3f817b8118f862f1a726855dae0613714393",
+      "capturedOn": "2026-10-13",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "be6657a604aa8b718310195d5279a40ec565e2353bd1ddf7923c8d4bac5f0776",
+      "origin": "local-browser-real-controller-controlled-openai",
+      "scenario": "tests/binary-workbench-smoke.mjs"
+    },
+    {
+      "file": "26-comparaison-z80.png",
+      "version": "0.41.6",
+      "baseCommit": "11bd3f817b8118f862f1a726855dae0613714393",
+      "capturedOn": "2026-10-13",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "ef40d2aa4a82f18492aa642009d62856ff14c1f10cecf74e9c696d5259790034",
+      "origin": "local-browser-real-controller-controlled-openai",
+      "scenario": "tests/binary-workbench-smoke.mjs"
     }
   ]
 }

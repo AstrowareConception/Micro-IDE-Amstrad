@@ -5,7 +5,7 @@ import type { ProjectStore } from './project-store.ts';
 import { durableReplace } from './save-journal.ts';
 import { inspectCpcFile } from '../../packages/cpc-disk/src/import-disk.ts';
 import { reassemblableListing } from '../../packages/z80/src/assemble.ts';
-import { validateRegions, patchRegions, type BinaryAnalysis, type BinaryFileView } from '../../packages/z80/src/workbench.ts';
+import { validateRegions, patchRegions, type BinaryAnalysis, type BinaryFileView, type BinaryComparison } from '../../packages/z80/src/workbench.ts';
 import { buildProjectDisk } from '../../packages/workspace/src/project.ts';
 const sha = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
 /** Project-owned analysis, optimistic revision checks, original assets never overwritten. */
@@ -59,13 +59,19 @@ export class BinaryWorkbench {
   }
   async compile(revision: unknown) {
     const analysis = await this.load(); if (analysis.revision !== revision) throw Error('Analyse périmée ; rechargez.');
-    const assets = await this.store.readAssets(); let changedBytes = 0;
+    const assets = await this.store.readAssets(); let changedBytes = 0; const changes: BinaryComparison['changes'] = [];
     for (const asset of assets) {
       const source = await this.asset(asset.id);
       const result = patchRegions(asset.bytes, source.base, source.length, analysis.regions.filter(region => region.assetId === asset.id));
+      for (const region of analysis.regions.filter(region => region.assetId === asset.id)) {
+        for (let i = 0; i < region.length && changes.length < 128; i++) {
+          const position = source.base + region.offset + i;
+          if (asset.bytes[position] !== result.bytes[position]) changes.push({ assetId: asset.id, offset: region.offset + i, address: region.origin + i, before: asset.bytes[position]!, after: result.bytes[position]! });
+        }
+      }
       asset.bytes = result.bytes; changedBytes += result.changedBytes;
     }
-    return { assets, changedBytes, regions: analysis.regions.length };
+    return { assets, changedBytes, regions: analysis.regions.length, changes, truncated: changedBytes > changes.length };
   }
   async disk(revision: unknown) {
     if (this.store.manifest.kind !== 'binary') throw Error('Export assembleur réservé aux projets binaires ; sources BASIC inchangées.');

@@ -60,7 +60,7 @@ test('binary-only project persists annotations, checks revisions and exports exa
   assert.deepEqual(output.find(f=>f.name==='DATA.BIN'),readDataDisk(disk).find(f=>f.name==='DATA.BIN'));
   assert.deepEqual(await readFile(path),Buffer.from(disk));assert.equal((await project.store.readAssets())[0]!.bytes[129],77);
   await assert.rejects(workbench.save(saved.revision,[region]),/modifiée/);
-  await assert.rejects(project.store.agentState([]),/BASIC/);
+  assert.deepEqual((await project.store.agentState([])).binaryAnalysis, edited);
   assert.throws(()=>parseProject({...project.store.manifest,kind:undefined}));
 });
 test('workbench refuses overlapping regions, forged hashes, shifted sizes and changed original assets', async () => {
