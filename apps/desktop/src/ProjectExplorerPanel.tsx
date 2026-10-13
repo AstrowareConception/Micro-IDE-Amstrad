@@ -87,7 +87,7 @@ export function ProjectExplorerPanel(props: Props) {
     <div className="explorer-controls"><Button disabled={props.busy || previewBusy || pending.size > 0} onClick={refresh} icon="history">Actualiser les fichiers</Button>
     <label><input type="checkbox" checked={showHidden} disabled={props.busy || previewBusy || pending.size > 0} onChange={event => setShowHidden(event.target.checked)} />Privés et générés</label></div>
     {port ? <ul className="explorer-tree" aria-label="Fichiers et dossiers du projet">{rows('')}</ul> : <nav className="project-files" aria-label="Explorateur de sources">{props.manifest.sources.map(source => <div key={source.id}><Button disabled={props.busy} onClick={() => props.onSource(source.id)}>{source.path}{props.dirtyIds.includes(source.id) ? ' •' : ''}</Button><Button disabled={props.busy} aria-label={`Actions de ${source.path}`} onClick={() => props.onSourceActions(source.id)}>⋯</Button></div>)}</nav>}
-    <p className="muted">Dossiers chargés à l’ouverture. Seules les sources marquées BASIC sont sur le DSK. Les autres fichiers s’ouvrent en lecture seule.</p>
+    <p className="muted">Dossiers chargés à l’ouverture. Les sources BASIC et les ressources déclarées sont sur le DSK. Les ressources importées restent inchangées ; les autres fichiers s’ouvrent en lecture seule.</p>
     <p role="status">{notice}</p>
     {preview && <dialog ref={dialog} className="explorer-preview-dialog" aria-label={`Aperçu de ${preview.path}`} onCancel={() => setPreview(undefined)} onClose={() => setPreview(undefined)}>
       <h2>{preview.path}</h2><p>{preview.bytes} octets · {preview.notice}</p>

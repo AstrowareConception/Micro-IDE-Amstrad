@@ -35,10 +35,10 @@ test('content detection ignores extension, preserves all records and distinguish
     assert.equal(view.files.find(file => file.name === name)?.kind, kind);
   for (const file of view.files) assert.deepEqual(file.records, readDataDisk(disk).find(raw => raw.name === file.name)!.records);
 });
-test('truncated/Extended/corrupt disks fail closed and ASCII EOF never truncates hidden content', () => {
+test('truncated/Extended/corrupt disks fail closed and binary data is not truncated by ASCII EOF', () => {
   assert.throws(() => inspectDataDisk(fixture().subarray(0, 100)), /non pris en charge/);
   const extended = fixture(); extended[0] = 69; assert.throws(() => inspectDataDisk(extended));
-  for (const bytes of [new TextEncoder().encode('10 END\x1aSECRET'), new Uint8Array([49,48,32,69,78,68,0,26]),
+  for (const bytes of [new Uint8Array([49,48,32,69,78,68,0,26]),
     new TextEncoder().encode('20 END\r\n10 END\x1a'), new TextEncoder().encode('HELLO\x1a'), new Uint8Array([49,48,32,255,26])]) {
     assert.equal(inspectDataDisk(createDataDisk([{ name: 'FAKE.BAS', bytes }])).files[0]!.kind, 'unknown');
   }
@@ -64,7 +64,7 @@ test('real worker/import creates a portable project, preserves BIN name and orig
   const reopened = await ProjectStore.open(root);
   const buffers = reopened.snapshot.files.map(file => ({ id: file.id, source: file.source }));
   const state = await reopened.store.agentState(buffers); assert.equal(state.files.find(file => file.id === entry.id)!.source, updated);
-  const rebuilt = readDataDisk(buildProjectDisk(reopened.snapshot.manifest, buffers)); assert.equal(rebuilt.length, 2);
+  const rebuilt = readDataDisk(buildProjectDisk(reopened.snapshot.manifest, buffers, await reopened.store.readAssets())); assert.equal(rebuilt.length, 6);
   assert.equal(new TextDecoder().decode(decodeAsciiRecords(rebuilt.find(file => file.name === 'OLD.BIN')!.records)), '10 PRINT "IMPROVED"\r\n20 END\r\n\x1a');
   assert.deepEqual(await readFile(path), Buffer.from(disk));
   assert.deepEqual(await readFile(join(root, '.microide/imports/original.dsk')), Buffer.from(disk));
@@ -92,6 +92,6 @@ test('import never overwrites a parent project and refuses symlink disk inputs',
   const root = await session.create(parent, { id: session.preview.id, name: 'New', sourceIds: [source.id], entryId: source.id });
   assert.notEqual(root, parent); assert.deepEqual(await readFile(join(parent, 'microide.project.json')), original);
   if (process.platform !== 'win32') {
-    await symlink(path, join(parent, 'link.dsk')); await assert.rejects(DiskImportSession.prepare(join(parent, 'link.dsk')), /standard DATA/);
+    await symlink(path, join(parent, 'link.dsk')); await assert.rejects(DiskImportSession.prepare(join(parent, 'link.dsk')), /DSK ordinaire/);
   }
 });

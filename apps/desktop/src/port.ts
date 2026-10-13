@@ -22,8 +22,12 @@ export interface DesktopPort {
   save(source: string, saveAs?: boolean): Promise<FileResult | Failure | null>;
   exportDisk(source: string): Promise<FileResult | Failure | null>;
   setDirty(dirty: boolean): void;
+  distribution?: { export(request: { sessionId?: string | undefined; sources: { id: string; source: string }[]; options: import('../../../packages/cpc-disk/src/distribution.ts').DistributionOptions }): Promise<FileResult | Failure | null> };
   diskImport?: {
     inspect(): Promise<DiskImportPreview | Failure | null>;
+    inspectFile?(): Promise<DiskImportPreview | Failure | null>;
+    disassemble?(request:{id:string;fileId:string;offset:number;length:number;origin:number}):Promise<{listing:string}|Failure>;
+    extract?(request:{id:string;fileId:string;listing?:string}):Promise<FileResult|Failure|null>;
     create(request: DiskImportRequest): Promise<ProjectSnapshot | Failure | null>;
   };
   feedback?: { open(input: FeedbackInput): Promise<{ url: string; prefilled: boolean } | Failure> };

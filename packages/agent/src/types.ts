@@ -1,6 +1,6 @@
 import type { ProjectManifest, SourceSnapshot } from '../../workspace/src/project.ts';
 export interface AgentFile extends SourceSnapshot { saved: string }
-export interface AgentWorkspaceState { sessionId: string; manifest: ProjectManifest; files: AgentFile[] }
+export interface AgentWorkspaceState { sessionId: string; manifest: ProjectManifest; files: AgentFile[]; assets?: import('../../workspace/src/project.ts').AssetSnapshot[] }
 export interface ToolDefinition { type: 'function'; name: string; description: string; strict: true; parameters: Record<string, unknown> }
 export interface TokenUsage { input: number; output: number; cached: number; cacheWrite: number; reasoning: number; complete: boolean }
 export interface ModelTurn { output: Record<string, unknown>[]; tokens: number; usage?: TokenUsage | undefined; model?: string | undefined; serviceTier?: string | undefined; incomplete?: boolean }

@@ -1,5 +1,7 @@
 # 10 — Données, persistence et contrats
 
+**Extension 0.41.3 :** ressources brutes sous assets/ (`id`, `path`, `cpcName`, `sha256`, `byteLength`) acceptées dans le manifeste v1 et incluses au build. Les modèles de ressources converties plus riches du schéma restent une cible. [Décision et compatibilité](../adr/0062-recuperation-distribution-basic.md).
+
 ## Dossier de projet
 
 Un projet est un dossier contenant `microide.project.json`, des sources dans `src`, des originaux dans `documents`, des recettes et fichiers CPC dans `assets`. Les sorties de construction peuvent être dans `dist`, exclu de Git et jamais réimporté implicitement. `.microide` contient cache, journal de récupération et historique local choisis ; il n'est pas requis pour reconstruire le projet. La configuration de clé et les ROM restent dans les données applicatives de l'hôte.

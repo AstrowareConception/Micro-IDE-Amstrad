@@ -304,3 +304,7 @@ Types explicites par suffixe, union conservatrice des types par première lettre
 | 5 | Profiler 0.42 : mesures réelles et bornées sur CPC, mapping et surcoût observé ; puis agent CPC 0.43 utilisant exécution, observations et tests autorisés avec checkpoints. | Recettes firmware/worker/UI et limites matérielles explicites pour le profiler ; pour l’agent, permissions, budgets, provenance, diff et revérification sur CPC réel de l’application. |
 
 Les suites BASIC 0.39.1, le debugger 0.38 et le flux 0.40.9 sont des fondations **partielles** ; couverture, variables/piles du debugger, erreurs/événements non qualifiés et autres exigences J0–J6/JG restent au backlog du [document 17](17-roadmap-ide-complet.md). La pause ne déclenche aucun nouveau lot, packaging ou programme de CI supplémentaire.
+
+## Avancement alpha 0.41.3 — Récupération et distribution
+
+[Guide](../implementation/recovery-protection-alpha.md), [ADR 0062](../adr/0062-recuperation-distribution-basic.md). DSK-A/B/C utilisables dans le sous-ensemble ASCII éditable : BASIC tokenisé et protégé, ressources au build/F5/agent ; DSK-D partiel (Extended et SYSTEM ordinaires 40 pistes). Import CPC isolé, extraction brute, lecture Z80 linéaire annotable/exportable. IDE-078 partiel : les trois modes sont réalisés, l'obfuscation reste conservatrice/autonome, sans FN ou accès machine. 407 tests, parcours UI réel, recette firmware native et comparaison Z80 externe. Glyphes CPC, profils supplémentaires, ajout au projet courant, dépendances et assembleur restent ouverts ; aucun décompilateur BASIC universel.

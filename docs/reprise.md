@@ -2,6 +2,18 @@
 
 **Pause demandée le 8 octobre 2026.** Ce document conserve l’état vérifié, les décisions et la suite ; il n’archive pas les conversations. Confronter son contenu au `main` distant avant toute reprise.
 
+## Incrément du 13 octobre — récupération et distribution 0.41.3
+
+Base distante : `main` à `93b4237801b9c446d678ccb74170b6a5a6586479`, PR #63 fusionnée après succès des contrôles spécifications, natif/disque, WASM, éditeur Linux et Windows. Branche de cette tranche : `feat/dsk-recovery-protection`. Vérifier sa PR et ses contrôles avant d'annoncer la fusion de 0.41.3.
+
+Demande prioritaire : aller jusqu'au parcours utilisable de récupération et ajouter les trois modes de distribution. Réalisé : BASIC tokenisé/protégé via codec local MIT, détection indépendante des extensions, import isolé BAS/BIN, DATA/SYSTEM standard/Extended ordinaires 40 pistes, ressources déclarées et réintégrées au build/F5/agent, extraction brute, lecture linéaire Z80 annotable/exportable, obfuscation/protection/combinaison sur copies avec aperçu. [Guide et compatibilité exacte](implementation/recovery-protection-alpha.md), [ADR 0062](adr/0062-recuperation-distribution-basic.md).
+
+Preuves locales : 407 tests réussis, TypeScript, renderer/main, parcours Chromium réel UI → worker/stockage → trois DSK ; sources claires inchangées. Recette native du moteur CPC et trois ROM 6128 anglaises explicitement contrôlées : résultats identiques pour clair/obfusqué/protégé/combiné ; vrais SAVE P/SAVE A récupérés ; scénario import → édition → LOAD/CALL du binaire préservé réussi (résultat 78). Comparaison Z80 externe : 699 encodages, 693 identiques, six différences documentées selon Zilog. Scripts de recette et preuves régénérables sous out/. Aucun installeur déclenché. Le build WASM local est bloqué par SIGSEGV de clang du SDK dans cet environnement ; CI complète et nouvelle recette IPC à vérifier pour cette tête.
+
+Limites : ASCII éditable seulement (glyphes CPC non convertibles conservés bruts), autres géométries/utilisateurs/protections disque refusés, dépendances non analysées automatiquement, ajout au projet courant non réalisé. Obfuscation conservatrice et autonome ; FN/portées/accès machine refusés. Z80 documentaire : ni reconstitution exacte des symboles, ni réassemblage, ni décompilateur BASIC universel. L'extraction et la copie des originaux restent possibles sans source convertible. Les fichiers source réellement compilés demandent un format identifié ou une reconstruction explicitement qualifiée.
+
+Suite : valider un DSK réel fourni sans le publier ; qualifier le jeu de caractères CPC, les noms historiques et les profils supplémentaires ; élargir les recettes firmware (multifichier/binaire) et émulateur indépendant ; compléter l'atelier Z80 puis reprendre FN/portées. Conserver les spécifications longues comme cible : ne pas marquer tous leurs lots comme réalisés.
+
 ## Complément du 13 octobre 2026 — import et récupération de sources
 
 Base relue : `main` à `50949c2fab9fc6c1ef746f3756425b27971688ca`, fusion de la PR #61 ; aucune PR ouverte lors de la vérification précédant ce travail. Branche de cadrage : `docs/dsk-project-import`. Le code reste en 0.41.1 ; aucun codec, exécutable ou nouveau build livré par ce complément.

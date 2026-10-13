@@ -170,6 +170,16 @@ export class ProjectStore {
     }
     return manifest;
   }
+  async readAssets(): Promise<import('../../packages/workspace/src/project.ts').AssetSnapshot[]> {
+    await this.checkManifest();
+    const result = [];
+    for (const asset of this.manifest.assets) {
+      const content = await bytes(await this.path(asset.path));
+      if (content.length !== asset.byteLength || hash(content) !== asset.sha256) throw new Error(`${asset.path} a changé ; ressource originale requise.`);
+      result.push({ id: asset.id, bytes: new Uint8Array(content) });
+    }
+    return result;
+  }
   async agentState(buffers: { id: string; source: string }[]): Promise<AgentWorkspaceState> {
     await this.checkManifest();
     if (buffers.length !== this.manifest.sources.length || new Set(buffers.map(file => file.id)).size !== buffers.length) throw new Error('Snapshot incomplet ou dupliqué.');
@@ -184,13 +194,15 @@ export class ProjectStore {
     }
     if (files.reduce((size, file) => size + Buffer.byteLength(file.source), 0) > 256 * 1024) throw new Error('Mission agent limitée à 256 Kio de buffers.');
     if (files.reduce((size, file) => size + Buffer.byteLength(file.saved), 0) > 256 * 1024) throw new Error('Mission agent limitée à 256 Kio de sources disque.');
-    return { sessionId: this.sessionId, manifest: structuredClone(this.manifest), files };
+    return { sessionId: this.sessionId, manifest: structuredClone(this.manifest), files, assets: await this.readAssets() };
   }
   /** Main-owned candidate; journal the entire source/manifest mutation before writing. */
   async applyAgentState(state: AgentWorkspaceState): Promise<void> {
     this.assertSession(state.sessionId); await this.checkManifest();
     await new SaveJournal(this.root, this.manifest, this.manifestHash).assertResolved();
     const manifest = parseProject(state.manifest);
+    if (JSON.stringify(manifest.assets) !== JSON.stringify(this.manifest.assets)) throw new Error('Ressources du projet modifiées ; mission refusée.');
+    await this.readAssets();
     if (JSON.stringify(manifest.documents) !== JSON.stringify(this.manifest.documents)) throw new Error('stale-read : documents du projet modifiés depuis la mission ; restauration refusée.');
     await this.agentDocuments();
     if (manifest.projectId !== this.manifest.projectId || state.files.length !== manifest.sources.length || new Set(state.files.map(file => file.id)).size !== state.files.length) throw new Error('Snapshot agent invalide.');

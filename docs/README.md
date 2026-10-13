@@ -1,5 +1,7 @@
 # CPCéleste — Dossier de conception et réalisation — version 0.41.2
 
+**Récupération et protection 0.41.3 :** [guide de réalisation](implementation/recovery-protection-alpha.md), [ADR 0062](adr/0062-recuperation-distribution-basic.md). Import BASIC tokenisé/protégé, ressources, trois modes de distribution et lecture Z80 ; limites explicites.
+
 [Point de reprise du développement](reprise.md) : état, preuves et suite immédiate.
 
 **Symboles et usages 0.41** : index textuel des scalaires/tableaux, rôles et occurrences navigables, recherche par nom/source, exports dédiés. Travail local à la demande sur les buffers, avec limites et protection des liens obsolètes ; types possibles enrichis en 0.41.1 ; résolution par chemin, portées FN et renommage encore ouverts. [Guide](implementation/basic-symbols-alpha.md), [ADR 0059](adr/0059-symboles-usages-basic.md).

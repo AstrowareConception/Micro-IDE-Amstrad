@@ -73,7 +73,7 @@ export class ProjectExplorer {
     try {
       const text = new TextDecoder('utf-8', { fatal: true }).decode(content);
       if (/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(text)) throw new Error('binary');
-      return { ...metadata, text, notice: 'Lecture seule · fichier hors des sources CPC · aucun ajout au DSK.' };
+      return { ...metadata, text, notice: this.store.manifest.assets.some(asset=>asset.path===path) ? 'Lecture seule · ressource incluse sans modification dans le DSK.' : 'Lecture seule · fichier hors des sources CPC · aucun ajout au DSK.' };
     } catch { return { ...metadata, notice: 'Format binaire ou encodage non UTF-8 ; contenu non affiché.' }; }
   }
 }

@@ -350,3 +350,7 @@ select{font:inherit;width:100%;margin:8px 0;background:var(--input);color:inheri
 .disk-import-catalog table { width: 100%; border-collapse: collapse; }
 .disk-import-catalog th, .disk-import-catalog td { text-align: left; padding: 6px 10px; }
 .disk-source-preview { max-height: 200px; overflow: auto; white-space: pre; padding: 12px; border: 1px solid currentColor; }
+
+.disk-import-dialog label.distribution-option { display: flex; flex-direction: row; align-items: center; gap: .65rem; margin: .65rem 0; }
+.disk-import-dialog .distribution-option input { width: auto; margin: 0; }
+.disk-import-dialog textarea { width: 100%; font-family: monospace; }

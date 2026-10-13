@@ -1,5 +1,7 @@
 # CPCéleste — Vos idées prennent vie en BASIC
 
+**Nouveauté 0.41.3 — récupération et distribution.** Le menu Fichier propose « Importer une disquette DSK… », « Récupérer un fichier CPC… » et « Exporter avec protection… ». BASIC tokenisé/protégé reconnu par son contenu, ressources incluses dans le build, aperçu Z80 et trois modes de distribution sur copie. [Guide détaillé et limites](implementation/recovery-protection-alpha.md).
+
 **L’atelier Amstrad CPC qui réunit le plaisir de créer sur une machine mythique et le confort d’un IDE moderne.**
 
 [Retour au README](../README.md) · [Premiers pas](#premiers-pas) · [Exécuter avec F5](#execution) · [Agent IA](#agent) · [Raccourcis](#raccourcis) · [Dépannage](#depannage)

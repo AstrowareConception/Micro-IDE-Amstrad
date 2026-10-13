@@ -23,7 +23,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-003 | Ajouter, renommer, déplacer, supprimer des sources proprement | P | P1 | DUR | 0.31 : renommer/déplacer/supprimer avec aperçu, journal/reprise et copie du brouillon ; ajout durable, import/duplication et plateformes restent ouverts |
 | IDE-004 | Onglets, fermeture individuelle/tout/autres et fichiers épinglés | P | P1 | DUR | Brouillon arbitrable ; ordre et vue conservés ; onglets chargés déjà livrés |
 | IDE-005 | Projets récents, modèles hello/graphismes/jeu et assistant de démarrage | P | P1 | IDE-001 | 0.27 : vingt projets récents privés, filtre/réouverture/retrait, dossiers périmés et projet remplacé contrôlés ; modèles et assistant de démarrage à construire |
-| IDE-006 | Récupérer les sources ASCII/tokenisées par contenu et importer les projets anciens | P | P1 | Codecs/DUR | 0.41.2 : ASCII depuis DSK livré ; tokenisé à réaliser. [Parcours DSK](20-import-dsk-projet.md) : BASIC éditable même nommé BIN, originaux préservés, conversion sans perte ou refus explicite ; pas de récupération universelle du BASIC compilé |
+| IDE-006 | Récupérer les sources par contenu et importer les projets anciens | P | P1 | Codecs/DUR | 0.41.3 : ASCII, tokenisé/protégé et ressources ; glyphes CPC, autres profils et ajout au projet courant ouverts |
 
 ## 2. Sauvegarde, récupération et historique local
 
@@ -46,7 +46,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-016 | Renumérotation sûre, plages et références | P | P0 | IDE-014 | Cibles couvertes réécrites ; formes ambiguës bloquées ; undo livré |
 | IDE-017 | Renommage sémantique de variables/fonctions | N | P1 | IDE-015 qualifié | Aperçu par source, identité et collisions vérifiées, suffixes/types et portée préservés, chaînes/DATA/commentaires intacts, sources modifiées refusées et undo ; aucun renommage livré en 0.41.1 |
 | IDE-018 | Templates/snippets, insertion de lignes et conventions | N | P1 | IDE-014 | Numéros sans collision ; génération minimale conforme au profil |
-| IDE-078 | Export BASIC obfusqué, protégé ou combiné, source claire conservée | N | P2 | IDE-015/017 et codec protégé qualifiés | [Fonctionnalité retenue](22-obfuscation-basic.md) : trois modes, obfuscation avant protection, correspondance privée hors DSK, tests comparatifs ; aucune confidentialité absolue |
+| IDE-078 | Export BASIC obfusqué, protégé ou combiné, source claire conservée | P | P1 | Index complet et codec | 0.41.3 : trois modes avec aperçu et recette firmware native ; obfuscation autonome conservatrice, FN/accès machine/multifichier refusés |
 | IDE-019 | Formatage optionnel et inspections/corrections ciblées | N | P2 | IDE-014 | Sémantique inchangée ; aperçu ; aucune casse/espacement opaque détruit |
 | IDE-076 | Rapport de qualité BASIC à la demande | P | P2 | IDE-014 | 0.40.9 : piles mixtes appels/FOR/WHILE contextuelles, divisions simples/erreurs possibles, reprises conditionnelles et contextes des ERROR explicites, cartographie événementielle et reprises, résumés GOSUB, graphe structurel, boucles contenues dans THEN/ELSE, sorties de NEXT qualifiées, appels/cycles et complexité locale ; fermetures intermédiaires sautées, portées traversées, événements et retours contextuels restent ouverts |
 | IDE-077 | Tests de programmes BASIC à la demande | P | P1 | IDE-050, FW | 0.39.1 : suites persistantes, assertions natives, clavier programmé, fixtures ASCII, observations exactes écran/fichier et rapports conservés ; couverture, fixtures binaires, scénarios sans signature et génération IA restent ouverts |
@@ -101,8 +101,8 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | --- | --- | --- | --- | --- | --- |
 | IDE-044 | DSK DATA déterministe multifichier depuis buffers | P | P0 | J0/J3 | Codec/export livré ; résultat dans émulateur indépendant encore requis |
 | IDE-045 | Rapport build, catalogue, capacité/noms 8.3 et erreurs | P | P0 | IDE-044 | Rapports visibles et source révisionnée ; quotas et erreur sans artefact ancien |
-| IDE-046 | Import/inspection DSK standard/Extended et extraction | P | P1 | Codecs/DUR | 0.41.2 : [assistant DSK ASCII vers nouveau projet](../implementation/dsk-import-alpha.md), originaux/provenance ; reader standard DATA 40 pistes/une face/utilisateur 0 ; reprise automatique, tokenisé, ressources et Extended à réaliser |
-| IDE-047 | BASIC tokenisé, binaires AMSDOS et ressources CPC | P | P1 | Codecs/J4 | ASCII strict et codec binaire type 2 limités livrés ; détokenisation, caractères CPC et intégration des ressources importées à construire selon le [document 20](20-import-dsk-projet.md) |
+| IDE-046 | Import/inspection DSK standard/Extended et extraction | P | P1 | Codecs/DUR | 0.41.3 : DATA/SYSTEM ordinaires 40 pistes/une face/utilisateur 0, extraction, nouveau projet ; autres géométries/protections et reprise automatique ouverts |
+| IDE-047 | BASIC tokenisé, binaires AMSDOS et ressources CPC | P | P1 | Codecs/J4 | 0.41.3 : détokenisation et protection, ressources réintégrées au build/F5/agent ; caractères CPC complets et dépendances à qualifier |
 | IDE-048 | Export dossier/ZIP projet, paquet CPC et README de lancement | N | P1 | J3/J4 | Projet complet avec originaux autorisés ; confidentialité ; RUN et profil exacts |
 | IDE-049 | Tests reproductibles de programmes, captures de référence | P | P1 | FW | Builds sur révisions, attentes écran/sorties, limite temps et seeds |
 
@@ -115,7 +115,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-052 | Clavier/focus, joystick, écran pixel net et audio | P | P0 | IDE-051 | Relâchement touches, ESC et retour focus ; captures non altérées |
 | IDE-053 | Disque mutable, OPENOUT, sauvegarde et export session | P | P0 | IDE-051 | Écriture relue par émulateur indépendant ; original DSK intact |
 | IDE-054 | Breakpoints/pas à pas BASIC, variables et pile | P | P2 | FW/Instrumentation | 0.38 : breakpoints de lignes et pas statement ancrés sur le BASIC 1.1 qualifié, ligne/pointeurs/ticks réels ; variables, pile GOSUB, Step Over/Out, gutter Monaco et autres firmwares restent ouverts |
-| IDE-055 | Mémoire, banques, désassemblage Z80 et récupération de sources | P | P2 | Codecs ; IDE-051 pour traces | 0.35 : registres/RAM et banques en pause ; [atelier binaire et récupération de sources](21-retro-ingenierie-z80.md) spécifiés, non réalisés ; snapshots/restauration ouverts ; source historique exacte non garantie |
+| IDE-055 | Mémoire, banques, désassemblage Z80 et récupération de sources | P | P2 | Codecs ; IDE-051 pour traces | 0.41.3 : lecture Z80 de plages et annotations exportables ; flot, assembleur, symboles persistants et décompilation spécialisée ouverts |
 | IDE-056 | CPC 464/664 puis Plus et autres Amstrad | N | P2 | Profils qualifiés | Recette propre à chaque machine ; aucun support déduit du seul 6128 |
 
 ## 10. Images, son, sprites et pièces jointes
@@ -347,3 +347,7 @@ Types explicites par suffixe, union conservatrice des types par première lettre
 ## Avancement alpha 0.41.2 — Premier import DSK
 
 [Parcours ASCII](../implementation/dsk-import-alpha.md), [ADR 0061](../adr/0061-import-dsk-ascii.md) : analyse bornée en worker, catalogue et aperçu, choix des listings/entrée, création dans un nouveau sous-dossier, fichiers bruts et image intégrale conservés. Reconnaissance par contenu même sous BIN, noms CPC préservés, aperçu périmé refusé et brouillons arbitrés. 400 tests locaux, TypeScript, builds main/renderer et parcours Chromium avec vrai worker/stockage réussis. IPC Electron/Windows et qualification firmware/externe non revendiqués localement. IDE-006/046/047 demeurent partiels : prochain lot détokenisation, puis ressources au build ; obfuscation reste une proposition P2.
+
+## Avancement alpha 0.41.3 — Récupération et distribution
+
+[Guide](../implementation/recovery-protection-alpha.md), [ADR 0062](../adr/0062-recuperation-distribution-basic.md). DSK-A/B/C utilisables dans le sous-ensemble ASCII éditable : BASIC tokenisé et protégé, ressources au build/F5/agent ; DSK-D partiel (Extended et SYSTEM ordinaires 40 pistes). Import CPC isolé, extraction brute, lecture Z80 linéaire annotable/exportable. IDE-078 partiel : les trois modes sont réalisés, l'obfuscation reste conservatrice/autonome, sans FN ou accès machine. 407 tests, parcours UI réel, recette firmware native et comparaison Z80 externe. Glyphes CPC, profils supplémentaires, ajout au projet courant, dépendances et assembleur restent ouverts ; aucun décompilateur BASIC universel.
