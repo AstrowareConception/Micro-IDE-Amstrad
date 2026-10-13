@@ -19,3 +19,7 @@ Un décodeur Z80 pur permet de lire des plages de 16 Kio, annoter et extraire un
 ## Conséquences et preuve
 
 Voir le [guide de réalisation](../implementation/recovery-protection-alpha.md). Les tests firmware utilisent uniquement les ROM locales explicites du profil CPC 6128 anglais, sans les publier. La validation native dans le moteur intégré ne remplace pas une recette sur matériel ou émulateur indépendant. Les modes de distribution réduisent la lisibilité, sans garantie de confidentialité ni équivalence universelle de timings.
+
+## Complément 0.41.4 — en-têtes historiques
+
+Accepter les deux libellés standard avec remplissage exact par espaces observés sur une image réelle, sans assouplir les validations des secteurs et du catalogue. Conserver les originaux et reconstruire en format canonique. La tolérance appartient au lecteur d'import ; le writer et l'adaptateur natif ne sont pas élargis. Deux fixtures synthétiques qualifient l'acceptation et les refus voisins, sans publier l'image fournie. [Recette et limites](../implementation/recovery-protection-alpha.md#compatibilité-historique-et-essais-réels--0414).

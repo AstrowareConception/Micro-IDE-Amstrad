@@ -26,6 +26,43 @@ function fixture() { return createDataDisk([
 ]); }
 const folder = () => mkdtemp(join(tmpdir(), 'cpceleste-dsk-import-'));
 
+function paddedHeaders(disk: Uint8Array): Uint8Array {
+  const result = disk.slice(), ascii = new TextEncoder();
+  result.set(ascii.encode('MV - CPCEMU Disk-File'.padEnd(34, ' ')));
+  for (let track = 0; track < 40; track++) result.set(ascii.encode('Track-Info  '), 256 + track * 4864);
+  return result;
+}
+
+test('historical space-padded headers import through the real worker without changing original records', async () => {
+  const canonical = fixture(), disk = paddedHeaders(canonical), before = disk.slice();
+  assert.deepEqual(inspectDataDisk(disk), inspectDataDisk(canonical));
+  const parent = await folder(), path = join(parent, 'historical.dsk'); await writeFile(path, disk);
+  const session = await DiskImportSession.prepare(path), entry = session.preview.files.find(file => file.source !== undefined)!;
+  const root = await session.create(parent, { id: session.preview.id, name: 'Historical', sourceIds: [entry.id], entryId: entry.id });
+  const { store, snapshot } = await ProjectStore.open(root);
+  const rebuilt = buildProjectDisk(snapshot.manifest, snapshot.files, await store.readAssets());
+  assert.equal(new TextDecoder().decode(rebuilt.subarray(0, 34)), 'MV - CPCEMU Disk-File\r\nDisk-Info\r\n');
+  const files = readDataDisk(rebuilt);
+  for (const file of inspectDataDisk(canonical).files.filter(file => file.id !== entry.id))
+    assert.deepEqual(files.find(item => item.name === file.name)!.records, file.records);
+  assert.deepEqual(await readFile(path), Buffer.from(before));
+  assert.deepEqual(await readFile(join(root, '.microide/imports/original.dsk')), Buffer.from(before));
+});
+
+test('space-padding compatibility never bypasses signatures, sector or allocation validation', () => {
+  for (const mutate of [
+    (bytes: Uint8Array) => { bytes[33] = 0; },
+    (bytes: Uint8Array) => { bytes[256 + 11] = 0; },
+    (bytes: Uint8Array) => { bytes[256 + 24 + 4] = 1; },
+    (bytes: Uint8Array) => { bytes[256 + 24 + 8 + 2] = 0xc1; },
+    (bytes: Uint8Array) => { bytes[256 + 256 + 16] = 255; },
+  ]) {
+    const bytes = paddedHeaders(fixture()); mutate(bytes);
+    assert.throws(() => inspectDataDisk(bytes), /non pris en charge/);
+  }
+  assert.throws(() => inspectDataDisk(paddedHeaders(fixture()).subarray(0, 194815)));
+});
+
 test('content detection ignores extension, preserves all records and distinguishes unsupported types', () => {
   const disk = fixture(), before = disk.slice(), view = inspectDataDisk(disk);
   assert.deepEqual(disk, before);

@@ -4,13 +4,18 @@ export interface ImportDisk { profile: string; files: ExtractedFile[] }
 export function readImportDisk(disk: Uint8Array): ImportDisk {
   const text = (p: number, n: number) => String.fromCharCode(...disk.subarray(p,p+n));
   const extended = text(0,34) === 'EXTENDED CPC DSK File\r\nDisk-Info\r\n';
-  if (!extended && text(0,34) !== 'MV - CPCEMU Disk-File\r\nDisk-Info\r\n') throw new Error('Signature DSK inconnue.');
+  // Some historical standard images pad these labels with spaces instead of CR/LF.
+  // Accept only the exact observed variant; all geometry/sector/allocation checks remain.
+  const standard = text(0,34) === 'MV - CPCEMU Disk-File\r\nDisk-Info\r\n' ||
+    text(0,34) === 'MV - CPCEMU Disk-File'.padEnd(34, ' ');
+  if (!extended && !standard) throw new Error('Signature DSK inconnue.');
   if (disk.length < 256 || disk[48] !== 40 || disk[49] !== 1) throw new Error('40 pistes et une face requis.');
   const chunks: Uint8Array[] = [];
   let p = 256, sectorBase = 0;
   for (let track=0; track<40; track++) {
     const size = extended ? disk[52+track]! * 256 : disk[50]! + disk[51]! * 256;
-    if (size < 256 || p + size > disk.length || text(p,12) !== 'Track-Info\r\n' || disk[p+16] !== track || disk[p+17] !== 0 || disk[p+21] !== 9) throw new Error('Piste absente ou géométrie non prise en charge.');
+    const trackSignature = text(p,12) === 'Track-Info\r\n' || (!extended && text(p,12) === 'Track-Info  ');
+    if (size < 256 || p + size > disk.length || !trackSignature || disk[p+16] !== track || disk[p+17] !== 0 || disk[p+21] !== 9) throw new Error('Piste absente ou géométrie non prise en charge.');
     const logical = new Uint8Array(4608), seen = new Set<number>();
     let data = p + 256;
     for (let i=0;i<9;i++) {

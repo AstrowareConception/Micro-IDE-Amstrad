@@ -1,4 +1,4 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.41.2
+# CPCéleste — Dossier de conception et réalisation — version 0.41.4
 
 **Récupération et protection 0.41.3 :** [guide de réalisation](implementation/recovery-protection-alpha.md), [ADR 0062](adr/0062-recuperation-distribution-basic.md). Import BASIC tokenisé/protégé, ressources, trois modes de distribution et lecture Z80 ; limites explicites.
 
