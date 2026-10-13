@@ -10,6 +10,8 @@ Réalisé : mode explicite de projet binaire sans faux BASIC ; import DSK/fichie
 
 Preuves : 415 tests unitaires, TypeScript, builds renderer/main et contrôle documentaire réussis (153 Markdown, 21 JSON, six schémas/six exemples). Parcours Chromium réel worker/stockage : import, annotation, Ctrl S, vérification 0 puis 1 octet modifié, export, préparation d’exécution et réouverture ; capture inspectée. Recette native avec ROM contrôlées : binaire de sept octets importé/réassemblé, LD A,77 changé en LD A,78, RAM &9000 observée à 77 puis 78. Deflektor : trois ressources, chargeur de 190 octets réassemblé à l’identique et menu atteint depuis la disquette reconstruite ; aucune partie complète revendiquée. Tests IPC ajoutés à la suite existante, résultat CI de cette tête à vérifier.
 
+Correction après première CI : l’affichage de l’entrée consultait aussi les ressources des projets BASIC sans tableau assets. Sélection de la collection selon le mode ; parcours navigateur complet réussi localement après correction. Contrôles distants de la nouvelle tête encore à vérifier.
+
 Limites : assembleur lié aux tables du décodeur (pas une preuve indépendante complète), 16 Kio par zone, pas de macros/expressions/relocalisation ; annotations des ressources dans projets BASIC mixtes et agent IA binaire non réalisés. Labels manuels, classement humain, aucun graphe/trace/banque ni décompilation BASIC. Brouillons non enregistrés protégés à la fermeture, sans récupération après crash. Suite : qualification assembleur indépendante et projets mixtes, puis routines expliquées/éditées par IA avec tests. Les jeux/ROM/captures commerciales et projets d’essai restent hors Git.
 
 ## Incrément du 13 octobre — compatibilité réelle 0.41.4

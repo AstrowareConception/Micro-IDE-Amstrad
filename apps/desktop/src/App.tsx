@@ -566,7 +566,7 @@ export function App() {
           {project ? <>
             {!binaryProject && <><Button disabled={busy || !files.sourceOperations} onClick={() => void restoreSourceMutation()}>Rétablir la dernière organisation</Button>
             <Button disabled={busy || binaryProject || !files.sourceOperations?.draft} onClick={() => void showSourceDraft()}>Consulter le brouillon conservé</Button></>}
-            <p>Entrée : {[...project.manifest.sources, ...project.manifest.assets].find(item => item.id === project.manifest.entryPoint)?.cpcName}</p>
+            <p>Entrée : {(binaryProject ? project.manifest.assets : project.manifest.sources).find(item => item.id === project.manifest.entryPoint)?.cpcName}</p>
             <ProjectExplorerPanel key={`explorer:${project.sessionId}`} sessionId={project.sessionId} manifest={project.manifest} busy={busy} activeSourceId={active.sourceId} dirtyIds={documents.filter(item => item.source !== item.saved).map(item => item.sourceId)}
               onSource={id => { const item = documents.find(item => item.sourceId === id); if (item) setActiveId(item.id); }}
               onSourceActions={id => { const item = documents.find(item => item.sourceId === id); if (item) setContextSource(item.id); }}
