@@ -2,6 +2,16 @@
 
 **Pause demandée le 8 octobre 2026.** Ce document conserve l’état vérifié, les décisions et la suite ; il n’archive pas les conversations. Confronter son contenu au `main` distant avant toute reprise.
 
+## Incrément du 13 octobre — compatibilité réelle 0.41.4
+
+Base distante : PR #64 fusionnée après réussite des trois workflows, commit `9ef09cb84d05136cedf2140e42f0455c5c96f51e`. Branche `fix/dsk-historical-compatibility`. Le build WASM et les contrôles éditeur Windows/Linux de 0.41.3 sont donc validés en CI, malgré le blocage local du SDK décrit dans l'historique. Vérifier la PR de cette nouvelle branche avant d'annoncer sa fusion.
+
+Trois images réelles étudiées localement sans publication : Nebulus et Vindicator contiennent chacun un chargeur BASIC récupérable et sept ressources ; Deflektor ne fournit aucun BASIC reconnu, seulement trois binaires. Correction ciblée : accepter les signatures standard exactement complétées d'espaces (Vindicator), en conservant tous les contrôles de secteurs/allocations et les originaux. Writer et montage natif inchangés. 409 tests unitaires, vérification TypeScript et contrôle documentaire/schémas réussis. [Guide et recette manuelle](implementation/recovery-protection-alpha.md#compatibilité-historique-et-essais-réels--0414).
+
+Deux projets réellement créés/rouverts/reconstruits ; sept ressources chacun conservées à l'identique. Comparaison native initial/reconstruit avec ROM contrôlées : question du chargeur puis menu Nebulus, illustration puis menu Vindicator atteints. Captures inspectées ; aucune partie complète ni nouvelle validation indépendante revendiquée. Script `qualify-real-disk.mjs` reproductible avec fichiers/ROM locaux ; captures, DSK et projets hors Git, aucune nouvelle CI de jeu ni installation déclenchée.
+
+Suite : projets entièrement binaires persistants (cas Deflektor), annotations code/données puis assembleur avec aller-retour prouvé. Pas de reconstitution universelle BASIC ; tester parties/émulateur indépendant et étendre caractères/profils. Ne pas confondre source du chargeur et source complète du jeu.
+
 ## Incrément du 13 octobre — récupération et distribution 0.41.3
 
 Base distante : `main` à `93b4237801b9c446d678ccb74170b6a5a6586479`, PR #63 fusionnée après succès des contrôles spécifications, natif/disque, WASM, éditeur Linux et Windows. Branche de cette tranche : `feat/dsk-recovery-protection`. Vérifier sa PR et ses contrôles avant d'annoncer la fusion de 0.41.3.

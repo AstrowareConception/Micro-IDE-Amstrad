@@ -40,3 +40,31 @@ Le build WASM local est bloqué par un crash SIGSEGV de `clang --version` du SDK
 ## Suite
 
 Qualifier le jeu de caractères CPC et les programmes réels fournis sans publication implicite ; étendre noms/profils multi-face/utilisateurs ; rendre les dépendances visibles avant import ; ajout à un projet existant avec conflits ; annotation Z80 persistante dans l'atelier, assembleur et aller-retour binaire. Un programme réellement compilé ne restitue pas universellement le BASIC d'origine : cela demande un format/compiler identifié ou une réécriture explicitement qualifiée.
+
+
+## Compatibilité historique et essais réels — 0.41.4
+
+Le lecteur d'import accepte aussi les signatures standard exactes `MV - CPCEMU Disk-File` complétées par des espaces jusqu'à 34 octets et `Track-Info` complétées par deux espaces. Aucun préfixe approximatif, octet nul ou padding arbitraire n'est accepté. Les contrôles de géométrie, secteurs, statuts et allocations restent bloquants. Les en-têtes Extended ne changent pas. Les copies originales restent intactes ; le writer et le montage natif continuent à utiliser les signatures canoniques.
+
+Recette du 13 octobre, sur trois DSK fournis localement :
+
+| Image examinée | Récupération | Observation |
+| --- | --- | --- |
+| Nebulus, variante Aragorn | NEBULUS.BAS éditable et sept ressources | Projet créé, rouvert, reconstruit ; question sur les options puis menu du jeu atteints |
+| Vindicator | VIND.BAS éditable et sept ressources | Variante d'en-têtes acceptée directement ; projet reconstruit ; illustration de chargement puis menu atteints |
+| Deflektor | Trois binaires, aucune source BASIC reconnue | Extraction et désassemblage du chargeur DISC.BIN ; aucun projet BASIC artificiel ni essai de lancement revendiqué |
+
+Pour les deux projets, les sept ressources restent identiques octet par octet, noms inclus. Les observations natives comparent le DSK initial (seules les signatures de Vindicator sont normalisées dans une copie pour le montage) à la disquette reconstruite depuis le listing ASCII récupéré. Même profil CPC6128 anglais et mêmes ROM que la recette ci-dessus. Les captures sont inspectées visuellement : ce n'est ni une comparaison pixel parfaite d'animations, ni une partie complète, ni une qualification sur émulateur indépendant. Les jeux complets et leurs captures ne sont pas publiés dans le dépôt.
+
+Recette manuelle reproductible, sans déclencher de workflow ou distribuer de jeu :
+
+```sh
+CPC_TEST_ROM_DIR=/chemin/roms node scripts/qualify-real-disk.mjs /chemin/nebulus.dsk NEBULUS.BAS 15 n 30 ''
+CPC_TEST_ROM_DIR=/chemin/roms node scripts/qualify-real-disk.mjs /chemin/vindicator.dsk VIND.BAS 15 ' ' 30 ''
+```
+
+Chaque paire indique le nombre de secondes émulées avant la capture, puis les touches à envoyer. Le script vérifie les empreintes ROM, importe via le vrai worker, crée/rouvre/reconstruit le projet et compare les ressources. Il compile `tests/native_disk_recovery.c` avec GCC et les headers chips déjà préparés, puis produit rapport JSON, copies DSK et captures PPM sous `out/real-disk-*`. Examiner les captures pour conclure sur le lancement : un processus natif terminé ne prouve pas que le jeu fonctionne. Le projet temporaire peut être rouvert depuis le chemin du rapport. Cette recette est limitée à DATA standard 40 pistes ; le script ne télécharge aucun fichier.
+
+409 tests unitaires réussis, dont deux nouveaux tests synthétiques : import réel des en-têtes à espaces avec conservation/reconstruction, et refus des signatures voisines, secteurs erronés/dupliqués, allocations invalides et troncatures. Aucun fichier commercial n'est utilisé par la CI.
+
+Suite prioritaire : atelier persistant pour les disquettes entièrement binaires, séparation code/données annotable et round-trip assembleur qualifié ; tests de parties et d'émulateur indépendant ; extension contrôlée des caractères et profils. Le BASIC récupéré dans ces deux exemples est un chargeur : le code machine du jeu ne redevient pas automatiquement un source BASIC.
