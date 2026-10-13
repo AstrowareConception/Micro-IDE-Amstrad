@@ -6,6 +6,8 @@ Référence produit : 4 octobre 2026, état de départ alpha 0.14. Responsable :
 
 ## Qualification et priorités
 
+**Demandes du 13 octobre 2026 — récupération de sources anciennes :** [import DSK vers projet éditable](20-import-dsk-projet.md), puis [récupération de sources et rétro-ingénierie Z80](21-retro-ingenierie-z80.md). Détection par contenu, BASIC ASCII/tokenisé éditable même sous une autre extension, ressources préservées et IA sur les sources importées. Ensuite : désassemblage, annotations, réassemblage et étude de récupération BASIC pour des formats compilés identifiés. Aucun retour universel au source original n'est promis. Cadrage documentaire uniquement ; version 0.41.1 inchangée, séquence FN/portées conservée tant que le prochain chantier n'est pas choisi.
+
 **L** : livré dans le périmètre étroit décrit, avec guide/test ; **P** : partiellement livré, travail restant explicité ; **N** : non réalisé ; **B** : réalisation/qualification dépendante d’un prérequis indisponible ou reporté. Aucun pourcentage global n’est déduit de ces états.
 
 **P0** : indispensable à un IDE utilisable et à la protection du travail ; **P1** : socle attendu d’une version 1.0 cohérente ; **P2** : enrichissement après qualification du socle. Une priorité élevée n’annule pas une dépendance. **FW** : jeu firmware autorisé + go J0 ; **DUR** : durabilité/reprise qualifiées ; **NET** : transports Git/credentials qualifiés ; **WIN** : recette Windows propre.
@@ -21,7 +23,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-003 | Ajouter, renommer, déplacer, supprimer des sources proprement | P | P1 | DUR | 0.31 : renommer/déplacer/supprimer avec aperçu, journal/reprise et copie du brouillon ; ajout durable, import/duplication et plateformes restent ouverts |
 | IDE-004 | Onglets, fermeture individuelle/tout/autres et fichiers épinglés | P | P1 | DUR | Brouillon arbitrable ; ordre et vue conservés ; onglets chargés déjà livrés |
 | IDE-005 | Projets récents, modèles hello/graphismes/jeu et assistant de démarrage | P | P1 | IDE-001 | 0.27 : vingt projets récents privés, filtre/réouverture/retrait, dossiers périmés et projet remplacé contrôlés ; modèles et assistant de démarrage à construire |
-| IDE-006 | Import listings ASCII/tokenisés et projets anciens | N | P2 | Codecs | Roundtrip et encodages CPC ; original jamais écrasé |
+| IDE-006 | Récupérer les sources ASCII/tokenisées par contenu et importer les projets anciens | N | P1 proposé | Codecs/DUR | [Parcours DSK](20-import-dsk-projet.md) : BASIC éditable même nommé BIN, originaux préservés, conversion sans perte ou refus explicite ; pas de récupération universelle du BASIC compilé |
 
 ## 2. Sauvegarde, récupération et historique local
 
@@ -98,8 +100,8 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | --- | --- | --- | --- | --- | --- |
 | IDE-044 | DSK DATA déterministe multifichier depuis buffers | P | P0 | J0/J3 | Codec/export livré ; résultat dans émulateur indépendant encore requis |
 | IDE-045 | Rapport build, catalogue, capacité/noms 8.3 et erreurs | P | P0 | IDE-044 | Rapports visibles et source révisionnée ; quotas et erreur sans artefact ancien |
-| IDE-046 | Import/inspection DSK standard/Extended et extraction | P | P1 | Codecs/DUR | Reader borné livré ; UI/import/écriture/extraction sûrs à compléter |
-| IDE-047 | BASIC tokenisé, binaires AMSDOS et ressources CPC | P | P1 | Codecs/J4 | Types/EOF/adresses/checksum qualifiés ; tokenisation à construire |
+| IDE-046 | Import/inspection DSK standard/Extended et extraction | P | P1 | Codecs/DUR | Reader standard DATA 40 pistes/une face/utilisateur 0 livré ; [assistant DSK vers projet](20-import-dsk-projet.md), import durable et Extended à réaliser |
+| IDE-047 | BASIC tokenisé, binaires AMSDOS et ressources CPC | P | P1 | Codecs/J4 | ASCII strict et codec binaire type 2 limités livrés ; détokenisation, caractères CPC et intégration des ressources importées à construire selon le [document 20](20-import-dsk-projet.md) |
 | IDE-048 | Export dossier/ZIP projet, paquet CPC et README de lancement | N | P1 | J3/J4 | Projet complet avec originaux autorisés ; confidentialité ; RUN et profil exacts |
 | IDE-049 | Tests reproductibles de programmes, captures de référence | P | P1 | FW | Builds sur révisions, attentes écran/sorties, limite temps et seeds |
 
@@ -112,7 +114,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-052 | Clavier/focus, joystick, écran pixel net et audio | P | P0 | IDE-051 | Relâchement touches, ESC et retour focus ; captures non altérées |
 | IDE-053 | Disque mutable, OPENOUT, sauvegarde et export session | P | P0 | IDE-051 | Écriture relue par émulateur indépendant ; original DSK intact |
 | IDE-054 | Breakpoints/pas à pas BASIC, variables et pile | P | P2 | FW/Instrumentation | 0.38 : breakpoints de lignes et pas statement ancrés sur le BASIC 1.1 qualifié, ligne/pointeurs/ticks réels ; variables, pile GOSUB, Step Over/Out, gutter Monaco et autres firmwares restent ouverts |
-| IDE-055 | Mémoire, banques, désassemblage Z80 et snapshots | P | P2 | IDE-051 | 0.35 : registres et RAM derrière ROM en pause, huit configurations de banques ; désassemblage/snapshots/restauration ouverts |
+| IDE-055 | Mémoire, banques, désassemblage Z80 et récupération de sources | P | P2 | Codecs ; IDE-051 pour traces | 0.35 : registres/RAM et banques en pause ; [atelier binaire et récupération de sources](21-retro-ingenierie-z80.md) spécifiés, non réalisés ; snapshots/restauration ouverts ; source historique exacte non garantie |
 | IDE-056 | CPC 464/664 puis Plus et autres Amstrad | N | P2 | Profils qualifiés | Recette propre à chaque machine ; aucun support déduit du seul 6128 |
 
 ## 10. Images, son, sprites et pièces jointes

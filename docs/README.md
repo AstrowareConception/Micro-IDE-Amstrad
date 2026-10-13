@@ -112,6 +112,8 @@ La tranche [dépôt/index Git 0.13](implementation/git-local-index-alpha.md) ajo
 | [17 — Roadmap IDE complet](specifications/17-roadmap-ide-complet.md) | Quelles 75 fonctionnalités réaliser, dans quel ordre et avec quelles preuves ? |
 | [18 — Incréments IDE de production](specifications/18-increments-ide-production.md) | Quels parcours, dépendances et recettes pour les huit lots ? |
 | [19 — Expérience et consommation agent](specifications/19-agent-experience-consommation.md) | Comment comprendre une mission, reprendre et suivre son coût ? |
+| [20 — Import DSK vers projet](specifications/20-import-dsk-projet.md) | Comment récupérer les BASIC et ressources d'une disquette pour les modifier dans l'IDE ? |
+| [21 — Récupération de sources et Z80](specifications/21-retro-ingenierie-z80.md) | Que peut-on retrouver depuis un fichier tokenisé, compilé ou assemblé, et comment le modifier ? |
 | [Glossaire](reference/glossaire.md) | Quel vocabulaire partager ? |
 | [Sources](reference/sources.md) | Sur quelles références reposent les décisions ? |
 | [ADR](adr/README.md) | Pourquoi les options principales ont-elles été retenues ? |

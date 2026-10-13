@@ -33,6 +33,8 @@ Les archives Actions initiales 0.38.1 du 7 octobre restent disponibles jusqu’a
 
 [Point de reprise du développement](docs/reprise.md) : état vérifiable, validations, limites et prochaine tranche.
 
+**Évolutions spécifiées le 13 octobre, non encore disponibles :** [importer une disquette DSK en projet éditable](docs/specifications/20-import-dsk-projet.md), puis [récupérer les sources et explorer le code Z80](docs/specifications/21-retro-ingenierie-z80.md). BASIC reconnu par son contenu, ressources préservées, désassemblage et assistance IA ; aucune promesse de retrouver exactement une source disparue à la compilation.
+
 ## Nouveautés et guides techniques
 
 **Types BASIC 0.41.1** : types explicites et possibles dans le panneau Symboles, déclarations DEFINT/DEFREAL/DEFSTR navigables, ambiguïtés conservées avant tout renommage. [Guide](docs/implementation/basic-symbols-alpha.md#types-0411).
