@@ -2,6 +2,16 @@
 
 **Pause demandée le 8 octobre 2026.** Ce document conserve l’état vérifié, les décisions et la suite ; il n’archive pas les conversations. Confronter son contenu au `main` distant avant toute reprise.
 
+## Complément du 13 octobre 2026 — import et récupération de sources
+
+Base relue : `main` à `50949c2fab9fc6c1ef746f3756425b27971688ca`, fusion de la PR #61 ; aucune PR ouverte lors de la vérification précédant ce travail. Branche de cadrage : `docs/dsk-project-import`. Le code reste en 0.41.1 ; aucun codec, exécutable ou nouveau build livré par ce complément.
+
+Deux demandes sont désormais détaillées : [DSK vers projet](specifications/20-import-dsk-projet.md), puis [récupération de sources et atelier Z80](specifications/21-retro-ingenierie-z80.md). L'objectif est de récupérer une source exploitable, BASIC compris si son format le permet, sans se fier à l'extension BIN/BAS. Le lecteur réel est limité à standard DATA 40 pistes/une face/utilisateur 0 ; détokenisation et parcours d'import restent à construire. Pour les fichiers compilés, distinguer source conservée, assembleur reconstruit et réécriture BASIC assistée ; aucune récupération exacte universelle.
+
+Les deux roadmaps et les sommaires sont actualisés. La séquence FN/portées ci-dessous est préservée, sans faire passer ces nouvelles spécifications pour une livraison. Pour attaquer le chantier demandé, commencer par DSK-A/B/C et constituer les fixtures originales/redistribuables avant le code ; suivre ensuite les lots Z80. Les autres profils disque et compilateurs sont à qualifier séparément.
+
+Validation de ce complément : `python scripts/check_specs.py --schemas` réussi (145 Markdown, 20 JSON, 84 exigences, 37 scénarios, cinq schémas et six exemples) et `git diff --check` réussi. Aucun test fonctionnel d'import ou de désassemblage annoncé. Les preuves 0.41.1 ci-dessous restent historiques.
+
 ## Base vérifiée
 
 - Dépôt : `AstrowareConception/Micro-IDE-Amstrad`.
