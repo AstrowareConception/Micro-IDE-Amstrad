@@ -164,8 +164,8 @@ export class WorkspaceTools implements ToolPort {
         return { ...result, ...metadata };
       }
       case 'build_project': {
-        const disk = buildProjectDisk(this.state.manifest, this.state.files); this.buildVerified = true;
-        return { bytes: disk.length, sha256: this.hash(disk), files: this.state.manifest.sources.map(source => source.cpcName), verification: 'structural-dsk-only', runtime: 'not-run', referencesConsulted: [...this.consulted] };
+        const disk = buildProjectDisk(this.state.manifest, this.state.files, this.state.assets); this.buildVerified = true;
+        return { bytes: disk.length, sha256: this.hash(disk), files: [...this.state.manifest.sources, ...this.state.manifest.assets].map(source => source.cpcName), verification: 'structural-dsk-only', runtime: 'not-run', referencesConsulted: [...this.consulted] };
       }
       default: throw new Error('scope-denied');
     }

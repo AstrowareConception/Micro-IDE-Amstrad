@@ -1,6 +1,6 @@
 # 22 — Export BASIC obfusqué : piste produit
 
-Demande confirmée du 13 octobre 2026 : combiner une obfuscation maison avec la sauvegarde BASIC protégée. Statut : **fonctionnalité retenue au backlog, non implémentée**, priorité P2. L'objectif est de rendre un programme distribué plus difficile à lire tout en conservant dans le projet sa source claire. Ce chantier ne remplace pas la récupération de sources demandée en priorité.
+Demande confirmée du 13 octobre 2026 : combiner une obfuscation maison avec la sauvegarde BASIC protégée. Statut : **trois modes implémentés dans le sous-ensemble conservateur 0.41.3**, priorité P1. L'objectif est de rendre un programme distribué plus difficile à lire tout en conservant dans le projet sa source claire. [Guide et limites actuels](../implementation/recovery-protection-alpha.md). Les transformations avancées et portées FN restent ouvertes. Ce chantier ne remplace pas la récupération de sources demandée en priorité.
 
 ## Existant sur CPC
 

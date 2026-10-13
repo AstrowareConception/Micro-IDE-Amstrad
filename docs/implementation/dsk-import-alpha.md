@@ -1,5 +1,7 @@
 # Import de disquette — première tranche 0.41.2
 
+Ce document décrit la tranche historique ASCII 0.41.2. Pour les fonctionnalités actuelles (tokenisé/protégé, ressources, Extended/SYSTEM, Z80 et exports), lire le [guide 0.41.3](recovery-protection-alpha.md).
+
 ## Parcours
 
 Dans l'application desktop, **Fichier → Importer une disquette DSK…** ouvre une image standard DATA de 40 pistes, une face, utilisateur 0. L'IDE présente le catalogue, les tailles en enregistrements, le type présumé et un aperçu des listings ASCII. La palette propose la même commande.

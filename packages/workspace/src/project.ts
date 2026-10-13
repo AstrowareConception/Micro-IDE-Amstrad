@@ -1,6 +1,8 @@
 import { encodeListing } from '../../basic-language/src/build.ts';
 import { createDataDisk, readDataDisk } from '../../cpc-disk/src/data-disk.ts';
 
+export interface ProjectAsset { id: string; path: string; cpcName: string; sha256: string; byteLength: number }
+export interface AssetSnapshot { id: string; bytes: Uint8Array }
 export interface ProjectSource { id: string; path: string; cpcName: string }
 export interface ProjectDocument {
   id: string; path: string; sha256: string; mediaType: 'text/plain' | 'text/markdown' | 'image/png' | 'image/jpeg' | 'application/pdf';
@@ -21,7 +23,7 @@ export const DOCUMENT_COUNT_LIMIT = 10;
 export interface ProjectManifest {
   schemaVersion: 1; projectId: string; name: string;
   target: { machineProfileId: 'cpc6128-classic-v1'; dialect: 'locomotive-1.1'; expectedFirmwareSetId?: string };
-  entryPoint: string; sources: ProjectSource[]; assets: []; documents: ProjectDocument[];
+  entryPoint: string; sources: ProjectSource[]; assets: ProjectAsset[]; documents: ProjectDocument[];
   build: { listingFormat: 'ascii'; diskFormat: 'standard-dsk'; filesystem: 'amsdos-data'; textEncoding: 'ascii-strict'; lineEnding: 'crlf'; asciiEof: 'ctrl-z'; fileOrder: 'cpc-name' };
 }
 export interface SourceSnapshot extends ProjectSource { source: string }
@@ -54,7 +56,13 @@ export function parseProject(value: unknown): ProjectManifest {
   if (typeof root.name !== 'string' || root.name.length < 1 || root.name.length > 100 || !root.name.trim()) throw new Error('Nom de projet requis (1–100 caractères).');
   const target = object(root.target, ['machineProfileId', 'dialect'], ['expectedFirmwareSetId']);
   if (target.machineProfileId !== 'cpc6128-classic-v1' || target.dialect !== 'locomotive-1.1') throw new Error('Profil CPC 6128 / BASIC 1.1 requis.');
-  if (!Array.isArray(root.assets) || root.assets.length) throw new Error('Ressources binaires non prises en charge dans cette alpha.');
+  if (!Array.isArray(root.assets) || root.assets.length > 64) throw new Error('64 ressources maximum.');
+  const assets: ProjectAsset[] = root.assets.map(value => {
+    const item = object(value, ['id', 'path', 'cpcName', 'sha256', 'byteLength']);
+    const path = string(item.path, /^assets\/[A-Za-z0-9_-]+\.bin$/);
+    if (!Number.isInteger(item.byteLength) || Number(item.byteLength) < 0 || Number(item.byteLength) > 184320) throw new Error('Taille de ressource invalide.');
+    return { id: string(item.id, ID), path, cpcName: string(item.cpcName, /^[A-Z0-9_]{1,8}(?:\.[A-Z0-9_]{1,3})?$/), sha256: string(item.sha256, /^[a-f0-9]{64}$/), byteLength: Number(item.byteLength) };
+  });
   if (!Array.isArray(root.documents) || root.documents.length > DOCUMENT_COUNT_LIMIT) throw new Error('10 documents maximum dans cette alpha.');
   const documents: ProjectDocument[] = root.documents.map(value => {
     const item = object(value, ['id', 'path', 'sha256', 'mediaType', 'role', 'originalName']);
@@ -77,15 +85,15 @@ export function parseProject(value: unknown): ProjectManifest {
     return { id, path, cpcName: string(source.cpcName, /^[A-Z0-9_]{1,8}(?:\.[A-Z0-9_]{1,3})?$/) };
   });
   for (const field of ['id', 'path', 'cpcName'] as const) {
-    if (new Set(sources.map(source => source[field].toLowerCase())).size !== sources.length) throw new Error(`Collision de ${field} dans les sources.`);
+    if (new Set([...sources, ...assets].map(source => source[field].toLowerCase())).size !== sources.length + assets.length) throw new Error(`Collision de ${field} dans les sources.`);
   }
   for (const field of ['id', 'path'] as const) {
-    const values = [...sources, ...documents].map(item => item[field].toLowerCase());
+    const values = [...sources, ...assets, ...documents].map(item => item[field].toLowerCase());
     if (new Set(values).size !== values.length) throw new Error(`Collision de ${field} dans le projet.`);
   }
   const entryPoint = string(root.entryPoint, ID);
   if (!sources.some(source => source.id === entryPoint)) throw new Error('Le point d’entrée doit référencer une source déclarée.');
-  const result: ProjectManifest = { schemaVersion: 1, projectId, name: root.name, target: { machineProfileId: 'cpc6128-classic-v1', dialect: 'locomotive-1.1' }, entryPoint, sources, assets: [], documents, build: supported };
+  const result: ProjectManifest = { schemaVersion: 1, projectId, name: root.name, target: { machineProfileId: 'cpc6128-classic-v1', dialect: 'locomotive-1.1' }, entryPoint, sources, assets, documents, build: supported };
   if (target.expectedFirmwareSetId !== undefined) result.target.expectedFirmwareSetId = string(target.expectedFirmwareSetId, ID);
   return result;
 }
@@ -98,7 +106,7 @@ export function addProjectSource(project: ProjectManifest, name: string): Projec
   if (!/^[A-Za-z0-9_]{1,8}$/.test(name)) throw new Error('Nom de source : 1–8 lettres ASCII, chiffres ou underscore.');
   return parseProject({ ...project, sources: [...project.sources, { id: name.toLowerCase(), path: `src/${name.toLowerCase()}.bas`, cpcName: `${name.toUpperCase()}.BAS` }] });
 }
-export function buildProjectDisk(project: ProjectManifest, snapshots: { id: string; source: string }[]): Uint8Array {
+export function buildProjectDisk(project: ProjectManifest, snapshots: { id: string; source: string }[], assets: AssetSnapshot[] = []): Uint8Array {
   const manifest = parseProject(project);
   if (snapshots.length !== manifest.sources.length || new Set(snapshots.map(source => source.id)).size !== snapshots.length) throw new Error('Snapshot de sources incomplet ou dupliqué.');
   const files = manifest.sources.map(item => {
@@ -107,5 +115,11 @@ export function buildProjectDisk(project: ProjectManifest, snapshots: { id: stri
     try { return { name: item.cpcName, bytes: encodeListing(buffer.source) }; }
     catch (error) { throw new Error(`${item.path} : ${error instanceof Error ? error.message : 'Échec d’encodage'}`); }
   });
+  if (assets.length !== manifest.assets.length || new Set(assets.map(asset => asset.id)).size !== assets.length) throw new Error('Snapshot de ressources incomplet.');
+  for (const asset of manifest.assets) {
+    const snapshot = assets.find(value => value.id === asset.id);
+    if (!snapshot || !(snapshot.bytes instanceof Uint8Array) || snapshot.bytes.length !== asset.byteLength) throw new Error('Ressource absente ou taille modifiée.');
+    files.push({ name: asset.cpcName, bytes: snapshot.bytes });
+  }
   const disk = createDataDisk(files); readDataDisk(disk); return disk;
 }

@@ -5,8 +5,12 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
   exportDisk: source => ipcRenderer.invoke('listing:export', { source }),
   feedback: Object.freeze({ open: input => ipcRenderer.invoke('feedback:open', input) }),
   setDirty: dirty => ipcRenderer.send('listing:dirty', dirty),
+  distribution: Object.freeze({ export: request => ipcRenderer.invoke('distribution:export', request) }),
   diskImport: Object.freeze({
     inspect: () => ipcRenderer.invoke('disk-import:inspect'),
+    inspectFile: () => ipcRenderer.invoke('disk-import:file'),
+    disassemble: request => ipcRenderer.invoke('disk-import:disassemble', request),
+    extract: request => ipcRenderer.invoke('disk-import:extract', request),
     create: request => ipcRenderer.invoke('disk-import:create', request),
   }),
   history: Object.freeze({

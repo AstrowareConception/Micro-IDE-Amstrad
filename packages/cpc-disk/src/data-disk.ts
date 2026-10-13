@@ -102,6 +102,10 @@ export function readDataDisk(disk: Uint8Array): ExtractedFile[] {
       logical.set(disk.subarray(begin, begin + 512), (track * 9 + id - 0xc1) * 512);
     }
   }
+  return readDirectory(logical);
+}
+
+export function readDirectory(logical: Uint8Array): ExtractedFile[] {
   const groups = new Map<string, { extent: number; records: Uint8Array; blocks: number[] }[]>();
   const allocated = new Set<number>();
   for (let slot = 0; slot < 64; slot++) {
@@ -126,7 +130,7 @@ export function readDataDisk(disk: Uint8Array): ExtractedFile[] {
         if (block !== 0) throw new Error("Unexpected extent allocation");
         continue;
       }
-      if (block < 2 || block >= 180 || allocated.has(block)) throw new Error("Overlapping or invalid allocation");
+      if (block < 2 || block >= Math.floor(logical.length / 1024) || allocated.has(block)) throw new Error("Overlapping or invalid allocation");
       allocated.add(block); blocks.push(block);
       const length = Math.min(1024, records.length - index * 1024);
       records.set(logical.subarray(block * 1024, block * 1024 + length), index * 1024);

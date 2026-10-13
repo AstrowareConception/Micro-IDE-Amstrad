@@ -2,13 +2,14 @@ import { BasicTestSuiteStore } from './basic-test-suite-store.ts';
 import { app, BrowserWindow, dialog, ipcMain, protocol, net, shell } from 'electron';
 import { readFile, writeFile, rename, unlink, lstat, mkdir } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
-import { join, dirname, relative, isAbsolute } from 'node:path';
+import { join, dirname, relative, isAbsolute, basename } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { buildListingDisk } from '../../packages/basic-language/src/build.ts';
 import { parseProject, buildProjectDisk } from '../../packages/workspace/src/project.ts';
 import { feedbackReport } from './feedback.ts';
 import { RecentProjectsStore } from './recent-projects-store.ts';
 import { ProjectStore } from './project-store.ts';
+import { distributionDisk, type DistributionOptions } from '../../packages/cpc-disk/src/distribution.ts';
 import { DiskImportSession } from './disk-import.ts';
 import type { DiskImportRequest } from '../../packages/cpc-disk/src/import-disk.ts';
 import { ProjectExplorer } from './project-explorer.ts';
@@ -71,6 +72,12 @@ async function atomicWrite(path: string, bytes: Uint8Array): Promise<void> {
   const temp = join(dirname(path), `.microide-${randomUUID()}.tmp`);
   try { await writeFile(temp, bytes, { flag: 'wx', mode: 0o600 }); await rename(temp, path); }
   finally { await unlink(temp).catch(() => undefined); }
+}
+async function protectOriginalDestination(destination: string, original: string): Promise<void> {
+  const target=join(await realpath(dirname(destination)),basename(destination));
+  const source=await realpath(original);
+  const normalize=(path:string)=>process.platform==='win32'?path.toLowerCase():path;
+  if(normalize(target)===normalize(source))throw new Error('Le fichier original ne peut pas être remplacé.');
 }
 function route(channel: string, handler: (payload: unknown) => Promise<unknown>, passive = false) {
   let inspecting = false;
@@ -233,6 +240,27 @@ route('disk-import:inspect', async () => {
   if (selection.canceled || !selection.filePaths[0]) return null;
   diskImport = await DiskImportSession.prepare(selection.filePaths[0]); return diskImport.preview;
 });
+route('disk-import:file', async () => {
+  diskImport=undefined;
+  const selection=await dialog.showOpenDialog(window,{properties:['openFile'],filters:[{name:'Fichier CPC',extensions:['bas','bin','scr','dat','asm','txt']}]});
+  if(selection.canceled||!selection.filePaths[0])return null;
+  diskImport=await DiskImportSession.prepareFile(selection.filePaths[0]);return diskImport.preview;
+});
+route('disk-import:disassemble', async payload => {
+  if(!diskImport || !payload || typeof payload!=='object')throw new Error('Aperçu requis.');
+  return {listing:diskImport.disassemble(payload as Parameters<DiskImportSession['disassemble']>[0])};
+});
+route('disk-import:extract', async payload => {
+  if(!diskImport || !payload || typeof payload!=='object')throw new Error('Aperçu requis.');
+  const value=payload as {id:string;fileId:string;listing?:string},file=diskImport.getFile(value.id,value.fileId);
+  if(value.listing!==undefined && (typeof value.listing!=='string'||value.listing.length>1024*1024||value.listing.includes('\0')))throw new Error('Listing invalide.');
+  const data=value.listing===undefined?file.records:Buffer.from(value.listing);
+  const selection=await dialog.showSaveDialog(window,{defaultPath:file.name+(value.listing===undefined?'.original.bin':'.asm')});
+  if(selection.canceled||!selection.filePath)return null;
+  await protectOriginalDestination(selection.filePath,diskImport.path);
+  if(project)await project.assertExportDestination(selection.filePath);
+  await atomicWrite(selection.filePath,data);return {name:selection.filePath.split(/[\\/]/).at(-1)};
+});
 route('disk-import:create', async payload => {
   if (!diskImport || !payload || typeof payload !== 'object' || Array.isArray(payload)) throw new Error('Analysez une disquette avant de créer le projet.');
   const request = payload as DiskImportRequest;
@@ -242,7 +270,7 @@ route('disk-import:create', async payload => {
   const root = await diskImport.create(selection.filePaths[0], request);
   diskImport = undefined;
   const opened = await openProjectFolder(root);
-  return opened ? { ...opened, recentProjectsNotice: 'Projet importé. Seuls les listings ASCII sélectionnés sont inclus dans le build ; consultez import-report.json pour les fichiers conservés et dépendances à reprendre.' } : null;
+  return opened ? { ...opened, recentProjectsNotice: 'Projet importé. Sources BASIC et ressources importées ; consultez import-report.json pour les conversions et limites.' } : null;
 });
 function projectRequest(payload: unknown): { store: ProjectStore; value: Record<string, unknown> } {
   if (!project || !payload || typeof payload !== 'object') throw new Error('Aucun projet ouvert.');
@@ -527,6 +555,26 @@ route('documents:read', async payload => {
   if (typeof value.id !== 'string') throw new Error('Identifiant de document requis.');
   return store.readDocument(value.id);
 });
+route('distribution:export', async payload => {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new Error('Demande invalide.');
+  const value = payload as { sessionId?: string; sources?: unknown; options: DistributionOptions };
+  const buffers = bufferRequest(value.sources);
+  const owner = value.sessionId ? projectRequest(payload).store : undefined;
+  if (!owner && (project || buffers.length !== 1)) throw new Error('Session d’export invalide.');
+  if (owner) await owner.assertCurrent();
+  const sources = owner ? owner.manifest.sources.map(item => {
+    const matches=buffers.filter(buffer=>buffer.id===item.id); if(matches.length!==1) throw new Error('Snapshot incomplet ou dupliqué.');
+    return { name:item.cpcName,source:matches[0]!.source };
+  }) : [{name:'MAIN.BAS',source:buffers[0]!.source}];
+  if (buffers.length!==sources.length) throw new Error('Snapshot invalide.');
+  const assets=owner?await owner.readAssets():[];
+  const disk=distributionDisk(sources,value.options,assets.map(asset=>({name:owner!.manifest.assets.find(a=>a.id===asset.id)!.cpcName,bytes:asset.bytes})));
+  const choice=await dialog.showSaveDialog(window,{defaultPath:'distribution.dsk',filters:[{name:'Disquette CPC DATA',extensions:['dsk']}]});
+  if(choice.canceled || !choice.filePath) return null;
+  if(owner){await owner.assertCurrent();await owner.assertExportDestination(choice.filePath);await owner.readAssets();}
+  else if(current?.path) await protectOriginalDestination(choice.filePath,current.path);
+  await atomicWrite(choice.filePath,disk);return {name:choice.filePath.split(/[\\/]/).at(-1)};
+});
 route('project:export', async payload => {
   const { store, value } = projectRequest(payload); await store.assertCurrent();
   if (!Array.isArray(value.sources) || value.sources.length > 64) throw new Error('Snapshot invalide.');
@@ -538,7 +586,7 @@ route('project:export', async payload => {
     if (typeof id !== 'string' || total > 8 * MAX_SOURCE_BYTES) throw new Error('Snapshot invalide ou supérieur à 8 Mio.');
     return { id, source };
   });
-  const bytes = buildProjectDisk(store.manifest, sources);
+  const bytes = buildProjectDisk(store.manifest, sources, await store.readAssets());
   const selection = await dialog.showSaveDialog(window, { defaultPath: 'project.dsk', filters: [{ name: 'Disquette CPC DATA', extensions: ['dsk'] }] });
   if (selection.canceled || !selection.filePath) return null;
   await store.assertCurrent(); await store.assertExportDestination(selection.filePath);
@@ -589,7 +637,7 @@ route('emulator:prepare', async payload => {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new Error('Snapshot d’exécution invalide.');
   const value = payload as Record<string, unknown>;
   let image, label = 'Listing courant';
-  if (Object.hasOwn(value, 'sessionId')) { const { store } = projectRequest(payload); await store.assertCurrent(); image = runDisk(value, store.manifest); label = store.manifest.name; }
+  if (Object.hasOwn(value, 'sessionId')) { const { store } = projectRequest(payload); await store.assertCurrent(); image = runDisk(value, store.manifest, await store.readAssets()); label = store.manifest.name; }
   else image = runDisk(value);
   const status = await firmware.status();
   if (!status.complete) throw new Error('ROM CPC manquantes ou invalides : importez OS, BASIC 1.1 et AMSDOS dans Configuration ROM avant Exécuter.');

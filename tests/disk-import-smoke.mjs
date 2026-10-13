@@ -4,6 +4,7 @@ import { mkdtemp, writeFile, readFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createDataDisk } from '../packages/cpc-disk/src/data-disk.ts';
+import { inspectDataDisk } from '../packages/cpc-disk/src/import-disk.ts';
 import { encodeBasicAscii } from '../packages/cpc-disk/src/basic-ascii.ts';
 import { encodeAmsdosBinary } from '../packages/cpc-disk/src/amsdos-binary.ts';
 import { DiskImportSession } from '../apps/desktop/disk-import.ts';
@@ -69,4 +70,11 @@ export async function verifyDiskImportDesktop(page, desktop, parent) {
   assert.equal(result.files[0].source, '10 PRINT "NATIVE IMPORT"\n20 END\n'); assert.equal(result.files[0].cpcName, 'OLD.BIN');
   assert.deepEqual(await readFile(path), Buffer.from(bytes));
   assert.match((await page.evaluate(request => window.desktop.diskImport.create(request), request)).error, /Analysez/);
+  for (const mode of ['obfuscate','protected','combined']) {
+    const output=join(parent,`native-${mode}.dsk`);
+    await desktop.evaluate(({dialog},path)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:path});},output);
+    const exported=await page.evaluate(({sessionId,source,mode})=>window.desktop.distribution.export({sessionId,sources:[{id:source.id,source:source.source}],options:{mode,rename:true,comments:true,renumber:false}}),{sessionId:result.sessionId,source:result.files[0],mode});
+    assert.ok(!exported.error,JSON.stringify(exported));assert.match(inspectDataDisk(await readFile(output)).files[0].source,/NATIVE IMPORT/);
+  }
+
 }

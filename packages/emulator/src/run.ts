@@ -6,7 +6,7 @@ export interface EmulatorPort {
   prepare(request: RunRequest): Promise<RunImage | { error: string }>;
   exportDisk?(disk: Uint8Array, sessionId?: string): Promise<{ name: string } | { error: string } | null>;
 }
-export function runDisk(value: unknown, manifest?: ProjectManifest): { disk: Uint8Array; entry: string } {
+export function runDisk(value: unknown, manifest?: ProjectManifest, assets: import('../../workspace/src/project.ts').AssetSnapshot[] = []): { disk: Uint8Array; entry: string } {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Snapshot d’exécution invalide.');
   const request = value as Record<string, unknown>;
   if (!manifest) {
@@ -23,7 +23,7 @@ export function runDisk(value: unknown, manifest?: ProjectManifest): { disk: Uin
     if (size > 1024 * 1024 || total > 8 * 1024 * 1024) throw new Error('Snapshot d’exécution trop volumineux.');
     return { id: item.id, source: item.source };
   });
-  const disk = buildProjectDisk(manifest, sources);
+  const disk = buildProjectDisk(manifest, sources, assets);
   return { disk, entry: manifest.sources.find(source => source.id === manifest.entryPoint)!.cpcName };
 }
 export function runCommand(entry: string): string {

@@ -1,4 +1,5 @@
 import { verifyBasicSymbols } from './basic-symbols-smoke.mjs';
+import { verifyRecoveryProtection } from './recovery-protection-smoke.mjs';
 import { verifyDiskImport } from './disk-import-smoke.mjs';
 import { verifyBasicFlow } from './basic-flow-smoke.mjs';
 import { verifyBasicDiagnostics } from './basic-diagnostics-smoke.mjs';
@@ -343,6 +344,7 @@ try {
   await modelsPage.close();
   await verifyRecentProjects(browser, errors);
   await verifyDiskImport(browser);
+  await verifyRecoveryProtection(browser);
   await verifyGitWorkbench(browser, errors);
   await verifyAgentWorkbench(browser, errors);
   await verifyProjectExplorer(browser, errors);

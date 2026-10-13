@@ -1,6 +1,6 @@
 # 20 — Retrouver un projet éditable depuis une disquette DSK
 
-Demande produit du 13 octobre 2026. **Statut : partiel — premier parcours ASCII réalisé en 0.41.2.** [Guide et limites](../implementation/dsk-import-alpha.md). Cette fonctionnalité relie IDE-006, IDE-046 et IDE-047 ; elle ne crée pas un second système de projets. L'objectif est de reprendre ses programmes CPC d'époque, de les modifier dans l'éditeur et avec l'agent IA, puis de les tester et d'en produire une nouvelle disquette.
+Demande produit du 13 octobre 2026. **Statut : partiel — BASIC ASCII/tokenisé/protégé et ressources réalisés en 0.41.3 ; profils ordinaires DATA/SYSTEM standard/Extended.** [Guide et limites actuels](../implementation/recovery-protection-alpha.md). Cette fonctionnalité relie IDE-006, IDE-046 et IDE-047 ; elle ne crée pas un second système de projets. L'objectif est de reprendre ses programmes CPC d'époque, de les modifier dans l'éditeur et avec l'agent IA, puis de les tester et d'en produire une nouvelle disquette.
 
 ## Résultat attendu
 
