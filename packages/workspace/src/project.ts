@@ -21,7 +21,7 @@ export const DOCUMENT_LIMIT = 1024 * 1024;
 export const DOCUMENT_TOTAL_LIMIT = 4 * DOCUMENT_LIMIT;
 export const DOCUMENT_COUNT_LIMIT = 10;
 export interface ProjectManifest {
-  schemaVersion: 1; projectId: string; name: string;
+  schemaVersion: 1; kind?: 'binary'; projectId: string; name: string;
   target: { machineProfileId: 'cpc6128-classic-v1'; dialect: 'locomotive-1.1'; expectedFirmwareSetId?: string };
   entryPoint: string; sources: ProjectSource[]; assets: ProjectAsset[]; documents: ProjectDocument[];
   build: { listingFormat: 'ascii'; diskFormat: 'standard-dsk'; filesystem: 'amsdos-data'; textEncoding: 'ascii-strict'; lineEnding: 'crlf'; asciiEof: 'ctrl-z'; fileOrder: 'cpc-name' };
@@ -48,10 +48,12 @@ export function validateSourcePath(path: string): void {
     if (/[. ]$/.test(segment) || /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i.test(segment)) throw new Error('Nom non portable sur Windows.');
   }
 }
-/** Supported v1 subset. Binary assets, WebP and other encodings are refused. */
+/** Supported v1 subset: BASIC projects and explicit binary-only projects with immutable assets. */
 export function parseProject(value: unknown): ProjectManifest {
-  const root = object(value, ['schemaVersion', 'projectId', 'name', 'target', 'entryPoint', 'sources', 'assets', 'documents', 'build']);
+  const root = object(value, ['schemaVersion', 'projectId', 'name', 'target', 'entryPoint', 'sources', 'assets', 'documents', 'build'], ['kind']);
   if (root.schemaVersion !== 1) throw new Error('Version de projet non prise en charge ; aucun fichier modifié.');
+  if (root.kind !== undefined && root.kind !== 'binary') throw new Error('Type de projet inconnu.');
+  const binary = root.kind === 'binary';
   const projectId = string(root.projectId, UUID);
   if (typeof root.name !== 'string' || root.name.length < 1 || root.name.length > 100 || !root.name.trim()) throw new Error('Nom de projet requis (1–100 caractères).');
   const target = object(root.target, ['machineProfileId', 'dialect'], ['expectedFirmwareSetId']);
@@ -78,7 +80,7 @@ export function parseProject(value: unknown): ProjectManifest {
   const build = object(root.build, ['listingFormat', 'diskFormat', 'filesystem', 'textEncoding', 'lineEnding', 'asciiEof', 'fileOrder']);
   const supported: ProjectManifest['build'] = { listingFormat: 'ascii', diskFormat: 'standard-dsk', filesystem: 'amsdos-data', textEncoding: 'ascii-strict', lineEnding: 'crlf', asciiEof: 'ctrl-z', fileOrder: 'cpc-name' };
   if (Object.entries(supported).some(([key, item]) => build[key] !== item)) throw new Error('Recette de construction non prise en charge.');
-  if (!Array.isArray(root.sources) || root.sources.length < 1 || root.sources.length > 64) throw new Error('Le projet doit contenir 1 à 64 sources.');
+  if (!Array.isArray(root.sources) || root.sources.length < (binary ? 0 : 1) || root.sources.length > (binary ? 0 : 64)) throw new Error(binary ? 'Un projet binaire ne contient aucune source BASIC.' : 'Le projet doit contenir 1 à 64 sources.');
   const sources = root.sources.map(value => {
     const source = object(value, ['id', 'path', 'cpcName']);
     const id = string(source.id, ID); const path = string(source.path, PATH); validateSourcePath(path);
@@ -92,8 +94,8 @@ export function parseProject(value: unknown): ProjectManifest {
     if (new Set(values).size !== values.length) throw new Error(`Collision de ${field} dans le projet.`);
   }
   const entryPoint = string(root.entryPoint, ID);
-  if (!sources.some(source => source.id === entryPoint)) throw new Error('Le point d’entrée doit référencer une source déclarée.');
-  const result: ProjectManifest = { schemaVersion: 1, projectId, name: root.name, target: { machineProfileId: 'cpc6128-classic-v1', dialect: 'locomotive-1.1' }, entryPoint, sources, assets, documents, build: supported };
+  if (!(binary ? assets : sources).some(source => source.id === entryPoint)) throw new Error('Le point d’entrée doit référencer une source déclarée.');
+  const result: ProjectManifest = { schemaVersion: 1, ...(binary ? { kind: 'binary' as const } : {}), projectId, name: root.name, target: { machineProfileId: 'cpc6128-classic-v1', dialect: 'locomotive-1.1' }, entryPoint, sources, assets, documents, build: supported };
   if (target.expectedFirmwareSetId !== undefined) result.target.expectedFirmwareSetId = string(target.expectedFirmwareSetId, ID);
   return result;
 }

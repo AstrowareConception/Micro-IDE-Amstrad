@@ -37,10 +37,11 @@ function run(command, args) {
 const original = await readFile(input), session = await DiskImportSession.prepare(input);
 assert.equal(session.preview.sha256, sha(original), 'Input changed during inspection');
 assert.equal(session.preview.profile, 'standard-data-40', 'Native observation limited to standard DATA');
-const entry = session.preview.files.find(file => file.name === entryName && file.source !== undefined);
-assert.ok(entry, 'Convertible BASIC entry required');
+const entry = session.preview.files.find(file => file.name === entryName);
+assert.ok(entry, 'Declared entry required');
+const binary = entry.source === undefined;
 const parent = await mkdtemp(join(tmpdir(), 'cpc-real-import-'));
-const root = await session.create(parent, { id: session.preview.id, name: 'Real disk observation', sourceIds: [entry.id], entryId: entry.id });
+const root = await session.create(parent, { id: session.preview.id, name: 'Real disk observation', sourceIds: binary ? [] : [entry.id], entryId: entry.id, ...(binary ? { kind: 'binary' } : {}) });
 const { store, snapshot } = await ProjectStore.open(root);
 const rebuilt = buildProjectDisk(snapshot.manifest, snapshot.files, await store.readAssets());
 // The native adapter accepts canonical headers only. Normalize labels on a diagnostic copy,
@@ -50,7 +51,7 @@ baseline.write('MV - CPCEMU Disk-File\r\nDisk-Info\r\n');
 for (let track = 0; track < 40; track++) baseline.write('Track-Info\r\n', 256 + track * 4864);
 const before = readDataDisk(baseline), after = readDataDisk(rebuilt);
 assert.deepEqual(after.map(file => file.name), before.map(file => file.name));
-for (const file of before.filter(file => file.name !== entryName))
+for (const file of before.filter(file => binary || file.name !== entryName))
   assert.deepEqual(after.find(item => item.name === file.name).records, file.records, file.name);
 assert.deepEqual(await readFile(input), original);
 await mkdir('out', { recursive: true });
@@ -65,7 +66,7 @@ for (const [name, bytes] of [['baseline', baseline], ['rebuilt', rebuilt]]) {
     .trim().split('\n').map(line => JSON.parse(line));
 }
 const report = { originalSha256: sha(original), rebuiltSha256: sha(rebuilt), firmware, entryName,
-  resourceRecordsPreserved: before.length - 1, originalUnchanged: true,
+  resourceRecordsPreserved: before.length - (binary ? 0 : 1), originalUnchanged: true,
   phases, observations, project: root, screenshots: 'PPM: inspect visually; execution success is not asserted by this script.',
   independentEmulator: false };
 await writeFile(join(output, 'report.json'), JSON.stringify(report, null, 2) + '\n');

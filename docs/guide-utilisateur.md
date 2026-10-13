@@ -1,5 +1,7 @@
 # CPCéleste — Vos idées prennent vie en BASIC
 
+**Nouveau — atelier Z80 0.41.5 :** pour les DSK sans BASIC, cocher **Créer un projet binaire** à l’import. L’atelier conserve les fichiers, vos zones code/données et vos annotations ; il vérifie le réassemblage et permet de tester/exporter une copie modifiée. [Parcours complet et limites](implementation/binary-workbench-alpha.md).
+
 **Nouveauté 0.41.3 — récupération et distribution.** Le menu Fichier propose « Importer une disquette DSK… », « Récupérer un fichier CPC… » et « Exporter avec protection… ». BASIC tokenisé/protégé reconnu par son contenu, ressources incluses dans le build, aperçu Z80 et trois modes de distribution sur copie. [Guide détaillé et limites](implementation/recovery-protection-alpha.md).
 
 **L’atelier Amstrad CPC qui réunit le plaisir de créer sur une machine mythique et le confort d’un IDE moderne.**

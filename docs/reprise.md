@@ -2,6 +2,18 @@
 
 **Pause demandée le 8 octobre 2026.** Ce document conserve l’état vérifié, les décisions et la suite ; il n’archive pas les conversations. Confronter son contenu au `main` distant avant toute reprise.
 
+## Incrément du 13 octobre — atelier binaire 0.41.5
+
+Base distante : `main` à `5ad4d90ad86aa48443c0dbd5157f2681da7bd398`, PR #65 fusionnée après tous les contrôles réussis. Branche `feat/binary-workbench`. Vérifier la PR de cette branche avant d’annoncer sa fusion ; aucun installateur déclenché.
+
+Réalisé : mode explicite de projet binaire sans faux BASIC ; import DSK/fichier CPC, choix d’entrée, ressources immuables, atelier central avec plages code/données, notes et copies assembleur persistantes dans binary-z80.json, révision et empreintes contrôlées. Assembleur local borné, aller-retour identique avant édition, tailles/origines fixes, export DSK modifié et bouton Tester la copie modifiée ; F5 utilise les ressources originales. [Guide](implementation/binary-workbench-alpha.md), [ADR 0063](adr/0063-atelier-projets-binaires.md).
+
+Preuves : 415 tests unitaires, TypeScript, builds renderer/main et contrôle documentaire réussis (153 Markdown, 21 JSON, six schémas/six exemples). Parcours Chromium réel worker/stockage : import, annotation, Ctrl S, vérification 0 puis 1 octet modifié, export, préparation d’exécution et réouverture ; capture inspectée. Recette native avec ROM contrôlées : binaire de sept octets importé/réassemblé, LD A,77 changé en LD A,78, RAM &9000 observée à 77 puis 78. Deflektor : trois ressources, chargeur de 190 octets réassemblé à l’identique et menu atteint depuis la disquette reconstruite ; aucune partie complète revendiquée. Tests IPC ajoutés à la suite existante, résultat CI de cette tête à vérifier.
+
+Correction après première CI : l’affichage de l’entrée consultait aussi les ressources des projets BASIC sans tableau assets. Sélection de la collection selon le mode ; parcours navigateur complet réussi localement après correction. Contrôles distants de la nouvelle tête encore à vérifier.
+
+Limites : assembleur lié aux tables du décodeur (pas une preuve indépendante complète), 16 Kio par zone, pas de macros/expressions/relocalisation ; annotations des ressources dans projets BASIC mixtes et agent IA binaire non réalisés. Labels manuels, classement humain, aucun graphe/trace/banque ni décompilation BASIC. Brouillons non enregistrés protégés à la fermeture, sans récupération après crash. Suite : qualification assembleur indépendante et projets mixtes, puis routines expliquées/éditées par IA avec tests. Les jeux/ROM/captures commerciales et projets d’essai restent hors Git.
+
 ## Incrément du 13 octobre — compatibilité réelle 0.41.4
 
 Base distante : PR #64 fusionnée après réussite des trois workflows, commit `9ef09cb84d05136cedf2140e42f0455c5c96f51e`. Branche `fix/dsk-historical-compatibility`. Le build WASM et les contrôles éditeur Windows/Linux de 0.41.3 sont donc validés en CI, malgré le blocage local du SDK décrit dans l'historique. Vérifier la PR de cette nouvelle branche avant d'annoncer sa fusion.

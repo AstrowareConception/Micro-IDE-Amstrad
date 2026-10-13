@@ -26,6 +26,7 @@ import { SettingsDialog } from './SettingsDialog.tsx';
 import { loadPreferences, persistPreferences, type Preferences } from './preferences.ts';
 import type { CSSProperties } from 'react';
 import { NewProjectDialog } from './NewProjectDialog.tsx';
+import { BinaryWorkbenchPanel } from './BinaryWorkbenchPanel.tsx';
 import { DistributionDialog } from './DistributionDialog.tsx';
 import { DiskImportDialog } from './DiskImportDialog.tsx';
 import type { DiskImportPreview, DiskImportRequest } from '../../../packages/cpc-disk/src/import-disk.ts';
@@ -79,6 +80,9 @@ export function App() {
   const [documents, setDocuments] = useState<Document[]>([{ id: 'initial', sourceId: 'main', name: 'MAIN.bas', source: SAMPLE, saved: SAMPLE }]);
   const [activeId, setActiveId] = useState('initial');
   const [project, setProject] = useState<{ sessionId: string; manifest: ProjectManifest } | undefined>();
+  const [binaryDirty, setBinaryDirty] = useState(false);
+  const binaryEditor = useRef<{ save(): Promise<void> } | null>(null);
+  const binaryProject = project?.manifest.kind === 'binary';
   const [projectName, setProjectName] = useState('Mon projet CPC');
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [diskPreview, setDiskPreview] = useState<DiskImportPreview>();
@@ -86,7 +90,7 @@ export function App() {
   const [sourceDraft, setSourceDraft] = useState<SourceDraft>();
   const [sourceDialog, setSourceDialog] = useState<{ sourceId: string; action: SourceOperation['action'] }>();
   const [documentRequest, setDocumentRequest] = useState<{ id: string; nonce: string }>();
-  const active = documents.find(document => document.id === activeId)!;
+  const active = documents.find(document => document.id === activeId) ?? { id: 'binary', sourceId: '', name: 'Atelier Z80', source: '', saved: '' };
   const { source } = active;
   const [status, setStatusText] = useState('Prêt. Écrivez du BASIC, sans ROM ni connexion.');
   const [notifications, setNotifications] = useState<WorkbenchNotification[]>([]);
@@ -174,7 +178,7 @@ export function App() {
     }) ?? order[0]!;
     revealProblem(next.doc.id, next.diagnostic);
   }
-  const dirty = documents.some(document => document.source !== document.saved);
+  const dirty = binaryDirty || documents.some(document => document.source !== document.saved);
   useEffect(() => {
     const save = () => { if (!persistPreferences(preferences)) notify({ source: 'settings', target: 'settings', level: 'warning', message: 'Paramètres appliqués pour cette session ; conservation indisponible.' }); };
     const timer = setTimeout(save, 150); window.addEventListener('pagehide', save);
@@ -189,7 +193,7 @@ export function App() {
   }, [preferences.theme, preferences.accent, preferences.density]);
   useEffect(() => {
     if (!preferences.autoSave) { autoSaveAttempt.current = ''; return; }
-    if (!project || !files.project || busy || sourceDialog || !dirty) return;
+    if (!project || binaryProject || !files.project || busy || sourceDialog || !dirty) return;
     const revision = JSON.stringify([project.sessionId, preferences.autoSaveDelay, documents.map(item => [item.id, item.source, item.saved])]);
     if (autoSaveAttempt.current === revision) return;
     const timer = setTimeout(() => { autoSaveAttempt.current = revision; void saveAll(); }, preferences.autoSaveDelay);
@@ -258,7 +262,8 @@ export function App() {
     setDocuments(items => append ? [...items, ...added] : added);
     if (!append) setClosedTabs(new Set());
     showTool('project');
-    setActiveId(added[0]!.id); setProject({ sessionId: snapshot.sessionId, manifest: snapshot.manifest });
+    if (snapshot.manifest.kind === 'binary') { setAgentOpen(false); setOutputOpen(false); }
+    setBinaryDirty(false); setActiveId(added[0]?.id ?? 'binary'); setProject({ sessionId: snapshot.sessionId, manifest: snapshot.manifest });
   }
   function acceptSourceMutation(result: SourceMutationResult) {
     if (!project) return;
@@ -314,7 +319,7 @@ export function App() {
       if ('error' in result) { setStatus(result.error, 'error'); return result.error; }
       if ('files' in result) acceptProject(result, append);
       else setProject(previous => previous ? { ...previous, manifest: result } : previous);
-      setStatus('recentProjectsNotice' in result && typeof result.recentProjectsNotice === 'string' && result.recentProjectsNotice ? result.recentProjectsNotice : 'Projet mis à jour. Les buffers existants sont conservés lors d’un ajout.');
+      setStatus('recentProjectsNotice' in result && typeof result.recentProjectsNotice === 'string' && result.recentProjectsNotice ? result.recentProjectsNotice : ('files' in result && result.manifest.kind === 'binary' ? 'Projet binaire ouvert : les analyses sont conservées dans binary-z80.json.' : 'Projet mis à jour. Les buffers existants sont conservés lors d’un ajout.'));
       return true;
     } catch (error) { setStatus(String(error), 'error'); return String(error); }
     finally { setBusy(false); }
@@ -365,8 +370,9 @@ export function App() {
       else button?.click();
     });
   }
-  const save = () => perform(() => project && files.project ? files.project.save(project.sessionId, active.sourceId, source) : files.save(source), 'Listing enregistré', true);
+  const save = () => binaryProject ? binaryEditor.current?.save() : perform(() => project && files.project ? files.project.save(project.sessionId, active.sourceId, source) : files.save(source), 'Listing enregistré', true);
   async function saveAll() {
+    if (binaryProject) { await binaryEditor.current?.save(); return; }
     if (busy || !project || !files.project) return;
     const snapshot = documents.map(item => ({ id: item.id, sourceId: item.sourceId, source: item.source }));
     setBusy(true);
@@ -401,11 +407,11 @@ export function App() {
     { id: 'recover-file', label: 'Récupérer un fichier CPC…', disabled: busy || !files.diskImport?.inspectFile, run: () => void inspectDisk(true) },
     { id: 'import-dsk', label: 'Importer une disquette DSK…', disabled: busy || !files.diskImport, run: () => void inspectDisk() },
     { id: 'recent-projects', label: 'Projets récents…', detail: 'Ctrl R', disabled: busy || !files.recentProjects, run: () => setRecentProjectsOpen(true) },
-    { id: 'save', label: 'Enregistrer le listing actif', detail: 'Ctrl S', disabled: busy, run: () => void save() },
+    { id: 'save', label: binaryProject ? 'Enregistrer l’analyse Z80' : 'Enregistrer le listing actif', detail: 'Ctrl S', disabled: busy, run: () => void save() },
     { id: 'save-all', detail: 'Ctrl Maj S', label: 'Enregistrer tout le projet', disabled: busy || !project || !files.project, run: () => void saveAll() },
-    { id: 'local-history', label: 'Historique local de la source', disabled: busy || !project || !files.history, run: () => setHistoryOpen(true) },
+    { id: 'local-history', label: 'Historique local de la source', disabled: busy || binaryProject || !project || !files.history, run: () => setHistoryOpen(true) },
     { id: 'run', label: 'Exécuter dans le CPC 6128', detail: 'F5', disabled: busy, run: () => runCurrent.current() },
-    { id: 'distribution', label: 'Exporter avec protection…', disabled: busy || !files.distribution, run: () => setDistributionOpen(true) },
+    { id: 'distribution', label: 'Exporter avec protection…', disabled: busy || binaryProject || !files.distribution, run: () => setDistributionOpen(true) },
     { id: 'export', label: 'Exporter le projet en DSK', disabled: busy, run: () => void exportDisk() },
     { id: 'undo', label: 'Annuler la modification', disabled: busy, run: () => { editor.current?.focus(); editor.current?.trigger('workbench', 'undo', null); } },
     { id: 'redo', label: 'Rétablir la modification', disabled: busy, run: () => { editor.current?.focus(); editor.current?.trigger('workbench', 'redo', null); } },
@@ -413,8 +419,8 @@ export function App() {
     { id: 'search-sources', label: 'Rechercher dans toutes les sources', detail: 'Ctrl Maj F', run: () => { setSearchOpen(true); showTool('search'); } },
     { id: 'replace', label: 'Remplacer dans le listing', detail: 'Ctrl H', disabled: busy, run: () => editorAction('editor.action.startFindReplaceAction') },
     { id: 'line', label: 'Aller à une ligne physique', detail: 'Ctrl G · distinct du numéro BASIC', run: () => editorAction('editor.action.gotoLine') },
-    { id: 'renumber', detail: 'Ctrl Maj R', label: 'Renuméroter le BASIC', disabled: busy, run: () => setRenumberOpen(true) },
-    { id: 'complete', label: 'Compléter le BASIC', detail: 'Ctrl Espace', disabled: busy, run: () => editorAction('editor.action.triggerSuggest') },
+    { id: 'renumber', detail: 'Ctrl Maj R', label: 'Renuméroter le BASIC', disabled: busy || binaryProject, run: () => setRenumberOpen(true) },
+    { id: 'complete', label: 'Compléter le BASIC', detail: 'Ctrl Espace', disabled: busy || binaryProject, run: () => editorAction('editor.action.triggerSuggest') },
     { id: 'minimap', label: preferences.minimap ? 'Masquer la minimap' : 'Afficher la minimap', run: () => setPreferences(previous => ({ ...previous, minimap: !previous.minimap })) },
     { id: 'zoom-in', label: 'Agrandir le texte du code', run: () => setPreferences(previous => ({ ...previous, fontSize: Math.min(32, previous.fontSize + 1) })) },
     { id: 'zoom-out', label: 'Réduire le texte du code', run: () => setPreferences(previous => ({ ...previous, fontSize: Math.max(10, previous.fontSize - 1) })) },
@@ -432,8 +438,8 @@ export function App() {
     { id: 'save-as', label: 'Enregistrer sous', detail: 'Ctrl Alt S', disabled: busy || !!project, run: () => void perform(() => files.save(source, true), 'Listing enregistré', true) },
     { id: 'create-project', label: 'Créer un projet', disabled: busy || !files.project, run: () => setNewProjectOpen(true) },
     ...sourceOperationCommands(active.sourceId),
-    { id: 'source-archive', label: 'Consulter le brouillon conservé…', disabled: busy || !project || !files.sourceOperations?.draft, run: () => void showSourceDraft() },
-    { id: 'source-restore', label: 'Rétablir la dernière organisation des sources…', disabled: busy || !project || !files.sourceOperations, run: () => void restoreSourceMutation() },
+    { id: 'source-archive', label: 'Consulter le brouillon conservé…', disabled: busy || binaryProject || !project || !files.sourceOperations?.draft, run: () => void showSourceDraft() },
+    { id: 'source-restore', label: 'Rétablir la dernière organisation des sources…', disabled: busy || binaryProject || !project || !files.sourceOperations, run: () => void restoreSourceMutation() },
     { id: 'explorer', label: 'Afficher l’explorateur', detail: 'Ctrl Maj E', run: () => showTool('project') },
     { id: 'git', label: 'Afficher Git', detail: 'Ctrl Maj G', run: () => showTool('git') },
     { id: 'github', label: 'Compte GitHub et dépôts privés…', disabled: busy || !files.github, run: () => setGithubOpen(true) },
@@ -489,7 +495,7 @@ export function App() {
   ] : [];
   return <main className="workbench" style={{ '--sidebar-width': `${preferences.sidebarWidth}px`, '--agent-width': `${preferences.agentWidth}px`, '--output-height': `${preferences.outputHeight}px` } as CSSProperties}>
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.41.4 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.41.5 · AstroWare Conception</p></div></div>
       <div className="topbar-actions"><Button icon="bell" aria-label={`Centre de notifications · ${unreadNotifications} non lue(s)`} onClick={() => setNotificationsOpen(true)}><span className="notification-badge">{unreadNotifications}</span></Button><span className="profile">CPC 6128 · BASIC 1.1</span></div>
     </header>
     <WorkbenchMenus groups={[
@@ -558,17 +564,17 @@ export function App() {
         {project && <DocumentsPanel key={`documents:${project.sessionId}`} sessionId={project.sessionId} manifest={project.manifest} busy={busy} requested={documentRequest} onBusy={setBusy} onManifest={manifest => setProject(previous => previous ? { ...previous, manifest } : previous)} />}
         </div><div className="tool-content" hidden={tool !== 'project'}><section className="panel"><h2>{project?.manifest.name ?? 'Projets BASIC'}</h2>
           {project ? <>
-            <Button disabled={busy || !files.sourceOperations} onClick={() => void restoreSourceMutation()}>Rétablir la dernière organisation</Button>
-            <Button disabled={busy || !files.sourceOperations?.draft} onClick={() => void showSourceDraft()}>Consulter le brouillon conservé</Button>
-            <p>Entrée : {project.manifest.sources.find(item => item.id === project.manifest.entryPoint)?.cpcName}</p>
+            {!binaryProject && <><Button disabled={busy || !files.sourceOperations} onClick={() => void restoreSourceMutation()}>Rétablir la dernière organisation</Button>
+            <Button disabled={busy || binaryProject || !files.sourceOperations?.draft} onClick={() => void showSourceDraft()}>Consulter le brouillon conservé</Button></>}
+            <p>Entrée : {(binaryProject ? project.manifest.assets : project.manifest.sources).find(item => item.id === project.manifest.entryPoint)?.cpcName}</p>
             <ProjectExplorerPanel key={`explorer:${project.sessionId}`} sessionId={project.sessionId} manifest={project.manifest} busy={busy} activeSourceId={active.sourceId} dirtyIds={documents.filter(item => item.source !== item.saved).map(item => item.sourceId)}
               onSource={id => { const item = documents.find(item => item.sourceId === id); if (item) setActiveId(item.id); }}
               onSourceActions={id => { const item = documents.find(item => item.sourceId === id); if (item) setContextSource(item.id); }}
               onDocument={id => { setDocumentRequest({ id, nonce: crypto.randomUUID() }); showTool('documents'); }} />
-            <label htmlFor="source-name">Nouvelle source (1–8 caractères)</label><input id="source-name" value={sourceName} onChange={event => setSourceName(event.target.value)} maxLength={8} />
+            {!binaryProject && <><label htmlFor="source-name">Nouvelle source (1–8 caractères)</label><input id="source-name" value={sourceName} onChange={event => setSourceName(event.target.value)} maxLength={8} />
             <Button disabled={busy || !sourceName} onClick={() => { if (files.project) void projectOperation(() => files.project!.add(project.sessionId, sourceName), true); }}>Ajouter source</Button>
             <Button disabled={busy || active.sourceId === project.manifest.entryPoint} onClick={() => { if (files.project) void projectOperation(() => files.project!.setEntry(project.sessionId, active.sourceId)); }}>Définir comme entrée</Button>
-            <p className="muted">Enregistrer sauvegarde uniquement l’onglet actif. Exporter construit tous les buffers, y compris non enregistrés. Les programmes restent indépendants sur le DSK.</p>
+            <p className="muted">Enregistrer sauvegarde uniquement l’onglet actif. Exporter construit tous les buffers, y compris non enregistrés. Les programmes restent indépendants sur le DSK.</p></>}
           </> : <><label htmlFor="project-name">Nom du projet</label><input id="project-name" value={projectName} onChange={event => setProjectName(event.target.value)} maxLength={100} />
             <Button disabled={busy || !files.project} onClick={() => openProject(true)}>Créer projet dans un dossier vide</Button>
             {!files.project && <p className="muted">Projets persistants disponibles dans l’application desktop, pas dans cet aperçu.</p>}</>}
@@ -586,11 +592,11 @@ export function App() {
       <ResizeHandle className="tools-separator" label="Largeur des outils" orientation="vertical" value={Math.min(preferences.sidebarWidth, workspaceSize.width * .3)} min={180} max={Math.min(800, workspaceSize.width * .3)} hidden={!sidebarOpen || panels.tools.floating} onChange={sidebarWidth => setPreferences(previous => ({ ...previous, sidebarWidth }))} />
 
       <section className="listing" aria-label="Éditeur">
-        <div className="tabs" role="tablist" aria-label="Sources ouvertes">{documents.filter(document => !closedTabs.has(document.id)).map(document => <div className="tab-entry" key={document.id}><Button role="tab" aria-selected={document.id === activeId} className="tab" disabled={busy} onClick={() => setActiveId(document.id)} onMouseDown={event => { if (event.button === 1) { event.preventDefault(); event.currentTarget.focus(); } }} onAuxClick={event => { if (event.button === 1) { event.preventDefault(); event.stopPropagation(); requestAnimationFrame(() => closeTab(document.id)); } }} onContextMenu={event => { event.preventDefault(); setContextSource(document.id); }} onKeyDown={event => { if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) { event.preventDefault(); setContextSource(document.id); } }}>{document.name}{document.source !== document.saved ? ' • modifié' : ''}{!!indexed.get(document.id)?.diagnostics.length && <span className="tab-problems" aria-label={String(indexed.get(document.id)!.diagnostics.length) + ' diagnostic(s)'}>{indexed.get(document.id)!.diagnostics.length}</span>}</Button><Button icon="close" className="tab-close" aria-label={`Fermer l’onglet ${document.name}`} title={`Fermer la vue · buffer conservé · ${shortcutLabel(preferences.keymap['close-tab'])}`} disabled={busy || documents.filter(item => !closedTabs.has(item.id)).length < 2} onClick={() => closeTab(document.id)} /></div>)}</div>
+        {binaryProject && project ? <BinaryWorkbenchPanel ref={binaryEditor} key={project.sessionId} sessionId={project.sessionId} manifest={project.manifest} onDirty={setBinaryDirty} onBusy={setBusy} onRun={binaryRevision => { showOutput('emulator'); setEmulatorLaunch({ id: crypto.randomUUID(), request: { sessionId: project.sessionId, sources: [], binaryRevision } }); }} /> : <><div className="tabs" role="tablist" aria-label="Sources ouvertes">{documents.filter(document => !closedTabs.has(document.id)).map(document => <div className="tab-entry" key={document.id}><Button role="tab" aria-selected={document.id === activeId} className="tab" disabled={busy} onClick={() => setActiveId(document.id)} onMouseDown={event => { if (event.button === 1) { event.preventDefault(); event.currentTarget.focus(); } }} onAuxClick={event => { if (event.button === 1) { event.preventDefault(); event.stopPropagation(); requestAnimationFrame(() => closeTab(document.id)); } }} onContextMenu={event => { event.preventDefault(); setContextSource(document.id); }} onKeyDown={event => { if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) { event.preventDefault(); setContextSource(document.id); } }}>{document.name}{document.source !== document.saved ? ' • modifié' : ''}{!!indexed.get(document.id)?.diagnostics.length && <span className="tab-problems" aria-label={String(indexed.get(document.id)!.diagnostics.length) + ' diagnostic(s)'}>{indexed.get(document.id)!.diagnostics.length}</span>}</Button><Button icon="close" className="tab-close" aria-label={`Fermer l’onglet ${document.name}`} title={`Fermer la vue · buffer conservé · ${shortcutLabel(preferences.keymap['close-tab'])}`} disabled={busy || documents.filter(item => !closedTabs.has(item.id)).length < 2} onClick={() => closeTab(document.id)} /></div>)}</div>
         <Editor preferences={preferences} documents={documents} activeId={activeId} analyses={indexed} problemNavigation={problemNavigation} onNextProblem={nextProblem} busy={busy} onChange={(id, value) => setDocuments(items => items.map(item => item.id === id ? { ...item, source: value } : item))} onCommand={setCard}
           navigation={navigation} onWorkspaceReady={value => { editorWorkspace.current = value; }}
           onPosition={(line, column) => setPosition({ line, column })}
-          onSave={() => void save()} onReady={value => { editor.current = value; }} onPalette={() => setPalette('all')} onRenumber={() => setRenumberOpen(true)} onExport={() => void exportDisk()} />
+          onSave={() => void save()} onReady={value => { editor.current = value; }} onPalette={() => setPalette('all')} onRenumber={() => setRenumberOpen(true)} onExport={() => void exportDisk()} /></>}
         <ResizeHandle label="Hauteur des sorties" orientation="horizontal" reverse value={Math.min(preferences.outputHeight, Math.max(120, workspaceSize.height - 180))} min={120} max={Math.min(1200, workspaceSize.height - 180)} hidden={!outputOpen || panels.output.floating} onChange={outputHeight => setPreferences(previous => ({ ...previous, outputHeight }))} />
         <DockPanel className="output-dock" label="Sorties de l’atelier" name="les sorties" hidden={!outputOpen} layout={panels.output} onLayout={value => updatePanel('output', value)} onHide={() => setOutputOpen(false)} tabs={<nav className="output-tabs" aria-label="Panneaux de sortie"><Button aria-pressed={outputTab === 'problems'} onClick={() => showOutput('problems')} icon="warning">Problèmes {allProblems.length}</Button><Button aria-pressed={outputTab === 'emulator'} onClick={() => showOutput('emulator')} icon="chip">CPC</Button><Button aria-pressed={outputTab === 'terminal'} onClick={() => showOutput('terminal')} icon="terminal">Terminal</Button><Button aria-pressed={outputTab === 'symbols'} onClick={() => showOutput('symbols')} icon="search">Symboles</Button><Button aria-pressed={outputTab === 'quality'} onClick={() => showOutput('quality')} icon="warning">Qualité</Button><Button aria-pressed={outputTab === 'basic-tests'} onClick={() => showOutput('basic-tests')} icon="chip">Tests BASIC</Button><Button aria-pressed={outputTab === 'performance'} onClick={() => showOutput('performance')} icon="settings">Performance</Button><Button aria-pressed={outputTab === 'git-log'} onClick={() => showOutput('git-log')} icon="git">Git</Button></nav>}><div hidden={outputTab !== 'problems'}><ProblemsPanel documents={documents} entries={analysis.entries} onReveal={revealProblem} onRetry={analysis.retry} /></div>
         {outputOpen && outputTab === 'performance' && <PerformancePanel visible snapshot={analysis} documents={documents} />}
@@ -604,7 +610,7 @@ export function App() {
       </section>
       <ResizeHandle label="Largeur de l’assistant" orientation="vertical" reverse value={Math.min(preferences.agentWidth, Math.max(240, workspaceSize.width * .35))} min={240} max={Math.min(800, Math.max(240, workspaceSize.width * .35))} hidden={!agentOpen || panels.agent.floating} onChange={agentWidth => setPreferences(previous => ({ ...previous, agentWidth }))} />
       <DockPanel as="aside" className="ai-sidebar" label="Assistant IA" name="l’agent IA" hidden={!agentOpen} layout={panels.agent} onLayout={value => updatePanel('agent', value)} onHide={() => setAgentOpen(false)}>
-        <AgentPanel sessionId={project?.sessionId} documentCount={project?.manifest.documents.length ?? 0} buffers={documents.map(document => ({ id: document.sourceId, source: document.source }))} busy={busy} onRunning={setAgentBusy} onState={acceptAgent} onNotify={notify} />
+        <AgentPanel sessionId={binaryProject ? undefined : project?.sessionId} documentCount={project?.manifest.documents.length ?? 0} buffers={documents.map(document => ({ id: document.sourceId, source: document.source }))} busy={busy} onRunning={setAgentBusy} onState={acceptAgent} onNotify={notify} />
       </DockPanel>
     </div>
     {githubOpen && <GitHubDialog busy={busy} onClone={cloneProject} {...(project ? { onRemote: associateRemote } : {})} onClose={() => setGithubOpen(false)} />}

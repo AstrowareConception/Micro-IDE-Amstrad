@@ -13,6 +13,14 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
     extract: request => ipcRenderer.invoke('disk-import:extract', request),
     create: request => ipcRenderer.invoke('disk-import:create', request),
   }),
+  binary: Object.freeze({
+    load: sessionId => ipcRenderer.invoke('binary:load', { sessionId }),
+    inspect: (sessionId, assetId) => ipcRenderer.invoke('binary:inspect', { sessionId, assetId }),
+    generate: (sessionId, assetId, offset, length, origin, kind) => ipcRenderer.invoke('binary:generate', { sessionId, assetId, offset, length, origin, kind }),
+    save: (sessionId, revision, regions) => ipcRenderer.invoke('binary:save', { sessionId, revision, regions }),
+    verify: (sessionId, revision) => ipcRenderer.invoke('binary:verify', { sessionId, revision }),
+    exportDisk: (sessionId, revision) => ipcRenderer.invoke('binary:export', { sessionId, revision }),
+  }),
   history: Object.freeze({
     list: sessionId => ipcRenderer.invoke('history:list', { sessionId }),
     version: (sessionId, snapshotId, id, revision) => ipcRenderer.invoke('history:version', { sessionId, snapshotId, id, revision }),

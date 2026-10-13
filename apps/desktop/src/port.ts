@@ -30,6 +30,7 @@ export interface DesktopPort {
     extract?(request:{id:string;fileId:string;listing?:string}):Promise<FileResult|Failure|null>;
     create(request: DiskImportRequest): Promise<ProjectSnapshot | Failure | null>;
   };
+  binary?: import('../../../packages/z80/src/workbench.ts').BinaryWorkbenchPort;
   feedback?: { open(input: FeedbackInput): Promise<{ url: string; prefilled: boolean } | Failure> };
   agent?: AgentPort;
   firmware?: FirmwarePort;

@@ -27,7 +27,7 @@ Les archives Actions initiales 0.38.1 du 7 octobre restent disponibles jusqu’a
 | Complétion, diagnostics, recherche et renumérotation | Projets, documents, agent OpenAI et rapports de qualité | Historique, brouillons, checkpoints et Git/GitHub |
 | F5 depuis les buffers, CPC 6128 intégré et export DSK | Thèmes, profils, raccourcis et panneaux ajustables | Sources locales et utilisation sans IA possible |
 
-**Version du code : alpha desktop 0.41.4 — compatibilité des DSK historiques.** Les binaires publiés peuvent correspondre à une version antérieure : consulter la version de la release. L’édition et la construction DSK fonctionnent sans ROM ni clé IA. L’exécution demande vos ROM locales ; l’agent utilise votre accès API OpenAI. La notice distingue les fonctions disponibles des évolutions encore prévues.
+**Version du code : alpha desktop 0.41.5 — atelier Z80 et projets binaires.** Les binaires publiés peuvent correspondre à une version antérieure : consulter la version de la release. L’édition et la construction DSK fonctionnent sans ROM ni clé IA. L’exécution demande vos ROM locales ; l’agent utilise votre accès API OpenAI. La notice distingue les fonctions disponibles des évolutions encore prévues.
 
 [Installer et démarrer](docs/guide-utilisateur.md#premiers-pas) · [Exécuter avec F5](docs/guide-utilisateur.md#execution) · [Découvrir l’agent](docs/guide-utilisateur.md#agent) · [Personnaliser l’atelier](docs/guide-utilisateur.md#personnalisation) · [Roadmap](docs/specifications/17-roadmap-ide-complet.md)
 
@@ -36,6 +36,8 @@ Les archives Actions initiales 0.38.1 du 7 octobre restent disponibles jusqu’a
 **Récupération et protection 0.41.4 :** import BASIC ASCII/tokenisé/protégé depuis DSK ou fichier CPC, ressources conservées au build, désassemblage Z80 documentaire et trois exports : obfuscation, BASIC protégé, combinaison. [Guide, preuves et limites](docs/implementation/recovery-protection-alpha.md). Variante historique à en-têtes remplis d’espaces acceptée ; lancement de Nebulus et Vindicator après reconstruction observé dans le moteur intégré. Sources claires préservées ; aucune promesse de reconstituer un source disparu à la compilation.
 
 **Évolutions spécifiées le 13 octobre :** [importer une disquette DSK en projet éditable](docs/specifications/20-import-dsk-projet.md), puis [récupérer les sources et explorer le code Z80](docs/specifications/21-retro-ingenierie-z80.md). BASIC reconnu par son contenu, ressources préservées, désassemblage et assistance IA ; aucune promesse de retrouver exactement une source disparue à la compilation.
+
+**Atelier Z80 0.41.5 :** projets entièrement binaires, zones code/données, annotations persistantes, copies assembleur réassemblables et test/export des modifications à taille constante. [Mode d’emploi et limites](docs/implementation/binary-workbench-alpha.md). Chargeur de Deflektor réassemblé à l’identique ; modification d’un programme témoin vérifiée dans le CPC.
 
 ## Nouveautés et guides techniques
 
