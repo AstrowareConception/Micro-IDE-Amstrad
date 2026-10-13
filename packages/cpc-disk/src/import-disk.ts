@@ -13,7 +13,7 @@ export type DiskImportPreview = {
   id: string; name: string; sha256: string; profile: DiskInspection['profile'];
   files: Omit<DiskImportFile, 'records'>[];
 };
-export interface DiskImportRequest { id: string; name: string; sourceIds: string[]; entryId: string }
+export interface DiskImportRequest { id: string; name: string; sourceIds: string[]; entryId: string; kind?: 'binary' }
 
 /** Structural transport check, not a claim that the program has valid BASIC syntax. */
 function asciiSource(records: Uint8Array): string | undefined {
@@ -69,6 +69,11 @@ export function inspectCpcFile(name:string, records:Uint8Array, id='file-0'):Dis
 }
 
 export function selectImportSources(inspection: DiskInspection, request: DiskImportRequest): DiskImportFile[] {
+  if (request?.kind === 'binary') {
+    if (typeof request.name !== 'string' || !request.name.trim() || request.name.length > 100 || !Array.isArray(request.sourceIds) || request.sourceIds.length !== 0 || !inspection.files.some(file => file.id === request.entryId)) throw Error('Projet binaire : nom, entrée et aucune source BASIC requis.');
+    return [];
+  }
+  if (request?.kind !== undefined) throw Error('Type d’import inconnu.');
   if (!request || typeof request.name !== 'string' || !request.name.trim() || request.name.length > 100 ||
       !Array.isArray(request.sourceIds) || request.sourceIds.length < 1 || request.sourceIds.length > 64 ||
       new Set(request.sourceIds).size !== request.sourceIds.length || !request.sourceIds.includes(request.entryId))

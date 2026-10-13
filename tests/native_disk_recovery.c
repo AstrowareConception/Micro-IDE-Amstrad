@@ -29,7 +29,7 @@ static void capture(const char *prefix, int stage) {
         const uint8_t rgb[3] = {color & 255, (color >> 8) & 255, (color >> 16) & 255};
         assert(fwrite(rgb, 1, 3, file) == 3);
     }
-    fclose(file); printf("{\"stage\":%d,\"pc\":%u}\n", stage, machine.cpu.pc);
+    fclose(file); printf("{\"stage\":%d,\"pc\":%u,\"peek9000\":%d}\n", stage, machine.cpu.pc, cpc_bridge_peek(0x9000));
 }
 int main(int argc, char **argv) {
     assert(argc >= 9 && argc % 2 == 1);

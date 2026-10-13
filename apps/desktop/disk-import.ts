@@ -76,7 +76,7 @@ export class DiskImportSession {
     if (!(await lstat(root)).isDirectory()) throw new Error('Dossier parent requis.');
     const id = randomUUID(), destination = join(root, `CPC-import-${id}`), staging = join(root, `.microide-import-${id}`);
     const assets = this.inspection.files.filter(file => !request.sourceIds.includes(file.id));
-    const manifest = parseProject({ ...newProject(request.name.trim(), id), entryPoint: request.entryId,
+    const manifest = parseProject({ ...newProject(request.name.trim(), id), ...(request.kind === 'binary' ? { kind: 'binary' as const } : {}), entryPoint: request.entryId,
       assets: assets.map(file => ({ id: file.id, path: `assets/${file.id}.bin`, cpcName: file.name, sha256: digest(file.records), byteLength: file.records.length })),
       sources: sources.map(file => ({ id: file.id, path: `src/${file.id}.bas`, cpcName: file.name })) });
     await mkdir(staging, { mode: 0o700 });

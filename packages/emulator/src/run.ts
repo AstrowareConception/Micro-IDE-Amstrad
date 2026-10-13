@@ -1,6 +1,7 @@
+import { decodeAmsdosBinary } from '../../cpc-disk/src/amsdos-binary.ts';
 import { buildListingDisk } from '../../basic-language/src/build.ts';
 import { buildProjectDisk, type ProjectManifest } from '../../workspace/src/project.ts';
-export interface RunRequest { source?: string; sessionId?: string; sources?: { id: string; source: string }[] }
+export interface RunRequest { binaryRevision?: string; source?: string; sessionId?: string; sources?: { id: string; source: string }[] }
 export interface RunImage { disk: Uint8Array; entry: string; label: string; sha256: string; roms: Record<'os' | 'basic' | 'amsdos', Uint8Array>; firmware: Record<'os' | 'basic' | 'amsdos', string> }
 export interface EmulatorPort {
   prepare(request: RunRequest): Promise<RunImage | { error: string }>;
@@ -24,6 +25,13 @@ export function runDisk(value: unknown, manifest?: ProjectManifest, assets: impo
     return { id: item.id, source: item.source };
   });
   const disk = buildProjectDisk(manifest, sources, assets);
+  if (manifest.kind === 'binary') {
+    const entry = manifest.assets.find(asset => asset.id === manifest.entryPoint)!;
+    const raw = assets.find(asset => asset.id === entry.id)!;
+    const binary = decodeAmsdosBinary(raw.bytes);
+    if (binary.entryAddress < binary.loadAddress || binary.entryAddress >= binary.loadAddress + binary.bytes.length) throw Error('Entrée binaire hors charge utile ; exécution automatique refusée.');
+    return { disk, entry: entry.cpcName };
+  }
   return { disk, entry: manifest.sources.find(source => source.id === manifest.entryPoint)!.cpcName };
 }
 export function runCommand(entry: string): string {

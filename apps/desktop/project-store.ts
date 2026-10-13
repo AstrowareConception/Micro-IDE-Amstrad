@@ -181,6 +181,7 @@ export class ProjectStore {
     return result;
   }
   async agentState(buffers: { id: string; source: string }[]): Promise<AgentWorkspaceState> {
+    if (this.manifest.kind === 'binary') throw Error('L’agent BASIC ne modifie pas encore les projets binaires.');
     await this.checkManifest();
     if (buffers.length !== this.manifest.sources.length || new Set(buffers.map(file => file.id)).size !== buffers.length) throw new Error('Snapshot incomplet ou dupliqué.');
     const files = [];

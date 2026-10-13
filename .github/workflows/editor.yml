@@ -94,6 +94,7 @@ jobs:
           git clone --no-checkout https://github.com/floooh/chips-test.git .cache/firmware-reference
           git -C .cache/firmware-reference checkout 3785836e76c43922f78a50e1f8adfed259ab9672
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-basic-recovery.mjs
+          CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-binary-workbench.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node tests/firmware-runtime.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node tests/basic-test-runtime-smoke.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node tests/basic-tests-firmware-smoke.mjs
@@ -113,6 +114,8 @@ jobs:
         with:
           name: editor-alpha-evidence
           path: |
+            out/binary-workbench-qualification.json
+            out/binary-workbench-alpha.png
             out/basic-analysis-benchmark.json
             out/basic-diagnostics-alpha.png
             out/basic-diagnostics-failure.png

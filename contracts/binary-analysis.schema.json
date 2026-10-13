@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/AstrowareConception/Micro-IDE-Amstrad/contracts/binary-analysis.schema.json",
+  "title": "Analyse Z80 liée aux ressources originales",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "projectId",
+    "regions"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "projectId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "regions": {
+      "type": "array",
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "assetId",
+          "sha256",
+          "offset",
+          "length",
+          "origin",
+          "kind",
+          "note",
+          "listing"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+          },
+          "assetId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 184320
+          },
+          "length": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 16384
+          },
+          "origin": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "kind": {
+            "enum": [
+              "code",
+              "data"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "listing": {
+            "type": "string",
+            "maxLength": 1048576
+          }
+        }
+      }
+    }
+  }
+}

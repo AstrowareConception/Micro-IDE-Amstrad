@@ -354,3 +354,9 @@ select{font:inherit;width:100%;margin:8px 0;background:var(--input);color:inheri
 .disk-import-dialog label.distribution-option { display: flex; flex-direction: row; align-items: center; gap: .65rem; margin: .65rem 0; }
 .disk-import-dialog .distribution-option input { width: auto; margin: 0; }
 .disk-import-dialog textarea { width: 100%; font-family: monospace; }
+.binary-workbench { flex: 1; min-height: 0; overflow: auto; padding: 20px; }
+.binary-workbench fieldset { min-width: 0; margin: 12px 0; }
+.binary-workbench textarea { width: 100%; resize: vertical; }
+.binary-workbench pre, .binary-listing { font-family: monospace; white-space: pre; overflow: auto; }
+.binary-workbench .binary-range { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
+.binary-workbench nav, .binary-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }

@@ -52,7 +52,7 @@
     },
     "sources": {
       "type": "array",
-      "minItems": 1,
+      "minItems": 0,
       "maxItems": 64,
       "items": {
         "type": "object",
@@ -190,6 +190,9 @@
           "const": "cpc-name"
         }
       }
+    },
+    "kind": {
+      "const": "binary"
     }
   },
   "$defs": {
@@ -471,5 +474,36 @@
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "kind": {
+            "const": "binary"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "sources": {
+            "maxItems": 0
+          },
+          "assets": {
+            "minItems": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "sources": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ]
 }

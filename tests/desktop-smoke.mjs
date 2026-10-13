@@ -1,3 +1,4 @@
+import { verifyBinaryWorkbenchDesktop } from './binary-workbench-smoke.mjs';
 import { verifyAgentDesktop } from './agent-desktop-smoke.mjs';
 import { verifyDiskImportDesktop } from './disk-import-smoke.mjs';
 import assert from 'node:assert/strict';
@@ -1145,6 +1146,7 @@ try {
 
   await verifyGitDesktop(page, desktop, temporary);
   await verifyDiskImportDesktop(page, desktop, temporary);
+  await verifyBinaryWorkbenchDesktop(page, desktop, temporary);
   console.log('Electron smoke: native Git init/status/diffs/stage/unstage, TXT/MD, real PNG/JPEG decode and PDF.js worker import/pagination/reopen/corrupt-file rejection, scoped PDF page excerpts and progressive multimodal agent outputs, projects and firmware checks passed. No live API, real vision or CPC execution claimed.');
 } catch (error) {
   await mkdir('out', { recursive: true });

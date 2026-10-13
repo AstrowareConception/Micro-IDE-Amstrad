@@ -10,6 +10,7 @@ import { feedbackReport } from './feedback.ts';
 import { RecentProjectsStore } from './recent-projects-store.ts';
 import { ProjectStore } from './project-store.ts';
 import { distributionDisk, type DistributionOptions } from '../../packages/cpc-disk/src/distribution.ts';
+import { BinaryWorkbench } from './binary-workbench.ts';
 import { DiskImportSession } from './disk-import.ts';
 import type { DiskImportRequest } from '../../packages/cpc-disk/src/import-disk.ts';
 import { ProjectExplorer } from './project-explorer.ts';
@@ -133,7 +134,7 @@ window.on('close', event => {
   if (inFlight) { event.preventDefault(); dialog.showMessageBoxSync(window, { message: 'Attendez la fin de l’opération disque avant de fermer la fenêtre.' }); return; }
   if (agent.running) { event.preventDefault(); dialog.showMessageBoxSync(window, { message: 'Arrêtez la mission agent avant de fermer la fenêtre.' }); return; }
   if (dirty && dialog.showMessageBoxSync(window, { type: 'warning', buttons: ['Annuler', 'Quitter sans enregistrer'],
-    defaultId: 0, cancelId: 0, message: 'Le listing contient des modifications non enregistrées.' }) === 0) event.preventDefault();
+    defaultId: 0, cancelId: 0, message: 'Le projet contient des modifications non enregistrées.' }) === 0) event.preventDefault();
 });
 ipcMain.on('listing:dirty', (event, value: unknown) => {
   try { trusted(event); if (typeof value === 'boolean') dirty = value; }
@@ -270,13 +271,31 @@ route('disk-import:create', async payload => {
   const root = await diskImport.create(selection.filePaths[0], request);
   diskImport = undefined;
   const opened = await openProjectFolder(root);
-  return opened ? { ...opened, recentProjectsNotice: 'Projet importé. Sources BASIC et ressources importées ; consultez import-report.json pour les conversions et limites.' } : null;
+  return opened ? { ...opened, recentProjectsNotice: 'Projet importé. Consultez import-report.json pour les conversions, les ressources et les limites.' } : null;
 });
 function projectRequest(payload: unknown): { store: ProjectStore; value: Record<string, unknown> } {
   if (!project || !payload || typeof payload !== 'object') throw new Error('Aucun projet ouvert.');
   const value = payload as Record<string, unknown>; project.assertSession(value.sessionId);
   return { store: project, value };
 }
+route('binary:load', async payload => { const { store } = projectRequest(payload); return new BinaryWorkbench(store).load(); }, true);
+route('binary:inspect', async payload => { const { store, value } = projectRequest(payload); if (typeof value.assetId !== 'string') throw Error('Ressource requise.'); return new BinaryWorkbench(store).inspect(value.assetId); }, true);
+route('binary:generate', async payload => {
+  const { store, value } = projectRequest(payload);
+  if (typeof value.assetId !== 'string' || typeof value.offset !== 'number' || typeof value.length !== 'number' || typeof value.origin !== 'number' || value.kind !== 'code' && value.kind !== 'data') throw Error('Plage requise.');
+  return new BinaryWorkbench(store).generate(value.assetId, value.offset, value.length, value.origin, value.kind);
+});
+route('binary:save', async payload => { const { store, value } = projectRequest(payload); return new BinaryWorkbench(store).save(value.revision, value.regions); });
+route('binary:verify', async payload => { const { store, value } = projectRequest(payload); const result = await new BinaryWorkbench(store).compile(value.revision); return { changedBytes: result.changedBytes, regions: result.regions }; });
+route('binary:export', async payload => {
+  const { store, value } = projectRequest(payload), workbench = new BinaryWorkbench(store);
+  await workbench.disk(value.revision);
+  const selection = await dialog.showSaveDialog(window, { defaultPath: 'binary-modified.dsk', filters: [{ name: 'Disquette CPC DATA', extensions: ['dsk'] }] });
+  if (selection.canceled || !selection.filePath) return null;
+  await store.assertExportDestination(selection.filePath);
+  const result = await workbench.disk(value.revision);
+  await atomicWrite(selection.filePath, result.disk); return { name: selection.filePath.split(/[\\/]/).at(-1) };
+});
 function testSuiteStore(store: ProjectStore) { return new BasicTestSuiteStore(store.root, store.manifest.projectId); }
 route('basic-tests:load', async payload => { const { store } = projectRequest(payload); await store.assertCurrent(); return testSuiteStore(store).load(); });
 route('basic-tests:save', async payload => { const { store, value } = projectRequest(payload); await store.assertCurrent(); return testSuiteStore(store).save(value.revision, value.suites, store.manifest.sources.map(source => source.id)); });
@@ -637,7 +656,15 @@ route('emulator:prepare', async payload => {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new Error('Snapshot d’exécution invalide.');
   const value = payload as Record<string, unknown>;
   let image, label = 'Listing courant';
-  if (Object.hasOwn(value, 'sessionId')) { const { store } = projectRequest(payload); await store.assertCurrent(); image = runDisk(value, store.manifest, await store.readAssets()); label = store.manifest.name; }
+  if (Object.hasOwn(value, 'sessionId')) {
+    const { store } = projectRequest(payload); await store.assertCurrent();
+    if (Object.hasOwn(value, 'binaryRevision')) {
+      if (store.manifest.kind !== 'binary' || typeof value.binaryRevision !== 'string' || !/^[a-f0-9]{64}$/.test(value.binaryRevision)) throw Error('Révision d’analyse binaire requise.');
+      const { binaryRevision, ...request } = value;
+      const compiled = await new BinaryWorkbench(store).compile(binaryRevision);
+      image = runDisk(request, store.manifest, compiled.assets); label = store.manifest.name + ' — copie Z80 modifiée';
+    } else { image = runDisk(value, store.manifest, await store.readAssets()); label = store.manifest.name; }
+  }
   else image = runDisk(value);
   const status = await firmware.status();
   if (!status.complete) throw new Error('ROM CPC manquantes ou invalides : importez OS, BASIC 1.1 et AMSDOS dans Configuration ROM avant Exécuter.');

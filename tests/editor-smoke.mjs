@@ -1,3 +1,4 @@
+import { verifyBinaryWorkbench } from './binary-workbench-smoke.mjs';
 import { verifyBasicSymbols } from './basic-symbols-smoke.mjs';
 import { verifyRecoveryProtection } from './recovery-protection-smoke.mjs';
 import { verifyDiskImport } from './disk-import-smoke.mjs';
@@ -345,6 +346,7 @@ try {
   await verifyRecentProjects(browser, errors);
   await verifyDiskImport(browser);
   await verifyRecoveryProtection(browser);
+  await verifyBinaryWorkbench(browser);
   await verifyGitWorkbench(browser, errors);
   await verifyAgentWorkbench(browser, errors);
   await verifyProjectExplorer(browser, errors);

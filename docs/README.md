@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.41.4
+# CPCéleste — Dossier de conception et réalisation — version 0.41.5
+
+**Atelier Z80 0.41.5 :** [guide](implementation/binary-workbench-alpha.md), [ADR 0063](adr/0063-atelier-projets-binaires.md). Projets sans BASIC, annotations liées aux empreintes, réassemblage de copies et test/export à taille constante. Lots B/D partiels, IA et relocalisation hors périmètre.
 
 **Récupération et protection 0.41.3 :** [guide de réalisation](implementation/recovery-protection-alpha.md), [ADR 0062](adr/0062-recuperation-distribution-basic.md). Import BASIC tokenisé/protégé, ressources, trois modes de distribution et lecture Z80 ; limites explicites.
 
