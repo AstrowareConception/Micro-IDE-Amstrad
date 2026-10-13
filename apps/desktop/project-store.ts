@@ -1,3 +1,4 @@
+import { BinaryWorkbench } from './binary-workbench.ts';
 import { lstat, realpath, readFile, writeFile, rename, unlink, mkdir, readdir } from 'node:fs/promises';
 import { join, dirname, relative, isAbsolute, basename, extname } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
@@ -181,7 +182,11 @@ export class ProjectStore {
     return result;
   }
   async agentState(buffers: { id: string; source: string }[]): Promise<AgentWorkspaceState> {
-    if (this.manifest.kind === 'binary') throw Error('L’agent BASIC ne modifie pas encore les projets binaires.');
+    if (this.manifest.kind === 'binary') {
+      if (buffers.length) throw Error('Un projet binaire ne reçoit pas de buffers BASIC.');
+      const binaryAnalysis = await new BinaryWorkbench(this).load();
+      return { sessionId: this.sessionId, manifest: structuredClone(this.manifest), files: [], assets: await this.readAssets(), binaryAnalysis };
+    }
     await this.checkManifest();
     if (buffers.length !== this.manifest.sources.length || new Set(buffers.map(file => file.id)).size !== buffers.length) throw new Error('Snapshot incomplet ou dupliqué.');
     const files = [];
@@ -200,6 +205,11 @@ export class ProjectStore {
   /** Main-owned candidate; journal the entire source/manifest mutation before writing. */
   async applyAgentState(state: AgentWorkspaceState): Promise<void> {
     this.assertSession(state.sessionId); await this.checkManifest();
+    if (this.manifest.kind === 'binary') {
+      if (JSON.stringify(state.manifest) !== JSON.stringify(this.manifest) || state.files.length || !state.binaryAnalysis) throw Error('Snapshot binaire invalide.');
+      state.binaryAnalysis = await new BinaryWorkbench(this).save(state.binaryAnalysis.revision, state.binaryAnalysis.regions);
+      return;
+    }
     await new SaveJournal(this.root, this.manifest, this.manifestHash).assertResolved();
     const manifest = parseProject(state.manifest);
     if (JSON.stringify(manifest.assets) !== JSON.stringify(this.manifest.assets)) throw new Error('Ressources du projet modifiées ; mission refusée.');

@@ -1,3 +1,4 @@
+import { BinaryWorkspaceTools, BINARY_INSTRUCTIONS } from '../../packages/agent/src/binary-tools.ts';
 import { mkdir, writeFile, rename, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
@@ -10,7 +11,7 @@ import { OpenAIProvider, DEFAULT_MODEL } from './openai-provider.ts';
 import type { ProjectStore } from './project-store.ts';
 
 const digest = (value: string | Uint8Array) => createHash('sha256').update(value).digest('hex');
-interface Job { id: string; store: ProjectStore; initial: AgentWorkspaceState; tools: WorkspaceTools; result: AgentResult; running: boolean; events: AgentEvent[]; steering: string[]; abort: AbortController; directory: string; documentIds: string[]; state: AgentRunState; budget: AgentBudget; provider: OpenAIProvider | undefined; model: string; pricing?: PricingProfile | undefined; continuations: number; restored: boolean }
+interface Job { id: string; store: ProjectStore; initial: AgentWorkspaceState; tools: WorkspaceTools | BinaryWorkspaceTools; result: AgentResult; running: boolean; events: AgentEvent[]; steering: string[]; abort: AbortController; directory: string; documentIds: string[]; state: AgentRunState; budget: AgentBudget; provider: OpenAIProvider | undefined; model: string; pricing?: PricingProfile | undefined; continuations: number; restored: boolean }
 export class AgentController {
   private provider: OpenAIProvider | undefined;
   private job: Job | undefined;
@@ -83,14 +84,17 @@ export class AgentController {
     if (!this.provider) throw new Error('Configurez une clé API OpenAI.');
     if (typeof objective !== 'string' || !objective.trim() || objective.length > 20000) throw new Error('Mission requise, 20 000 caractères maximum.');
     const budget = parseBudget(budgetInput);
-    const initial = await store.agentState(buffers); const corpus = await this.corpus();
+    const initial = await store.agentState(buffers); const binary = initial.manifest.kind === 'binary';
+    if (binary && !initial.binaryAnalysis?.regions.length) throw Error('Enregistrez une zone Z80 avant la mission.');
+    if (binary && includeDocuments) throw Error('Documents externes non disponibles pour les missions Z80.');
+    const corpus = binary ? [] : await this.corpus();
     const documents = includeDocuments ? await store.agentDocuments() : [];
     const id = randomUUID(), directory = join(this.storage, id); await mkdir(directory, { recursive: true, mode: 0o700 });
-    const context = { target: initial.manifest.target, entryPoint: initial.manifest.entryPoint, files: initial.manifest.sources, documents: documents.map(item => ({ id: item.id, originalName: item.originalName, mediaType: item.mediaType, sha256: item.sha256, bytes: item.bytes })), corpusVersion: 'initial-import-1' };
+    const context = { kind: binary ? 'binary' : 'basic', target: initial.manifest.target, entryPoint: initial.manifest.entryPoint, files: binary ? initial.manifest.assets.map(({ id, cpcName, byteLength, sha256 }) => ({ id, cpcName, byteLength, sha256 })) : initial.manifest.sources, documents: documents.map(item => ({ id: item.id, originalName: item.originalName, mediaType: item.mediaType, sha256: item.sha256, bytes: item.bytes })), corpusVersion: 'initial-import-1' };
     const job: Job = { id, store, initial, directory, documentIds: documents.map(item => item.id), abort: new AbortController(), steering: [], events: [], running: true,
       state: createRunState(objective, context), budget, provider: this.provider, model: this.provider.model, pricing: this.prices.get(this.provider.model), continuations: 0, restored: false,
       tools: undefined as unknown as WorkspaceTools, result: { status: 'blocked', turns: 0, calls: 0, tokens: 0, summary: 'Mission en cours.' } };
-    job.tools = new WorkspaceTools(initial, async state => {
+    const persist = async (state: AgentWorkspaceState) => {
       if (job.abort.signal.aborted) throw new Error('cancelled');
       await this.record(job, state, 'prepared');
       await store.applyAgentState(state);
@@ -98,19 +102,24 @@ export class AgentController {
       job.tools.state = structuredClone(state);
       job.tools.buildVerified = false;
       try { await this.record(job, state, 'committed'); } catch { job.abort.abort(); throw new Error('Écriture journal interrompue après commit ; modifications conservées.'); }
-    }, digest, corpus, documents);
+    };
+    job.tools = binary ? new BinaryWorkspaceTools(initial, persist, digest) : new WorkspaceTools(initial, persist, digest, corpus, documents);
     await this.record(job, initial, 'initial'); this.job = job;
     this.launch(job);
     return { taskId: id };
   }
   private launch(job: Job): void {
     const provider = job.provider; if (!provider) throw new Error('Connexion IA modifiée ; nouvelle mission requise.');
-    void runAgent({ model: provider, tools: job.tools, objective: '', context: {}, state: job.state, pricing: job.pricing, ...job.budget,
+    void runAgent({ model: job.initial.binaryAnalysis ? { respond: (input, tools, signal) => provider.respond(input, tools, signal, BINARY_INSTRUCTIONS) } : provider, tools: job.tools, objective: '', context: {}, state: job.state, pricing: job.pricing, ...job.budget,
       signal: AbortSignal.any([job.abort.signal, AbortSignal.timeout(15 * 60 * 1000)]), progress: result => { job.result = result; },
       emit: event => { job.events.push(event); if (job.events.length > 300) job.events.shift(); }, takeSteering: () => job.steering.splice(0),
     }).then(async result => {
+      if (result.status === 'completed' && job.tools.state.binaryAnalysis) {
+        const current = await job.store.agentState([]);
+        if (current.binaryAnalysis?.revision !== job.tools.state.binaryAnalysis.revision) result = { ...result, status: 'blocked', summary: result.summary + '\nAnalyse modifiée ailleurs ; validation périmée.' };
+      }
       job.result = result;
-      if (result.status === 'completed') job.result = { ...result, summary: `${result.summary}\nValidation IDE : DSK structurel uniquement. Aucun programme exécuté sur CPC.` };
+      if (result.status === 'completed') job.result = { ...result, summary: `${result.summary}\nValidation IDE : ${job.initial.binaryAnalysis ? 'réassemblage et DSK structurel uniquement.' : 'DSK structurel uniquement.'} Aucun programme exécuté sur CPC.` };
       if (result.status === 'completed' && !job.tools.buildVerified) job.result = { ...result, status: 'blocked', summary: `${result.summary}\nAucune construction réussie de la révision finale ; mission non validée.` };
       try { await this.record(job, job.tools.state, 'finished'); }
       catch { job.result = { ...job.result, status: 'failed', summary: 'Journal final non écrit ; modifications terminées conservées.' }; }
@@ -130,7 +139,10 @@ export class AgentController {
   private get(id: unknown): Job { if (!this.job || this.job.id !== id) throw new Error('Mission périmée.'); return this.job; }
   status(id: unknown): AgentView {
     const job = this.get(id); const changed = job.tools.state.files.filter(file => job.initial.files.find(old => old.id === file.id)?.source !== file.source).map(file => file.path);
-    return structuredClone({ ...job.result, taskId: job.id, running: job.running, events: job.events, workspace: job.tools.state, changed, before: job.initial.files.filter(file => changed.includes(file.path)).map(({ id, source }) => ({ id, source })), buildVerified: job.tools.buildVerified,
+    if (job.initial.binaryAnalysis && JSON.stringify(job.initial.binaryAnalysis.regions) !== JSON.stringify(job.tools.state.binaryAnalysis?.regions)) changed.push('binary-z80.json');
+    const { assets: _assets, ...binaryWorkspace } = job.tools.state;
+    const workspace = job.tools.state.binaryAnalysis ? binaryWorkspace : job.tools.state;
+    return structuredClone({ ...job.result, taskId: job.id, running: job.running, events: job.events, workspace, changed, before: job.initial.files.filter(file => changed.includes(file.path)).map(({ id, source }) => ({ id, source })), ...(job.initial.binaryAnalysis ? { binaryBefore: job.initial.binaryAnalysis } : {}), buildVerified: job.tools.buildVerified,
       model: job.model, budget: job.budget, pricing: job.pricing, resumable: !!job.provider && !job.running && !job.restored && job.continuations < 10 && job.result.status === 'paused-limit' && !/^Budget de contexte|^Stagnation/.test(job.result.summary) });
   }
   cancel(id: unknown): { ok: boolean } { this.get(id).abort.abort(); return { ok: true }; }
@@ -143,9 +155,11 @@ export class AgentController {
     const job = this.get(id); if (job.running) throw new Error('Arrêtez la mission avant restauration.');
     const now = job.tools.state;
     if (buffers.length !== now.files.length || new Set(buffers.map(file => file.id)).size !== buffers.length || now.files.some(file => buffers.find(buffer => buffer.id === file.id)?.source !== file.source)) throw new Error('stale-read : modifications manuelles postérieures conservées ; restauration refusée.');
-    await this.record(job, job.initial, 'restore-prepared'); await job.store.applyAgentState(job.initial);
-    job.tools.state = structuredClone(job.initial); job.tools.buildVerified = false;
+    const restored = structuredClone(job.initial);
+    if (restored.binaryAnalysis) restored.binaryAnalysis.revision = now.binaryAnalysis!.revision;
+    await this.record(job, restored, 'restore-prepared'); await job.store.applyAgentState(restored);
+    job.tools.state = restored; job.tools.buildVerified = false;
     job.restored = true;
-    await this.record(job, job.initial, 'restored'); return structuredClone(job.initial);
+    await this.record(job, restored, 'restored'); return structuredClone(restored);
   }
 }

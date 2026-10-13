@@ -1,3 +1,4 @@
+import { BinaryWorkspaceTools } from '../packages/agent/src/binary-tools.ts';
 import assert from 'node:assert/strict';
 import { readFile, writeFile, mkdtemp, mkdir, chmod } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -24,11 +25,16 @@ const {listing}=await workbench.generate(asset.id,0,7,0x8000,'code');
 const region={id:'routine',assetId:asset.id,sha256:asset.sha256,offset:0,length:7,origin:0x8000,kind:'code',note:'Write an observable byte and stay in a loop',listing};
 let analysis=await workbench.save(null,[region]);const reports=[];
 for(const [name,expected] of [['unchanged',77],['edited',78]]) {
-  if(name==='edited')analysis=await workbench.save(analysis.revision,[{...region,listing:listing.replace('LD A,$4D','LD A,$4E')}]);
+  if(name==='edited') {
+    const tools=new BinaryWorkspaceTools(await store.agentState([]),state=>store.applyAgentState(state),value=>createHash('sha256').update(value).digest('hex'));
+    const read=await tools.execute('binary_read_region',{id:region.id,startLine:1,endLine:200});await tools.execute('binary_dialect',{});
+    await tools.execute('binary_replace_region',{id:region.id,expectedHash:read.hash,note:region.note+' — mutation par outil agent contrôlé',listing:listing.replace('LD A,$4D','LD A,$4E')});
+    const build=await tools.execute('binary_build',{});assert.equal(build.changedBytes,1);analysis=tools.state.binaryAnalysis;
+  }
   const compiled=await workbench.disk(analysis.revision),disk=`out/binary-${name}.dsk`;await writeFile(disk,compiled.disk);
   if(name==='unchanged')assert.deepEqual(readDataDisk(compiled.disk),readDataDisk(original));else assert.equal(compiled.changedBytes,1);
   const observations=run(exe,[...roms,disk,'BOOT.BIN',`out/binary-${name}`,'5','']).trim().split('\n').map(line=>JSON.parse(line));
   assert.equal(observations.at(-1).peek9000,expected);reports.push({name,expected,observations});
 }
 assert.deepEqual(await readFile(path),Buffer.from(original));
-await writeFile('out/binary-workbench-qualification.json',JSON.stringify({firmware:hashes,reports,originalUnchanged:true,independentEmulator:false},null,2)+'\n');console.log(JSON.stringify(reports));
+await writeFile('out/binary-workbench-qualification.json',JSON.stringify({firmware:hashes,reports,originalUnchanged:true,mutationVia:"binary_replace_region",independentEmulator:false},null,2)+'\n');console.log(JSON.stringify(reports));

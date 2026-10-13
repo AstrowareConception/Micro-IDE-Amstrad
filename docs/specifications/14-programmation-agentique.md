@@ -1,5 +1,7 @@
 # 14 — Missions, outils et boucle agentique
 
+**Tranche 0.41.6 :** [agent Z80 et comparaison des octets](../implementation/binary-agent-alpha.md), sur les zones déjà enregistrées des projets binaires. Catalogue distinct, lectures bornées, hash/révision, contrôle origine/taille, checkpoints et restauration en session ; parcours UI guidé. Lot Z80-C partiel : pas de références firmware qualifiées ni de test CPC autonome. Suite prioritaire : qualification assembleur indépendante, projets mixtes, références et tests comportementaux ; puis reprise FN/portées BASIC.
+
 ## Contrat d'une mission
 
 Une mission doit transformer un objectif en travail réel sur le projet. Elle n'est pas une conversation qui renvoie seulement un listing. L'utilisateur doit pouvoir écrire « crée ce jeu en mode 1 à partir de ce PDF, utilise cette image comme écran de titre et teste le démarrage » ; l'agent effectue les opérations utiles, dans les limites de la machine et de son périmètre.

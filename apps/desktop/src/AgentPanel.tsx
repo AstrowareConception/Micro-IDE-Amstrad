@@ -6,9 +6,10 @@ import { useEffect, useRef, useState } from 'react';
 import type { AgentView, AgentWorkspaceState, ModelCatalog, AgentBudget, PricingProfile } from '../../../packages/agent/src/types.ts';
 import { files } from './port.ts';
 
-const TOOL_LABELS: Record<string, string> = { project_list_files: 'Exploration du projet', project_read_file: 'Lecture d’une source', reference_search: 'Recherche dans les références BASIC', reference_read: 'Lecture d’une référence BASIC', reference_read_many: 'Lecture groupée des références BASIC', project_replace_source: 'Modification d’une source', project_create_source: 'Création d’une source', language_analyze: 'Analyse des sources', build_project: 'Construction et relecture du DSK', documents_list: 'Liste des documents autorisés', documents_search: 'Recherche documentaire' };
+const TOOL_LABELS: Record<string, string> = { binary_list_regions: 'Exploration des zones Z80', binary_read_region: 'Lecture d’une zone Z80', binary_dialect: 'Consultation du dialecte assembleur', binary_replace_region: 'Enregistrement d’une zone Z80', binary_build: 'Réassemblage et comparaison des octets', project_list_files: 'Exploration du projet', project_read_file: 'Lecture d’une source', reference_search: 'Recherche dans les références BASIC', reference_read: 'Lecture d’une référence BASIC', reference_read_many: 'Lecture groupée des références BASIC', project_replace_source: 'Modification d’une source', project_create_source: 'Création d’une source', language_analyze: 'Analyse des sources', build_project: 'Construction et relecture du DSK', documents_list: 'Liste des documents autorisés', documents_search: 'Recherche documentaire' };
 
 interface Props {
+  binary?: boolean; binaryDirty?: boolean; seed?: { id: string; text: string } | undefined;
   sessionId: string | undefined; buffers: { id: string; source: string }[]; busy: boolean;
   documentCount: number; onNotify?: Notify;
   onRunning(running: boolean): void; onState(state: AgentWorkspaceState): void;
@@ -31,6 +32,7 @@ export function AgentPanel(props: Props) {
   const adopted = useRef('');
   const announced = useRef('');
   const port = files.agent;
+  useEffect(() => { if (props.seed) setObjective(props.seed.text); }, [props.seed]);
   function reportError(message: string) {
     setMessage(message);
     latest.current.onNotify?.({ source: 'agent', target: 'agent', sessionId: latest.current.sessionId, level: 'error', message: 'Action IA non confirmée. Consultez le panneau Agent IA.' });
@@ -54,7 +56,7 @@ export function AgentPanel(props: Props) {
           const state = JSON.stringify(result.workspace);
           if (state !== adopted.current) {
             const buffers = latest.current.buffers;
-            if (buffers.length !== result.workspace.files.length || result.workspace.files.some(file => buffers.find(buffer => buffer.id === file.id)?.source !== file.source)) latest.current.onState(result.workspace);
+            if (result.workspace.binaryAnalysis || buffers.length !== result.workspace.files.length || result.workspace.files.some(file => buffers.find(buffer => buffer.id === file.id)?.source !== file.source)) latest.current.onState(result.workspace);
             adopted.current = state;
           }
           latest.current.onRunning(result.running);
@@ -121,7 +123,7 @@ export function AgentPanel(props: Props) {
     if (!port || !props.sessionId) return; setRequesting(true); props.onRunning(true);
     try {
       if (!pricing || Date.now() - Date.parse(pricing.fetchedAt) >= 60 * 60 * 1000) await loadPricing();
-      const result = await port.start(props.sessionId, objective, props.buffers, includeDocuments, budget);
+      const result = await port.start(props.sessionId, objective, props.buffers, props.binary ? false : includeDocuments, budget);
       if ('error' in result) { reportError(result.error); props.onRunning(false); }
       else { announced.current = ''; adopted.current = ''; setTaskId(result.taskId); setView(undefined); setMessage(''); }
     } catch { reportError('Démarrage impossible.'); props.onRunning(false); }
@@ -137,10 +139,10 @@ export function AgentPanel(props: Props) {
     finally { setRequesting(false); props.onRunning(false); }
   }
   return <section className="panel agent-panel" aria-label="Agent OpenAI">
-    <div className="agent-heading"><h2>Agent de programmation</h2><Button icon="settings" disabled={props.busy || requesting} onClick={() => setSettingsOpen(true)}>Réglages IA</Button></div>
+    <div className="agent-heading"><h2>{props.binary ? 'Agent Z80' : 'Agent de programmation'}</h2><Button icon="settings" disabled={props.busy || requesting} onClick={() => setSettingsOpen(true)}>Réglages IA</Button></div>
     <p className="muted">{configured && model ? `Modèle : ${model}` : 'Ouvrez les réglages IA pour connecter votre clé et choisir un modèle.'}</p>
-    <p className="muted">Sources et extraits consultés transmis à OpenAI. L’agent enregistre ses modifications avec checkpoint local. API facturée par OpenAI.</p>
-    <label htmlFor="agent-objective">Mission de programmation</label><textarea id="agent-objective" value={objective} onChange={event => setObjective(event.target.value)} maxLength={20000} rows={4} placeholder="Crée un écran de titre CPC en MODE 1…" disabled={props.busy || requesting} />
+    <p className="muted">{props.binary ? 'Zones enregistrées et notes consultées transmises à OpenAI ; aucun binaire brut ni ROM envoyé.' : 'Sources et extraits consultés transmis à OpenAI.'} L’agent enregistre ses modifications avec checkpoint local. API facturée par OpenAI.</p>
+    <label htmlFor="agent-objective">Mission de programmation</label><textarea id="agent-objective" value={objective} onChange={event => setObjective(event.target.value)} maxLength={20000} rows={4} placeholder={props.binary ? 'Explique une routine, annote ses hypothèses ou demande une modification précise…' : 'Crée un écran de titre CPC en MODE 1…'} disabled={props.busy || requesting} />
     {settingsOpen && <AgentSettingsDialog onClose={() => setSettingsOpen(false)}>
     <fieldset><legend><span className="agent-setting-step" aria-hidden="true">1</span> Connexion OpenAI</legend>
       <p className="agent-connection-status" role="status">{configured ? 'Clé configurée pour cette session' : 'Clé API à configurer'}</p>
@@ -184,9 +186,11 @@ export function AgentPanel(props: Props) {
     <p className="agent-settings-notice" aria-live="polite">{message}</p>
     </AgentSettingsDialog>}
 
-    <label className="document-consent"><input type="checkbox" checked={includeDocuments} disabled={props.busy || requesting || !props.documentCount} onChange={event => setDocumentConsentSession(event.target.checked ? props.sessionId : undefined)} />Autoriser les documents du projet pour cette mission ({props.documentCount})</label>
-    <details className="agent-data-notice"><summary>Données transmises</summary><p className="muted">Si activé, les noms et empreintes, les extraits TXT/MD/PDF lus/recherchés et les aperçus d’images demandés par l’agent sont transmis à OpenAI. Aucun original complet n’est ajouté automatiquement. Modèle vision nécessaire pour les images ; PDF texte uniquement, sans OCR.</p></details>
-    <Button className="primary" disabled={!port || !props.sessionId || !configured || !model || !catalog?.models.some(item => item.id === model) || !objective.trim() || props.busy || requesting} onClick={() => void start()}>Lancer l’agent</Button>
+    {!props.binary && <><label className="document-consent"><input type="checkbox" checked={includeDocuments} disabled={props.busy || requesting || !props.documentCount} onChange={event => setDocumentConsentSession(event.target.checked ? props.sessionId : undefined)} />Autoriser les documents du projet pour cette mission ({props.documentCount})</label>
+    <details className="agent-data-notice"><summary>Données transmises</summary><p className="muted">Si activé, les noms et empreintes, les extraits TXT/MD/PDF lus/recherchés et les aperçus d’images demandés par l’agent sont transmis à OpenAI. Aucun original complet n’est ajouté automatiquement. Modèle vision nécessaire pour les images ; PDF texte uniquement, sans OCR.</p></details></>}
+    {props.binary && <p className="muted">Périmètre : toutes les zones déjà enregistrées, origine et taille fixes. Modifications sauvegardées avec checkpoint. La vérification assemble et construit le DSK ; le test CPC reste manuel.</p>}
+    {props.binaryDirty && <p role="status">Enregistrez l’analyse Z80 avant de lancer, reprendre ou restaurer une mission.</p>}
+    <Button className="primary" disabled={!port || !props.sessionId || !configured || !model || !catalog?.models.some(item => item.id === model) || !objective.trim() || props.busy || requesting || props.binaryDirty} onClick={() => void start()}>Lancer l’agent</Button>
     <Button disabled={!taskId || !view?.running || requesting} onClick={() => { if (port && taskId) void port.cancel(taskId).then(result => setMessage('error' in result ? result.error : 'Arrêt demandé ; écritures terminées conservées.')).catch(() => setMessage('Arrêt impossible.')); }}>Arrêter l’agent</Button>
     {view?.running && <><label htmlFor="agent-steering">Consigne de suivi (facultatif)</label><p className="muted">La mission suffit. Ajoutez ici une précision en cours de travail, par exemple « palette bleue et ivoire ».</p><textarea id="agent-steering" value={instruction} onChange={event => setInstruction(event.target.value)} maxLength={20000} rows={2} />
       <Button disabled={!instruction.trim()} onClick={() => { if (port && taskId) void port.steer(taskId, instruction).then(result => { setMessage('error' in result ? result.error : 'Consigne ajoutée au prochain tour.'); setInstruction(''); }).catch(() => setMessage('Consigne impossible.')); }}>Envoyer la consigne</Button></>}
@@ -198,7 +202,7 @@ export function AgentPanel(props: Props) {
       <p>{view.model} · {view.turns} tours · {view.calls} outils ({view.failedCalls ?? 0} échecs) · {view.tokens.toLocaleString('fr-FR')} tokens</p>
       <p>{view.changed.length ? `${view.changed.length} fichier(s) modifié(s), enregistrés dans le projet.` : 'Aucun fichier modifié pour le moment.'} {view.buildVerified ? 'DSK construit et relu.' : 'Construction finale non validée.'}</p>
       {!view.running && <p>{view.summary}</p>}
-      {view.resumable && <><p className="muted">Reprendre conserve le contexte, les fichiers et le checkpoint initial, avec {view.budget?.maxTurns} tours et {view.budget?.maxTokens} tokens supplémentaires maximum. De nouveaux appels API peuvent être facturés.</p><Button icon="run" disabled={props.busy || requesting || !port?.resume || props.sessionId !== view.workspace.sessionId} onClick={() => void resume()}>Reprendre la mission</Button></>}
+      {view.resumable && <><p className="muted">Reprendre conserve le contexte, les fichiers et le checkpoint initial, avec {view.budget?.maxTurns} tours et {view.budget?.maxTokens} tokens supplémentaires maximum. De nouveaux appels API peuvent être facturés.</p><Button icon="run" disabled={props.busy || requesting || props.binaryDirty || !port?.resume || props.sessionId !== view.workspace.sessionId} onClick={() => void resume()}>Reprendre la mission</Button></>}
       {view.usage && <dl className="agent-stats"><div><dt>Entrée</dt><dd>{view.usage.input.toLocaleString('fr-FR')}</dd></div><div><dt>Sortie</dt><dd>{view.usage.output.toLocaleString('fr-FR')}</dd></div><div><dt>Cache lu / écrit</dt><dd>{view.usage.cached} / {view.usage.cacheWrite}</dd></div><div><dt>Raisonnement inclus dans la sortie</dt><dd>{view.usage.reasoning}</dd></div></dl>}
       {view.usage && !view.usage.complete && <p className="muted">Détail d’usage incomplet : les sous-totaux ne couvrent que les données reçues.</p>}
       <p>Coût API estimé : {view.costComplete && view.estimatedUsd !== undefined && view.tokens > 0 ? `${view.estimatedUsd.toFixed(6)} USD (hors taxes)` : 'indisponible ou incomplet'}. La facture OpenAI fait foi.</p>
@@ -208,12 +212,12 @@ export function AgentPanel(props: Props) {
       {view.running && <p className="muted">Dernière activité : {TOOL_LABELS[view.events.at(-1)?.tool ?? ''] ?? view.events.at(-1)?.text ?? 'Préparation de la mission…'}</p>}
       <details><summary>Journal technique ({view.events.length} événements récents)</summary><ol className="agent-events">{view.events.map((event, index) => <li key={index} className={event.success === false ? 'agent-tool-error' : ''}><strong>{event.kind === 'tool-result' ? event.success ? 'Réussi' : 'Échec' : event.kind}</strong> {event.tool && event.kind === 'tool-result' ? `${event.tool} : ` : ''}{event.text}</li>)}</ol></details>
 
-      <details><summary>Changements ({view.changed.length})</summary>{view.changed.map(path => {
+      <details><summary>Changements ({view.changed.length})</summary>{view.workspace.binaryAnalysis ? view.workspace.binaryAnalysis.regions.filter(region => JSON.stringify(region) !== JSON.stringify(view.binaryBefore?.regions.find(old => old.id === region.id))).map(region => { const before = view.binaryBefore?.regions.find(old => old.id === region.id); return <div key={region.id}><h3>Zone {region.id}</h3><p>Avant la mission</p><pre>{`${before?.note ?? ''}\n${before?.listing ?? ''}`.slice(0,16384)}</pre><p>Après la mission</p><pre>{`${region.note}\n${region.listing}`.slice(0,16384)}</pre><p className="muted">Aperçus limités à 16 384 caractères par version. La comparaison des octets reste disponible dans l’atelier.</p></div>; }) : view.changed.map(path => {
         const current = view.workspace.files.find(file => file.path === path);
         const before = view.before.find(file => file.id === current?.id);
         return <div key={path}><h3>{path}</h3><p>Avant</p><pre>{before?.source ?? 'Nouveau fichier'}</pre><p>Après</p><pre>{current?.source}</pre></div>;
       })}</details>
-      <Button disabled={!view.changed.length || view.running || props.busy || requesting || props.sessionId !== view.workspace.sessionId} onClick={() => void restore()}>Restaurer le checkpoint initial</Button>
+      <Button disabled={!view.changed.length || view.running || props.busy || requesting || props.binaryDirty || props.sessionId !== view.workspace.sessionId} onClick={() => void restore()}>Restaurer le checkpoint initial</Button>
     </div>}
   </section>;
 }

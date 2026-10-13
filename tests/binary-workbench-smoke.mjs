@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+import { AgentController } from '../apps/desktop/agent-controller.ts';
 import assert from 'node:assert/strict';
 import { expect } from '@playwright/test';
 import { mkdtemp, writeFile, readFile } from 'node:fs/promises';
@@ -12,17 +14,32 @@ import { BinaryWorkbench } from '../apps/desktop/binary-workbench.ts';
 const bytes=()=>createDataDisk([{name:'BOOT.BIN',bytes:encodeAmsdosBinary('BOOT.BIN',Uint8Array.of(0x3e,77,0x32,0,0x90,0xc9),0x8000,0x8000)}]);
 export async function verifyBinaryWorkbench(browser) {
   const parent=await mkdtemp(join(tmpdir(),'cpc-z80-ui-')),path=join(parent,'binary.dsk');await writeFile(path,bytes());
-  let session,project,workbench,root,prepared=false;
+  let session,project,workbench,root,prepared=false,agentStep=0;
+  const controller=new AgentController(join(parent,'checkpoints'),'absent-basic-corpus',async(url,init)=>{
+    if(String(url).endsWith('/models'))return Response.json({data:[{id:'gpt-5.6-luna',created:1,owned_by:'openai'}]});
+    if(!String(url).endsWith('/responses'))return new Response('No live pricing in UI fixture',{status:404});
+    const current=(await workbench.load()).regions[0];
+    const call=(name,args)=>({type:'function_call',call_id:name,name,arguments:JSON.stringify(args)});
+    const output=[call('binary_read_region',{id:current.id,startLine:1,endLine:200}),call('binary_dialect',{}),call('binary_replace_region',{id:current.id,expectedHash:createHash('sha256').update(JSON.stringify(current)).digest('hex'),note:current.note+'\nAnalyse IA : fait — écrit la valeur 79 à $9000. Effets du retour à vérifier.',listing:current.listing.replace('$4E','$4F')}),call('binary_build',{}),{type:'message',content:[{type:'output_text',text:'Réassemblage vérifié ; aucun CPC exécuté.'}]}][agentStep++];
+    return Response.json({status:'completed',output:[output],usage:{total_tokens:1}});
+  });
   const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
   const open=async()=>{project=await ProjectStore.open(root);workbench=new BinaryWorkbench(project.store);return project.snapshot;};
   await page.exposeFunction('binaryInspect',async()=>{session=await DiskImportSession.prepare(path);return session.preview;});
   await page.exposeFunction('binaryCreate',async request=>{root=await session.create(parent,request);return open();});
   await page.exposeFunction('binaryOpen',open);
   await page.exposeFunction('binaryRun',async request=>{const {binaryRevision,...base}=request;const compiled=await workbench.compile(binaryRevision);const image=runDisk(base,project.store.manifest,compiled.assets);assert.equal(readDataDisk(image.disk)[0].records[129],78);prepared=true;return {error:'ROM volontairement absentes de cette recette UI'};});
+  await page.exposeFunction('binaryAgent',async(method,args)=>{try{
+    if(method==='start'){agentStep=0;return await controller.start(project.store,args[1],args[2],args[3],args[4]);}
+    if(method==='restore')return await controller.restore(args[0],args[1]);
+    if(method==='resume')return await controller.resume(args[0],project.store,args[1]);
+    return await controller[method](...args);
+  }catch(e){return {error:e.message};}});
   await page.exposeFunction('binaryCall',async(method,args)=>{
     try {if(method==='exportDisk'){const result=await workbench.disk(args[0]);await writeFile(join(parent,'modified.dsk'),result.disk);return {name:'modified.dsk'};}return await workbench[method](...args);}catch(e){return {error:e.message};}
   });
   await page.addInitScript(()=>{window.confirm=()=>true;window.desktop={setDirty(){},open:async()=>null,save:async()=>null,exportDisk:async()=>null,
+    agent:Object.fromEntries(['models','selectModel','pricing','configure','start','status','cancel','steer','restore','resume'].map(method=>[method,(...args)=>window.binaryAgent(method,args)])),
     emulator:{prepare:r=>window.binaryRun(r)},project:{open:()=>window.binaryOpen()},diskImport:{inspect:()=>window.binaryInspect(),create:r=>window.binaryCreate(r)},
     binary:Object.fromEntries(['load','inspect','generate','save','verify','exportDisk'].map(method=>[method,(_session,...args)=>window.binaryCall(method==='verify'?'compile':method,args)]))};});
   const menu=async name=>{await page.getByRole('navigation',{name:'Menus de l’atelier',exact:true}).getByRole('button',{name:'Fichier',exact:true}).click();await page.getByRole('menuitem',{name,exact:true}).click();};
@@ -47,6 +64,27 @@ export async function verifyBinaryWorkbench(browser) {
     await page.reload();await page.locator('.monaco-editor .view-line').first().waitFor();
     await menu('Ouvrir un projet');await expect(panel).toBeVisible();await panel.getByRole('navigation',{name:'Zones analysées',exact:true}).getByRole('button').first().click();
     await expect(panel.getByLabel('Annotations Z80',{exact:true})).toHaveValue('Routine témoin : valeur observée à 9000.');await expect(listing).toContainText('LD A,$4E');
+    await panel.getByRole('button',{name:'Expliquer cette zone avec l’IA',exact:true}).click();
+    const agent=page.getByRole('region',{name:'Agent OpenAI',exact:true});
+    await expect(agent.getByLabel('Mission de programmation')).toHaveValue(/Explique et annote/);
+    await agent.getByRole('button',{name:'Réglages IA',exact:true}).click();
+    await page.getByLabel('Clé API OpenAI',{exact:true}).fill('sk-fixture-not-real');await page.getByRole('button',{name:'Configurer la clé',exact:true}).click();
+    await page.getByLabel('Modèle OpenAI',{exact:true}).selectOption('gpt-5.6-luna');await page.getByRole('button',{name:'Fermer les réglages IA',exact:true}).click();
+    await agent.getByLabel('Mission de programmation').fill('Passe la valeur à 79 et annote cette modification.');
+    await panel.getByLabel('Annotations Z80',{exact:true}).fill('Routine témoin : valeur observée à 9000. Brouillon manuel.');
+    await expect(agent.getByRole('button',{name:'Lancer l’agent',exact:true})).toBeDisabled();
+    await page.keyboard.press('Control+s');await expect(agent.getByRole('button',{name:'Lancer l’agent',exact:true})).toBeEnabled();
+    await agent.getByRole('button',{name:'Lancer l’agent',exact:true}).click();
+    await expect(agent.locator('.agent-status')).toHaveText('Mission terminée',{timeout:15000});
+    await expect(listing).toContainText('LD A,$4F');await expect(panel.getByLabel('Annotations Z80',{exact:true})).toHaveValue(/Analyse IA/);
+    await page.screenshot({path:'out/binary-agent-alpha.png'});
+    await panel.getByRole('button',{name:'Vérifier le réassemblage',exact:true}).click();
+    await expect(panel.getByRole('region',{name:'Comparaison des octets',exact:true})).toContainText('4F');
+    await panel.getByRole('region',{name:'Comparaison des octets',exact:true}).scrollIntoViewIfNeeded();
+    await page.screenshot({path:'out/binary-comparison-alpha.png'});
+    await agent.getByRole('button',{name:'Restaurer le checkpoint initial',exact:true}).click();
+    await expect(listing).toContainText('LD A,$4E');await expect(panel.getByLabel('Annotations Z80',{exact:true})).toHaveValue(/Brouillon manuel/);
+    assert.doesNotMatch((await workbench.load()).regions[0].note,/Analyse IA/);
     await page.screenshot({path:'out/binary-workbench-alpha.png'});assert.deepEqual(await readFile(path),Buffer.from(bytes()));assert.deepEqual(errors,[]);
   }finally{await page.close();}
 }
@@ -68,4 +106,27 @@ export async function verifyBinaryWorkbenchDesktop(page,desktop,parent) {
   const output=join(parent,'native-binary-edited.dsk');await desktop.evaluate(({dialog},path)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:path});},output);
   const exported=await page.evaluate(({sessionId,revision})=>window.desktop.binary.exportDisk(sessionId,revision),{sessionId:project.sessionId,revision:saved.revision});assert.ok(exported.name,JSON.stringify(exported));
   assert.equal(readDataDisk(await readFile(output))[0].records[129],78);assert.deepEqual(await readFile(path),Buffer.from(bytes()));
+  await desktop.evaluate(() => {
+    let step=0;
+    globalThis.fetch=async(url,init)=>{
+      if(url!=='https://api.openai.com/v1/responses')throw Error('Unexpected live request');
+      const body=JSON.parse(init.body),call=(name,args)=>({type:'function_call',call_id:name,name,arguments:JSON.stringify(args)});
+      let output;
+      if(++step===1)output=call('binary_read_region',{id:'routine',startLine:1,endLine:200});
+      else if(step===2)output=call('binary_dialect',{});
+      else if(step===3){const read=JSON.parse(body.input.find(item=>item.call_id==='binary_read_region'&&item.type==='function_call_output').output);output=call('binary_replace_region',{id:'routine',expectedHash:read.hash,note:read.note+'\nAnalyse IA : valeur 79.',listing:read.text.replace('$4E','$4F')});}
+      else if(step===4)output=call('binary_build',{});
+      else output={type:'message',content:[{type:'output_text',text:'Réassemblage natif contrôlé, sans exécution CPC.'}]};
+      return Response.json({status:'completed',output:[output],usage:{total_tokens:1}});
+    };
+  });
+  await page.evaluate(()=>window.desktop.agent.configure('sk-fixture-not-real','gpt-5.6-luna'));
+  await page.evaluate(()=>window.desktop.setDirty(true));
+  const denied=await page.evaluate(sessionId=>window.desktop.agent.start(sessionId,'Modifie',[]),project.sessionId);assert.match(denied.error,/Enregistrez/);
+  await page.evaluate(()=>window.desktop.setDirty(false));
+  const mission=await page.evaluate(sessionId=>window.desktop.agent.start(sessionId,'Passe la valeur à 79',[]),project.sessionId);assert.ok(mission.taskId,JSON.stringify(mission));
+  await expect.poll(async()=>{const view=await page.evaluate(id=>window.desktop.agent.status(id),mission.taskId);return view.running?'running':view.status;},{timeout:15000}).toBe('completed');
+  const updated=await page.evaluate(id=>window.desktop.binary.load(id),project.sessionId);assert.match(updated.regions[0].listing,/LD A,\$4F/);
+  const restored=await page.evaluate(({taskId,sessionId})=>window.desktop.agent.restore(taskId,[],sessionId),{taskId:mission.taskId,sessionId:project.sessionId});assert.equal(restored.binaryAnalysis.regions[0].listing,region.listing);
+  assert.deepEqual(await readFile(path),Buffer.from(bytes()));
 }

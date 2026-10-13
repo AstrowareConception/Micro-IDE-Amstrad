@@ -1,6 +1,6 @@
 import type { ProjectManifest, SourceSnapshot } from '../../workspace/src/project.ts';
 export interface AgentFile extends SourceSnapshot { saved: string }
-export interface AgentWorkspaceState { sessionId: string; manifest: ProjectManifest; files: AgentFile[]; assets?: import('../../workspace/src/project.ts').AssetSnapshot[] }
+export interface AgentWorkspaceState { sessionId: string; manifest: ProjectManifest; files: AgentFile[]; binaryAnalysis?: import('../../z80/src/workbench.ts').BinaryAnalysis; assets?: import('../../workspace/src/project.ts').AssetSnapshot[] }
 export interface ToolDefinition { type: 'function'; name: string; description: string; strict: true; parameters: Record<string, unknown> }
 export interface TokenUsage { input: number; output: number; cached: number; cacheWrite: number; reasoning: number; complete: boolean }
 export interface ModelTurn { output: Record<string, unknown>[]; tokens: number; usage?: TokenUsage | undefined; model?: string | undefined; serviceTier?: string | undefined; incomplete?: boolean }
@@ -11,7 +11,7 @@ export interface AgentBudget { maxTurns: number; maxCalls: number; maxTokens: nu
 export interface PricingProfile { model: string; billedModels?: string[]; input: number; cached: number; output: number; cacheWriteMultiplier: number; longContext?: { threshold: number; inputMultiplier: number; outputMultiplier: number }; fetchedAt: string; source: string }
 export interface AgentEvent { kind: 'model' | 'tool' | 'tool-result' | 'message' | 'limit' | 'error'; text: string; tool?: string; success?: boolean }
 export interface AgentResult { status: 'completed' | 'blocked' | 'failed' | 'cancelled' | 'paused-limit'; turns: number; calls: number; tokens: number; summary: string; usage?: TokenUsage | undefined; failedCalls?: number; estimatedUsd?: number; costComplete?: boolean }
-export interface AgentView extends AgentResult { taskId: string; running: boolean; events: AgentEvent[]; workspace: AgentWorkspaceState; changed: string[]; before: { id: string; source: string }[]; buildVerified: boolean; model?: string | undefined; budget?: AgentBudget; pricing?: PricingProfile | undefined; resumable?: boolean }
+export interface AgentView extends AgentResult { taskId: string; running: boolean; events: AgentEvent[]; workspace: AgentWorkspaceState; changed: string[]; before: { id: string; source: string }[]; binaryBefore?: import('../../z80/src/workbench.ts').BinaryAnalysis; buildVerified: boolean; model?: string | undefined; budget?: AgentBudget; pricing?: PricingProfile | undefined; resumable?: boolean }
 export interface OpenAIModel { id: string; created: number; owner: string; shutdownDate?: string }
 export interface ModelCatalog { models: OpenAIModel[]; fetchedAt: string; model: string }
 export interface AgentPort {

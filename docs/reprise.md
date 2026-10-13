@@ -2,6 +2,18 @@
 
 **Pause demandée le 8 octobre 2026.** Ce document conserve l’état vérifié, les décisions et la suite ; il n’archive pas les conversations. Confronter son contenu au `main` distant avant toute reprise.
 
+## Incrément du 13 octobre — agent Z80 et UX 0.41.6
+
+Base : `main` à `11bd3f817b8118f862f1a726855dae0613714393`, PR #66 fusionnée après succès des contrôles Windows/Linux, moteur natif, WASM et spécifications. Branche `feat/z80-agent-workbench`. Vérifier sa PR et la CI de sa tête avant d’annoncer la fusion ; aucun installateur déclenché.
+
+Réalisé : catalogue agent Z80 distinct, instructions dédiées, lecture bornée des zones enregistrées, hash et consultation du dialecte avant édition, assemblage à taille/origine fixes, checkpoint, pause/reprise et restauration en session. Pas de binaire brut ni ROM/document externe transmis au modèle. Révisions contrôlées aux écritures, reprise, restauration et fin de mission. Statut renderer sans snapshots d’octets bruts. Les projets BASIC gardent leur catalogue.
+
+UX : cartes ressources/zones/octets, formulaire repliable, styles de code/thèmes, actions accessibles pendant le défilement, raccourci de mission « Expliquer cette zone avec l’IA », brouillons protégés, synchronisation des résultats dans l’atelier, avant/après des notes et listings, comparaison de 128 octets maximum avec total exact. [Guide illustré](implementation/binary-agent-alpha.md), [ADR 0064](adr/0064-agent-z80-et-comparaison.md), notice, roadmaps et provenance des captures mis à jour.
+
+Vérifications locales : 421 tests unitaires réussis, TypeScript, builds renderer/main ; contrôle documentaire réussi (155 Markdown, 21 JSON, six schémas et six exemples), deux captures inspectées et versionnées ; parcours navigateur complet de l’éditeur puis recette Z80 ciblée avec véritable contrôleur/stockage et fournisseur simulé (aucun appel facturé). Mutation par binary_replace_region, construction et comparaison, blocage des brouillons, restauration du checkpoint et réouverture vérifiés. Recette native CPC avec ROM identifiées : l’outil agent change la valeur de 77 à 78, RAM &9000 observée à ces valeurs, originaux inchangés. Recette IPC Electron enrichie (garde dirty, mission Z80, sauvegarde et restauration) : qualification distante à vérifier. Pas de nouveau build WASM local, qualification complète attendue en CI.
+
+Limites : périmètre de mission = toutes les zones déjà enregistrées, pas de création/suppression de zones ni de documents externes ; 64 K caractères par remplacement IA, 4 K pour les notes. Les faits/hypothèses sont demandés au modèle, sans oracle sémantique. Aucun test CPC automatique par l’agent ni de corpus firmware Z80 qualifié. La restauration automatique après redémarrage et les projets mixtes restent absents. Suite : assembleur indépendant, projets mixtes, références firmware et tests comportementaux ; poursuivre ensuite FN/portées BASIC. Captures de programme témoin uniquement, jeux/ROM privés hors Git.
+
 ## Incrément du 13 octobre — atelier binaire 0.41.5
 
 Base distante : `main` à `5ad4d90ad86aa48443c0dbd5157f2681da7bd398`, PR #65 fusionnée après tous les contrôles réussis. Branche `feat/binary-workbench`. Vérifier la PR de cette branche avant d’annoncer sa fusion ; aucun installateur déclenché.

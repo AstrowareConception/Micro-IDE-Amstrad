@@ -286,7 +286,7 @@ route('binary:generate', async payload => {
   return new BinaryWorkbench(store).generate(value.assetId, value.offset, value.length, value.origin, value.kind);
 });
 route('binary:save', async payload => { const { store, value } = projectRequest(payload); return new BinaryWorkbench(store).save(value.revision, value.regions); });
-route('binary:verify', async payload => { const { store, value } = projectRequest(payload); const result = await new BinaryWorkbench(store).compile(value.revision); return { changedBytes: result.changedBytes, regions: result.regions }; });
+route('binary:verify', async payload => { const { store, value } = projectRequest(payload); const result = await new BinaryWorkbench(store).compile(value.revision); return { changedBytes: result.changedBytes, regions: result.regions, changes: result.changes, truncated: result.truncated }; });
 route('binary:export', async payload => {
   const { store, value } = projectRequest(payload), workbench = new BinaryWorkbench(store);
   await workbench.disk(value.revision);
@@ -635,10 +635,12 @@ route('agent:configure', async payload => {
 route('agent:start', async payload => {
   const { store, value } = projectRequest(payload);
   if (value.includeDocuments !== undefined && typeof value.includeDocuments !== 'boolean') throw new Error('Scope documentaire invalide.');
+  if (store.manifest.kind === 'binary' && dirty) throw Error('Enregistrez l’analyse Z80 avant la mission.');
   return agent.start(store, value.objective, bufferRequest(value.buffers), value.includeDocuments === true, value.budget);
 });
 route('agent:resume', async payload => {
   const { store, value } = projectRequest(payload);
+  if (store.manifest.kind === 'binary' && dirty) throw Error('Enregistrez l’analyse Z80 avant la reprise.');
   return agent.resume(value.taskId, store, bufferRequest(value.buffers));
 });
 route('agent:status', async payload => agent.status(payload));
@@ -650,6 +652,7 @@ route('agent:steer', async payload => {
 route('agent:restore', async payload => {
   const { store, value } = projectRequest(payload);
   const view = agent.status(value.taskId); store.assertSession(view.workspace.sessionId);
+  if (store.manifest.kind === 'binary' && dirty) throw Error('Enregistrez l’analyse Z80 avant la restauration.');
   return agent.restore(value.taskId, bufferRequest(value.buffers));
 });
 route('emulator:prepare', async payload => {
