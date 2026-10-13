@@ -27,7 +27,7 @@
         "properties": {
           "id": {"$ref": "#/$defs/id"},
           "path": {"allOf": [{"$ref": "#/$defs/path"}, {"pattern": "^src/"}]},
-          "cpcName": {"type": "string", "pattern": "^[A-Z0-9_]{1,8}\\.BAS$"}
+          "cpcName": {"$ref": "#/$defs/cpcName"}
         }
       }
     },

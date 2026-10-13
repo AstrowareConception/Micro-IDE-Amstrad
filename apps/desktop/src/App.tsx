@@ -26,6 +26,8 @@ import { SettingsDialog } from './SettingsDialog.tsx';
 import { loadPreferences, persistPreferences, type Preferences } from './preferences.ts';
 import type { CSSProperties } from 'react';
 import { NewProjectDialog } from './NewProjectDialog.tsx';
+import { DiskImportDialog } from './DiskImportDialog.tsx';
+import type { DiskImportPreview, DiskImportRequest } from '../../../packages/cpc-disk/src/import-disk.ts';
 import { Icon } from './Icon.tsx';
 import { COMMANDS, type CommandCard } from '../../../packages/basic-language/src/catalog.ts';
 import { files, type Failure, type FileResult } from './port.ts';
@@ -78,6 +80,7 @@ export function App() {
   const [project, setProject] = useState<{ sessionId: string; manifest: ProjectManifest } | undefined>();
   const [projectName, setProjectName] = useState('Mon projet CPC');
   const [newProjectOpen, setNewProjectOpen] = useState(false);
+  const [diskPreview, setDiskPreview] = useState<DiskImportPreview>();
   const [sourceName, setSourceName] = useState('');
   const [sourceDraft, setSourceDraft] = useState<SourceDraft>();
   const [sourceDialog, setSourceDialog] = useState<{ sourceId: string; action: SourceOperation['action'] }>();
@@ -319,6 +322,18 @@ export function App() {
     if (!port || busy || (dirty && !window.confirm('Abandonner les modifications non enregistrées ?'))) return;
     void projectOperation(() => create ? port.create(name) : port.open());
   }
+  async function inspectDisk() {
+    if (busy || !files.diskImport) return; setBusy(true);
+    try {
+      const result = await files.diskImport.inspect();
+      if (result && 'error' in result) setStatus(result.error, 'error');
+      else if (result) setDiskPreview(result);
+    } catch (error) { setStatus(String(error), 'error'); } finally { setBusy(false); }
+  }
+  async function importDisk(request: DiskImportRequest): Promise<true | string | false> {
+    if (!files.diskImport || busy || dirty && !window.confirm('Abandonner les modifications non enregistrées pour ouvrir le projet importé ?')) return false;
+    return await projectOperation(() => files.diskImport!.create(request)) ?? false;
+  }
   async function openRecentProject(id: string) {
     if (!files.recentProjects || busy || (dirty && !window.confirm('Abandonner les modifications non enregistrées ?'))) return false;
     return await projectOperation(() => files.recentProjects!.open(id)) ?? false;
@@ -381,6 +396,7 @@ export function App() {
   const commands: WorkbenchCommand[] = [
     { id: 'open', detail: 'Ctrl O', label: 'Ouvrir un listing', disabled: busy, run: () => void open() },
     { id: 'project', detail: 'Ctrl Maj O', label: 'Ouvrir un projet', disabled: busy || !files.project, run: () => openProject(false) },
+    { id: 'import-dsk', label: 'Importer une disquette DSK…', disabled: busy || !files.diskImport, run: () => void inspectDisk() },
     { id: 'recent-projects', label: 'Projets récents…', detail: 'Ctrl R', disabled: busy || !files.recentProjects, run: () => setRecentProjectsOpen(true) },
     { id: 'save', label: 'Enregistrer le listing actif', detail: 'Ctrl S', disabled: busy, run: () => void save() },
     { id: 'save-all', detail: 'Ctrl Maj S', label: 'Enregistrer tout le projet', disabled: busy || !project || !files.project, run: () => void saveAll() },
@@ -469,11 +485,11 @@ export function App() {
   ] : [];
   return <main className="workbench" style={{ '--sidebar-width': `${preferences.sidebarWidth}px`, '--agent-width': `${preferences.agentWidth}px`, '--output-height': `${preferences.outputHeight}px` } as CSSProperties}>
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.36 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.41.2 · AstroWare Conception</p></div></div>
       <div className="topbar-actions"><Button icon="bell" aria-label={`Centre de notifications · ${unreadNotifications} non lue(s)`} onClick={() => setNotificationsOpen(true)}><span className="notification-badge">{unreadNotifications}</span></Button><span className="profile">CPC 6128 · BASIC 1.1</span></div>
     </header>
     <WorkbenchMenus groups={[
-      ['Fichier', ['open', 'project', 'recent-projects', 'clone', 'create-project', 'save', 'save-all', 'save-as', 'local-history', 'export']],
+      ['Fichier', ['open', 'project', 'import-dsk', 'recent-projects', 'clone', 'create-project', 'save', 'save-all', 'save-as', 'local-history', 'export']],
       ['Édition', ['undo', 'redo', 'find', 'replace', 'search-sources', 'line', 'basic-comment', 'editor.action.copyLinesDownAction', 'editor.action.moveLinesUpAction', 'editor.action.moveLinesDownAction', 'editor.action.deleteLines', 'editor.action.addSelectionToNextFindMatch', 'next-tab', 'previous-tab', 'close-tab']],
       ['BASIC', ['run', 'basic-tests', 'symbols', 'quality', 'renumber', 'complete', 'editor.action.revealDefinition', 'editor.action.marker.next', 'editor.action.marker.prev', 'reference']],
       ['Git', ['git', 'git-refresh', 'git-init', 'git-commit', 'git-ai-message', 'git-history', 'git-branches', 'git-create-branch', 'git-remotes', 'git-fetch', 'git-pull', 'git-push', 'clone', 'github', 'git-prs']],
@@ -483,6 +499,7 @@ export function App() {
       ['Aide', ['reference', 'shortcuts', 'feedback']],
     ].map(([label, ids]) => ({ label: label as string, commands: (ids as string[]).map(id => commands.find(command => command.id === id)!) }))} />
     {newProjectOpen && <NewProjectDialog busy={busy} onClose={() => setNewProjectOpen(false)} onCreate={name => { setProjectName(name); openProject(true, name); }} />}
+    {diskPreview && <DiskImportDialog preview={diskPreview} onCreate={importDisk} onClose={() => setDiskPreview(undefined)} />}
     {renumberOpen && <RenumberPanel source={source} documentId={activeId} busy={busy} defaultStart={preferences.renumberStart} defaultStep={preferences.renumberStep} revision={() => editor.current?.getModel()?.getVersionId() ?? -1} onApply={renumber} onClose={() => setRenumberOpen(false)} />}
     {palette && <CommandPalette key={palette} title={palette === 'all' ? 'Commandes CPCéleste' : 'Ouvrir rapidement une source'} commands={palette === 'all' ? commands : commands.filter(command => command.id.startsWith('source:'))} onClose={() => setPalette(undefined)} />}
     {selectedSource && <CommandPalette title={`Actions de ${selectedSource.name}`} searchable={false} commands={sourceCommands} onClose={() => setContextSource(undefined)} />}

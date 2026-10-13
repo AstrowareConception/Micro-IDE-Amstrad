@@ -1,6 +1,6 @@
 # 20 — Retrouver un projet éditable depuis une disquette DSK
 
-Demande produit du 13 octobre 2026. **Statut : spécifié, parcours non réalisé.** Cette fonctionnalité relie IDE-006, IDE-046 et IDE-047 ; elle ne crée pas un second système de projets. L'objectif est de reprendre ses programmes CPC d'époque, de les modifier dans l'éditeur et avec l'agent IA, puis de les tester et d'en produire une nouvelle disquette.
+Demande produit du 13 octobre 2026. **Statut : partiel — premier parcours ASCII réalisé en 0.41.2.** [Guide et limites](../implementation/dsk-import-alpha.md). Cette fonctionnalité relie IDE-006, IDE-046 et IDE-047 ; elle ne crée pas un second système de projets. L'objectif est de reprendre ses programmes CPC d'époque, de les modifier dans l'éditeur et avec l'agent IA, puis de les tester et d'en produire une nouvelle disquette.
 
 ## Résultat attendu
 
@@ -82,6 +82,6 @@ Les images de test doivent être synthétiques ou redistribuables avec provenanc
 
 ## Place dans la roadmap
 
-IDE-006 passe de P2 à **P1 proposé** pour ce besoin ; son état reste N. IDE-046/047 restent P pour leur socle limité, sans annoncer le parcours livré. Ce cadrage n'annule pas la séquence FN/portées → accès curseur → renommage définie à la pause : le lot d'import est désormais identifié et prêt à être choisi comme prochain chantier produit. Aucune version ni date de livraison n'est promise.
+IDE-006 passe de P2 à **P1** pour ce besoin ; son état devient P avec la tranche ASCII 0.41.2. IDE-046/047 restent P : seul le parcours ASCII est réalisé. L’autorisation de développement priorise désormais l’import : détokenisation et ressources après la tranche ASCII. La séquence FN/portées → accès curseur → renommage reste au backlog. Aucune date de livraison des lots suivants n'est promise.
 
 Références : [construction DSK](07-construction-dsk.md), [contrats](10-donnees-contrats.md), [roadmap produit](17-roadmap-ide-complet.md), [définition Extended DSK par ses auteurs](https://www.cpctech.cpcwiki.de/docs/extdsk.html). La spécification Extended décrit le conteneur ; les détails du codec BASIC demandent une qualification documentaire et firmware propre.

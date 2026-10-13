@@ -8,6 +8,8 @@ Les noms de dossiers sont des conventions, pas un moyen de contourner les permis
 
 ## Manifeste version 1
 
+L'incrément 0.41.2 étend `sources[].cpcName` au nom CPC 8.3 qualifié, avec extension facultative, pour conserver un BASIC ASCII nommé `.BIN` ou sans extension. Les chemins de sources restent des `.bas` sous `src/`. Les anciennes versions peuvent refuser ce sous-ensemble élargi ; aucun changement silencieux du nom CPC. Les originaux d'import `.microide/imports/` sont une exception au contenu jetable : ils doivent être sauvegardés avec le dossier, sans purge par rétention. `import-report.json` décrit les fichiers, leurs empreintes et leur conversion (`schemaVersion: 1`, convertisseur `data-ascii-import-1`). Voir l'[ADR 0061](../adr/0061-import-dsk-ascii.md).
+
 Le [schéma de projet](../../contracts/project.schema.json) constitue le contrat structural. `schemaVersion` est entier, actuellement 1. `projectId` est stable et indépendant du chemin. `target` identifie profil et dialecte. `entryPoint` référence l'identifiant d'une source, pas un chemin libre. Chaque source possède identifiant, chemin et nom CPC. Les ressources déclarent type, sortie, nom CPC et métadonnées de chargement ; les documents portent rôle et empreinte de l'original.
 
 La configuration de construction fixe format disque, système de fichiers, encodage, fin de ligne, EOF et ordre de fichiers. Une future version peut ajouter des codecs sans changer silencieusement l'interprétation de ces champs. Une option inconnue est une erreur dans la version courante. Le schéma refuse les propriétés supplémentaires pour rendre les changements explicites.

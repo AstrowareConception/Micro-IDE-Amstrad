@@ -344,3 +344,9 @@ select{font:inherit;width:100%;margin:8px 0;background:var(--input);color:inheri
 .symbols-list small { color: var(--muted); }
 .symbols-list button, .symbol-occurrences button { white-space: normal; overflow-wrap: anywhere; }
 @media (max-width: 800px) { .symbols-columns { grid-template-columns: minmax(0, 1fr); } }
+.disk-import-dialog { width: min(960px, calc(100vw - 40px)); max-height: 90vh; overflow: auto; }
+.disk-import-dialog fieldset { min-width: 0; }
+.disk-import-catalog { max-height: 240px; overflow: auto; }
+.disk-import-catalog table { width: 100%; border-collapse: collapse; }
+.disk-import-catalog th, .disk-import-catalog td { text-align: left; padding: 6px 10px; }
+.disk-source-preview { max-height: 200px; overflow: auto; white-space: pre; padding: 12px; border: 1px solid currentColor; }

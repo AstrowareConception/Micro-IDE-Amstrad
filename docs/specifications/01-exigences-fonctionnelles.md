@@ -44,7 +44,7 @@ Chaque ligne est une exigence normative identifiable. **MVP** signifie attendue 
 | REQ-DSK-001 | Exporter un DSK standard AMSDOS DATA, 40 pistes, 1 face, 9 secteurs de 512 octets ; CAT et RUN fonctionnent ailleurs. | MVP | ACC-11 |
 | REQ-DSK-002 | Fournir les noms exacts, tailles, espace disponible et commande de lancement avant l'export ; écrire atomiquement la destination. | MVP | ACC-07 |
 | REQ-DSK-003 | Inspecter les DSK standard et Extended compatibles ; un format ou une protection non pris en charge est annoncé sans altération. | MVP | ACC-12 |
-| REQ-DSK-004 | Ouvrir un DSK externe en lecture seule par défaut et importer les fichiers supportés en conservant l'original. | MVP | ACC-12 |
+| REQ-DSK-004 | Ouvrir un DSK externe en lecture seule par défaut, prévisualiser et sélectionner les fichiers supportés, créer un projet en conservant original, noms CPC et provenance ; signaler les fichiers non convertis et dépendances non incluses. | MVP | ACC-12 |
 | REQ-DSK-005 | Exporter aussi le listing BASIC ASCII et le projet ouvert pour permettre la reprise hors de l'outil. | MVP | ACC-06 |
 | REQ-DSK-006 | Qualifier la livraison sur un émulateur indépendant ; un essai sur CPC physique est requis pour revendiquer une compatibilité matérielle testée. | 1.0 | ACC-11 |
 

@@ -21,7 +21,7 @@ La validation distingue cinq niveaux : contrat de données, règles métier, int
 | ACC-09 | AZERTY, guillemets, chiffres, curseurs, shift/ctrl, INKEY, JOY, SOUND et perte de focus : mapping et libération prouvés. | J0, intégré J3 |
 | ACC-10 | Erreur simple, ON ERROR, effacement d'écran et caractères redéfinis : les observations ne prétendent pas plus que leur méthode détecte. | J3 |
 | ACC-11 | Export DATA : CAT, RUN, LOAD écran et texte sauvegardé dans un autre émulateur ; essai matériel enregistré si disponible. | J0, J3, J6 |
-| ACC-12 | DSK standard, Extended DATA, image tronquée, secteurs atypiques et fichier ambigu : lecture bornée et original intact. | J3 |
+| ACC-12 | DSK standard, Extended DATA, image tronquée, secteurs atypiques et fichier ambigu : lecture bornée et original intact. Import sélectionné vers nouveau projet, noms CPC conservés même sous BIN, dépendances non incluses signalées, refus des aperçus périmés, réouverture et sources modifiables. | J3 |
 | ACC-13 | TXT/MD, image alpha, PDF texte/colonnes/scanné/chiffré : sélection exacte ; écran modes 0/1/2 avec mires qualifiées. | J4 |
 | ACC-14 | Tuer worker, fermer brutalement pendant saisie, transaction et export ; reprendre sans corruption et expliquer récupération. | J6 |
 | ACC-15 | Fournisseur simulé puis réel choisi : création, explication, correction, multimodal, limite de contexte, annulation, quota et offline. | J5 |

@@ -24,5 +24,6 @@ test('run refuses unencodable BASIC and oversized disk before exposing a machine
 });
 test('RUN commands accept only bounded CPC BASIC names and have one Enter with no injection', () => {
   assert.equal(runCommand('MAIN.BAS'), 'RUN"MAIN.BAS"\r'); assert.equal(runCommand('OTHER.BAS'), 'RUN"OTHER.BAS"\r');
-  for (const entry of ['x.bas', 'MAIN.BAS"\rNEW', '../MAIN.BAS', 'TOO-LONG9.BAS', 'MAIN.TXT']) assert.throws(() => runCommand(entry));
+  for (const entry of ['x.bas', 'MAIN.BAS"\rNEW', '../MAIN.BAS', 'TOO-LONG9.BAS', 'MAIN.TOOLONG']) assert.throws(() => runCommand(entry));
+  assert.equal(runCommand('OLD.BIN'), 'RUN"OLD.BIN"\r'); assert.equal(runCommand('LOADER'), 'RUN"LOADER"\r');
 });
