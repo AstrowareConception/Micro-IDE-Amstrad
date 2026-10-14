@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.41.7
+# CPCéleste — Dossier de conception et réalisation — version 0.41.8
+
+**Bibliothèque de missions 0.41.8 :** [guide illustré](implementation/mission-library-alpha.md), [ADR 0066](adr/0066-bibliotheque-missions.md). Sept modèles contextualisés et modèles personnels, sans changement de droits de l’agent.
 
 **Import historique 0.41.7 :** [compatibilité et recette Fer & Flamme](implementation/recovery-protection-alpha.md#import-historique-et-diagnostic--0417), [ADR 0065](adr/0065-import-dsk-historique.md). Sources récupérées et limites de reconstruction explicites.
 

@@ -16,7 +16,7 @@ Il suffit parfois d’un `MODE 1`, de quelques couleurs et d’une idée pour re
 
 Le fil conducteur est simple : **garder la création au centre, raccourcir le chemin entre une idée et son résultat, et vous laisser comprendre ce que l’outil fait.** Le BASIC reste du BASIC, vos sources restent des fichiers texte et votre projet reste un dossier que vous pouvez conserver, déplacer et versionner.
 
-Cette notice rassemble les fonctions livrées jusqu’à **CPCéleste 0.41.6, alpha desktop**, au **13 octobre 2026**. Les captures antérieures gardent leur version et leur provenance propres. Elle réunit découverte du produit et mode d’emploi. Les captures représentent l’interface réelle ; celles issues des recettes automatisées utilisent des données de démonstration. Leur [provenance détaillée](images/guide-utilisateur/README.md) distingue captures locales, Electron et services distants simulés. Cliquez sur une image pour l’ouvrir en grand dans GitHub.
+Cette notice rassemble les fonctions livrées jusqu’à **CPCéleste 0.41.8, alpha desktop**, au **14 octobre 2026**. Les captures antérieures gardent leur version et leur provenance propres. Elle réunit découverte du produit et mode d’emploi. Les captures représentent l’interface réelle ; celles issues des recettes automatisées utilisent des données de démonstration. Leur [provenance détaillée](images/guide-utilisateur/README.md) distingue captures locales, Electron et services distants simulés. Cliquez sur une image pour l’ouvrir en grand dans GitHub.
 
 <a id="sommaire"></a>
 ## Votre parcours dans la notice
@@ -404,6 +404,16 @@ Décrivez le résultat, le mode vidéo, les contraintes, les fichiers concernés
 > Crée un écran de titre pour un jeu de mahjong en MODE 1. Je veux un titre lisible, un cadre décoratif et des motifs de tuiles construits en BASIC. Consulte les références des commandes graphiques utilisées. Travaille dans la source d’entrée, conserve le reste du projet, puis construis le DSK et explique les choix à vérifier dans l’émulateur.
 
 L’agent dispose des buffers autorisés au lancement. Les documents du projet demandent une autorisation distincte. Pendant la mission, l’édition manuelle et certaines opérations concurrentes sont verrouillées pour éviter les changements simultanés.
+
+### Choisir une mission guidée
+
+Le bouton **Choisir une mission…**, sous votre objectif, ouvre une bibliothèque adaptée au projet BASIC ou Z80. Recherchez un modèle, précisez le périmètre et l’objectif, puis cliquez sur **Générer l’aperçu**. Vous pouvez retoucher librement le texte avant de l’insérer. Si une consigne existe, choisissez **Ajouter à ma mission** ou **Remplacer ma mission** ; **Rétablir la mission précédente** annule cette insertion dans la session.
+
+Sept modèles couvrent compréhension BASIC, amélioration, écran de titre dessiné en BASIC, préparation d’une recette, explication Z80, étude d’optimisation et modification ciblée d’une zone. Chaque fiche annonce son résultat et ses limites. **L’insertion ne lance aucun appel IA** : relisez puis utilisez **Lancer l’agent**.
+
+**Conserver comme modèle personnel** enregistre le titre et l’aperçu sur cet ordinateur, pour les projets du même type. Création de copie, mise à jour, suppression et rétablissement de la dernière suppression sont disponibles. Ces modèles ne sont pas inclus dans le DSK ni synchronisés entre ordinateurs. [Guide détaillé et crédits](implementation/mission-library-alpha.md).
+
+![Bibliothèque de missions IA](images/guide-utilisateur/27-missions-ia.png)
 
 ### Ce que l’agent peut faire aujourd’hui
 

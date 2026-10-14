@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { verifyMissionLibrary } from './mission-library-smoke.mjs';
 import { expect } from '@playwright/test';
 import { newProject } from '../packages/workspace/src/project.ts';
 
@@ -38,6 +39,7 @@ export async function verifyAgentWorkbench(browser, errors) {
     await page.goto('http://127.0.0.1:5173'); await page.locator('.view-lines').first().waitFor();
     await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click();
     const panel = page.getByRole('region', { name: 'Agent OpenAI', exact: true });
+    await verifyMissionLibrary(page, panel);
     await expect(page.getByLabel('Clé API OpenAI', { exact: true })).toHaveCount(0);
     await panel.getByRole('button', { name: 'Réglages IA', exact: true }).click();
     const settings = page.getByRole('dialog', { name: 'Réglages de l’agent IA', exact: true });
