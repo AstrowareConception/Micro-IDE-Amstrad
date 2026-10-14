@@ -1,3 +1,4 @@
+import { verifyAgentKnowledge } from './agent-knowledge-smoke.mjs';
 import { verifyKnowledge } from './knowledge-smoke.mjs';
 import { verifyBinaryWorkbench } from './binary-workbench-smoke.mjs';
 import { verifyBasicSymbols } from './basic-symbols-smoke.mjs';
@@ -348,6 +349,7 @@ try {
   await verifyDiskImport(browser);
   await verifyRecoveryProtection(browser);
   await verifyKnowledge(browser);
+  await verifyAgentKnowledge(browser);
   await verifyBinaryWorkbench(browser);
   await verifyGitWorkbench(browser, errors);
   await verifyAgentWorkbench(browser, errors);

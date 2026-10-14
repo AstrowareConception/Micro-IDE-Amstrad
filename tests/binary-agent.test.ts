@@ -69,7 +69,7 @@ test('controller restore refuses a later manual edit and completion requires a f
   const controller=new AgentController(join(parent,'checkpoints'),'absent',async()=>Response.json({status:'completed',output:[message],usage:{total_tokens:1}}));controller.configure('sk-fixture-not-real','gpt-5.6-luna');
   const {taskId}=await controller.start(store,'Explique',[]);assert.equal((await settle(controller,taskId)).status,'blocked');
   const manual=await workbench.save(state.binaryAnalysis!.revision,[{...region,note:'Notes postérieures'}]);
-  await assert.rejects(controller.restore(taskId,[]),/modifiée/);assert.deepEqual(await workbench.load(),manual);
+  await assert.rejects(controller.restore(taskId,[]),/modifi/);assert.deepEqual(await workbench.load(),manual);
 });
 test('comparison reports exact addresses and total for a modified payload',async()=>{
   const {workbench,region,state}=await fixture();const saved=await workbench.save(state.binaryAnalysis!.revision,[{...region,listing:'ORG $8000\nDEFB 0,0,0,0,0,0'}]);const result=await workbench.compile(saved.revision);assert.equal(result.changedBytes,5);assert.equal(result.truncated,false);assert.equal(result.changes.length,5);

@@ -4,6 +4,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { parseProject, type ProjectManifest } from '../../packages/workspace/src/project.ts';
 import { durableReplace, syncDirectory, type RecoverySummary, type RecoveryChoice } from './save-journal.ts';
 import type { SourceMutationResult } from '../../packages/workspace/src/source-operations.ts';
+import { validateRegions } from '../../packages/z80/src/workbench.ts';
 import { LocalHistory } from './local-history.ts';
 const MIB = 1024 * 1024;
 const hash = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
@@ -30,17 +31,37 @@ function decode(value: unknown, limit: number): Buffer {
 function manifest(version: Version): ProjectManifest { return parseProject(JSON.parse(decode(version, MIB).toString('utf8'))); }
 type JournalKind = 'agent' | 'source';
 const limits = (kind: JournalKind) => kind === 'agent' ? { file: 65536, total: 256 * 1024, record: 4 * MIB } : { file: MIB, total: 8 * MIB, record: 28 * MIB };
+/** Documents are immutable blobs; only editable, authorized note pointers may change. */
+export function assertNoteTransition(before: ProjectManifest, after: ProjectManifest): void {
+  const fixed = (d: ProjectManifest['documents'][number]) => { const {path,sha256,knowledge,...rest}=d; return JSON.stringify({...rest,...(knowledge ? {knowledge:{category:knowledge.category,editable:knowledge.editable,access:knowledge.access}} : {})}); };
+  for (const id of new Set([...before.documents,...after.documents].map(d=>d.id))) {
+    const old=before.documents.find(d=>d.id===id), next=after.documents.find(d=>d.id===id);
+    if (JSON.stringify(old) === JSON.stringify(next)) continue;
+    if ([old,next].some(d=>d && (!d.knowledge?.editable || d.knowledge.access==='excluded')) || old && next && fixed(old)!==fixed(next)) throw Error('Document hors périmètre de restauration.');
+  }
+}
+const binaryFile = (file: {id?: unknown; path?: unknown}) => file.id === 'binary-analysis' && file.path === 'binary-z80.json';
 function parse(value: unknown, kind: JournalKind): RecordV1 {
   const hasDraft = kind === 'source' && !!value && typeof value === 'object' && Object.hasOwn(value, 'draft');
   const item = object(value, ['version', 'id', 'projectId', 'createdAt', 'phase', 'before', 'after', 'files', ...(hasDraft ? ['draft'] : [])]);
   const bounds = limits(kind);
-  if (item.version !== 1 || typeof item.id !== 'string' || !/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(item.id) || typeof item.createdAt !== 'string' || item.createdAt.length !== 24 || !Number.isFinite(Date.parse(item.createdAt)) || new Date(item.createdAt).toISOString() !== item.createdAt || !['pending', 'committed', 'restored'].includes(item.phase as string) || !Array.isArray(item.files) || !item.files.length || item.files.length > 128) throw new Error('Journal de projet inconnu ; données conservées.');
+  if (item.version !== 1 || typeof item.id !== 'string' || !/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(item.id) || typeof item.createdAt !== 'string' || item.createdAt.length !== 24 || !Number.isFinite(Date.parse(item.createdAt)) || new Date(item.createdAt).toISOString() !== item.createdAt || !['pending', 'committed', 'restored'].includes(item.phase as string) || !Array.isArray(item.files) || kind === 'source' && !item.files.length || item.files.length > 128) throw new Error('Journal de projet inconnu ; données conservées.');
   const before = manifest(item.before as Version), after = manifest(item.after as Version);
-  const identity = ({ sources: _sources, entryPoint: _entry, ...rest }: ProjectManifest) => JSON.stringify(rest);
+  const identity = ({ sources: _sources, entryPoint: _entry, ...rest }: ProjectManifest) => { if (kind === 'agent') { const {documents: _documents,...fixed}=rest; return JSON.stringify(fixed); } return JSON.stringify(rest); };
   if (before.projectId !== item.projectId || after.projectId !== item.projectId || identity(before) !== identity(after)) throw new Error('Identité/documents du journal de projet différents.');
+  if (kind === 'agent') assertNoteTransition(before,after);
   let beforeTotal = 0, afterTotal = 0;
   for (const raw of item.files) {
     const file = object(raw, ['id', 'path', 'before', 'after']);
+    if (kind === 'agent' && binaryFile(file)) {
+      if (before.kind !== 'binary' || after.kind !== 'binary' || file.before === null || file.after === null) throw Error('Analyse binaire du journal invalide.');
+      for (const version of [file.before,file.after]) {
+        const content=JSON.parse(decode(version,MIB).toString('utf8'));
+        if (content.version!==1 || content.projectId!==before.projectId || Object.keys(content).sort().join(',')!=='projectId,regions,version') throw Error('Analyse binaire incompatible.');
+        validateRegions(content.regions,before.assets);
+      }
+      continue;
+    }
     const old = before.sources.find(source => source.id === file.id && (kind === 'agent' || source.path === file.path)), next = after.sources.find(source => source.id === file.id && (kind === 'agent' || source.path === file.path));
     if (!old && !next || old && old.path !== file.path || next && next.path !== file.path || kind === 'agent' && (old && next && old.cpcName !== next.cpcName || !old && next!.path !== `src/${next!.id}.bas`) || (file.before === null) !== !old || (file.after === null) !== !next) throw new Error('Source du journal de projet incohérente.');
     if (file.before !== null) beforeTotal += decode(file.before, bounds.file).length;
@@ -116,8 +137,19 @@ export class WorkspaceJournal {
     const actualManifest = await this.bytes(await this.path('microide.project.json'), MIB);
     const digest = actualManifest && hash(actualManifest);
     if (only ? digest !== record[only].hash : digest !== record.before.hash && digest !== record.after.hash) throw new Error('Conflit de manifeste ; versions conservées.');
+    const before=manifest(record.before), after=manifest(record.after);
+    if (this.kind==='agent' && JSON.stringify(before.documents)!==JSON.stringify(after.documents)) {
+      for (const documents of [before.documents,after.documents]) {
+        let total=0;
+        for (const document of documents) {
+          const bytes=await this.bytes(await this.path(document.path),MIB);
+          if (!bytes || hash(bytes)!==document.sha256) throw Error(`Conflit documentaire : ${document.originalName}. Versions conservées.`);
+          total+=bytes.length; if(total>4*MIB) throw Error('Documents limités à 4 Mio.');
+        }
+      }
+    }
     for (const file of record.files) {
-      const bytes = await this.bytes(await this.path(file.path), this.bounds.file), digest = bytes === null ? null : hash(bytes);
+      const bytes = await this.bytes(await this.path(file.path), binaryFile(file) ? MIB : this.bounds.file), digest = bytes === null ? null : hash(bytes);
       if (only ? digest !== (file[only]?.hash ?? null) : digest !== (file.before?.hash ?? null) && digest !== (file.after?.hash ?? null)) throw new Error(`Conflit externe : ${file.path}. Journal de projet conservé.`);
     }
   }
@@ -175,22 +207,24 @@ export class WorkspaceJournal {
     const record = await check(), side = choice === 'finish' ? 'after' : 'before';
     const history = new LocalHistory(this.root, record.projectId);
     // Retain both sides before any recovery write; removed/created sources remain in snapshots.
-    await history.capture(record.files.filter(file => file.before !== null).map(file => ({ id: file.id, path: file.path, content: decode(file.before, this.bounds.file) })), this.kind === 'agent' ? 'before-agent' : 'before-source');
-    await history.capture(record.files.filter(file => file.after !== null).map(file => ({ id: file.id, path: file.path, content: decode(file.after, this.bounds.file) })), this.kind === 'agent' ? 'after-agent' : 'after-source');
+    for (const side of ['before','after'] as const) {
+      const sources=record.files.filter(file => !binaryFile(file) && file[side]!==null);
+      if(sources.length) await history.capture(sources.map(file=>({id:file.id,path:file.path,content:decode(file[side],this.bounds.file)})), this.kind==='agent' ? side==='before'?'before-agent':'after-agent' : side==='before'?'before-source':'after-source');
+    }
     if (record.draft) await history.capture([{ id: record.draft.id, path: record.draft.path, content: decode(record.draft.version, MIB) }], 'source-draft');
     for (const file of record.files) {
       await check(); const path = await this.path(file.path), version = file[side];
-      const actual = await this.bytes(path, this.bounds.file);
+      const actual = await this.bytes(path, binaryFile(file) ? MIB : this.bounds.file);
       if ((actual === null ? null : hash(actual)) === (version?.hash ?? null)) continue;
       if (version === null) { await unlink(path); await syncDirectory(dirname(path)); }
-      else await durableReplace(path, decode(version, this.bounds.file));
+      else await durableReplace(path, decode(version, binaryFile(file) ? MIB : this.bounds.file));
     }
     await check();
     const manifestPath = await this.path('microide.project.json');
     if (hash((await this.bytes(manifestPath, MIB))!) !== record[side].hash) await durableReplace(manifestPath, decode(record[side], MIB));
     await check();
     for (const file of record.files) {
-      const actual = await this.bytes(await this.path(file.path), this.bounds.file);
+      const actual = await this.bytes(await this.path(file.path), binaryFile(file) ? MIB : this.bounds.file);
       if ((actual === null ? null : hash(actual)) !== (file[side]?.hash ?? null)) throw new Error('Conflit final de sources ; journal conservé.');
     }
     if (hash((await this.bytes(manifestPath, MIB))!) !== record[side].hash) throw new Error('Conflit final de manifeste.');

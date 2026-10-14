@@ -1,6 +1,6 @@
 # CPCéleste
 
-**Connaissances 0.41.9 :** documentation du projet, lecture Markdown mise en forme, édition/vue partagée, modèles de notes, versions restaurables et accès IA persistant en BASIC/Z80. [Guide illustré](docs/implementation/knowledge-alpha.md).
+**Connaissances 0.41.10 :** l’agent crée et révise des notes Markdown, avec comparaison et restauration commune au code. L’espace réunit documentation du projet, lecture Markdown mise en forme, édition/vue partagée, modèles de notes, versions restaurables et accès IA persistant en BASIC/Z80. [Guide illustré](docs/implementation/knowledge-alpha.md).
 
 **Missions IA 0.41.8 :** sept modèles BASIC/Z80, recherche, paramètres, aperçu modifiable et modèles personnels locaux. Préparez votre objectif sans lancer l’agent ; conservez ou remplacez explicitement votre consigne. [Guide illustré](docs/implementation/mission-library-alpha.md).
 
@@ -26,7 +26,7 @@ Les archives Actions initiales 0.38.1 du 7 octobre restent disponibles jusqu’a
 
 ### [Lire la présentation et la notice utilisateur illustrée →](docs/guide-utilisateur.md)
 
-**25 chapitres et 24 captures de l’interface** pour découvrir le produit et apprendre à l’utiliser : premiers pas, édition BASIC, disquettes, émulateur, IA et documents, sauvegardes, versionnement, personnalisation et dépannage.
+**Une présentation complète et des captures réelles de l’interface** pour découvrir le produit et apprendre à l’utiliser : premiers pas, édition BASIC, disquettes, émulateur, IA et documents, sauvegardes, versionnement, personnalisation et dépannage.
 
 [![L’atelier CPCéleste, un programme BASIC et ses outils réunis](docs/images/guide-utilisateur/01-atelier.png)](docs/guide-utilisateur.md)
 
@@ -35,7 +35,7 @@ Les archives Actions initiales 0.38.1 du 7 octobre restent disponibles jusqu’a
 | Complétion, diagnostics, recherche et renumérotation | Projets, documents, agent OpenAI et rapports de qualité | Historique, brouillons, checkpoints et Git/GitHub |
 | F5 depuis les buffers, CPC 6128 intégré et export DSK | Thèmes, profils, raccourcis et panneaux ajustables | Sources locales et utilisation sans IA possible |
 
-**Version du code : alpha desktop 0.41.9 — connaissances et Markdown.** Les binaires publiés peuvent correspondre à une version antérieure : consulter la version de la release. L’édition et la construction DSK fonctionnent sans ROM ni clé IA. L’exécution demande vos ROM locales ; l’agent utilise votre accès API OpenAI. La notice distingue les fonctions disponibles des évolutions encore prévues.
+**Version du code : alpha desktop 0.41.10 — connaissances et Markdown.** Les binaires publiés peuvent correspondre à une version antérieure : consulter la version de la release. L’édition et la construction DSK fonctionnent sans ROM ni clé IA. L’exécution demande vos ROM locales ; l’agent utilise votre accès API OpenAI. La notice distingue les fonctions disponibles des évolutions encore prévues.
 
 [Installer et démarrer](docs/guide-utilisateur.md#premiers-pas) · [Exécuter avec F5](docs/guide-utilisateur.md#execution) · [Découvrir l’agent](docs/guide-utilisateur.md#agent) · [Personnaliser l’atelier](docs/guide-utilisateur.md#personnalisation) · [Roadmap](docs/specifications/17-roadmap-ide-complet.md)
 

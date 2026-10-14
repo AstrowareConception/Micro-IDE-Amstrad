@@ -54,4 +54,26 @@ export async function verifyKnowledgeDesktop(page,desktop,parent) {
  await page.getByRole('button',{name:/^Enregistrer Ctrl/}).click();await expect(reader.getByRole('heading',{name:'Contexte natif',exact:true})).toBeVisible();await expect(reader).toContainText('Version enregistrée');
  const manifest=JSON.parse(await readFile(join(root,'microide.project.json'),'utf8'));assert.equal(manifest.documents.length,1);assert.match(await readFile(join(root,manifest.documents[0].path),'utf8'),/Contexte natif/);
  const forbidden=await page.evaluate(()=>window.desktop.knowledge.write('stale-session',{action:'create',title:'x',source:'x',category:'design'}));assert.match(forbidden.error,/périmée/);
+ await desktop.evaluate((_electron,id)=>{
+  let step=0;
+  globalThis.fetch=async(url,init)=>{
+   if(String(url).endsWith('/models'))return Response.json({data:[{id:'gpt-5.6-luna',created:100,owned_by:'openai'}]});
+   if(!String(url).endsWith('/responses'))return new Response('Fixture sans tarif',{status:404});
+   const body=JSON.parse(init.body),call=(name,args)=>({type:'function_call',call_id:name,name,arguments:JSON.stringify(args)});let output;
+   if(step++===0)output=[call('documents_read_text',{id,startLine:1,endLine:200})];
+   else if(step===2){const read=JSON.parse(body.input.find(item=>item.call_id==='documents_read_text' && item.type==='function_call_output').output);output=[call('documents_replace_note',{id,expectedRevision:read.revision,source:'# Contexte natif\n\n**CPC 6128** : vérifier avant de conclure.\n\n## Analyse IA\nLe test CPC reste à effectuer.'})];}
+   else if(step===3)output=[call('documents_create_note',{title:'Journal natif IA',category:'progress',source:'# Journal natif IA\n\n- [ ] Vérifier sur CPC'})];
+   else if(step===4)output=[call('build_project',{})];
+   else output=[{type:'message',content:[{type:'output_text',text:'Notes enregistrées. Aucun CPC exécuté.'}]}];
+   return Response.json({status:'completed',output,usage:{total_tokens:1}});
+  };
+ },manifest.documents[0].id);
+ const agent=page.getByRole('region',{name:'Agent OpenAI',exact:true});await agent.getByRole('button',{name:'Réglages IA',exact:true}).click();
+ const settings=page.getByRole('dialog',{name:'Réglages de l’agent IA',exact:true});await settings.getByLabel('Clé API OpenAI',{exact:true}).fill('sk-native-fixture-not-real');await settings.getByRole('button',{name:'Configurer la clé',exact:true}).click();await settings.getByLabel('Modèle OpenAI',{exact:true}).selectOption('gpt-5.6-luna');await settings.getByLabel('Tours modèle maximum',{exact:true}).fill('12');await settings.getByRole('button',{name:'Fermer les réglages IA',exact:true}).click();
+ await agent.getByLabel('Mission de programmation',{exact:true}).fill('Complète le contexte et crée un journal Markdown.');await agent.getByRole('button',{name:'Lancer l’agent',exact:true}).click();await expect(agent.locator('.agent-result')).toContainText('Mission terminée');await expect(reader).toContainText('Analyse IA');
+ await agent.getByRole('button',{name:'Lire Journal natif IA.md',exact:true}).click();await expect(reader.getByRole('heading',{name:'Journal natif IA',exact:true})).toBeVisible();
+ const updated=JSON.parse(await readFile(join(root,'microide.project.json'),'utf8'));assert.equal(updated.documents.length,2);assert.match(await readFile(join(root,updated.documents[0].path),'utf8'),/Analyse IA/);
+ await agent.getByRole('button',{name:'Restaurer le checkpoint initial',exact:true}).click();await expect(agent).toContainText('Checkpoint initial restauré');await expect(reader).toHaveCount(0);assert.deepEqual(JSON.parse(await readFile(join(root,'microide.project.json'),'utf8')),manifest);
+ console.log('Native knowledge agent: real IPC, create/revise Markdown, reader refresh and checkpoint restoration passed.');
+
 }

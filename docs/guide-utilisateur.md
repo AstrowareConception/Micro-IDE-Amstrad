@@ -16,7 +16,7 @@ Il suffit parfois d’un `MODE 1`, de quelques couleurs et d’une idée pour re
 
 Le fil conducteur est simple : **garder la création au centre, raccourcir le chemin entre une idée et son résultat, et vous laisser comprendre ce que l’outil fait.** Le BASIC reste du BASIC, vos sources restent des fichiers texte et votre projet reste un dossier que vous pouvez conserver, déplacer et versionner.
 
-Cette notice rassemble les fonctions livrées jusqu’à **CPCéleste 0.41.9, alpha desktop**, au **14 octobre 2026**. Les captures antérieures gardent leur version et leur provenance propres. Elle réunit découverte du produit et mode d’emploi. Les captures représentent l’interface réelle ; celles issues des recettes automatisées utilisent des données de démonstration. Leur [provenance détaillée](images/guide-utilisateur/README.md) distingue captures locales, Electron et services distants simulés. Cliquez sur une image pour l’ouvrir en grand dans GitHub.
+Cette notice rassemble les fonctions livrées jusqu’à **CPCéleste 0.41.10, alpha desktop**, au **14 octobre 2026**. Les captures antérieures gardent leur version et leur provenance propres. Elle réunit découverte du produit et mode d’emploi. Les captures représentent l’interface réelle ; celles issues des recettes automatisées utilisent des données de démonstration. Leur [provenance détaillée](images/guide-utilisateur/README.md) distingue captures locales, Electron et services distants simulés. Cliquez sur une image pour l’ouvrir en grand dans GitHub.
 
 <a id="sommaire"></a>
 ## Votre parcours dans la notice
@@ -461,6 +461,13 @@ Quand usage et tarif sont suffisamment établis, CPCéleste affiche une **estima
 **Arrêter l’agent** interrompt le travail à venir et la requête en cours ; cela ne défait pas les modifications déjà enregistrées. Pour revenir à l’état de départ, utilisez **Restaurer le checkpoint initial** après examen. La restauration contrôle les révisions, remet les sources et le manifeste initiaux et retire les créations de la mission lorsque les préconditions sont satisfaites. Un changement concurrent bloque cette opération plutôt que de l’écraser.
 
 <a id="documents"></a>
+### Rédaction documentaire par l’agent — 0.41.10
+
+Dans **Connaissances**, **Documenter avec l’IA** prépare une consigne à personnaliser avant lancement. L’agent peut créer des notes et réviser les notes éditables autorisées, en conservant les versions ; les références importées et les droits d’accès restent intacts. Son bilan affiche les documents créés/révisés, leur comparaison et un bouton pour les lire. Le checkpoint initial restaure ensemble code et documents ; un brouillon ou une modification manuelle postérieure protège votre travail. La vérification DSK n’est pas une preuve du contenu documentaire. [Mode d’emploi et limites](implementation/knowledge-alpha.md#faire-rédiger-la-documentation-par-lagent).
+
+![Documentation rédigée et consultée dans le projet](images/guide-utilisateur/29-redaction-documentaire-ia.png)
+
+
 ## 13. Donner à votre projet ses références et ses intentions
 
 Un programme se nourrit aussi de textes, de règles de jeu, de croquis et de documents. **Documents du projet** garde ce contexte à proximité du code. L’import copie l’original et le vérifie ; les aperçus sont consultables dans l’atelier. Les documents ne sont pas des sources BASIC et restent exclus du DSK.

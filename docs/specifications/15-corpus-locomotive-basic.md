@@ -1,6 +1,6 @@
 # 15 — Corpus de référence Locomotive BASIC
 
-**Connaissances 0.41.9 :** [espace documentaire et Markdown](../implementation/knowledge-alpha.md), notes éditables, versions restaurables, accès persistant par document et extraits essentiels bornés, disponibles pour les agents BASIC/Z80. [ADR 0067](../adr/0067-espace-connaissances-markdown.md). Suite de ce parcours : création/révision Markdown par l’agent avec checkpoints documentaires, recherche plein texte et onglets multiples ; les outils de cette tranche restent en lecture documentaire. Les tests CPC agent restent la priorité suivante de la roadmap générale.
+**Connaissances 0.41.10 :** [espace documentaire et Markdown](../implementation/knowledge-alpha.md), édition humaine et rédaction agent BASIC/Z80 : création de notes, révision après lecture avec contrôle de version, comparaison et restauration commune code/documents. Références importées et politiques d’accès immuables pour l’agent. [ADR 0068](../adr/0068-redaction-documentaire-agent.md). Suite : recherche humaine plein texte, onglets multiples ; tests CPC agent selon la roadmap générale. La construction structurelle ne qualifie pas le contenu documentaire.
 
 ## Finalité
 

@@ -262,6 +262,17 @@
       "sha256": "f560e622255869bf4d52fae8a4157b05c04ce93a882a6e4bf746a5457a563a94",
       "origin": "local-browser-real-project-store-no-ai-call",
       "scenario": "tests/knowledge-smoke.mjs"
+    },
+    {
+      "file": "29-redaction-documentaire-ia.png",
+      "version": "0.41.10",
+      "baseCommit": "9c33be45f8ad1ebfa5ef774e2afce2c36f4e7e2e",
+      "capturedOn": "2026-10-14",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "3c16d4e59d9b6a3e3bb85e4fdcfd01485023abe5a53d8c34d5ed304a56833288",
+      "origin": "local-browser-real-controller-controlled-openai",
+      "scenario": "tests/agent-knowledge-smoke.mjs"
     }
   ]
 }

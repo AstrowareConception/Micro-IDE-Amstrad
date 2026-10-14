@@ -1,6 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.41.9
+# CPCéleste — Dossier de conception et réalisation — version 0.41.10
 
-**Connaissances 0.41.9 :** documentation du projet, lecture Markdown mise en forme, édition/vue partagée, modèles de notes, versions restaurables et accès IA persistant en BASIC/Z80. [Guide illustré](implementation/knowledge-alpha.md).
+**Connaissances 0.41.10 :** l’agent crée et révise des notes Markdown, avec comparaison et restauration commune au code. L’espace réunit documentation du projet, lecture Markdown mise en forme, édition/vue partagée, modèles de notes, versions restaurables et accès IA persistant en BASIC/Z80. [Guide illustré](implementation/knowledge-alpha.md).
 
 **Bibliothèque de missions 0.41.8 :** [guide illustré](implementation/mission-library-alpha.md), [ADR 0066](adr/0066-bibliotheque-missions.md). Sept modèles contextualisés et modèles personnels, sans changement de droits de l’agent.
 
@@ -30,7 +30,7 @@
 
 ## Vous cherchez le mode d’emploi ?
 
-**[Présentation commerciale et notice utilisateur illustrée de CPCéleste](guide-utilisateur.md)** : 25 chapitres, 24 captures, les parcours complétés par les suites/scénarios BASIC et l’analyse de flux 0.40.9, des premiers pas aux fonctions avancées.
+**[Présentation commerciale et notice utilisateur illustrée de CPCéleste](guide-utilisateur.md)** : Des chapitres illustrés, les parcours complétés par les suites/scénarios BASIC et l’analyse de flux 0.40.9, des premiers pas aux fonctions avancées.
 
 Le dossier ci-dessous conserve les spécifications et les rapports des incréments successifs.
 

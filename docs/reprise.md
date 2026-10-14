@@ -2,6 +2,16 @@
 
 **Pause demandée le 8 octobre 2026.** Ce document conserve l’état vérifié, les décisions et la suite ; il n’archive pas les conversations. Confronter son contenu au `main` distant avant toute reprise.
 
+## Incrément du 14 octobre — rédaction documentaire agent 0.41.10
+
+Base : `main` à `9c33be45f8ad1ebfa5ef774e2afce2c36f4e7e2e`, PR #70 fusionnée après succès des trois workflows. Code 0.41.9, installateurs publiés 0.41.7. Branche `feat/agent-knowledge-writing` ; vérifier sa PR et les contrôles de sa tête avant d’annoncer la fusion. Aucun packaging supplémentaire déclenché.
+
+Réalisé : outils `documents_create_note` et `documents_replace_note` communs aux agents BASIC/Z80 ; lecture réelle et révision exacte pour remplacer, scope éditable/autorisé, imports et droits immuables, publication des versions Markdown via le stockage existant. Le checkpoint complet restaure notes et sources/analyse ; extension bornée du journal de récupération pour les pointeurs de notes et l’analyse Z80. Les versions documentaires physiques restent conservées. Refus des modifications manuelles ultérieures avant restauration. Corpus de mission actualisé, pause/reprise conservée. UI : Documenter avec l’IA prépare une consigne sans appel, notes créées/révisées et comparaisons dans le bilan, lecture directe, actualisation du manifeste et du lecteur, garde des brouillons. [Guide](implementation/knowledge-alpha.md), [ADR 0068](adr/0068-redaction-documentaire-agent.md), contrat AgentTask et roadmaps actualisés.
+
+Vérifications locales : 436 tests réussis ; 11 tests ciblés agent documentaire/Z80 rejoués après ajustements. TypeScript, builds renderer/main et suite navigateur complète de l’éditeur réussis. Parcours documentaire avec vrai contrôleur et stockage sur disque, fournisseur simulé : création/révision, pause/reprise, secrets exclus, comparaison, restauration complète, conflits et journal interrompu. Capture réelle inspectée et intégrée au guide. Contrôle documentaire réussi : 161 Markdown, 21 JSON, six schémas et six exemples. Recette Electron IPC ajoutée ; résultat Windows/Linux natif à vérifier en CI. Aucun appel IA facturé, ROM ni document privé ajouté.
+
+Limites : 10 documents actifs/4 Mio, notes 64 Kio, dix versions antérieures proposées ; pas de purge des fichiers archivés. Le checkpoint global est restaurable dans la session ; la récupération après crash concerne la transaction interrompue, pas la conversation IA. Toute mission reste soumise à la construction DSK finale ; le contenu Markdown n’est pas validé sémantiquement. Projet Z80 : une zone enregistrée requise. Pas de suppression/renommage documentaire agent, modification des politiques, recherche humaine plein texte, onglets documentaires multiples ni qualification multi-fenêtres. Suite : tests CPC agent selon la roadmap, puis enrichissement du corpus et recherche documentaire. Les trois pièces jointes de référence étaient déjà conservées dans le corpus initial ; elles ne sont pas recopiées ni modifiées.
+
 ## Incrément du 14 octobre — Connaissances et Markdown 0.41.9
 
 Base : `main` à `352700c3be610c2554992c15bab8dc45cec08ff5`, PR #69 fusionnée après réussite des trois workflows ; code 0.41.8, installateurs publiés 0.41.7. Branche `feat/project-knowledge`. Vérifier sa PR et ses contrôles avant d’annoncer la fusion. Aucun packaging supplémentaire déclenché.

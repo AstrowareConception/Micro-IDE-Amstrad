@@ -74,3 +74,7 @@ Reproduction : `npm run build:renderer`, puis `npm run test:editor` (Playwright 
 ## Capture 28 — Connaissances et Markdown 0.41.9
 
 [28-connaissances-markdown.png](28-connaissances-markdown.png) est une copie octet pour octet de `out/knowledge-markdown-alpha.png`, produite par [tests/knowledge-smoke.mjs](../../../tests/knowledge-smoke.mjs) le 14 octobre 2026 sur la base `352700c3be610c2554992c15bab8dc45cec08ff5`. Renderer 0.41.9 et ProjectStore réels, Chromium Linux, viewport 1440 × 1000. Projet temporaire original, sauvegarde/version/restauration exécutées sur disque ; aucune API IA appelée et aucun document privé inclus. Pixels non retouchés. Reproduction : `npm run build:renderer` puis `npm run test:editor`.
+
+## Capture 29 — Rédaction documentaire IA 0.41.10
+
+[29-redaction-documentaire-ia.png](29-redaction-documentaire-ia.png) est la copie exacte de `out/agent-knowledge-alpha.png`, produite par [tests/agent-knowledge-smoke.mjs](../../../tests/agent-knowledge-smoke.mjs) le 14 octobre 2026 sur la base `9c33be45f8ad1ebfa5ef774e2afce2c36f4e7e2e`. Renderer 0.41.10, contrôleur agent et ProjectStore réels, Chromium Linux, viewport 1440 × 1000. Réponses du fournisseur contrôlées, sans appel API réel ; notes synthétiques originales, aucun document privé ni ROM. Création, révision, lecture et restauration réellement exécutées sur disque. Pixels non retouchés. Reproduction : `npm run build:renderer` puis `npm run test:editor`.
