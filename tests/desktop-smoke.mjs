@@ -494,10 +494,11 @@ try {
   await showTool(page, 'ROM CPC');
   await expect(romPanel).toContainText('Sélection retirée.');
   const workerProbe=await desktop.evaluate(async()=>{
-    const {pathToFileURL}=await import('node:url');
-    const base=pathToFileURL(process.cwd()+'/dist/apps/desktop/main.js');
-    const {agentTestRunner}=await import(new URL('./agent-test-runner.js',base).href);
-    const {BASIC_TEST_EXAMPLE}=await import(new URL('../../packages/emulator/src/basic-tests.js',base).href);
+    // Playwright evaluates in a VM without an ESM import callback. Use Node's
+    // synchronous module loader for these compiled modules (no top-level await).
+    const load=process.getBuiltinModule('module').createRequire(process.cwd()+'/package.json');
+    const {agentTestRunner}=load('./dist/apps/desktop/agent-test-runner.js');
+    const {BASIC_TEST_EXAMPLE}=load('./dist/packages/emulator/src/basic-tests.js');
     return agentTestRunner({load:async()=>({os:new Uint8Array(16384),basic:new Uint8Array(16384),amsdos:new Uint8Array(16384)})},process.cwd()+'/dist/renderer/emulator')({id:'probe',name:'probe',source:BASIC_TEST_EXAMPLE},1,new AbortController().signal);
   });
   assert.equal(workerProbe.outcome,'blocked');assert.match(workerProbe.message,/non qualifiés pour ces ROM/);
