@@ -12,7 +12,7 @@ export interface DiskFile { name: string; bytes: Uint8Array }
 export interface ExtractedFile { name: string; records: Uint8Array; extents: number; blocks: number[] }
 
 export function validateCpcName(name: string): void {
-  if (!/^[A-Z0-9_]{1,8}(\.[A-Z0-9_]{1,3})?$/.test(name)) throw new Error("Invalid CPC 8.3 filename: " + name);
+  if (!/^[A-Z0-9_&]{1,8}(\.[A-Z0-9_&]{1,3})?$/.test(name)) throw new Error("Invalid CPC 8.3 filename: " + name);
 }
 
 export function createDataDisk(files: readonly DiskFile[]): Uint8Array {

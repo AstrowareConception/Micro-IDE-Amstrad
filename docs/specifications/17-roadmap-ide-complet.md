@@ -1,5 +1,7 @@
 # 17 — Roadmap qualifiée d’un IDE CPCéleste abouti
 
+**Correctif 0.41.7 :** import du profil historique observé sur Fer & Flamme (fin de cylindre, secteur supplémentaire 256 octets, noms avec `&`), avertissements de fidélité et capacité avant import. [Preuves et limites](../implementation/recovery-protection-alpha.md#import-historique-et-diagnostic--0417). Autres géométries, caractères CPC, détokenisation de DEF1 et exécution du jeu restent à qualifier ; ce correctif ne clôt pas DSK-D.
+
 **Tranche 0.41.6 :** [agent Z80 et comparaison des octets](../implementation/binary-agent-alpha.md), sur les zones déjà enregistrées des projets binaires. Catalogue distinct, lectures bornées, hash/révision, contrôle origine/taille, checkpoints et restauration en session ; parcours UI guidé. Lot Z80-C partiel : pas de références firmware qualifiées ni de test CPC autonome. Suite prioritaire : qualification assembleur indépendante, projets mixtes, références et tests comportementaux ; puis reprise FN/portées BASIC.
 
 **Atelier Z80 0.41.5 — réalisé partiellement :** projet entièrement binaire, annotations persistantes, classement code/données explicite, assembleur borné, aller-retour identique et modification à taille constante testable/exportable. [Preuves et limites](../implementation/binary-workbench-alpha.md). Suite : ressources dans projets mixtes, qualification avec assembleur indépendant, navigation/graphes et assistance IA avec révisions ; aucune relocalisation ni décompilation BASIC universelle.

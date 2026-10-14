@@ -20,7 +20,7 @@ La table de correspondance et le source clair ne sont pas ajoutés au DSK. Les r
 
 ## Compatibilité exacte
 
-- Conteneurs standard et Extended ordinaires, DATA ou SYSTEM, 40 pistes/une face/utilisateur 0, secteurs 512 octets sans erreur, répertoire à extents et blocs 1 Kio. Reconstruction en DATA standard uniquement. Noms limités aux lettres ASCII majuscules, chiffres et underscore, format 8.3.
+- Conteneurs standard et Extended ordinaires, DATA ou SYSTEM, 40 pistes/une face/utilisateur 0, secteurs 512 octets sans erreur, répertoire à extents et blocs 1 Kio. Reconstruction en DATA standard uniquement. Noms limités aux lettres ASCII majuscules, chiffres, underscore et `&`, format 8.3. La variante qualifiée en 0.41.7 est décrite ci-dessous.
 - BASIC : lignes croissantes, tokens connus, entiers/réels/hexadécimaux/binaires, noms de variables, RSX, chaînes, DATA et commentaires. Pointeurs de lignes en mémoire refusés. La présentation peut être normalisée ; commentaires et noms conservés lors de l'import, lorsqu'ils existent dans le fichier.
 - Les caractères CPC graphiques/contrôles non représentables en ASCII sont refusés pour l'édition plutôt que remplacés silencieusement. Les originaux restent extractibles. Ce n'est pas encore un convertisseur intégral du jeu de caractères CPC.
 - Export tokenisé : source de 65 535 caractères maximum, 255 caractères par ligne ; programme encodé au plus 65 535 octets. Les contraintes réelles de mémoire BASIC et de disquette peuvent être inférieures.
@@ -68,3 +68,22 @@ Chaque paire indique le nombre de secondes émulées avant la capture, puis les 
 409 tests unitaires réussis, dont deux nouveaux tests synthétiques : import réel des en-têtes à espaces avec conservation/reconstruction, et refus des signatures voisines, secteurs erronés/dupliqués, allocations invalides et troncatures. Aucun fichier commercial n'est utilisé par la CI.
 
 Suite prioritaire : atelier persistant pour les disquettes entièrement binaires, séparation code/données annotable et round-trip assembleur qualifié ; tests de parties et d'émulateur indépendant ; extension contrôlée des caractères et profils. Le BASIC récupéré dans ces deux exemples est un chargeur : le code machine du jeu ne redevient pas automatiquement un source BASIC.
+
+
+## Import historique et diagnostic — 0.41.7
+
+Le lecteur accepte ST1=&80 seul (fin de cylindre), sans ignorer les autres indicateurs FDC. Pour Extended DATA/SYSTEM, il accepte neuf secteurs usuels de 512 octets accompagnés, au maximum, d’un secteur supplémentaire de 256 octets (CA en DATA, 4A en SYSTEM). L’ordre physique est libre, y compris un secteur supplémentaire en première position. Les adresses, tailles, doublons, statuts, bornes et allocations restent contrôlés. Les erreurs de secteur précisent désormais piste, identifiant et motif.
+
+L’aperçu indique les particularités détectées et rappelle que les secteurs hors système de fichiers restent **uniquement dans le DSK original intégral**, pas dans la reconstruction DATA. Les avertissements sont conservés dans `import-report.json` (convertisseur `basic-resources-import-3`). Les noms comme `F&F.BAS` sont préservés au catalogue, dans le manifeste, au build et dans la commande RUN ; les chemins locaux restent générés à partir des identifiants.
+
+L’aperçu calcule aussi les blocs et entrées de catalogue nécessaires à la sélection : convertir du BASIC tokenisé en ASCII peut saturer un disque presque plein. L’import et l’édition restent possibles ; un dépassement est indiqué avant création, avec les valeurs conservées dans le rapport. Sélectionner moins de BASIC à convertir conserve les autres fichiers comme ressources brutes. Cela ne constitue pas encore un export automatique retokenisé ni une répartition automatique entre disquettes.
+
+### Cas fourni : Fer & Flamme, disquette 1 sur 4
+
+L’image examinée contient 40 pistes, une face, 368 secteurs avec ST1=&80 dont huit secteurs supplémentaires sur les pistes 5, 10, 15, 20, 25, 30, 35 et 39. Le catalogue fournit **47 fichiers**. Cinq listings sont convertibles : `F&F.BAS`, `F&F2.BAS`, `F&F3.BAS`, `TRANSIT.BAS` et `W86.BAS`. `DEF1.BAS` porte un en-tête BASIC protégé, mais sa structure ne passe pas la validation du détokeniseur : conservation brute, sans prétendre en avoir récupéré une source fiable.
+
+Recette locale : vrai worker, création/réouverture du projet, cinq sources et 42 ressources ; DSK original et enregistrements conservés octet par octet. L’export des cinq sources en ASCII dépasse la capacité DATA et est refusé sans perte de fichiers. En sélectionnant uniquement `F&F.BAS`, la reconstruction tient exactement dans 178 blocs : 47 fichiers relus, 46 ressources identiques aux originaux. Cela permet de travailler progressivement. Aucune exécution du jeu, vérification de ses protections ou des trois autres disquettes n’est revendiquée. Aucun octet du jeu ni capture commerciale n’est versionné.
+
+Les régressions utilisent des disquettes synthétiques : DATA et SYSTEM, interleave, secteur supplémentaire en tête, statuts EN/erreurs FDC, secteurs faibles/dupliqués/tronqués, allocations invalides, noms avec `&`, import/réouverture/build et prévision de capacité. Le parcours navigateur contrôle les avertissements avant import et le maintien de l’import lorsque la reconstruction dépasse la capacité.
+
+Références techniques : [définition Extended DSK par ses auteurs](https://cpctech.cpcwiki.de/docs/extdsk.html), [registres uPD765 dans le moteur chips](https://github.com/floooh/chips/blob/master/chips/upd765.h). Le bit EN est distinct des erreurs CRC, données absentes et dépassements ; cette tolérance ne répare pas un secteur défectueux.

@@ -19,7 +19,7 @@
         "type": "object", "additionalProperties": false,
         "required": ["name", "type", "logicalBytes", "allocatedBytes", "sha256"],
         "properties": {
-          "name": {"type": "string", "pattern": "^[A-Z0-9_]{1,8}(?:\\.[A-Z0-9_]{1,3})?$"},
+          "name": {"type": "string", "pattern": "^[A-Z0-9_&]{1,8}(?:\\.[A-Z0-9_&]{1,3})?$"},
           "type": {"enum": ["basic-ascii", "binary", "text"]},
           "logicalBytes": {"type": "integer", "minimum": 0},
           "allocatedBytes": {"type": "integer", "minimum": 0, "multipleOf": 1024},

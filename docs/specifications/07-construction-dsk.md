@@ -27,7 +27,7 @@ Un BASIC ASCII non protégé est un fichier sans en-tête AMSDOS. L'en-tête bin
 
 ## Noms et types
 
-Politique MVP : noms CPC en majuscules, partie 1–8 caractères, extension 0–3 ; alphabet conservateur `[A-Z0-9_]`. Il est plus restreint que certaines possibilités AMSDOS pour favoriser la portabilité. La conversion d'un nom long est proposée, jamais silencieuse. Les comparaisons ignorent la casse ; `MAIN.bas` et `main.BAS` ne sont pas deux fichiers distincts. Les caractères de commande, chemins hôte et wildcards sont refusés dans un nom de catalogue.
+Politique MVP : noms CPC en majuscules, partie 1–8 caractères, extension 0–3 ; alphabet conservateur `[A-Z0-9_&]`. Il est plus restreint que certaines possibilités AMSDOS pour favoriser la portabilité. La conversion d'un nom long est proposée, jamais silencieuse. Les comparaisons ignorent la casse ; `MAIN.bas` et `main.BAS` ne sont pas deux fichiers distincts. Les caractères de commande, chemins hôte et wildcards sont refusés dans un nom de catalogue.
 
 | Type produit | Extension conseillée | En-tête | Particularité |
 | --- | --- | --- | --- |

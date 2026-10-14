@@ -327,7 +327,9 @@ L’export ne remplace pas la sauvegarde des sources et ne marque pas les buffer
 
 ### Reprendre une ancienne disquette (0.41.2)
 
-**Fichier → Importer une disquette DSK…** affiche le catalogue et l’aperçu des listings ASCII. Choisissez les sources, le programme à lancer et le dossier parent : un nouveau projet est créé, avec une copie intégrale du DSK et des fichiers bruts. Les noms CPC sont préservés, y compris pour un BASIC ASCII nommé `.BIN`. Les programmes tokenisés/protégés, binaires et données sont conservés mais ne sont pas encore convertis ou réintégrés au build ; Extended reste non pris en charge. Consultez le rapport d’import à la racine et le [guide détaillé](implementation/dsk-import-alpha.md). Sauvegardez le dossier complet pour garder les originaux.
+**Fichier → Importer une disquette DSK…** affiche le catalogue et l’aperçu des BASIC ASCII, tokenisés ou protégés reconnus. Choisissez les sources, le programme à lancer et le dossier parent : un nouveau projet est créé, sans modifier le projet courant. La détection repose sur le contenu ; les noms CPC, y compris `F&F.BAS`, sont préservés. Les autres fichiers sont conservés comme ressources et inclus dans le build. Sans BASIC convertible, choisissez un projet binaire pour l’atelier Z80. Sauvegardez le dossier complet pour garder les originaux.
+
+Les formats DATA/SYSTEM standard ou Extended sont pris en charge dans le [périmètre documenté](implementation/recovery-protection-alpha.md#import-historique-et-diagnostic--0417). Les particularités historiques reconnues sont signalées avant import : les secteurs supplémentaires restent dans l’original mais ne sont pas reproduits dans le DSK reconstruit. La récupération des fichiers ne garantit donc pas le lancement d’un jeu protégé. L’aperçu prévient également si la conversion des BASIC en texte dépasse la capacité DATA ; vous pouvez toujours importer pour lire et éditer les sources. Le rapport `import-report.json` conserve ces informations.
 
 <a id="sauvegardes"></a>
 ## 11. Expérimenter avec plusieurs chemins de retour

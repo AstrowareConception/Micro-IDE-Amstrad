@@ -8,9 +8,9 @@ export interface DiskImportFile {
   loadAddress?: number; entryAddress?: number; payloadBytes?: number;
   source?: string; records: Uint8Array;
 }
-export interface DiskInspection { profile: string; files: DiskImportFile[] }
+export interface DiskInspection { profile: string; files: DiskImportFile[]; warnings?: string[] }
 export type DiskImportPreview = {
-  id: string; name: string; sha256: string; profile: DiskInspection['profile'];
+  id: string; name: string; sha256: string; profile: DiskInspection['profile']; warnings?: string[];
   files: Omit<DiskImportFile, 'records'>[];
 };
 export interface DiskImportRequest { id: string; name: string; sourceIds: string[]; entryId: string; kind?: 'binary' }
@@ -29,7 +29,7 @@ export function inspectDataDisk(disk: Uint8Array): DiskInspection {
   let extracted;
   try { extracted = readImportDisk(disk); }
   catch (error) { throw new Error('DSK non pris en charge ou endommagé : DATA/SYSTEM standard ou Extended, 40 pistes, une face, utilisateur 0 requis. ' + (error instanceof Error ? error.message : '')); }
-  return { profile: extracted.profile, files: extracted.files.map((file,index)=>inspectCpcFile(file.name,file.records,`file-${index}`)) };
+  return { profile: extracted.profile, ...(extracted.warnings ? { warnings: extracted.warnings } : {}), files: extracted.files.map((file,index)=>inspectCpcFile(file.name,file.records,`file-${index}`)) };
 }
 export function inspectCpcFile(name:string, records:Uint8Array, id='file-0'):DiskImportFile {
     const file={name,records};
@@ -83,4 +83,16 @@ export function selectImportSources(inspection: DiskInspection, request: DiskImp
     if (!file || file.source === undefined) throw new Error('Source absente ou non convertible ; aucun projet créé.');
     return file;
   });
+}
+
+/** Exact allocation of the current ASCII/DATA build, including unselected raw resources. */
+export function importCapacity(files: DiskImportPreview['files'], sourceIds: readonly string[]) {
+  const selected = new Set(sourceIds);
+  let blocks = 0, entries = 0;
+  for (const file of files) {
+    const length = selected.has(file.id) && file.source !== undefined ? encodeBasicAscii(file.source).length : file.recordBytes;
+    blocks += Math.ceil(length / 1024);
+    entries += Math.max(1, Math.ceil(length / 16384));
+  }
+  return { blocks, maxBlocks: 178, entries, maxEntries: 64, fits: blocks <= 178 && entries <= 64 };
 }

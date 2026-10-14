@@ -63,7 +63,7 @@ export function parseProject(value: unknown): ProjectManifest {
     const item = object(value, ['id', 'path', 'cpcName', 'sha256', 'byteLength']);
     const path = string(item.path, /^assets\/[A-Za-z0-9_-]+\.bin$/);
     if (!Number.isInteger(item.byteLength) || Number(item.byteLength) < 0 || Number(item.byteLength) > 184320) throw new Error('Taille de ressource invalide.');
-    return { id: string(item.id, ID), path, cpcName: string(item.cpcName, /^[A-Z0-9_]{1,8}(?:\.[A-Z0-9_]{1,3})?$/), sha256: string(item.sha256, /^[a-f0-9]{64}$/), byteLength: Number(item.byteLength) };
+    return { id: string(item.id, ID), path, cpcName: string(item.cpcName, /^[A-Z0-9_&]{1,8}(?:\.[A-Z0-9_&]{1,3})?$/), sha256: string(item.sha256, /^[a-f0-9]{64}$/), byteLength: Number(item.byteLength) };
   });
   if (!Array.isArray(root.documents) || root.documents.length > DOCUMENT_COUNT_LIMIT) throw new Error('10 documents maximum dans cette alpha.');
   const documents: ProjectDocument[] = root.documents.map(value => {
@@ -84,7 +84,7 @@ export function parseProject(value: unknown): ProjectManifest {
   const sources = root.sources.map(value => {
     const source = object(value, ['id', 'path', 'cpcName']);
     const id = string(source.id, ID); const path = string(source.path, PATH); validateSourcePath(path);
-    return { id, path, cpcName: string(source.cpcName, /^[A-Z0-9_]{1,8}(?:\.[A-Z0-9_]{1,3})?$/) };
+    return { id, path, cpcName: string(source.cpcName, /^[A-Z0-9_&]{1,8}(?:\.[A-Z0-9_&]{1,3})?$/) };
   });
   for (const field of ['id', 'path', 'cpcName'] as const) {
     if (new Set([...sources, ...assets].map(source => source[field].toLowerCase())).size !== sources.length + assets.length) throw new Error(`Collision de ${field} dans les sources.`);

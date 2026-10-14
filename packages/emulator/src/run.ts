@@ -35,6 +35,6 @@ export function runDisk(value: unknown, manifest?: ProjectManifest, assets: impo
   return { disk, entry: manifest.sources.find(source => source.id === manifest.entryPoint)!.cpcName };
 }
 export function runCommand(entry: string): string {
-  if (!/^[A-Z0-9_]{1,8}(?:\.[A-Z0-9_]{1,3})?$/.test(entry)) throw new Error('Entrée CPC BASIC invalide.');
+  if (!/^[A-Z0-9_&]{1,8}(?:\.[A-Z0-9_&]{1,3})?$/.test(entry)) throw new Error('Entrée CPC BASIC invalide.');
   return `RUN"${entry}"\r`;
 }
