@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.41.6
+# CPCéleste — Dossier de conception et réalisation — version 0.41.7
+
+**Import historique 0.41.7 :** [compatibilité et recette Fer & Flamme](implementation/recovery-protection-alpha.md#import-historique-et-diagnostic--0417), [ADR 0065](adr/0065-import-dsk-historique.md). Sources récupérées et limites de reconstruction explicites.
 
 **Agent Z80 0.41.6 :** explication et annotation des zones, modifications assembleur contrôlées, checkpoint restaurable et comparaison des octets. Une interface plus lisible accompagne ce parcours ; [guide illustré](implementation/binary-agent-alpha.md). Les tests CPC restent distincts de la vérification IA.
 

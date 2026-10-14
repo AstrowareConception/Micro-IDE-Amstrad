@@ -3,7 +3,7 @@ import { lstat, readFile, realpath, mkdir, rename } from 'node:fs/promises';
 import { join, basename } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { newProject, parseProject } from '../../packages/workspace/src/project.ts';
-import { inspectCpcFile, selectImportSources, type DiskInspection, type DiskImportPreview, type DiskImportRequest } from '../../packages/cpc-disk/src/import-disk.ts';
+import { inspectCpcFile, selectImportSources, importCapacity, type DiskInspection, type DiskImportPreview, type DiskImportRequest } from '../../packages/cpc-disk/src/import-disk.ts';
 import { z80Listing } from '../../packages/z80/src/disassemble.ts';
 import { durableReplace } from './save-journal.ts';
 
@@ -42,7 +42,7 @@ export class DiskImportSession {
   }
   static async prepare(path: string): Promise<DiskImportSession> {
     const bytes = await readDisk(path), inspection = await inspect(bytes);
-    const preview: DiskImportPreview = { id: randomUUID(), name: basename(path), sha256: digest(bytes), profile: inspection.profile,
+    const preview: DiskImportPreview = { id: randomUUID(), name: basename(path), sha256: digest(bytes), profile: inspection.profile, ...(inspection.warnings ? { warnings: inspection.warnings } : {}),
       files: inspection.files.map(({ records: _records, ...file }) => file) };
     return new DiskImportSession(path, bytes, inspection, preview);
   }
@@ -50,7 +50,7 @@ export class DiskImportSession {
     const bytes=await readDisk(path);
     if(bytes.length>65536+128) throw new Error('Fichier CPC limité à 65 664 octets.');
     const name=basename(path).toUpperCase();
-    if(!/^[A-Z0-9_]{1,8}(?:\.[A-Z0-9_]{1,3})?$/.test(name)) throw new Error('Nom CPC 8.3 requis pour conserver le nom sans ambiguïté.');
+    if(!/^[A-Z0-9_&]{1,8}(?:\.[A-Z0-9_&]{1,3})?$/.test(name)) throw new Error('Nom CPC 8.3 requis pour conserver le nom sans ambiguïté.');
     const file=inspectCpcFile(name,bytes), inspection:DiskInspection={profile:'cpc-file',files:[file]};
     const {records:_,...view}=file;
     return new DiskImportSession(path,bytes,inspection,{id:randomUUID(),name:basename(path),sha256:digest(bytes),profile:'cpc-file',files:[view]});
@@ -89,8 +89,8 @@ export class DiskImportSession {
       await mkdir(join(originals, 'records'));
       for (const file of this.inspection.files) await durableReplace(join(originals, 'records', `${file.id}.bin`), file.records);
       for (const file of sources) await durableReplace(join(staging, 'src', `${file.id}.bas`), Buffer.from(file.source!));
-      const report = { schemaVersion: 1, converter: 'basic-resources-import-2', profile: this.preview.profile,
-        originalName: this.preview.name, sha256: this.preview.sha256, originalPath: `.microide/imports/original.${this.preview.profile==='cpc-file'?'bin':'dsk'}`,
+      const report = { schemaVersion: 1, converter: 'basic-resources-import-3', profile: this.preview.profile,
+        warnings: this.inspection.warnings ?? [], capacity: importCapacity(this.preview.files, request.sourceIds), originalName: this.preview.name, sha256: this.preview.sha256, originalPath: `.microide/imports/original.${this.preview.profile==='cpc-file'?'bin':'dsk'}`,
         warning: 'Les sources sélectionnées sont reconstruites ; tous les autres fichiers sont inclus comme ressources brutes inchangées. Les secteurs spéciaux et protections disque ne sont pas reproduits.',
         files: this.inspection.files.map(file => ({ id: file.id, name: file.name, kind: file.kind, reason: file.reason,
           recordBytes: file.recordBytes, sha256: digest(file.records), originalPath: `.microide/imports/records/${file.id}.bin`,

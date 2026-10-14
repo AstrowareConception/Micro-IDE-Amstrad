@@ -142,3 +142,8 @@ Déclarations en lignes entières `numéro REM @directive paramètres` : `CPCINP
 Le rapport version 1 accepte désormais `sources[].checks?:[{kind,name,line}]` et `results[].observations?:[{kind,name,line,outcome,expectedSha256,actualSha256,message}]`. `kind` : screen/file ; empreintes hexadécimales SHA-256 ; empreinte observée nullable en cas d’absence/format refusé. Une observation est réussie seulement si les deux empreintes correspondent. L’ordre et les identités doivent correspondre aux déclarations. Une comparaison échouée interdit le succès global ; un natif incomplet reste incomplet. Blocage/délai/annulation ne portent pas d’observations finales. Aucune nouvelle route IPC et aucun changement du schéma des suites.
 
 Le worker peut retourner séparément des captures `{name,line,width,height,rgba:Uint8Array}` des seules zones déclarées. Dimensions et taille exacte sont validées par le renderer. Les aperçus ne sont pas archivés ; seul un téléchargement explicite les exporte en PNG. [ADR 0048](../adr/0048-scenarios-basic-reproductibles.md).
+
+
+### Complément d’import 0.41.7
+
+L’alphabet CPC 8.3 qualifié inclut `&` dans les sources et ressources ; les chemins hôte restent inchangés et générés indépendamment. `DiskInspection` et `DiskImportPreview` portent une liste facultative `warnings`. Le rapport d’import conserve ces avertissements et `capacity` (blocs/entrées requis, maxima, indicateur `fits`) avec le convertisseur `basic-resources-import-3` ; `schemaVersion: 1` est conservé pour cet ajout informatif. Les secteurs supplémentaires acceptés restent dans le DSK original uniquement. Voir [ADR 0065](../adr/0065-import-dsk-historique.md).

@@ -2,6 +2,18 @@
 
 **Pause demandée le 8 octobre 2026.** Ce document conserve l’état vérifié, les décisions et la suite ; il n’archive pas les conversations. Confronter son contenu au `main` distant avant toute reprise.
 
+## Correctif du 14 octobre — import historique 0.41.7
+
+Base : `main` à `1fdb4a59ae342fff76402e2e3d38f2b58c711430`, PR #67 fusionnée et préversion 0.41.6 publiée par le workflow 38475890518. Branche `fix/dsk-fer-flamme`. Demande : corriger le refus d’import sur Fer & Flamme, disquette 1 fournie localement.
+
+Réalisé : ST1=&80 seul accepté avec avertissement, Extended DATA/SYSTEM à neuf secteurs 512 octets et un secteur supplémentaire CA/4A de 256 octets accepté, indépendamment de l’interleave. Autres statuts, doublons, tailles faibles/tronquées et allocations invalides toujours refusés. Noms avec `&` conservés dans le lecteur/writer, manifeste, contrats, récupération isolée et commande RUN. Avertissements dans l’aperçu et le rapport ; calcul de capacité ASCII selon sélection avant import. Documentation et ADR 0065 actualisés.
+
+Preuves locales : 425 tests réussis, TypeScript, builds renderer/main ; contrôle documentaire (156 Markdown, 21 JSON, six schémas/six exemples) réussi. Parcours Chromium avec vrai worker/stockage réussi : avertissements historiques, noms avec `&`, création/réouverture, garde des brouillons, capacité et import toujours disponible si dépassement. Capture synthétique inspectée, non ajoutée au guide. Aucune nouvelle dépendance applicative.
+
+Fichier réel : 47 fichiers extraits, comparés octet par octet à un parcours de secteurs indépendant ; cinq BASIC convertibles et 42 ressources. Projet créé/rouvert, DSK et enregistrements d’origine préservés. Tous les BASIC en ASCII : 183 blocs pour 178, refus de build attendu. Seulement `F&F.BAS` converti : 178 blocs, reconstruction de 47 fichiers, 46 ressources identiques. `DEF1.BAS` reste brut (structure tokenisée non validée). Aucune exécution du jeu ni de ses protections, aucune qualification des trois autres disquettes ; les secteurs supplémentaires sont préservés seulement dans l’original. DSK, fichiers extraits et projets privés hors Git.
+
+Suite immédiate : vérifier la CI de la PR, fusionner après succès et publier un unique packaging 0.41.7 pour le retest utilisateur. Ne pas annoncer l’installateur avant la publication effective. Au-delà : retokenisation de reconstruction pour les disques pleins, caractères CPC, autres profils et protection particulière de DEF1 ; la roadmap Z80/FN existante reste ouverte.
+
 ## Incrément du 13 octobre — agent Z80 et UX 0.41.6
 
 Base : `main` à `11bd3f817b8118f862f1a726855dae0613714393`, PR #66 fusionnée après succès des contrôles Windows/Linux, moteur natif, WASM et spécifications. Branche `feat/z80-agent-workbench`. Vérifier sa PR et la CI de sa tête avant d’annoncer la fusion ; aucun installateur déclenché.

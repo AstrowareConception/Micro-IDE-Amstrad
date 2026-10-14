@@ -3,6 +3,8 @@ import { expect } from '@playwright/test';
 import { mkdtemp, writeFile, readFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { historicalExtended } from './historical-disk-fixture.ts';
+import { encodeBasicFile } from '../packages/cpc-disk/src/basic-codec.ts';
 import { createDataDisk } from '../packages/cpc-disk/src/data-disk.ts';
 import { inspectDataDisk } from '../packages/cpc-disk/src/import-disk.ts';
 import { encodeBasicAscii } from '../packages/cpc-disk/src/basic-ascii.ts';
@@ -13,9 +15,9 @@ import { ProjectStore } from '../apps/desktop/project-store.ts';
 /** Browser UI + actual worker and filesystem adapter. Native dialogs/IPC are covered separately. */
 export async function verifyDiskImport(browser) {
   const parent = await mkdtemp(join(tmpdir(), 'cpceleste-import-ui-')), path = join(parent, 'archives.dsk');
-  const bytes = createDataDisk([{ name: 'MENU.BAS', bytes: encodeBasicAscii('10 PRINT "RECOVERED"\n20 END\n') },
+  const bytes = historicalExtended(createDataDisk([{ name: 'M&NU.BAS', bytes: encodeBasicAscii('10 PRINT "RECOVERED"\n20 END\n') },
     { name: 'OLD.BIN', bytes: encodeBasicAscii('10 PRINT "BASIC IN BIN"\n20 END\n') },
-    { name: 'IMAGE.SCR', bytes: encodeAmsdosBinary('IMAGE.SCR', new Uint8Array(32), 0xc000) }]);
+    { name: 'IMAGE.SCR', bytes: encodeAmsdosBinary('IMAGE.SCR', new Uint8Array(32), 0xc000) }]));
   await writeFile(path, bytes);
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   const errors = []; page.on('pageerror', error => errors.push(error.message));
@@ -37,10 +39,12 @@ export async function verifyDiskImport(browser) {
     await page.getByRole('menuitem', { name: 'Importer une disquette DSK…', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'Importer une disquette DSK', exact: true });
     await expect(dialog).toBeVisible(); await expect(dialog.locator('tbody tr')).toHaveCount(3);
+    await expect(dialog.getByRole('note')).toContainText('8 secteur(s) supplémentaire(s)');
+    await expect(dialog.getByRole('note')).toContainText('ST1=&80');
     await expect(dialog.getByLabel('Importer IMAGE.SCR', { exact: true })).toBeDisabled();
     await dialog.getByRole('button', { name: 'Examiner OLD.BIN', exact: true }).click();
     await expect(dialog.getByRole('region', { name: 'Aperçu de OLD.BIN', exact: true })).toContainText('BASIC IN BIN');
-    await dialog.getByLabel('Importer MENU.BAS', { exact: true }).uncheck();
+    await dialog.getByLabel('Importer M&NU.BAS', { exact: true }).uncheck();
     await expect(dialog.getByLabel('Programme à lancer', { exact: true })).toHaveValue('file-2');
     await dialog.getByLabel('Nom du projet importé', { exact: true }).fill('Mes anciens programmes');
     await dialog.getByRole('button', { name: 'Choisir le dossier parent et importer', exact: true }).click();
@@ -54,6 +58,17 @@ export async function verifyDiskImport(browser) {
     assert.equal(opened.snapshot.files.length, 1); assert.equal(opened.snapshot.files[0].cpcName, 'OLD.BIN');
     assert.deepEqual(await readFile(join(root, '.microide/imports/original.dsk')), Buffer.from(bytes));
     assert.deepEqual(await readFile(path), Buffer.from(bytes)); assert.deepEqual(errors, []);
+    const largeSource = Array.from({length: 50}, (_, i) => `${10 + i * 10} ${'PRINT 0:'.repeat(20)}END`).join('\n') + '\n';
+    const tokenized = encodeBasicFile('FULL.BAS', largeSource);
+    await writeFile(path, createDataDisk([{name: 'FULL.BAS', bytes: tokenized}, {name: 'DATA.BIN', bytes: new Uint8Array((178 - Math.ceil(tokenized.length / 1024)) * 1024).fill(255)}]));
+    await page.getByRole('navigation', { name: 'Menus de l’atelier', exact: true }).getByRole('button', { name: 'Fichier', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Importer une disquette DSK…', exact: true }).click();
+    await expect(dialog.getByRole('status')).toContainText('reconstruction ASCII dépasse la capacité');
+    await expect(dialog.getByRole('button', {name: 'Choisir le dossier parent et importer', exact: true})).toBeEnabled();
+    await dialog.getByLabel('Projet binaire', {exact: true}).check();
+    await expect(dialog.getByRole('status')).toHaveCount(0);
+    await dialog.getByRole('button', {name: 'Fermer', exact: true}).click();
+    assert.deepEqual(errors, []);
   } finally { await page.close(); }
 }
 

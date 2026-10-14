@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { DiskImportPreview, DiskImportRequest, DiskFileKind } from '../../../packages/cpc-disk/src/import-disk.ts';
+import { importCapacity } from '../../../packages/cpc-disk/src/import-disk.ts';
 import { FileRecoveryView } from './FileRecoveryView.tsx';
 import { Button } from './Icon.tsx';
 
@@ -21,11 +22,17 @@ export function DiskImportDialog({ preview, onCreate, onClose }: {
     const next = selected.includes(id) ? selected.filter(value => value !== id) : [...selected, id];
     setSelected(next); if (!next.includes(entry)) setEntry(next[0] ?? '');
   }
+  const capacity = useMemo(() => importCapacity(preview.files, binary ? [] : selected), [preview.files, binary, selected]);
   const current = preview.files.find(file => file.id === active);
   return <dialog ref={dialog} className="command-dialog disk-import-dialog" aria-label="Importer une disquette DSK" onCancel={event => { if (busy) event.preventDefault(); }} onClose={onClose}>
     <h2>Retrouver les programmes d’une disquette</h2>
     <p><strong>{preview.name}</strong> · {preview.profile} · {preview.files.length} fichier(s)</p>
     <p className="muted">Les BASIC ASCII, tokenisés et protégés reconnus deviennent éditables. Les autres fichiers sont conservés et inclus dans la nouvelle disquette comme ressources.</p>
+    {!!preview.warnings?.length && <section role="note" aria-label="Particularités de la disquette">
+      <h3>Récupération des fichiers possible, copie du disque différente</h3>
+      <ul>{preview.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul>
+      <p>Le DSK original reste conservé intégralement dans le projet. Consultez aussi import-report.json après l’import.</p>
+    </section>}
     <form onSubmit={async event => {
       event.preventDefault(); if (busy || !binary && !selected.length || !name.trim()) return;
       setBusy(true); setError('');
@@ -47,6 +54,7 @@ export function DiskImportDialog({ preview, onCreate, onClose }: {
         <label>Programme à lancer<select aria-label="Programme à lancer" value={entry} onChange={event => setEntry(event.target.value)}>{(binary ? preview.files : eligible.filter(file => selected.includes(file.id))).map(file => <option key={file.id} value={file.id}>{file.name}</option>)}</select></label>
       </fieldset>
       <p>Le dossier choisi recevra un nouveau sous-dossier de projet. La disquette et tous ses fichiers bruts seront conservés. Les listings sélectionnés seront reconstruits ; les autres fichiers seront inclus sans modification. Les chargeurs dépendant des secteurs du disque original peuvent ne pas fonctionner.</p>
+      {!capacity.fits && <p role="status">L’import et l’édition restent possibles, mais la reconstruction ASCII dépasse la capacité DATA : {capacity.blocks}/{capacity.maxBlocks} blocs, {capacity.entries}/{capacity.maxEntries} entrées de catalogue. Sélectionnez moins de BASIC à convertir pour garder les autres en ressources originales, ou répartissez ensuite le projet. F5 et l’export resteront bloqués tant que la copie ne tient pas sur disque.</p>}
       {error && <p role="alert">{error}</p>}
       <Button type="submit" disabled={busy || !binary && !selected.length || !name.trim() || !(binary ? preview.files.some(file => file.id === entry) : selected.includes(entry))}>{busy ? 'Import en cours…' : 'Choisir le dossier parent et importer'}</Button>
       <Button type="button" disabled={busy} onClick={onClose}>Fermer</Button>
