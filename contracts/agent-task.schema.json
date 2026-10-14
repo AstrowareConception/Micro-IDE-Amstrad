@@ -42,9 +42,9 @@
   },
   "allOf": [
     {"if": {"properties": {"mode": {"enum": ["review", "explain"]}}}, "then": {"properties": {"scope": {"properties": {"writePrefixes": {"maxItems": 0}}}, "allowedTools": {"items": {"not": {"enum": ["project.create_source", "project.replace_source", "project.rename_source", "project.remove_source", "documents.create_note", "documents.replace_note", "assets.convert_screen", "language.renumber"]}}}}}},
-    {"if": {"properties": {"mode": {"const": "explain"}}}, "then": {"properties": {"allowedTools": {"items": {"not": {"enum": ["build.project", "emulator.run_build", "emulator.send_input", "emulator.control", "artifacts.prepare_export"]}}}}}}
+    {"if": {"properties": {"mode": {"const": "explain"}}}, "then": {"properties": {"allowedTools": {"items": {"not": {"enum": ["basic_tests.run", "build.project", "emulator.run_build", "emulator.send_input", "emulator.control", "artifacts.prepare_export"]}}}}}}
   ],
   "$defs": {
-    "tool": {"enum": ["project.list_files", "project.search", "project.read_file", "project.create_source", "project.replace_source", "project.rename_source", "project.remove_source", "reference.search", "reference.read", "documents.read_text", "documents.create_note", "documents.replace_note", "documents.inspect_image", "documents.render_pdf_pages", "assets.convert_screen", "assets.inspect", "language.analyze", "language.renumber", "build.project", "emulator.run_build", "emulator.send_input", "emulator.observe", "emulator.control", "artifacts.prepare_export", "task.checkpoint"]}
+    "tool": {"enum": ["project.list_files", "project.search", "project.read_file", "project.create_source", "project.replace_source", "project.rename_source", "project.remove_source", "reference.search", "reference.read", "documents.read_text", "documents.create_note", "documents.replace_note", "documents.inspect_image", "documents.render_pdf_pages", "assets.convert_screen", "assets.inspect", "language.analyze", "language.symbols", "language.renumber", "basic_tests.list", "basic_tests.run", "build.project", "emulator.run_build", "emulator.send_input", "emulator.observe", "emulator.control", "artifacts.prepare_export", "task.checkpoint"]}
   }
 }

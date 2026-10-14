@@ -1,3 +1,4 @@
+import { agentTestRunner } from './agent-test-runner.ts';
 import { BasicTestSuiteStore } from './basic-test-suite-store.ts';
 import { app, BrowserWindow, dialog, ipcMain, protocol, net, shell } from 'electron';
 import { readFile, writeFile, rename, unlink, lstat, mkdir } from 'node:fs/promises';
@@ -113,14 +114,14 @@ protocol.handle('cpceleste', async request => {
     return net.fetch(pathToFileURL(path).href);
   } catch { return new Response('Ressource absente', { status: 404 }); }
 });
-agent = new AgentController(join(app.getPath('userData'), 'agent-checkpoints'), join(base, '../../knowledge/locomotive-basic'));
+const firmware = new FirmwareStore(join(app.getPath('userData'), 'firmware'));
+agent = new AgentController(join(app.getPath('userData'), 'agent-checkpoints'), join(base, '../../knowledge/locomotive-basic'), undefined, agentTestRunner(firmware,join(rendererRoot,'emulator')));
 const recents = new RecentProjectsStore(app.getPath('userData'));
 async function rememberProject(store: ProjectStore) {
   try { await recents.remember(store.root, store.manifest.projectId, store.manifest.name); return ''; }
   catch { return 'Projet ouvert ; la liste des projets récents n’a pas pu être enregistrée.'; }
 }
 const gitIdentity = new GitIdentityStore(app.getPath('userData'));
-const firmware = new FirmwareStore(join(app.getPath('userData'), 'firmware'));
 window = new BrowserWindow({ width: 1440, height: 960, minWidth: 900, minHeight: 650, show: !packageSmokeFile,
   backgroundColor: '#10151d', title: 'CPCéleste — Atelier Amstrad CPC', icon: join(base, '../../renderer/brand/cpceleste-icon.png'),
   webPreferences: { preload: join(base, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true },

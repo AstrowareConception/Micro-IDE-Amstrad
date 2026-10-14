@@ -78,3 +78,7 @@ Reproduction : `npm run build:renderer`, puis `npm run test:editor` (Playwright 
 ## Capture 29 — Rédaction documentaire IA 0.41.10
 
 [29-redaction-documentaire-ia.png](29-redaction-documentaire-ia.png) est la copie exacte de `out/agent-knowledge-alpha.png`, produite par [tests/agent-knowledge-smoke.mjs](../../../tests/agent-knowledge-smoke.mjs) le 14 octobre 2026 sur la base `9c33be45f8ad1ebfa5ef774e2afce2c36f4e7e2e`. Renderer 0.41.10, contrôleur agent et ProjectStore réels, Chromium Linux, viewport 1440 × 1000. Réponses du fournisseur contrôlées, sans appel API réel ; notes synthétiques originales, aucun document privé ni ROM. Création, révision, lecture et restauration réellement exécutées sur disque. Pixels non retouchés. Reproduction : `npm run build:renderer` puis `npm run test:editor`.
+
+## Lisibilité assistée — 0.41.11
+
+[30-lisibilite-agent.png](30-lisibilite-agent.png) est la copie exacte de `out/agent-readability-alpha.png`, produite par [tests/agent-readability-smoke.mjs](../../../tests/agent-readability-smoke.mjs) sur la base `729ba9fca150d1ad27d9c952fccb5cf18da0692c`, renderer 0.41.11. Chromium Linux, viewport 1440 × 1000, programme original de tests de score. Préparation de mission sans appel IA ; contrôleur et stockage réels, fournisseur et exécution CPC simulés pour le parcours UI. Pixels non retouchés, aucun secret ni ROM. Reproduction : `npm run build:renderer` puis `npm run test:editor`.

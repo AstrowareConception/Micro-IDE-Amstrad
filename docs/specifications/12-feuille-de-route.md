@@ -1,5 +1,7 @@
 # 12 — Feuille de route et backlog de réalisation
 
+**Lisibilité et tests agent 0.41.11 :** [mission paramétrable, index des noms/types et suites CPC avant/après](../implementation/agent-readability-alpha.md). Rapports avec empreintes, limites et checkpoint ; FN et extraction multifichier restent à qualifier.
+
 **Connaissances 0.41.10 :** [espace documentaire et Markdown](../implementation/knowledge-alpha.md), édition humaine et rédaction agent BASIC/Z80 : création de notes, révision après lecture avec contrôle de version, comparaison et restauration commune code/documents. Références importées et politiques d’accès immuables pour l’agent. [ADR 0068](../adr/0068-redaction-documentaire-agent.md). Suite : recherche humaine plein texte, onglets multiples ; tests CPC agent selon la roadmap générale. La construction structurelle ne qualifie pas le contenu documentaire.
 
 **Bibliothèque 0.41.8 :** [sept missions contextualisées BASIC/Z80](../implementation/mission-library-alpha.md), recherche, paramètres, aperçu éditable, ajout/remplacement explicite et modèles personnels locaux. Préparation sans appel IA, aucun outil ni droit supplémentaire. IDE-062/063 restent partiels ; IDE-066 (modes Revue/Explication avec droits distincts) reste distinct. Suite : exécution CPC bornée et scénarios avant/après pour l’agent, puis conversion graphique ; qualification Z80, FN/portées et retokenisation restent ouvertes. [ADR 0066](../adr/0066-bibliotheque-missions.md).

@@ -406,3 +406,9 @@ select{font:inherit;width:100%;margin:8px 0;background:var(--input);color:inheri
 .agent-document-card > div { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; margin-bottom:.5rem; }
 .agent-document-badge { font-size:.75rem; border:1px solid currentColor; border-radius:1rem; padding:.1rem .5rem; }
 .agent-document-card pre { max-height:18rem; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; }
+
+.readability-panel { margin: 1rem 0; padding: .8rem; border: 1px solid var(--line); border-radius: 8px; }
+.readability-panel summary { cursor: pointer; font-weight: 600; }
+.readability-panel fieldset { display: grid; gap: .5rem; min-width: 0; border: 0; padding: 0; }
+.readability-panel .document-consent { margin: .3rem 0; }
+.readability-panel input:not([type="checkbox"]) { width: 100%; box-sizing: border-box; }

@@ -1,3 +1,5 @@
+import { indexSymbols, SYMBOL_METHOD } from '../../basic-language/src/symbols.ts';
+import { TEST_DEFINITIONS, type AgentBasicTests } from './basic-tests.ts';
 import { analyze, tokenize } from '../../basic-language/src/language.ts';
 import { COMMANDS, REFERENCE } from '../../basic-language/src/catalog.ts';
 import { planRenumber } from '../../basic-language/src/renumber.ts';
@@ -24,6 +26,7 @@ export const DEFINITIONS = [
   tool('reference_read_many', 'Lit en un appel 1–32 fiches de commandes (MODE, INK, PRINT…). Les fiches absentes sont explicitement signalées.', { names: { type: 'array', items: s, minItems: 1, maxItems: 32 } }),
   tool('project_replace_source', 'Remplace et enregistre une source déclarée ; hash de lecture requis. Consulte les références des commandes couvertes avant mutation.', { id: s, expectedHash: s, source: s }),
   tool('project_create_source', 'Crée et enregistre un fichier BASIC indépendant et son entrée manifeste ; nom sans extension de 1–8 caractères ASCII.', { name: s, source: s }),
+  tool('language_symbols', 'Index textuel partiel des variables/types possibles, 50 symboles par page. Pas un oracle de renommage ; FN et formes opaques non résolus.', {id:s,offset:n}),
   tool('language_analyze', 'Diagnostics réels du sous-ensemble pour toutes les sources. Aucun test ROM.'),
   tool('language_renumber', 'Renumérote et enregistre une source avec références locales littérales ; hash requis. Refuse formes opaques/collisions. Références de commandes à consulter ; même checkpoint que les autres mutations.', { id: s, expectedHash: s, start: n, step: n, from: n, to: n }),
   tool('build_project', 'Construit réellement le DSK de tous les buffers et le relit ; renvoie taille/hash/noms. Ne lance pas de CPC.'),
@@ -50,6 +53,7 @@ export class WorkspaceTools implements ToolPort {
   definitions = DEFINITIONS;
   state: AgentWorkspaceState;
   buildVerified = false;
+  readonly tests: AgentBasicTests | undefined;
   private consulted = new Set<string>();
   private readonly persist: (state: AgentWorkspaceState) => Promise<void>;
   private readonly hash: (value: string | Uint8Array) => string;
@@ -59,10 +63,10 @@ export class WorkspaceTools implements ToolPort {
   private readonly writeKnowledge: ((request: Extract<KnowledgeRequest, { action: 'create' | 'save' }>) => Promise<KnowledgeResult>) | undefined;
   updateDocuments(documents: DocumentSnapshot[]): void { this.documents = structuredClone(documents); }
 
-  constructor(state: AgentWorkspaceState, persist: (state: AgentWorkspaceState) => Promise<void>, hash: (value: string | Uint8Array) => string, corpus: { id: string; text: string; sha256: string }[], documents: DocumentSnapshot[] = [], writeKnowledge?: (request: Extract<KnowledgeRequest, { action: 'create' | 'save' }>) => Promise<KnowledgeResult>) {
+  constructor(state: AgentWorkspaceState, persist: (state: AgentWorkspaceState) => Promise<void>, hash: (value: string | Uint8Array) => string, corpus: { id: string; text: string; sha256: string }[], documents: DocumentSnapshot[] = [], writeKnowledge?: (request: Extract<KnowledgeRequest, { action: 'create' | 'save' }>) => Promise<KnowledgeResult>, tests?: AgentBasicTests) {
     this.state = structuredClone(state); this.persist = persist; this.hash = hash; this.corpus = corpus;
-    this.documents = structuredClone(documents); this.writeKnowledge = writeKnowledge;
-    this.definitions = [...DEFINITIONS, ...(writeKnowledge ? [
+    this.documents = structuredClone(documents); this.writeKnowledge = writeKnowledge; this.tests = tests;
+    this.definitions = [...DEFINITIONS, ...(tests ? TEST_DEFINITIONS : []), ...(writeKnowledge ? [
       tool('documents_create_note', 'Crée une nouvelle note Markdown du projet, consultable par l’agent, avec checkpoint. Ne remplace aucun document ; 64 Kio UTF-8 maximum.', { title: s, source: s, category: { type: 'string', enum: ['reference','design','progress','resource'] } }),
       tool('documents_replace_note', 'Enregistre une note Markdown éditable et autorisée, après lecture de son contenu. Révision exacte requise ; original importé et droits immuables, version précédente conservée.', { id: s, expectedRevision: s, source: s }),
     ] : [])];
@@ -79,6 +83,13 @@ export class WorkspaceTools implements ToolPort {
     const value = args(input, Object.keys(definition.parameters.properties as Record<string, unknown>));
     const file = () => { const item = this.state.files.find(file => file.id === str(value.id, 64)); if (!item) throw new Error('scope-denied : source non déclarée.'); return item; };
     switch (name) {
+      case 'language_symbols': {
+        const item=file(); if(!Number.isInteger(value.offset)||Number(value.offset)<0)throw Error('invalid-range');
+        const index=indexSymbols({id:item.id,name:item.path,source:item.source}); const offset=Number(value.offset);
+        return {method:SYMBOL_METHOD,hash:this.hash(item.source),status:index.status,reasons:index.reasons,typeDeclarations:index.typeDeclarations,omittedReasons:index.omittedReasons,totalSymbols:index.symbols.length,truncated:offset+50<index.symbols.length,symbols:index.symbols.slice(offset,offset+50).map(symbol=>({...symbol,totalOccurrences:symbol.occurrences.length,occurrences:symbol.occurrences.slice(0,10),occurrencesTruncated:symbol.occurrences.length>10}))};
+      }
+      case 'basic_tests_list': return this.tests!.list(this.state);
+      case 'basic_tests_run': return this.tests!.run(structuredClone(this.state),value.suiteId,value.expectedRevision);
       case 'documents_create_note':
       case 'documents_replace_note': {
         if (!this.writeKnowledge) throw Error('scope-denied');

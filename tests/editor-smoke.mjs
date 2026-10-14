@@ -1,3 +1,4 @@
+import { verifyAgentReadability } from './agent-readability-smoke.mjs';
 import { verifyAgentKnowledge } from './agent-knowledge-smoke.mjs';
 import { verifyKnowledge } from './knowledge-smoke.mjs';
 import { verifyBinaryWorkbench } from './binary-workbench-smoke.mjs';
@@ -350,6 +351,7 @@ try {
   await verifyRecoveryProtection(browser);
   await verifyKnowledge(browser);
   await verifyAgentKnowledge(browser);
+  await verifyAgentReadability(browser);
   await verifyBinaryWorkbench(browser);
   await verifyGitWorkbench(browser, errors);
   await verifyAgentWorkbench(browser, errors);
