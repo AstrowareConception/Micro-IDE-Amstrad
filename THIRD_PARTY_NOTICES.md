@@ -33,3 +33,7 @@ Les ROM OS/BASIC/AMSDOS ne sont pas incluses. Les droits firmware sont distincts
 ## Portage_Opti — inspiration méthodologique, alpha 0.41.8
 
 La bibliothèque de missions s’inspire de la démarche de [bfggamepassion/Portage_Opti](https://github.com/bfggamepassion/Portage_Opti/tree/f5599fc41af0c6a320dca54a45c79da6ff9b5b80), commit `f5599fc41af0c6a320dca54a45c79da6ff9b5b80` : cadrage par étapes, objectifs explicites, distinction faits/hypothèses et vérification. Les sept textes sont rédigés pour les outils de CPCéleste ; aucun code, PDF, simulateur ou kit de ce dépôt n’est redistribué ici. Cette attribution ne place pas les composants tiers de Portage_Opti sous la licence MIT de CPCéleste. Leurs conditions restent à examiner séparément avant toute intégration future. [Périmètre et suite](docs/implementation/mission-library-alpha.md).
+
+## Lecture Markdown — alpha 0.41.9
+
+[react-markdown](https://github.com/remarkjs/react-markdown) 10.1.0 et [remark-gfm](https://github.com/remarkjs/remark-gfm) 4.0.1, MIT : rendu React du Markdown/CommonMark et extensions GFM (tableaux, listes de tâches, texte barré, liens et notes). Versions et dépendances transitives figées dans package-lock.json ; licences originales conservées dans [markdown-dependencies.txt](licenses/markdown-dependencies.txt), y compris les dépendances MIT/ISC ajoutées. Aucun plugin d’HTML brut ou de script n’est activé. Les documents rendus restent soumis à leurs conditions propres.

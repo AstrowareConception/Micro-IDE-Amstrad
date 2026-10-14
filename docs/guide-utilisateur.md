@@ -16,7 +16,7 @@ Il suffit parfois d’un `MODE 1`, de quelques couleurs et d’une idée pour re
 
 Le fil conducteur est simple : **garder la création au centre, raccourcir le chemin entre une idée et son résultat, et vous laisser comprendre ce que l’outil fait.** Le BASIC reste du BASIC, vos sources restent des fichiers texte et votre projet reste un dossier que vous pouvez conserver, déplacer et versionner.
 
-Cette notice rassemble les fonctions livrées jusqu’à **CPCéleste 0.41.8, alpha desktop**, au **14 octobre 2026**. Les captures antérieures gardent leur version et leur provenance propres. Elle réunit découverte du produit et mode d’emploi. Les captures représentent l’interface réelle ; celles issues des recettes automatisées utilisent des données de démonstration. Leur [provenance détaillée](images/guide-utilisateur/README.md) distingue captures locales, Electron et services distants simulés. Cliquez sur une image pour l’ouvrir en grand dans GitHub.
+Cette notice rassemble les fonctions livrées jusqu’à **CPCéleste 0.41.9, alpha desktop**, au **14 octobre 2026**. Les captures antérieures gardent leur version et leur provenance propres. Elle réunit découverte du produit et mode d’emploi. Les captures représentent l’interface réelle ; celles issues des recettes automatisées utilisent des données de démonstration. Leur [provenance détaillée](images/guide-utilisateur/README.md) distingue captures locales, Electron et services distants simulés. Cliquez sur une image pour l’ouvrir en grand dans GitHub.
 
 <a id="sommaire"></a>
 ## Votre parcours dans la notice
@@ -404,6 +404,14 @@ Décrivez le résultat, le mode vidéo, les contraintes, les fichiers concernés
 > Crée un écran de titre pour un jeu de mahjong en MODE 1. Je veux un titre lisible, un cadre décoratif et des motifs de tuiles construits en BASIC. Consulte les références des commandes graphiques utilisées. Travaille dans la source d’entrée, conserve le reste du projet, puis construis le DSK et explique les choix à vérifier dans l’émulateur.
 
 L’agent dispose des buffers autorisés au lancement. Les documents du projet demandent une autorisation distincte. Pendant la mission, l’édition manuelle et certaines opérations concurrentes sont verrouillées pour éviter les changements simultanés.
+
+### La mémoire documentaire du projet
+
+**Connaissances**, dans la colonne gauche, classe références, conception, suivi et ressources. Créez un contexte, une roadmap ou un journal en Markdown ; cliquez sur un `.md` pour le lire au centre de l’atelier, avec titres, tableaux, listes et code. **Édition** affiche sa source, **Vue partagée** affiche les deux. Les références importées restent intactes ; une copie explicite devient modifiable. **Revenir au code** retrouve les buffers BASIC et les sorties.
+
+Dans **Classement, accès IA et versions**, choisissez Exclu, Consultable ou Essentiel. Ces choix sont conservés avec le projet. Les extraits essentiels sont transmis au démarrage d’une mission ; les autres documents sont lus à la demande. Dix versions précédentes sont restaurables. L’écriture documentaire automatique par l’agent reste une étape suivante. [Mode d’emploi et limites](implementation/knowledge-alpha.md).
+
+![Connaissances et Markdown](images/guide-utilisateur/28-connaissances-markdown.png)
 
 ### Choisir une mission guidée
 

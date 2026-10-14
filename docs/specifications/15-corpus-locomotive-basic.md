@@ -1,5 +1,7 @@
 # 15 — Corpus de référence Locomotive BASIC
 
+**Connaissances 0.41.9 :** [espace documentaire et Markdown](../implementation/knowledge-alpha.md), notes éditables, versions restaurables, accès persistant par document et extraits essentiels bornés, disponibles pour les agents BASIC/Z80. [ADR 0067](../adr/0067-espace-connaissances-markdown.md). Suite de ce parcours : création/révision Markdown par l’agent avec checkpoints documentaires, recherche plein texte et onglets multiples ; les outils de cette tranche restent en lecture documentaire. Les tests CPC agent restent la priorité suivante de la roadmap générale.
+
 ## Finalité
 
 Les fichiers fournis ne servent pas seulement de documentation pour le développeur de l'IDE. Ils constituent une base de connaissances exploitable par l'agent, par l'aide de l'éditeur et par la validation des programmes. L'objectif est de produire du Locomotive BASIC CPC conforme à ses particularités, pas un BASIC générique approximativement renommé.

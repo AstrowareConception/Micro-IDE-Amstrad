@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('desktop', Object.freeze({
+  knowledge: Object.freeze({ write: (sessionId, request) => ipcRenderer.invoke('knowledge:write', { sessionId, request }) }),
   open: () => ipcRenderer.invoke('listing:open'),
   save: (source, saveAs = false) => ipcRenderer.invoke('listing:save', { source, saveAs }),
   exportDisk: source => ipcRenderer.invoke('listing:export', { source }),

@@ -179,7 +179,9 @@ export function App() {
     }) ?? order[0]!;
     revealProblem(next.doc.id, next.diagnostic);
   }
-  const dirty = binaryDirty || documents.some(document => document.source !== document.saved);
+  const knowledgeSave = useRef<(()=>Promise<boolean>) | undefined>(undefined);
+  const [knowledgeDirty, setKnowledgeDirty] = useState(false), [knowledgeOpen,setKnowledgeOpen] = useState(false);
+  const dirty = knowledgeDirty || binaryDirty || documents.some(document => document.source !== document.saved);
   useEffect(() => {
     const save = () => { if (!persistPreferences(preferences)) notify({ source: 'settings', target: 'settings', level: 'warning', message: 'Paramètres appliqués pour cette session ; conservation indisponible.' }); };
     const timer = setTimeout(save, 150); window.addEventListener('pagehide', save);
@@ -194,12 +196,12 @@ export function App() {
   }, [preferences.theme, preferences.accent, preferences.density]);
   useEffect(() => {
     if (!preferences.autoSave) { autoSaveAttempt.current = ''; return; }
-    if (!project || binaryProject || !files.project || busy || sourceDialog || !dirty) return;
+    if (!project || binaryProject || !files.project || busy || sourceDialog || knowledgeDirty || !documents.some(d=>d.source!==d.saved)) return;
     const revision = JSON.stringify([project.sessionId, preferences.autoSaveDelay, documents.map(item => [item.id, item.source, item.saved])]);
     if (autoSaveAttempt.current === revision) return;
     const timer = setTimeout(() => { autoSaveAttempt.current = revision; void saveAll(); }, preferences.autoSaveDelay);
     return () => clearTimeout(timer);
-  }, [preferences.autoSave, preferences.autoSaveDelay, project?.sessionId, busy, dirty, documents, sourceDialog]);
+  }, [preferences.autoSave, preferences.autoSaveDelay, project?.sessionId, busy, dirty, knowledgeDirty, documents, sourceDialog]);
   useEffect(() => { files.setDirty(dirty); }, [dirty]);
   useEffect(() => { if (searchOpen) showTool('search'); }, [searchOpen]);
   useEffect(() => { setClosedTabs(previous => { if (!previous.has(activeId)) return previous; const next = new Set(previous); next.delete(activeId); return next; }); }, [activeId]);
@@ -264,7 +266,7 @@ export function App() {
     if (!append) setClosedTabs(new Set());
     showTool('project');
     if (snapshot.manifest.kind === 'binary') { setAgentOpen(false); setOutputOpen(false); }
-    setBinaryDirty(false); setActiveId(added[0]?.id ?? 'binary'); setProject({ sessionId: snapshot.sessionId, manifest: snapshot.manifest });
+    setKnowledgeDirty(false); setKnowledgeOpen(false); setBinaryDirty(false); setActiveId(added[0]?.id ?? 'binary'); setProject({ sessionId: snapshot.sessionId, manifest: snapshot.manifest });
   }
   function acceptSourceMutation(result: SourceMutationResult) {
     if (!project) return;
@@ -372,8 +374,9 @@ export function App() {
       else button?.click();
     });
   }
-  const save = () => binaryProject ? binaryEditor.current?.save() : perform(() => project && files.project ? files.project.save(project.sessionId, active.sourceId, source) : files.save(source), 'Listing enregistré', true);
+  const save = () => knowledgeOpen ? knowledgeSave.current?.() : binaryProject ? binaryEditor.current?.save() : perform(() => project && files.project ? files.project.save(project.sessionId, active.sourceId, source) : files.save(source), 'Listing enregistré', true);
   async function saveAll() {
+    if (knowledgeDirty && !await knowledgeSave.current?.()) return;
     if (binaryProject) { await binaryEditor.current?.save(); return; }
     if (busy || !project || !files.project) return;
     const snapshot = documents.map(item => ({ id: item.id, sourceId: item.sourceId, source: item.source }));
@@ -450,7 +453,7 @@ export function App() {
     { id: 'git-refresh', label: 'Actualiser Git', disabled: busy || !project || !files.git, run: () => { showTool('git'); requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('.git-panel button')?.click()); } },
     { id: 'git-history', label: 'Historique des commits Git', disabled: busy || !project || !files.git, run: () => showOutput('git-log') },
     { id: 'git-commit', label: 'Préparer un commit Git', disabled: busy || !project || !files.git, run: () => { showTool('git'); requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>('.git-commit-form textarea')?.focus()); } },
-    { id: 'documents', label: 'Afficher les documents du projet', detail: 'Ctrl Maj D', run: () => showTool('documents') },
+    { id: 'documents', label: 'Afficher les connaissances du projet', detail: 'Ctrl Maj D', run: () => showTool('documents') },
     { id: 'reference', label: 'Référence Locomotive BASIC', detail: 'F1', run: () => showTool('reference') },
     { id: 'firmware', label: 'Configurer les ROM du CPC', detail: 'Ctrl Alt R', run: () => showTool('firmware') },
     { id: 'recovery', label: 'Brouillons et modifications externes', run: () => showTool('recovery') },
@@ -497,7 +500,7 @@ export function App() {
   ] : [];
   return <main className="workbench" style={{ '--sidebar-width': `${preferences.sidebarWidth}px`, '--agent-width': `${preferences.agentWidth}px`, '--output-height': `${preferences.outputHeight}px` } as CSSProperties}>
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.41.8 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.41.9 · AstroWare Conception</p></div></div>
       <div className="topbar-actions"><Button icon="bell" aria-label={`Centre de notifications · ${unreadNotifications} non lue(s)`} onClick={() => setNotificationsOpen(true)}><span className="notification-badge">{unreadNotifications}</span></Button><span className="profile">CPC 6128 · BASIC 1.1</span></div>
     </header>
     <WorkbenchMenus groups={[
@@ -535,7 +538,7 @@ export function App() {
     </nav>
     <div ref={workspaceElement} className={`workspace ${sidebarOpen && !panels.tools.floating ? '' : 'sidebar-closed'} ${agentOpen && !panels.agent.floating ? '' : 'agent-closed'}`}>
       <nav className="activitybar" aria-label="Outils de l’IDE">{[
-        ['project', 'Explorateur', 'folder'], ['search', 'Recherche', 'search'], ['git', 'Git', 'git'], ['documents', 'Documents', 'file'], ['reference', 'Référence BASIC', 'book'], ['recovery', 'Récupération', 'history'], ['firmware', 'ROM CPC', 'chip'],
+        ['project', 'Explorateur', 'folder'], ['search', 'Recherche', 'search'], ['git', 'Git', 'git'], ['documents', 'Connaissances', 'book'], ['reference', 'Référence BASIC', 'book'], ['recovery', 'Récupération', 'history'], ['firmware', 'ROM CPC', 'chip'],
       ].map(([id, label, icon]) => <Button key={id} icon={icon as import('./Icon.tsx').IconName} aria-label={`Afficher ${label}`} aria-pressed={sidebarOpen && tool === id} title={label} onClick={() => { if (sidebarOpen && tool === id) setSidebarOpen(false); else showTool(id!); }} />)}<Button icon="spark" aria-label="Afficher l’agent IA" aria-pressed={agentOpen} title={`Agent IA · ${shortcutLabel(preferences.keymap.agent)}`} onClick={() => setAgentOpen(value => !value)} /></nav>
       <DockPanel as="aside" className="tool-sidebar" label="Outils du projet" name="les outils" hidden={!sidebarOpen} layout={panels.tools} onLayout={value => updatePanel('tools', value)} onHide={() => setSidebarOpen(false)}>
         <div className="tool-content" hidden={tool !== 'recovery'}>{!project && <div className="empty-tool">Ouvrez un projet pour retrouver ses brouillons et suivre les modifications externes.</div>}
@@ -563,14 +566,14 @@ export function App() {
 
 
         <div className="tool-content" hidden={tool !== 'documents'}>{!project && <div className="empty-tool">Ouvrez un projet pour importer textes, images et PDF.</div>}
-        {project && <DocumentsPanel key={`documents:${project.sessionId}`} sessionId={project.sessionId} manifest={project.manifest} busy={busy} requested={documentRequest} onBusy={setBusy} onManifest={manifest => setProject(previous => previous ? { ...previous, manifest } : previous)} />}
+        {project && <DocumentsPanel key={`documents:${project.sessionId}`} sessionId={project.sessionId} manifest={project.manifest} busy={busy} onSaveReady={handler=>{knowledgeSave.current=handler;}} onDirty={setKnowledgeDirty} onView={setKnowledgeOpen} onReference={()=>showTool('reference')} requested={documentRequest} onBusy={setBusy} onManifest={manifest => setProject(previous => previous ? { ...previous, manifest } : previous)} />}
         </div><div className="tool-content" hidden={tool !== 'project'}><section className="panel"><h2>{project?.manifest.name ?? 'Projets BASIC'}</h2>
           {project ? <>
             {!binaryProject && <><Button disabled={busy || !files.sourceOperations} onClick={() => void restoreSourceMutation()}>Rétablir la dernière organisation</Button>
             <Button disabled={busy || binaryProject || !files.sourceOperations?.draft} onClick={() => void showSourceDraft()}>Consulter le brouillon conservé</Button></>}
             <p>Entrée : {(binaryProject ? project.manifest.assets : project.manifest.sources).find(item => item.id === project.manifest.entryPoint)?.cpcName}</p>
             <ProjectExplorerPanel key={`explorer:${project.sessionId}`} sessionId={project.sessionId} manifest={project.manifest} busy={busy} activeSourceId={active.sourceId} dirtyIds={documents.filter(item => item.source !== item.saved).map(item => item.sourceId)}
-              onSource={id => { const item = documents.find(item => item.sourceId === id); if (item) setActiveId(item.id); }}
+              onSource={id => { setKnowledgeOpen(false); const item = documents.find(item => item.sourceId === id); if (item) setActiveId(item.id); }}
               onSourceActions={id => { const item = documents.find(item => item.sourceId === id); if (item) setContextSource(item.id); }}
               onDocument={id => { setDocumentRequest({ id, nonce: crypto.randomUUID() }); showTool('documents'); }} />
             {!binaryProject && <><label htmlFor="source-name">Nouvelle source (1–8 caractères)</label><input id="source-name" value={sourceName} onChange={event => setSourceName(event.target.value)} maxLength={8} />
@@ -594,13 +597,16 @@ export function App() {
       <ResizeHandle className="tools-separator" label="Largeur des outils" orientation="vertical" value={Math.min(preferences.sidebarWidth, workspaceSize.width * .3)} min={180} max={Math.min(800, workspaceSize.width * .3)} hidden={!sidebarOpen || panels.tools.floating} onChange={sidebarWidth => setPreferences(previous => ({ ...previous, sidebarWidth }))} />
 
       <section className="listing" aria-label="Éditeur">
+        <div id="knowledge-editor-host" hidden={!knowledgeOpen} />
+        <div className="code-surface" hidden={knowledgeOpen}>
         {binaryProject && project ? <BinaryWorkbenchPanel ref={binaryEditor} key={project.sessionId} sessionId={project.sessionId} manifest={project.manifest} locked={agentBusy} onAskAgent={id => { setAgentOpen(true); setAgentSeed({ id: crypto.randomUUID(), text: `Explique et annote la zone ${id}. Conserve le listing et les octets. Sépare les faits, les hypothèses et les points à vérifier ; préserve mes notes. Vérifie le réassemblage final.` }); }} onDirty={setBinaryDirty} onBusy={setBusy} onRun={binaryRevision => { showOutput('emulator'); setEmulatorLaunch({ id: crypto.randomUUID(), request: { sessionId: project.sessionId, sources: [], binaryRevision } }); }} /> : <><div className="tabs" role="tablist" aria-label="Sources ouvertes">{documents.filter(document => !closedTabs.has(document.id)).map(document => <div className="tab-entry" key={document.id}><Button role="tab" aria-selected={document.id === activeId} className="tab" disabled={busy} onClick={() => setActiveId(document.id)} onMouseDown={event => { if (event.button === 1) { event.preventDefault(); event.currentTarget.focus(); } }} onAuxClick={event => { if (event.button === 1) { event.preventDefault(); event.stopPropagation(); requestAnimationFrame(() => closeTab(document.id)); } }} onContextMenu={event => { event.preventDefault(); setContextSource(document.id); }} onKeyDown={event => { if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) { event.preventDefault(); setContextSource(document.id); } }}>{document.name}{document.source !== document.saved ? ' • modifié' : ''}{!!indexed.get(document.id)?.diagnostics.length && <span className="tab-problems" aria-label={String(indexed.get(document.id)!.diagnostics.length) + ' diagnostic(s)'}>{indexed.get(document.id)!.diagnostics.length}</span>}</Button><Button icon="close" className="tab-close" aria-label={`Fermer l’onglet ${document.name}`} title={`Fermer la vue · buffer conservé · ${shortcutLabel(preferences.keymap['close-tab'])}`} disabled={busy || documents.filter(item => !closedTabs.has(item.id)).length < 2} onClick={() => closeTab(document.id)} /></div>)}</div>
         <Editor preferences={preferences} documents={documents} activeId={activeId} analyses={indexed} problemNavigation={problemNavigation} onNextProblem={nextProblem} busy={busy} onChange={(id, value) => setDocuments(items => items.map(item => item.id === id ? { ...item, source: value } : item))} onCommand={setCard}
           navigation={navigation} onWorkspaceReady={value => { editorWorkspace.current = value; }}
           onPosition={(line, column) => setPosition({ line, column })}
           onSave={() => void save()} onReady={value => { editor.current = value; }} onPalette={() => setPalette('all')} onRenumber={() => setRenumberOpen(true)} onExport={() => void exportDisk()} /></>}
-        <ResizeHandle label="Hauteur des sorties" orientation="horizontal" reverse value={Math.min(preferences.outputHeight, Math.max(120, workspaceSize.height - 180))} min={120} max={Math.min(1200, workspaceSize.height - 180)} hidden={!outputOpen || panels.output.floating} onChange={outputHeight => setPreferences(previous => ({ ...previous, outputHeight }))} />
-        <DockPanel className="output-dock" label="Sorties de l’atelier" name="les sorties" hidden={!outputOpen} layout={panels.output} onLayout={value => updatePanel('output', value)} onHide={() => setOutputOpen(false)} tabs={<nav className="output-tabs" aria-label="Panneaux de sortie"><Button aria-pressed={outputTab === 'problems'} onClick={() => showOutput('problems')} icon="warning">Problèmes {allProblems.length}</Button><Button aria-pressed={outputTab === 'emulator'} onClick={() => showOutput('emulator')} icon="chip">CPC</Button><Button aria-pressed={outputTab === 'terminal'} onClick={() => showOutput('terminal')} icon="terminal">Terminal</Button><Button aria-pressed={outputTab === 'symbols'} onClick={() => showOutput('symbols')} icon="search">Symboles</Button><Button aria-pressed={outputTab === 'quality'} onClick={() => showOutput('quality')} icon="warning">Qualité</Button><Button aria-pressed={outputTab === 'basic-tests'} onClick={() => showOutput('basic-tests')} icon="chip">Tests BASIC</Button><Button aria-pressed={outputTab === 'performance'} onClick={() => showOutput('performance')} icon="settings">Performance</Button><Button aria-pressed={outputTab === 'git-log'} onClick={() => showOutput('git-log')} icon="git">Git</Button></nav>}><div hidden={outputTab !== 'problems'}><ProblemsPanel documents={documents} entries={analysis.entries} onReveal={revealProblem} onRetry={analysis.retry} /></div>
+        </div>
+        <ResizeHandle label="Hauteur des sorties" orientation="horizontal" reverse value={Math.min(preferences.outputHeight, Math.max(120, workspaceSize.height - 180))} min={120} max={Math.min(1200, workspaceSize.height - 180)} hidden={!outputOpen || knowledgeOpen || panels.output.floating} onChange={outputHeight => setPreferences(previous => ({ ...previous, outputHeight }))} />
+        <DockPanel className="output-dock" label="Sorties de l’atelier" name="les sorties" hidden={!outputOpen || knowledgeOpen} layout={panels.output} onLayout={value => updatePanel('output', value)} onHide={() => setOutputOpen(false)} tabs={<nav className="output-tabs" aria-label="Panneaux de sortie"><Button aria-pressed={outputTab === 'problems'} onClick={() => showOutput('problems')} icon="warning">Problèmes {allProblems.length}</Button><Button aria-pressed={outputTab === 'emulator'} onClick={() => showOutput('emulator')} icon="chip">CPC</Button><Button aria-pressed={outputTab === 'terminal'} onClick={() => showOutput('terminal')} icon="terminal">Terminal</Button><Button aria-pressed={outputTab === 'symbols'} onClick={() => showOutput('symbols')} icon="search">Symboles</Button><Button aria-pressed={outputTab === 'quality'} onClick={() => showOutput('quality')} icon="warning">Qualité</Button><Button aria-pressed={outputTab === 'basic-tests'} onClick={() => showOutput('basic-tests')} icon="chip">Tests BASIC</Button><Button aria-pressed={outputTab === 'performance'} onClick={() => showOutput('performance')} icon="settings">Performance</Button><Button aria-pressed={outputTab === 'git-log'} onClick={() => showOutput('git-log')} icon="git">Git</Button></nav>}><div hidden={outputTab !== 'problems'}><ProblemsPanel documents={documents} entries={analysis.entries} onReveal={revealProblem} onRetry={analysis.retry} /></div>
         {outputOpen && outputTab === 'performance' && <PerformancePanel visible snapshot={analysis} documents={documents} />}
         <div hidden={outputTab !== 'symbols'}><SymbolsPanel documents={documents} activeId={activeId} scopeId={project?.sessionId ?? 'standalone'} onReveal={revealSymbol} /></div>
         <div hidden={outputTab !== 'quality'}><QualityPanel documents={documents} activeId={activeId} scopeId={project?.sessionId ?? 'standalone'} onReveal={revealQuality} /></div>
@@ -612,7 +618,7 @@ export function App() {
       </section>
       <ResizeHandle label="Largeur de l’assistant" orientation="vertical" reverse value={Math.min(preferences.agentWidth, Math.max(240, workspaceSize.width * .35))} min={240} max={Math.min(800, Math.max(240, workspaceSize.width * .35))} hidden={!agentOpen || panels.agent.floating} onChange={agentWidth => setPreferences(previous => ({ ...previous, agentWidth }))} />
       <DockPanel as="aside" className="ai-sidebar" label="Assistant IA" name="l’agent IA" hidden={!agentOpen} layout={panels.agent} onLayout={value => updatePanel('agent', value)} onHide={() => setAgentOpen(false)}>
-        <AgentPanel binary={binaryProject} seed={agentSeed} binaryDirty={binaryDirty} sessionId={project?.sessionId} documentCount={project?.manifest.documents.length ?? 0} buffers={documents.map(document => ({ id: document.sourceId, source: document.source }))} busy={busy} onRunning={setAgentBusy} onState={acceptAgent} onNotify={notify} />
+        <AgentPanel knowledgeCount={project?.manifest.documents.filter(d=>d.knowledge && d.knowledge.access!=='excluded').length ?? 0} documentDirty={knowledgeDirty} binary={binaryProject} seed={agentSeed} binaryDirty={binaryDirty} sessionId={project?.sessionId} documentCount={project?.manifest.documents.length ?? 0} buffers={documents.map(document => ({ id: document.sourceId, source: document.source }))} busy={busy} onRunning={setAgentBusy} onState={acceptAgent} onNotify={notify} />
       </DockPanel>
     </div>
     {githubOpen && <GitHubDialog busy={busy} onClone={cloneProject} {...(project ? { onRemote: associateRemote } : {})} onClose={() => setGithubOpen(false)} />}

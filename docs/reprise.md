@@ -2,6 +2,16 @@
 
 **Pause demandée le 8 octobre 2026.** Ce document conserve l’état vérifié, les décisions et la suite ; il n’archive pas les conversations. Confronter son contenu au `main` distant avant toute reprise.
 
+## Incrément du 14 octobre — Connaissances et Markdown 0.41.9
+
+Base : `main` à `352700c3be610c2554992c15bab8dc45cec08ff5`, PR #69 fusionnée après réussite des trois workflows ; code 0.41.8, installateurs publiés 0.41.7. Branche `feat/project-knowledge`. Vérifier sa PR et ses contrôles avant d’annoncer la fusion. Aucun packaging supplémentaire déclenché.
+
+Réalisé : espace Connaissances à gauche, catégories et recherche par titre ; lecture Markdown/GFM au centre, source et vue partagée, templates de notes, copie des références importées, éditions humaines et dix versions précédentes restaurables. Sources BASIC préservées, brouillons documentaires signalés, Ctrl/Cmd S et bouton général orientés vers le lecteur actif. Extension optionnelle du manifeste par document, publication de versions Markdown immuables puis du pointeur de manifeste. Accès Exclu/Consultable/Essentiel persistant ; contexte essentiel borné 4 K/document et 12 K total, lectures partagées BASIC/Z80. [Guide](implementation/knowledge-alpha.md), [ADR 0067](adr/0067-espace-connaissances-markdown.md).
+
+Vérifications locales : 431 tests réussis, dont store réel et contexte du contrôleur avec fournisseur simulé. TypeScript et builds renderer/main réussis. Parcours navigateur complet de l’éditeur réussi ; parcours ciblé Connaissances/agent BASIC/Z80 repassé après les derniers ajustements. Capture réelle inspectée et copiée dans le guide. Contrôle documentaire réussi : 160 Markdown, 21 JSON, six schémas et six exemples. Régression native des imports et nouvelle recette IPC ajoutées à la suite Desktop ; qualification Windows/Linux à vérifier en CI. Aucun appel IA payant, ROM ni document privé ajouté.
+
+Limites : dix documents actifs/4 Mio, notes 64 Kio, versions archivées conservées sans purge automatique. Rendu Markdown 64 K caractères, HTML brut inerte, pas d’images externes automatiques, liens externes à copier. Pas de Mermaid/mathématiques/coloration de code, glisser-déposer, onglets documentaires multiples ou récupération du brouillon après crash. La génération et modification automatique du Markdown par l’agent restent à réaliser avec checkpoints cohérents ; la consultation persistante est livrée. Pas de transaction multi-fenêtres ni garantie universelle de panne matérielle. Les anciens exécutables refusent les nouveaux champs de manifeste : conserver une version Git avant retour à un ancien IDE. Suite : outils documentaires mutatifs, recherche plein texte, puis tests CPC agent selon la roadmap.
+
 ## Incrément du 14 octobre — bibliothèque de missions 0.41.8
 
 Base : `main` à `b283e2b4d7c982da26145ed7012f8751301a47da`, PR #68 fusionnée, préversion 0.41.7 publiée par le workflow 38616060931. Branche `feat/agent-mission-library`. Vérifier sa PR et ses contrôles avant d’annoncer sa fusion ; aucun packaging supplémentaire déclenché par cet incrément.

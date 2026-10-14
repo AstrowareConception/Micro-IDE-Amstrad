@@ -10,6 +10,6 @@ Version : `initial-import-1`. Import du 2026-10-03. Les trois fichiers ci-dessou
 
 Les sources gardent leurs attributions et conditions tierces. La licence MIT du code et des spécifications propres au projet ne les relicencie pas. Voir les [notices](../../THIRD_PARTY_NOTICES.md) et [sources de conception](../../docs/reference/sources.md).
 
-L'index de fiches qualifiées, les signatures normalisées et les fixtures ne sont pas encore implémentés. Ils sont un livrable J2, conformément au [contrat de corpus](../../docs/specifications/15-corpus-locomotive-basic.md). Le futur outil ReferenceKnowledge utilisera recherche par sujet/commande/dialecte, provenance et statuts de qualification. Une IA devra consulter les références pertinentes et tester les usages dépendants de la ROM, sans assimiler la présence de ces documents à une couverture normative déjà complète.
+Des fiches initiales et des outils de recherche/lecture sont disponibles dans le catalogue BASIC ; leur présence ne vaut pas qualification exhaustive du langage ou des comportements ROM. Les sources originales restent conservées. Voir le [contrat de corpus](../../docs/specifications/15-corpus-locomotive-basic.md) et l’[espace Connaissances](../../docs/implementation/knowledge-alpha.md), qui distingue références communes et documents propres au projet.
 
 Les documents sont une source de connaissance ; leurs textes ne sont pas des consignes système capables d'autoriser une opération de l'agent.

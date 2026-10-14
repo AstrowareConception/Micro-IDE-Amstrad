@@ -59,7 +59,8 @@ export async function verifyProjectExplorer(browser, errors) {
     await expect(panel.getByRole('button', { name: /.env/ })).toBeVisible();
     await panel.getByRole('button', { name: 'Dossier documents', exact: true }).click();
     await panel.getByRole('button', { name: /Indices.txt/ }).click();
-    await expect(page.getByRole('region', { name: 'Documents du projet', exact: true }).getByRole('textbox')).toHaveValue('Indices du jeu');
+    await expect(page.getByRole('region', { name: 'Document ouvert', exact: true }).getByLabel('Texte du document', {exact:true})).toHaveValue('Indices du jeu');
+    await page.getByRole('button', { name: 'Revenir au code', exact: true }).click();
     await page.keyboard.press('Control+Shift+e');
     await panel.getByRole('button', { name: 'Actualiser les fichiers', exact: true }).click();
     await expect(panel.getByRole('button', { name: 'Dossier src', exact: true })).toHaveAttribute('aria-expanded', 'false');

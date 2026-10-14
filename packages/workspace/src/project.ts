@@ -1,3 +1,4 @@
+import { parseKnowledge, type KnowledgeMetadata } from './knowledge.ts';
 import { encodeListing } from '../../basic-language/src/build.ts';
 import { createDataDisk, readDataDisk } from '../../cpc-disk/src/data-disk.ts';
 
@@ -6,7 +7,7 @@ export interface AssetSnapshot { id: string; bytes: Uint8Array }
 export interface ProjectSource { id: string; path: string; cpcName: string }
 export interface ProjectDocument {
   id: string; path: string; sha256: string; mediaType: 'text/plain' | 'text/markdown' | 'image/png' | 'image/jpeg' | 'application/pdf';
-  role: 'context' | 'inspiration' | 'asset-source'; originalName: string;
+  role: 'context' | 'inspiration' | 'asset-source'; originalName: string; knowledge?: KnowledgeMetadata;
 }
 export interface DocumentText extends ProjectDocument { text: string; bytes: number }
 export interface ImagePreview { dataUrl: string; width: number; height: number; previewWidth: number; previewHeight: number }
@@ -14,7 +15,7 @@ export interface DocumentImage extends ProjectDocument, ImagePreview { bytes: nu
 export interface PdfPageText { page: number; text: string }
 export interface PdfTextPreview { pages: PdfPageText[]; pageCount: number; extraction: 'pdfjs-text-v1' }
 export interface DocumentPdf extends ProjectDocument, PdfTextPreview { bytes: number }
-export type DocumentSnapshot = DocumentText | DocumentImage | DocumentPdf;
+export type DocumentSnapshot = (DocumentText | DocumentImage | DocumentPdf) & { revision?: string };
 export type ImageDecoder = (bytes: Uint8Array, mediaType: ProjectDocument['mediaType']) => Promise<ImagePreview>;
 export type PdfExtractor = (bytes: Uint8Array) => Promise<PdfTextPreview>;
 export const DOCUMENT_LIMIT = 1024 * 1024;
@@ -67,15 +68,16 @@ export function parseProject(value: unknown): ProjectManifest {
   });
   if (!Array.isArray(root.documents) || root.documents.length > DOCUMENT_COUNT_LIMIT) throw new Error('10 documents maximum dans cette alpha.');
   const documents: ProjectDocument[] = root.documents.map(value => {
-    const item = object(value, ['id', 'path', 'sha256', 'mediaType', 'role', 'originalName']);
+    const item = object(value, ['id', 'path', 'sha256', 'mediaType', 'role', 'originalName'], ['knowledge']);
     const id = string(item.id, ID), path = string(item.path, PATH);
     if (path.length > 240 || !path.startsWith('documents/') || path.split('/').some(segment => /[. ]$/.test(segment) || /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i.test(segment))) throw new Error('Chemin documentaire relatif portable sous documents/ requis.');
     const extensions: Record<string, RegExp> = { 'text/plain': /\.txt$/i, 'text/markdown': /\.md$/i, 'image/png': /\.png$/i, 'image/jpeg': /\.jpe?g$/i, 'application/pdf': /\.pdf$/i };
     if (typeof item.mediaType !== 'string' || !Object.hasOwn(extensions, item.mediaType)) throw new Error('Seuls TXT, Markdown, PNG, JPEG et PDF sont pris en charge dans cette alpha.');
+    if (item.knowledge !== undefined && parseKnowledge(item.knowledge,item.mediaType).editable && !/^documents\/note-[a-f0-9-]+\.md$/.test(path)) throw Error('Chemin de note Markdown invalide.');
     if (!extensions[item.mediaType]!.test(path)) throw new Error('Extension documentaire incohérente.');
     if (!['context', 'inspiration', 'asset-source'].includes(item.role as string)) throw new Error('Rôle documentaire invalide.');
     if (typeof item.originalName !== 'string' || !item.originalName.trim() || item.originalName.length > 255 || /[\x00-\x1f\x7f/\\]/.test(item.originalName)) throw new Error('Nom original documentaire invalide.');
-    return { id, path, sha256: string(item.sha256, /^[a-f0-9]{64}$/), mediaType: item.mediaType as ProjectDocument['mediaType'], role: item.role as ProjectDocument['role'], originalName: item.originalName };
+    return { ...(item.knowledge === undefined ? {} : { knowledge: parseKnowledge(item.knowledge, String(item.mediaType)) }), id, path, sha256: string(item.sha256, /^[a-f0-9]{64}$/), mediaType: item.mediaType as ProjectDocument['mediaType'], role: item.role as ProjectDocument['role'], originalName: item.originalName };
   });
   const build = object(root.build, ['listingFormat', 'diskFormat', 'filesystem', 'textEncoding', 'lineEnding', 'asciiEof', 'fileOrder']);
   const supported: ProjectManifest['build'] = { listingFormat: 'ascii', diskFormat: 'standard-dsk', filesystem: 'amsdos-data', textEncoding: 'ascii-strict', lineEnding: 'crlf', asciiEof: 'ctrl-z', fileOrder: 'cpc-name' };

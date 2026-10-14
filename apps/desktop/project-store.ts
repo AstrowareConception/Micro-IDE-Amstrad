@@ -1,3 +1,4 @@
+import { parseKnowledge, type KnowledgeRequest, type KnowledgeResult } from '../../packages/workspace/src/knowledge.ts';
 import { BinaryWorkbench } from './binary-workbench.ts';
 import { lstat, realpath, readFile, writeFile, rename, unlink, mkdir, readdir } from 'node:fs/promises';
 import { join, dirname, relative, isAbsolute, basename, extname } from 'node:path';
@@ -134,7 +135,7 @@ export class ProjectStore {
     if (!item) throw new Error('scope-denied : document non déclaré.');
     const content = await readDocumentBytes(await this.path(item.path));
     if (hash(content) !== item.sha256) throw new Error(`stale-read : ${item.originalName} a changé sur disque ; original documentaire refusé.`);
-    return { ...item, ...await this.documentView(content, item.mediaType), bytes: content.length };
+    return { ...item, ...await this.documentView(content, item.mediaType), bytes: content.length, revision: hash(Buffer.from(JSON.stringify(item))) };
   }
   async agentDocuments(): Promise<DocumentSnapshot[]> {
     const result: DocumentSnapshot[] = []; let total = 0;
@@ -170,6 +171,57 @@ export class ProjectStore {
       throw error;
     }
     return manifest;
+  }
+  /** Publish a new immutable Markdown revision before atomically moving the manifest pointer. */
+  async writeKnowledge(input: unknown): Promise<KnowledgeResult> {
+    await this.checkManifest();
+    if (!input || typeof input !== 'object' || Array.isArray(input)) throw Error('Demande documentaire invalide.');
+    const request = input as KnowledgeRequest;
+    const fields = { create: ['action','title','source','category'], save: ['action','id','revision','source'], configure: ['action','id','revision','category','access'], restore: ['action','id','revision','path'] };
+    if (!Object.hasOwn(fields,request.action)) throw Error('Action documentaire inconnue.');
+    const keys = fields[request.action];
+    if (!keys || Object.keys(request).length !== keys.length || keys.some(key => !Object.hasOwn(request,key))) throw Error('Demande documentaire invalide.');
+    const creating = request.action === 'create';
+    const current = creating ? undefined : await this.readDocument(request.id);
+    if (current && request.action !== 'create' && current.revision !== request.revision) throw Error('Document modifié : rechargez-le avant d’enregistrer. Votre brouillon est conservé.');
+    let item = current ? this.manifest.documents.find(d => d.id === current.id)! : undefined;
+    let source: string | undefined;
+    if (request.action === 'create') {
+      if (typeof request.title !== 'string' || !request.title.trim() || request.title.length > 100 || /[\x00-\x1f/\\]/.test(request.title)) throw Error('Titre requis, 100 caractères maximum, sans séparateur.');
+      if (this.manifest.documents.length >= DOCUMENT_COUNT_LIMIT) throw Error('10 documents maximum.');
+      item = { id: `doc-${randomUUID()}`, path:'', sha256:'', mediaType:'text/markdown', role:'context', originalName:request.title.trim().replace(/\.md$/i,'')+'.md', knowledge:parseKnowledge({ category:request.category, editable:true, access:'available', versions:[] },'text/markdown') };
+      source = request.source;
+    } else if (request.action === 'configure') {
+      item = { ...item!, knowledge:parseKnowledge({ category:request.category, editable:item!.knowledge?.editable ?? false, access:request.access, versions:item!.knowledge?.versions ?? [] },item!.mediaType) };
+    } else {
+      if (!item!.knowledge?.editable) throw Error('Référence importée en lecture seule : créez une copie modifiable.');
+      if (request.action === 'save') source = request.source;
+      else {
+        const version = item!.knowledge.versions.find(v => v.path === request.path);
+        if (!version) throw Error('Version documentaire inconnue.');
+        const content = await readDocumentBytes(await this.path(version.path));
+        if (hash(content) !== version.sha256) throw Error('Version altérée : restauration refusée.');
+        source = decodeDocument(content);
+      }
+    }
+    let destination: string | undefined, content: Buffer | undefined;
+    if (request.action !== 'configure') {
+      if (typeof source !== 'string' || source.includes('\0') || source.charCodeAt(0) === 0xfeff || Buffer.byteLength(source) > 65536) throw Error('Note Markdown limitée à 64 Kio UTF-8 sans BOM/NUL.');
+      content = Buffer.from(source.replace(/\r\n?/g,'\n')); decodeDocument(content);
+      const docs = await this.agentDocuments();
+      if (docs.reduce((n,d) => n+(d.id === item!.id ? 0 : d.bytes),content.length) > DOCUMENT_TOTAL_LIMIT) throw Error('Documents limités à 4 Mio.');
+      const previous = current ? [{path:current.path,sha256:current.sha256,savedAt:new Date().toISOString()},...item!.knowledge!.versions].slice(0,10) : [];
+      item = { ...item!, path:`documents/note-${randomUUID()}.md`,sha256:hash(content),knowledge:{...item!.knowledge!,versions:previous} };
+    }
+    const manifest = parseProject({ ...this.manifest,documents:creating ? [...this.manifest.documents,item!] : this.manifest.documents.map(d=>d.id === item!.id ? item! : d) });
+    if (content) {
+      await mkdir(join(this.root,'documents')).catch((e:NodeJS.ErrnoException)=>{if(e.code!=='EEXIST')throw e;});
+      await this.path('documents'); destination=join(this.root,item!.path);
+      await writeFile(destination,content,{flag:'wx',mode:0o600});
+    }
+    try { await this.checkManifest(); await this.writeManifest(manifest); }
+    catch(error) { if(destination && content && hash(await readDocumentBytes(destination))===hash(content)) await unlink(destination); throw error; }
+    return { manifest:this.manifest,document:await this.readDocument(item!.id) };
   }
   async readAssets(): Promise<import('../../packages/workspace/src/project.ts').AssetSnapshot[]> {
     await this.checkManifest();

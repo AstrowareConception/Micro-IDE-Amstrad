@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.41.8
+# CPCéleste — Dossier de conception et réalisation — version 0.41.9
+
+**Connaissances 0.41.9 :** documentation du projet, lecture Markdown mise en forme, édition/vue partagée, modèles de notes, versions restaurables et accès IA persistant en BASIC/Z80. [Guide illustré](implementation/knowledge-alpha.md).
 
 **Bibliothèque de missions 0.41.8 :** [guide illustré](implementation/mission-library-alpha.md), [ADR 0066](adr/0066-bibliotheque-missions.md). Sept modèles contextualisés et modèles personnels, sans changement de droits de l’agent.
 

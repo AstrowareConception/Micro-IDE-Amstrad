@@ -12,7 +12,7 @@ const TOOL_LABELS: Record<string, string> = { binary_list_regions: 'Exploration 
 interface Props {
   binary?: boolean; binaryDirty?: boolean; seed?: { id: string; text: string } | undefined;
   sessionId: string | undefined; buffers: { id: string; source: string }[]; busy: boolean;
-  documentCount: number; onNotify?: Notify;
+  documentCount: number; knowledgeCount?: number; documentDirty?: boolean; onNotify?: Notify;
   onRunning(running: boolean): void; onState(state: AgentWorkspaceState): void;
 }
 export function AgentPanel(props: Props) {
@@ -190,11 +190,12 @@ export function AgentPanel(props: Props) {
     <p className="agent-settings-notice" aria-live="polite">{message}</p>
     </AgentSettingsDialog>}
 
-    {!props.binary && <><label className="document-consent"><input type="checkbox" checked={includeDocuments} disabled={props.busy || requesting || !props.documentCount} onChange={event => setDocumentConsentSession(event.target.checked ? props.sessionId : undefined)} />Autoriser les documents du projet pour cette mission ({props.documentCount})</label>
-    <details className="agent-data-notice"><summary>Données transmises</summary><p className="muted">Si activé, les noms et empreintes, les extraits TXT/MD/PDF lus/recherchés et les aperçus d’images demandés par l’agent sont transmis à OpenAI. Aucun original complet n’est ajouté automatiquement. Modèle vision nécessaire pour les images ; PDF texte uniquement, sans OCR.</p></details></>}
+    <><p className="muted">Connaissances : {props.knowledgeCount ?? 0} document(s) accessibles automatiquement selon les réglages du projet. Les extraits essentiels sont transmis au démarrage.</p><label className="document-consent"><input type="checkbox" checked={includeDocuments} disabled={props.busy || requesting || !props.documentCount} onChange={event => setDocumentConsentSession(event.target.checked ? props.sessionId : undefined)} />Autoriser les documents du projet pour cette mission ({props.documentCount})</label>
+    <details className="agent-data-notice"><summary>Données transmises</summary><p className="muted">Si activé, les noms et empreintes, les extraits TXT/MD/PDF lus/recherchés et les aperçus d’images demandés par l’agent sont transmis à OpenAI. Les documents explicitement exclus restent hors accès. Les extraits essentiels sont bornés ; les autres contenus sont consultés à la demande. Modèle vision nécessaire pour les images ; PDF texte uniquement, sans OCR.</p></details></>
     {props.binary && <p className="muted">Périmètre : toutes les zones déjà enregistrées, origine et taille fixes. Modifications sauvegardées avec checkpoint. La vérification assemble et construit le DSK ; le test CPC reste manuel.</p>}
+    {props.documentDirty && <p role="status">Enregistrez ou abandonnez le brouillon documentaire avant de lancer une mission.</p>}
     {props.binaryDirty && <p role="status">Enregistrez l’analyse Z80 avant de lancer, reprendre ou restaurer une mission.</p>}
-    <Button className="primary" disabled={!port || !props.sessionId || !configured || !model || !catalog?.models.some(item => item.id === model) || !objective.trim() || props.busy || requesting || props.binaryDirty} onClick={() => void start()}>Lancer l’agent</Button>
+    <Button className="primary" disabled={!port || !props.sessionId || !configured || !model || !catalog?.models.some(item => item.id === model) || !objective.trim() || props.busy || requesting || props.binaryDirty || props.documentDirty} onClick={() => void start()}>Lancer l’agent</Button>
     <Button disabled={!taskId || !view?.running || requesting} onClick={() => { if (port && taskId) void port.cancel(taskId).then(result => setMessage('error' in result ? result.error : 'Arrêt demandé ; écritures terminées conservées.')).catch(() => setMessage('Arrêt impossible.')); }}>Arrêter l’agent</Button>
     {view?.running && <><label htmlFor="agent-steering">Consigne de suivi (facultatif)</label><p className="muted">La mission suffit. Ajoutez ici une précision en cours de travail, par exemple « palette bleue et ivoire ».</p><textarea id="agent-steering" value={instruction} onChange={event => setInstruction(event.target.value)} maxLength={20000} rows={2} />
       <Button disabled={!instruction.trim()} onClick={() => { if (port && taskId) void port.steer(taskId, instruction).then(result => { setMessage('error' in result ? result.error : 'Consigne ajoutée au prochain tour.'); setInstruction(''); }).catch(() => setMessage('Consigne impossible.')); }}>Envoyer la consigne</Button></>}
