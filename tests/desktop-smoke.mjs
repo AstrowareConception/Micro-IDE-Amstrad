@@ -493,6 +493,14 @@ try {
   await romPanel.getByRole('button', { name: 'Retirer la sélection ROM', exact: true }).click();
   await showTool(page, 'ROM CPC');
   await expect(romPanel).toContainText('Sélection retirée.');
+  const workerProbe=await desktop.evaluate(async()=>{
+    const {pathToFileURL}=await import('node:url');
+    const base=pathToFileURL(process.cwd()+'/dist/apps/desktop/main.js');
+    const {agentTestRunner}=await import(new URL('./agent-test-runner.js',base).href);
+    const {BASIC_TEST_EXAMPLE}=await import(new URL('../../packages/emulator/src/basic-tests.js',base).href);
+    return agentTestRunner({load:async()=>({os:new Uint8Array(16384),basic:new Uint8Array(16384),amsdos:new Uint8Array(16384)})},process.cwd()+'/dist/renderer/emulator')({id:'probe',name:'probe',source:BASIC_TEST_EXAMPLE},1,new AbortController().signal);
+  });
+  assert.equal(workerProbe.outcome,'blocked');assert.match(workerProbe.message,/non qualifiés pour ces ROM/);
   const firmwareRoot = join(await desktop.evaluate(({ app }) => app.getPath('userData')), 'firmware');
   let osHash;
   for (const [index, label] of ['OS CPC', 'BASIC 1.1', 'AMSDOS'].entries()) {

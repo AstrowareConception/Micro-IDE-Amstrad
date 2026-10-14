@@ -1,3 +1,5 @@
+import { AgentBasicTests, type AgentTestPort } from '../../packages/agent/src/basic-tests.ts';
+import { BasicTestSuiteStore } from './basic-test-suite-store.ts';
 import type { DocumentSnapshot } from '../../packages/workspace/src/project.ts';
 import type { KnowledgeRequest } from '../../packages/workspace/src/knowledge.ts';
 import { documentAllowed, knowledgeContext } from '../../packages/workspace/src/knowledge.ts';
@@ -25,7 +27,8 @@ export class AgentController {
   private selectionRequired = false;
   private readonly prices = new Map<string, PricingProfile>();
   private readonly transport: typeof fetch | undefined;
-  constructor(storage: string, corpusRoot: string, transport?: typeof fetch) { this.storage = storage; this.corpusRoot = corpusRoot; this.transport = transport; }
+  private readonly testRunner: AgentTestPort['run'] | undefined;
+  constructor(storage: string, corpusRoot: string, transport?: typeof fetch, testRunner?: AgentTestPort['run']) { this.storage = storage; this.corpusRoot = corpusRoot; this.transport = transport; this.testRunner = testRunner; }
   get running(): boolean { return this.job?.running ?? false; }
   async suggestCommit(diff: string): Promise<{ message: string; model: string }> {
     if (this.running || this.selectionRequired || !this.provider) throw new Error('Configurez la clé et choisissez un modèle OpenAI dans le panneau IA avant cette suggestion.');
@@ -120,15 +123,18 @@ export class AgentController {
       catch { job.abort.abort(); throw Error('Journal interrompu après commit documentaire ; version enregistrée conservée.'); }
       return result;
     };
-    job.tools = binary ? new BinaryWorkspaceTools(initial, persist, digest, documents,writeKnowledge) : new WorkspaceTools(initial, persist, digest, corpus, documents,writeKnowledge);
+    const suiteStore=new BasicTestSuiteStore(store.root,store.manifest.projectId);
+    const tests=!binary && this.testRunner ? new AgentBasicTests({load:()=>suiteStore.load(),run:this.testRunner,record:async report=>{await suiteStore.record(report);}},digest,randomUUID,()=>job.abort.signal) : undefined;
+    job.tools = binary ? new BinaryWorkspaceTools(initial, persist, digest, documents,writeKnowledge) : new WorkspaceTools(initial, persist, digest, corpus, documents,writeKnowledge,tests);
     await this.record(job, initial, 'initial'); this.job = job;
     this.launch(job);
     return { taskId: id };
   }
   private launch(job: Job): void {
     const provider = job.provider; if (!provider) throw new Error('Connexion IA modifiée ; nouvelle mission requise.');
+    const deadline=setTimeout(()=>job.abort.abort(),15*60*1000);
     void runAgent({ model: job.initial.binaryAnalysis ? { respond: (input, tools, signal) => provider.respond(input, tools, signal, BINARY_INSTRUCTIONS) } : provider, tools: job.tools, objective: '', context: {}, state: job.state, pricing: job.pricing, ...job.budget,
-      signal: AbortSignal.any([job.abort.signal, AbortSignal.timeout(15 * 60 * 1000)]), progress: result => { job.result = result; },
+      signal: job.abort.signal, progress: result => { job.result = result; },
       emit: event => { job.events.push(event); if (job.events.length > 300) job.events.shift(); }, takeSteering: () => job.steering.splice(0),
     }).then(async result => {
       if (result.status === 'completed') {
@@ -137,12 +143,18 @@ export class AgentController {
         if (JSON.stringify(current) !== JSON.stringify(job.tools.state)) result = { ...result, status: 'blocked', summary: result.summary + '\nProjet modifié ailleurs ; validation périmée.' };
       }
       job.result = result;
-      if (result.status === 'completed') job.result = { ...result, summary: `${result.summary}\nValidation IDE : ${job.initial.binaryAnalysis ? 'réassemblage et DSK structurel uniquement.' : 'DSK structurel uniquement.'} Aucun programme exécuté sur CPC.` };
+      if (result.status === 'completed') {
+        const runs=job.tools instanceof WorkspaceTools ? await job.tools.tests?.validate(job.tools.state) ?? [] : [];
+        const latest=runs.at(-1);
+        const latestBySuite=[...new Map(runs.map(run=>[run.report.suiteId,run])).values()];
+        const valid=latest && latestBySuite.every(run=>!run.stale && run.report.results.every(r=>r.outcome==='passed'));
+        job.result={...result,status:latest&&!valid?'blocked':result.status,summary:`${result.summary}\nValidation IDE : DSK structurel. ${latest ? valid ? 'Suite CPC réussie sur cette révision ; uniquement les assertions des listings autonomes sélectionnés.' : 'Au moins une suite CPC non réussie ou périmée ; validation non obtenue.' : 'Aucun test CPC exécuté.'}`};
+      }
       if (result.status === 'completed' && !job.tools.buildVerified) job.result = { ...result, status: 'blocked', summary: `${result.summary}\nAucune construction réussie de la révision finale ; mission non validée.` };
       try { await this.record(job, job.tools.state, 'finished'); }
       catch { job.result = { ...job.result, status: 'failed', summary: 'Journal final non écrit ; modifications terminées conservées.' }; }
-      finally { job.running = false; }
-    }).catch(() => { job.result = { ...job.result, status: 'failed', summary: 'Échec du contrôleur ; consulter le checkpoint local.' }; job.running = false; });
+      finally { clearTimeout(deadline); job.running = false; }
+    }).catch(() => { clearTimeout(deadline); job.result = { ...job.result, status: 'failed', summary: 'Échec du contrôleur ; consulter le checkpoint local.' }; job.running = false; });
   }
   async resume(id: unknown, store: ProjectStore, buffers: { id: string; source: string }[]): Promise<{ taskId: string }> {
     const job = this.get(id);
@@ -165,7 +177,7 @@ export class AgentController {
     });
     const { assets: _assets, ...binaryWorkspace } = job.tools.state;
     const workspace = job.tools.state.binaryAnalysis ? binaryWorkspace : job.tools.state;
-    return structuredClone({ ...job.result, taskId: job.id, running: job.running, events: job.events, workspace, changed, documentChanges, before: job.initial.files.filter(file => changed.includes(file.path)).map(({ id, source }) => ({ id, source })), ...(job.initial.binaryAnalysis ? { binaryBefore: job.initial.binaryAnalysis } : {}), buildVerified: job.tools.buildVerified,
+    return structuredClone({ ...job.result, taskId: job.id, running: job.running, events: job.events, workspace, changed, documentChanges, testRuns:job.tools instanceof WorkspaceTools ? job.tools.tests?.views(job.tools.state) ?? [] : [], before: job.initial.files.filter(file => changed.includes(file.path)).map(({ id, source }) => ({ id, source })), ...(job.initial.binaryAnalysis ? { binaryBefore: job.initial.binaryAnalysis } : {}), buildVerified: job.tools.buildVerified,
       model: job.model, budget: job.budget, pricing: job.pricing, resumable: !!job.provider && !job.running && !job.restored && job.continuations < 10 && job.result.status === 'paused-limit' && !/^Budget de contexte|^Stagnation/.test(job.result.summary) });
   }
   cancel(id: unknown): { ok: boolean } { this.get(id).abort.abort(); return { ok: true }; }

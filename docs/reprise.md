@@ -1,5 +1,15 @@
 # CPCéleste — Point de reprise du développement
 
+## Incrément du 14 octobre — Lisibilité et tests agent 0.41.11
+
+Base : main `729ba9fca150d1ad27d9c952fccb5cf18da0692c`, PR #71 fusionnée, CI main réussie. Installateurs **0.41.10 publiés** par le run `38644488916`, Windows/Linux, neuf assets dont checksums/provenance. Branche `feat/agent-readability-tests` ; vérifier sa PR et sa CI avant d’annoncer la fusion. Aucun second packaging déclenché.
+
+Réalisé : préparation d’une mission de lisibilité avec traitements et périmètre, consigne éditable et précédente restaurable ; consultation agent des symboles/types possibles. Noms, commentaires, présentation et note Markdown demandés à l’IA ; FN reste une proposition et découpage un plan sans déplacement automatique. Suites existantes accessibles à l’agent BASIC avec révision, buffers courants, worker CPC jetable et ROM locales. 5 exécutions/mission, 60 s/suite ; rapports avant/après et historique, dernier essai de chaque suite non réussi/périmé bloquant. [Guide](implementation/agent-readability-alpha.md), [ADR 0069](adr/0069-lisibilite-et-tests-agent.md).
+
+Vérifications locales : 439 tests Node réussis, TypeScript et builds renderer/main réussis. Parcours navigateur complet réussi, capture réelle inspectée ; contrôle documentaire 163 Markdown, 21 JSON, six schémas et six exemples réussi. Recettes firmware/IPC et CI à confirmer avant publication. Aucun appel IA facturé. Les tests UI simulent le modèle et le runtime ; ils ne prouvent pas la ROM. La nouvelle recette firmware utilise le vrai worker et sera exécutée en CI.
+
+Limites : ni renommage sémantique déterministe, ni fonctions/portées FN qualifiées, ni extraction automatique de modules. L’aperçu est celui de la consigne ; les changements agent sont enregistrés et restaurables. Chaque test est autonome : une copie de routine ne couvre pas le programme principal. Pas de génération de suites ni tests Z80, pas de preuve universelle de conservation du comportement/mémoire/timing. Suite : lier tests et sources, qualifier FN puis renommage avec diff préalable et découpage contrôlé.
+
 **Pause demandée le 8 octobre 2026.** Ce document conserve l’état vérifié, les décisions et la suite ; il n’archive pas les conversations. Confronter son contenu au `main` distant avant toute reprise.
 
 ## Incrément du 14 octobre — rédaction documentaire agent 0.41.10

@@ -1,5 +1,7 @@
 # CPCéleste — Vos idées prennent vie en BASIC
 
+**Nouveau 0.41.11 :** [améliorer la lisibilité avec l’IA et consulter les essais CPC avant/après](implementation/agent-readability-alpha.md).
+
 **Nouveau — agent Z80 0.41.6 :** expliquer une zone, annoter ses hypothèses, modifier une copie assembleur et comparer ses octets, avec restauration du checkpoint. [Guide illustré pas à pas](implementation/binary-agent-alpha.md).
 
 **Atelier Z80 0.41.5 :** pour les DSK sans BASIC, cocher **Créer un projet binaire** à l’import. L’atelier conserve les fichiers, vos zones code/données et vos annotations ; il vérifie le réassemblage et permet de tester/exporter une copie modifiée. [Parcours complet et limites](implementation/binary-workbench-alpha.md).

@@ -508,3 +508,14 @@ await recipe('scenario-no-input', scenario.replace('40 REM @CPCINPUT 3000 "21\\r
 const early = await recipe('scenario-premature-end', BASIC_TEST_EXAMPLE + '1020 REM @CPCINPUT 3000 "x"\n', 'blocked', 5);
 assert.match(early.message, /avant la fin des saisies/);
 await writeFile('out/basic-test-runtime.json', JSON.stringify({ results, independentEmulator: false, physicalCpc: false }, null, 2));
+
+// Agent adapter: real disposable Node worker, same qualified runtime, no model call.
+const {agentTestRunner}=await import('../apps/desktop/agent-test-runner.ts');
+const runAgentTest=agentTestRunner({load:async()=>roms},new URL('../out/',import.meta.url).pathname);
+for(const [name,source,outcome] of [['agent-before',BASIC_TEST_EXAMPLE,'passed'],['agent-after',BASIC_TEST_EXAMPLE.replaceAll('score','points'),'passed'],['agent-regression',BASIC_TEST_EXAMPLE.replace('score=score+bonus','score=score-bonus'),'failed']]){
+ const result=await runAgentTest({id:name,name,source},3,new AbortController().signal);
+ assert.equal(result.outcome,outcome,JSON.stringify(result));assert.equal(result.sourceSha256,await basicTestHash(new TextEncoder().encode(source)));
+}
+const stopped=new AbortController();stopped.abort();
+await assert.rejects(runAgentTest({id:'stop',name:'stop',source:BASIC_TEST_EXAMPLE},3,stopped.signal));
+console.log('Agent CPC worker: before/after, regression and abort passed.');

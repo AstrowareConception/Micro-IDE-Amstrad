@@ -1,5 +1,7 @@
 # CPCéleste — Dossier de conception et réalisation — version 0.41.10
 
+**Lisibilité et tests agent 0.41.11 :** [mission paramétrable, index des noms/types et suites CPC avant/après](implementation/agent-readability-alpha.md). Rapports avec empreintes, limites et checkpoint ; FN et extraction multifichier restent à qualifier.
+
 **Connaissances 0.41.10 :** l’agent crée et révise des notes Markdown, avec comparaison et restauration commune au code. L’espace réunit documentation du projet, lecture Markdown mise en forme, édition/vue partagée, modèles de notes, versions restaurables et accès IA persistant en BASIC/Z80. [Guide illustré](implementation/knowledge-alpha.md).
 
 **Bibliothèque de missions 0.41.8 :** [guide illustré](implementation/mission-library-alpha.md), [ADR 0066](adr/0066-bibliotheque-missions.md). Sept modèles contextualisés et modèles personnels, sans changement de droits de l’agent.
