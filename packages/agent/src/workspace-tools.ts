@@ -2,6 +2,7 @@ import { analyze, tokenize } from '../../basic-language/src/language.ts';
 import { COMMANDS, REFERENCE } from '../../basic-language/src/catalog.ts';
 import { planRenumber } from '../../basic-language/src/renumber.ts';
 import { addProjectSource, buildProjectDisk } from '../../workspace/src/project.ts';
+import type { KnowledgeRequest, KnowledgeResult } from '../../workspace/src/knowledge.ts';
 import type { DocumentSnapshot } from '../../workspace/src/project.ts';
 import type { AgentWorkspaceState, ToolDefinition, ToolPort } from './types.ts';
 
@@ -53,10 +54,18 @@ export class WorkspaceTools implements ToolPort {
   private readonly persist: (state: AgentWorkspaceState) => Promise<void>;
   private readonly hash: (value: string | Uint8Array) => string;
   private readonly corpus: { id: string; text: string; sha256: string }[];
-  private readonly documents: DocumentSnapshot[];
-  constructor(state: AgentWorkspaceState, persist: (state: AgentWorkspaceState) => Promise<void>, hash: (value: string | Uint8Array) => string, corpus: { id: string; text: string; sha256: string }[], documents: DocumentSnapshot[] = []) {
+  private documents: DocumentSnapshot[];
+  private readonly documentReads = new Map<string, string>();
+  private readonly writeKnowledge: ((request: Extract<KnowledgeRequest, { action: 'create' | 'save' }>) => Promise<KnowledgeResult>) | undefined;
+  updateDocuments(documents: DocumentSnapshot[]): void { this.documents = structuredClone(documents); }
+
+  constructor(state: AgentWorkspaceState, persist: (state: AgentWorkspaceState) => Promise<void>, hash: (value: string | Uint8Array) => string, corpus: { id: string; text: string; sha256: string }[], documents: DocumentSnapshot[] = [], writeKnowledge?: (request: Extract<KnowledgeRequest, { action: 'create' | 'save' }>) => Promise<KnowledgeResult>) {
     this.state = structuredClone(state); this.persist = persist; this.hash = hash; this.corpus = corpus;
-    this.documents = structuredClone(documents);
+    this.documents = structuredClone(documents); this.writeKnowledge = writeKnowledge;
+    this.definitions = [...DEFINITIONS, ...(writeKnowledge ? [
+      tool('documents_create_note', 'Crée une nouvelle note Markdown du projet, consultable par l’agent, avec checkpoint. Ne remplace aucun document ; 64 Kio UTF-8 maximum.', { title: s, source: s, category: { type: 'string', enum: ['reference','design','progress','resource'] } }),
+      tool('documents_replace_note', 'Enregistre une note Markdown éditable et autorisée, après lecture de son contenu. Révision exacte requise ; original importé et droits immuables, version précédente conservée.', { id: s, expectedRevision: s, source: s }),
+    ] : [])];
   }
   private validateSource(source: string): void {
     if (new TextEncoder().encode(source).length > 65536 || source.includes('\0') || source.charCodeAt(0) === 0xfeff) throw new Error('Source agent limitée à 64 Kio UTF-8 sans BOM/NUL.');
@@ -70,7 +79,28 @@ export class WorkspaceTools implements ToolPort {
     const value = args(input, Object.keys(definition.parameters.properties as Record<string, unknown>));
     const file = () => { const item = this.state.files.find(file => file.id === str(value.id, 64)); if (!item) throw new Error('scope-denied : source non déclarée.'); return item; };
     switch (name) {
-      case 'documents_list': return { complete: true, documents: this.documents.map(item => ({ id: item.id, path: item.path, originalName: item.originalName, mediaType: item.mediaType, role: item.role, sha256: item.sha256, bytes: item.bytes,
+      case 'documents_create_note':
+      case 'documents_replace_note': {
+        if (!this.writeKnowledge) throw Error('scope-denied');
+        if (typeof value.source !== 'string' || new TextEncoder().encode(value.source).length > 65536) throw Error('Note limitée à 64 Kio UTF-8.');
+        let request: Extract<KnowledgeRequest, { action: 'create' | 'save' }>;
+        if (name === 'documents_create_note') {
+          const title = str(value.title, 100).trim();
+          if (this.documents.some(d => d.originalName.toLocaleLowerCase() === (title.replace(/\.md$/i,'')+'.md').toLocaleLowerCase())) throw Error('Une note porte déjà ce titre ; consultez-la avant de la modifier.');
+          request = { action:'create', title, source:value.source, category:value.category as 'design' };
+        } else {
+          const item = this.documents.find(d => d.id === value.id);
+          if (!item?.knowledge?.editable || !item.revision) throw Error('scope-denied : note éditable autorisée requise.');
+          if (value.expectedRevision !== item.revision || this.documentReads.get(item.id) !== item.revision) throw Error('stale-read : relire la note avant modification.');
+          request = { action:'save', id:item.id, revision:item.revision, source:value.source };
+        }
+        const result = await this.writeKnowledge(request);
+        this.state.manifest = structuredClone(result.manifest);
+        this.documents = [...this.documents.filter(d => d.id !== result.document.id), structuredClone(result.document)];
+        this.documentReads.delete(result.document.id); this.buildVerified = false;
+        return { id:result.document.id, originalName:result.document.originalName, revision:result.document.revision, sha256:result.document.sha256, saved:true, previousVersions:result.document.knowledge?.versions.length ?? 0 };
+      }
+      case 'documents_list': return { complete: true, documents: this.documents.map(item => ({ id: item.id, path: item.path, originalName: item.originalName, mediaType: item.mediaType, role: item.role, sha256: item.sha256, bytes: item.bytes, editable: !!this.writeKnowledge && !!item.knowledge?.editable,
         ...('text' in item ? { totalLines: item.text.split('\n').length } : 'pages' in item ? { pageCount: item.pageCount, pages: item.pages.map(page => ({ page: page.page, hasText: !!page.text.trim(), totalLines: page.text.split('\n').length })), extraction: item.extraction } : { width: item.width, height: item.height, previewWidth: item.previewWidth, previewHeight: item.previewHeight }) })) };
       case 'documents_inspect_image': {
         const item = this.documents.find(document => document.id === str(value.id, 64));
@@ -83,7 +113,9 @@ export class WorkspaceTools implements ToolPort {
         if (!item) throw new Error('scope-denied : document non autorisé pour cette mission.');
         if (!('text' in item)) throw new Error('unsupported-capability : utiliser documents_read_pdf_page pour un PDF, documents_inspect_image pour une image.');
         const [start, end] = range(value);
-        return { id, originalName: item.originalName, sha256: item.sha256, trust: 'untrusted-document-data', extraction: 'utf8-lf-v1', ...excerpt(item.text, start, end) };
+        const portion = excerpt(item.text, start, end);
+        if (item.revision) this.documentReads.set(id, item.revision);
+        return { id, originalName: item.originalName, sha256: item.sha256, revision: item.revision, editable: !!this.writeKnowledge && !!item.knowledge?.editable, trust: 'untrusted-document-data', extraction: 'utf8-lf-v1', ...portion };
       }
       case 'documents_read_pdf_page': {
         const id = str(value.id, 64), item = this.documents.find(document => document.id === id);

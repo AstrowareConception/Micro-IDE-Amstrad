@@ -20,7 +20,7 @@
       "properties": {
         "readPrefixes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["src/", "assets/", "documents/"]}},
         "transmitPrefixes": {"type": "array", "uniqueItems": true, "items": {"enum": ["src/", "assets/", "documents/"]}},
-        "writePrefixes": {"type": "array", "uniqueItems": true, "items": {"enum": ["src/", "assets/generated/"]}},
+        "writePrefixes": {"description": "documents/ autorise uniquement les notes Markdown éditables du corpus autorisé, et les nouvelles notes produites par documents.create_note ; jamais un chemin arbitraire ni une référence importée.", "type": "array", "uniqueItems": true, "items": {"enum": ["src/", "assets/generated/", "documents/"]}},
         "documentIds": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}$"}},
         "allowCorpus": {"type": "boolean"},
         "allowSessionCapture": {"type": "boolean"}
@@ -41,10 +41,10 @@
     }
   },
   "allOf": [
-    {"if": {"properties": {"mode": {"enum": ["review", "explain"]}}}, "then": {"properties": {"scope": {"properties": {"writePrefixes": {"maxItems": 0}}}, "allowedTools": {"items": {"not": {"enum": ["project.create_source", "project.replace_source", "project.rename_source", "project.remove_source", "assets.convert_screen", "language.renumber"]}}}}}},
+    {"if": {"properties": {"mode": {"enum": ["review", "explain"]}}}, "then": {"properties": {"scope": {"properties": {"writePrefixes": {"maxItems": 0}}}, "allowedTools": {"items": {"not": {"enum": ["project.create_source", "project.replace_source", "project.rename_source", "project.remove_source", "documents.create_note", "documents.replace_note", "assets.convert_screen", "language.renumber"]}}}}}},
     {"if": {"properties": {"mode": {"const": "explain"}}}, "then": {"properties": {"allowedTools": {"items": {"not": {"enum": ["build.project", "emulator.run_build", "emulator.send_input", "emulator.control", "artifacts.prepare_export"]}}}}}}
   ],
   "$defs": {
-    "tool": {"enum": ["project.list_files", "project.search", "project.read_file", "project.create_source", "project.replace_source", "project.rename_source", "project.remove_source", "reference.search", "reference.read", "documents.read_text", "documents.inspect_image", "documents.render_pdf_pages", "assets.convert_screen", "assets.inspect", "language.analyze", "language.renumber", "build.project", "emulator.run_build", "emulator.send_input", "emulator.observe", "emulator.control", "artifacts.prepare_export", "task.checkpoint"]}
+    "tool": {"enum": ["project.list_files", "project.search", "project.read_file", "project.create_source", "project.replace_source", "project.rename_source", "project.remove_source", "reference.search", "reference.read", "documents.read_text", "documents.create_note", "documents.replace_note", "documents.inspect_image", "documents.render_pdf_pages", "assets.convert_screen", "assets.inspect", "language.analyze", "language.renumber", "build.project", "emulator.run_build", "emulator.send_input", "emulator.observe", "emulator.control", "artifacts.prepare_export", "task.checkpoint"]}
   }
 }

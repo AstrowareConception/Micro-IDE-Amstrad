@@ -13,6 +13,7 @@ import { LocalHistory } from './local-history.ts';
 import type { HistorySnapshot, HistoryVersion } from '../../packages/workspace/src/history.ts';
 import { SourceJournal, type SourceJournalFile } from './source-journal.ts';
 import { planSourceOperation, type SourcePlan, type SourceMutationResult } from '../../packages/workspace/src/source-operations.ts';
+import { assertNoteTransition } from './workspace-journal.ts';
 import { AgentJournal, type AgentJournalSource } from './agent-journal.ts';
 import { DraftStore } from './draft-store.ts';
 import type { DraftSummary, DraftRecovery } from '../../packages/workspace/src/drafts.ts';
@@ -255,9 +256,14 @@ export class ProjectStore {
     return { sessionId: this.sessionId, manifest: structuredClone(this.manifest), files, assets: await this.readAssets() };
   }
   /** Main-owned candidate; journal the entire source/manifest mutation before writing. */
-  async applyAgentState(state: AgentWorkspaceState): Promise<void> {
+  async applyAgentState(state: AgentWorkspaceState, expected?: AgentWorkspaceState): Promise<void> {
     this.assertSession(state.sessionId); await this.checkManifest();
-    if (this.manifest.kind === 'binary') {
+    if (expected) {
+      const current=await this.agentState(expected.files.map(({id,source})=>({id,source})));
+      if (JSON.stringify(current)!==JSON.stringify(expected)) throw Error('stale-read : projet modifié depuis la mission ; restauration refusée.');
+      assertNoteTransition(this.manifest,state.manifest);
+    }
+    if (this.manifest.kind === 'binary' && !expected) {
       if (JSON.stringify(state.manifest) !== JSON.stringify(this.manifest) || state.files.length || !state.binaryAnalysis) throw Error('Snapshot binaire invalide.');
       state.binaryAnalysis = await new BinaryWorkbench(this).save(state.binaryAnalysis.revision, state.binaryAnalysis.regions);
       return;
@@ -266,7 +272,7 @@ export class ProjectStore {
     const manifest = parseProject(state.manifest);
     if (JSON.stringify(manifest.assets) !== JSON.stringify(this.manifest.assets)) throw new Error('Ressources du projet modifiées ; mission refusée.');
     await this.readAssets();
-    if (JSON.stringify(manifest.documents) !== JSON.stringify(this.manifest.documents)) throw new Error('stale-read : documents du projet modifiés depuis la mission ; restauration refusée.');
+    if (!expected && JSON.stringify(manifest.documents) !== JSON.stringify(this.manifest.documents)) throw new Error('stale-read : documents du projet modifiés depuis la mission ; restauration refusée.');
     await this.agentDocuments();
     if (manifest.projectId !== this.manifest.projectId || state.files.length !== manifest.sources.length || new Set(state.files.map(file => file.id)).size !== state.files.length) throw new Error('Snapshot agent invalide.');
     const entries = new Map<string, AgentJournalSource>();
@@ -275,7 +281,7 @@ export class ProjectStore {
       if (hash(content) !== this.hashes.get(item.id)) throw new Error(`${item.path} a changé sur disque.`);
       entries.set(item.id, { id: item.id, path: item.path, before: content, after: null });
     }
-    await this.path('src'); let total = 0;
+    if (manifest.kind !== 'binary') await this.path('src'); let total = 0;
     for (const item of manifest.sources) {
       const file = state.files.find(file => file.id === item.id);
       if (!file || file.path !== item.path || file.cpcName !== item.cpcName || typeof file.saved !== 'string' || file.saved.includes('\0') || file.saved.charCodeAt(0) === 0xfeff) throw new Error('Source agent invalide.');
@@ -296,6 +302,15 @@ export class ProjectStore {
     if (hash(before) !== this.manifestHash) throw new Error('Manifeste périmé avant mutation agent.');
     const after = JSON.stringify(manifest) === JSON.stringify(this.manifest) ? before : Buffer.from(JSON.stringify(manifest, null, 2) + '\n');
     const files = [...entries.values()];
+    if (manifest.kind === 'binary') {
+      if (!state.binaryAnalysis || !expected?.binaryAnalysis || state.files.length) throw Error('Snapshot binaire invalide.');
+      const current = await new BinaryWorkbench(this).load();
+      if (current.revision!==expected.binaryAnalysis.revision) throw Error('Analyse modifiée ailleurs ; restauration refusée.');
+      const previous=await bytes(await this.path('binary-z80.json'));
+      const content=Buffer.from(JSON.stringify({version:1,projectId:manifest.projectId,regions:state.binaryAnalysis.regions},null,2)+'\n');
+      files.push({id:'binary-analysis',path:'binary-z80.json',before:previous,after:content});
+      state.binaryAnalysis.revision=hash(content);
+    }
     if (hash(before) === hash(after) && files.every(file => file.before !== null && file.after !== null && hash(file.before) === hash(file.after))) return;
     const journal = new AgentJournal(this.root), transaction = await journal.prepare(before, after, files);
     try { await journal.recover(transaction.id, 'finish', transaction.revision!); }

@@ -1,3 +1,5 @@
+import type { DocumentSnapshot } from '../../packages/workspace/src/project.ts';
+import type { KnowledgeRequest } from '../../packages/workspace/src/knowledge.ts';
 import { documentAllowed, knowledgeContext } from '../../packages/workspace/src/knowledge.ts';
 import { BinaryWorkspaceTools, BINARY_INSTRUCTIONS } from '../../packages/agent/src/binary-tools.ts';
 import { mkdir, writeFile, rename, readFile } from 'node:fs/promises';
@@ -12,7 +14,7 @@ import { OpenAIProvider, DEFAULT_MODEL } from './openai-provider.ts';
 import type { ProjectStore } from './project-store.ts';
 
 const digest = (value: string | Uint8Array) => createHash('sha256').update(value).digest('hex');
-interface Job { id: string; store: ProjectStore; initial: AgentWorkspaceState; tools: WorkspaceTools | BinaryWorkspaceTools; result: AgentResult; running: boolean; events: AgentEvent[]; steering: string[]; abort: AbortController; directory: string; documentIds: string[]; state: AgentRunState; budget: AgentBudget; provider: OpenAIProvider | undefined; model: string; pricing?: PricingProfile | undefined; continuations: number; restored: boolean }
+interface Job { id: string; store: ProjectStore; initial: AgentWorkspaceState; tools: WorkspaceTools | BinaryWorkspaceTools; result: AgentResult; running: boolean; events: AgentEvent[]; steering: string[]; abort: AbortController; directory: string; documentIds: string[]; initialDocuments: DocumentSnapshot[]; documents: DocumentSnapshot[]; state: AgentRunState; budget: AgentBudget; provider: OpenAIProvider | undefined; model: string; pricing?: PricingProfile | undefined; continuations: number; restored: boolean }
 export class AgentController {
   private provider: OpenAIProvider | undefined;
   private job: Job | undefined;
@@ -74,9 +76,9 @@ export class AgentController {
     }
     return result;
   }
-  private async record(job: Job, state: AgentWorkspaceState, phase: string) {
+  private async record(job: Job, state: AgentWorkspaceState, phase: string, documentOperation?: KnowledgeRequest) {
     const temp = join(job.directory, `.${randomUUID()}.tmp`);
-    await writeFile(temp, JSON.stringify({ schemaVersion: 1, taskId: job.id, phase, projectRoot: job.store.root, authorizedDocumentIds: job.documentIds, initial: job.initial, current: state, result: job.result, events: job.events }, null, 2), { flag: 'wx', mode: 0o600 });
+    await writeFile(temp, JSON.stringify({ schemaVersion: 1, taskId: job.id, phase, projectRoot: job.store.root, authorizedDocumentIds: job.documentIds, ...(documentOperation ? {documentOperation} : {}), initial: job.initial, current: state, result: job.result, events: job.events }, null, 2), { flag: 'wx', mode: 0o600 });
     await rename(temp, join(job.directory, 'checkpoint.json'));
   }
   async start(store: ProjectStore, objective: unknown, buffers: { id: string; source: string }[], includeDocuments = false, budgetInput?: unknown): Promise<{ taskId: string }> {
@@ -91,7 +93,7 @@ export class AgentController {
     const documents = (await store.agentDocuments()).filter(document => documentAllowed(document,includeDocuments));
     const id = randomUUID(), directory = join(this.storage, id); await mkdir(directory, { recursive: true, mode: 0o700 });
     const context = { kind: binary ? 'binary' : 'basic', target: initial.manifest.target, entryPoint: initial.manifest.entryPoint, files: binary ? initial.manifest.assets.map(({ id, cpcName, byteLength, sha256 }) => ({ id, cpcName, byteLength, sha256 })) : initial.manifest.sources, documents: documents.map(item => ({ id: item.id, originalName: item.originalName, mediaType: item.mediaType, sha256: item.sha256, bytes: item.bytes })), knowledge: knowledgeContext(documents), corpusVersion: 'initial-import-1' };
-    const job: Job = { id, store, initial, directory, documentIds: documents.map(item => item.id), abort: new AbortController(), steering: [], events: [], running: true,
+    const job: Job = { id, store, initial, directory, documentIds: documents.map(item => item.id), initialDocuments:structuredClone(documents), documents:structuredClone(documents), abort: new AbortController(), steering: [], events: [], running: true,
       state: createRunState(objective, context), budget, provider: this.provider, model: this.provider.model, pricing: this.prices.get(this.provider.model), continuations: 0, restored: false,
       tools: undefined as unknown as WorkspaceTools, result: { status: 'blocked', turns: 0, calls: 0, tokens: 0, summary: 'Mission en cours.' } };
     const persist = async (state: AgentWorkspaceState) => {
@@ -103,7 +105,22 @@ export class AgentController {
       job.tools.buildVerified = false;
       try { await this.record(job, state, 'committed'); } catch { job.abort.abort(); throw new Error('Écriture journal interrompue après commit ; modifications conservées.'); }
     };
-    job.tools = binary ? new BinaryWorkspaceTools(initial, persist, digest, documents) : new WorkspaceTools(initial, persist, digest, corpus, documents);
+    const writeKnowledge = async (request: Extract<KnowledgeRequest,{action:'create'|'save'}>) => {
+      if(job.abort.signal.aborted) throw Error('cancelled');
+      const current=await store.agentState(job.tools.state.files.map(({id,source})=>({id,source})));
+      if(JSON.stringify(current)!==JSON.stringify(job.tools.state)) throw Error('stale-read : projet modifié depuis la mission.');
+      if(request.action==='save' && !job.documents.some(d=>d.id===request.id && d.knowledge?.editable && d.knowledge.access!=='excluded')) throw Error('scope-denied');
+      await this.record(job,job.tools.state,'document-prepared',request);
+      const result=await store.writeKnowledge(request);
+      job.tools.state.manifest=structuredClone(result.manifest); job.tools.buildVerified=false;
+      job.documents=[...job.documents.filter(d=>d.id!==result.document.id),result.document];
+      job.documentIds=job.documents.map(d=>d.id);
+      job.tools.updateDocuments(job.documents);
+      try { await this.record(job,job.tools.state,'document-committed'); }
+      catch { job.abort.abort(); throw Error('Journal interrompu après commit documentaire ; version enregistrée conservée.'); }
+      return result;
+    };
+    job.tools = binary ? new BinaryWorkspaceTools(initial, persist, digest, documents,writeKnowledge) : new WorkspaceTools(initial, persist, digest, corpus, documents,writeKnowledge);
     await this.record(job, initial, 'initial'); this.job = job;
     this.launch(job);
     return { taskId: id };
@@ -114,9 +131,10 @@ export class AgentController {
       signal: AbortSignal.any([job.abort.signal, AbortSignal.timeout(15 * 60 * 1000)]), progress: result => { job.result = result; },
       emit: event => { job.events.push(event); if (job.events.length > 300) job.events.shift(); }, takeSteering: () => job.steering.splice(0),
     }).then(async result => {
-      if (result.status === 'completed' && job.tools.state.binaryAnalysis) {
-        const current = await job.store.agentState([]);
-        if (current.binaryAnalysis?.revision !== job.tools.state.binaryAnalysis.revision) result = { ...result, status: 'blocked', summary: result.summary + '\nAnalyse modifiée ailleurs ; validation périmée.' };
+      if (result.status === 'completed') {
+        await job.store.agentDocuments();
+        const current = await job.store.agentState(job.tools.state.files.map(({id,source})=>({id,source})));
+        if (JSON.stringify(current) !== JSON.stringify(job.tools.state)) result = { ...result, status: 'blocked', summary: result.summary + '\nProjet modifié ailleurs ; validation périmée.' };
       }
       job.result = result;
       if (result.status === 'completed') job.result = { ...result, summary: `${result.summary}\nValidation IDE : ${job.initial.binaryAnalysis ? 'réassemblage et DSK structurel uniquement.' : 'DSK structurel uniquement.'} Aucun programme exécuté sur CPC.` };
@@ -129,7 +147,7 @@ export class AgentController {
   async resume(id: unknown, store: ProjectStore, buffers: { id: string; source: string }[]): Promise<{ taskId: string }> {
     const job = this.get(id);
     if (this.running || !job.provider || job.store !== store || job.restored || job.continuations >= 10 || job.result.status !== 'paused-limit' || /^Budget de contexte|^Stagnation/.test(job.result.summary)) throw new Error('Cette mission ne peut pas être reprise. Démarrez une nouvelle mission ciblée.');
-    await store.assertCurrent();
+    await store.assertCurrent(); await store.agentDocuments();
     const now = await store.agentState(buffers);
     if (JSON.stringify(now) !== JSON.stringify(job.tools.state)) throw new Error('stale-read : projet ou buffers modifiés depuis la pause ; reprise refusée.');
     job.abort = new AbortController(); job.continuations++; job.running = true;
@@ -140,9 +158,14 @@ export class AgentController {
   status(id: unknown): AgentView {
     const job = this.get(id); const changed = job.tools.state.files.filter(file => job.initial.files.find(old => old.id === file.id)?.source !== file.source).map(file => file.path);
     if (job.initial.binaryAnalysis && JSON.stringify(job.initial.binaryAnalysis.regions) !== JSON.stringify(job.tools.state.binaryAnalysis?.regions)) changed.push('binary-z80.json');
+    const documentChanges=job.documents.filter(d=>d.knowledge?.editable && d.sha256!==job.initialDocuments.find(old=>old.id===d.id)?.sha256).map(d=>{
+      const old=job.initialDocuments.find(item=>item.id===d.id), before=old && 'text' in old ? old.text : undefined, after='text' in d?d.text:'';
+      changed.push(d.originalName);
+      return {id:d.id,title:d.originalName,created:!old,...(before===undefined?{}:{before:before.slice(0,16384)}),after:after.slice(0,16384),truncated:after.length>16384 || (before?.length??0)>16384};
+    });
     const { assets: _assets, ...binaryWorkspace } = job.tools.state;
     const workspace = job.tools.state.binaryAnalysis ? binaryWorkspace : job.tools.state;
-    return structuredClone({ ...job.result, taskId: job.id, running: job.running, events: job.events, workspace, changed, before: job.initial.files.filter(file => changed.includes(file.path)).map(({ id, source }) => ({ id, source })), ...(job.initial.binaryAnalysis ? { binaryBefore: job.initial.binaryAnalysis } : {}), buildVerified: job.tools.buildVerified,
+    return structuredClone({ ...job.result, taskId: job.id, running: job.running, events: job.events, workspace, changed, documentChanges, before: job.initial.files.filter(file => changed.includes(file.path)).map(({ id, source }) => ({ id, source })), ...(job.initial.binaryAnalysis ? { binaryBefore: job.initial.binaryAnalysis } : {}), buildVerified: job.tools.buildVerified,
       model: job.model, budget: job.budget, pricing: job.pricing, resumable: !!job.provider && !job.running && !job.restored && job.continuations < 10 && job.result.status === 'paused-limit' && !/^Budget de contexte|^Stagnation/.test(job.result.summary) });
   }
   cancel(id: unknown): { ok: boolean } { this.get(id).abort.abort(); return { ok: true }; }
@@ -157,8 +180,8 @@ export class AgentController {
     if (buffers.length !== now.files.length || new Set(buffers.map(file => file.id)).size !== buffers.length || now.files.some(file => buffers.find(buffer => buffer.id === file.id)?.source !== file.source)) throw new Error('stale-read : modifications manuelles postérieures conservées ; restauration refusée.');
     const restored = structuredClone(job.initial);
     if (restored.binaryAnalysis) restored.binaryAnalysis.revision = now.binaryAnalysis!.revision;
-    await this.record(job, restored, 'restore-prepared'); await job.store.applyAgentState(restored);
-    job.tools.state = restored; job.tools.buildVerified = false;
+    await this.record(job, restored, 'restore-prepared'); await job.store.applyAgentState(restored,now);
+    job.tools.state = restored; job.tools.buildVerified = false; job.documents=structuredClone(job.initialDocuments); job.tools.updateDocuments(job.documents);
     job.restored = true;
     await this.record(job, restored, 'restored'); return structuredClone(restored);
   }

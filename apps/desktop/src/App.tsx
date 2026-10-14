@@ -310,7 +310,7 @@ export function App() {
   }
   function acceptAgent(state: AgentWorkspaceState) {
     if (state.sessionId !== project?.sessionId) return;
-    if (state.binaryAnalysis) { binaryEditor.current?.adopt(state.binaryAnalysis); return; }
+    if (state.binaryAnalysis) { setProject({sessionId:state.sessionId,manifest:state.manifest}); binaryEditor.current?.adopt(state.binaryAnalysis); return; }
     const next = state.files.map(file => ({ id: `${state.sessionId}:${file.id}`, sourceId: file.id, name: file.path, source: file.source, saved: file.saved }));
     setDocuments(next); setProject({ sessionId: state.sessionId, manifest: state.manifest });
     if (!next.some(file => file.id === activeId)) setActiveId(next[0]!.id);
@@ -500,7 +500,7 @@ export function App() {
   ] : [];
   return <main className="workbench" style={{ '--sidebar-width': `${preferences.sidebarWidth}px`, '--agent-width': `${preferences.agentWidth}px`, '--output-height': `${preferences.outputHeight}px` } as CSSProperties}>
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.41.9 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.41.10 · AstroWare Conception</p></div></div>
       <div className="topbar-actions"><Button icon="bell" aria-label={`Centre de notifications · ${unreadNotifications} non lue(s)`} onClick={() => setNotificationsOpen(true)}><span className="notification-badge">{unreadNotifications}</span></Button><span className="profile">CPC 6128 · BASIC 1.1</span></div>
     </header>
     <WorkbenchMenus groups={[
@@ -566,7 +566,7 @@ export function App() {
 
 
         <div className="tool-content" hidden={tool !== 'documents'}>{!project && <div className="empty-tool">Ouvrez un projet pour importer textes, images et PDF.</div>}
-        {project && <DocumentsPanel key={`documents:${project.sessionId}`} sessionId={project.sessionId} manifest={project.manifest} busy={busy} onSaveReady={handler=>{knowledgeSave.current=handler;}} onDirty={setKnowledgeDirty} onView={setKnowledgeOpen} onReference={()=>showTool('reference')} requested={documentRequest} onBusy={setBusy} onManifest={manifest => setProject(previous => previous ? { ...previous, manifest } : previous)} />}
+        {project && <DocumentsPanel onAskAgent={text=>{setAgentOpen(true);setAgentSeed({id:crypto.randomUUID(),text});}} key={`documents:${project.sessionId}`} sessionId={project.sessionId} manifest={project.manifest} busy={busy} onSaveReady={handler=>{knowledgeSave.current=handler;}} onDirty={setKnowledgeDirty} onView={setKnowledgeOpen} onReference={()=>showTool('reference')} requested={documentRequest} onBusy={setBusy} onManifest={manifest => setProject(previous => previous ? { ...previous, manifest } : previous)} />}
         </div><div className="tool-content" hidden={tool !== 'project'}><section className="panel"><h2>{project?.manifest.name ?? 'Projets BASIC'}</h2>
           {project ? <>
             {!binaryProject && <><Button disabled={busy || !files.sourceOperations} onClick={() => void restoreSourceMutation()}>Rétablir la dernière organisation</Button>
@@ -618,7 +618,7 @@ export function App() {
       </section>
       <ResizeHandle label="Largeur de l’assistant" orientation="vertical" reverse value={Math.min(preferences.agentWidth, Math.max(240, workspaceSize.width * .35))} min={240} max={Math.min(800, Math.max(240, workspaceSize.width * .35))} hidden={!agentOpen || panels.agent.floating} onChange={agentWidth => setPreferences(previous => ({ ...previous, agentWidth }))} />
       <DockPanel as="aside" className="ai-sidebar" label="Assistant IA" name="l’agent IA" hidden={!agentOpen} layout={panels.agent} onLayout={value => updatePanel('agent', value)} onHide={() => setAgentOpen(false)}>
-        <AgentPanel knowledgeCount={project?.manifest.documents.filter(d=>d.knowledge && d.knowledge.access!=='excluded').length ?? 0} documentDirty={knowledgeDirty} binary={binaryProject} seed={agentSeed} binaryDirty={binaryDirty} sessionId={project?.sessionId} documentCount={project?.manifest.documents.length ?? 0} buffers={documents.map(document => ({ id: document.sourceId, source: document.source }))} busy={busy} onRunning={setAgentBusy} onState={acceptAgent} onNotify={notify} />
+        <AgentPanel onDocument={id=>{setDocumentRequest({id,nonce:crypto.randomUUID()});showTool('documents');}} knowledgeCount={project?.manifest.documents.filter(d=>d.knowledge && d.knowledge.access!=='excluded').length ?? 0} documentDirty={knowledgeDirty} binary={binaryProject} seed={agentSeed} binaryDirty={binaryDirty} sessionId={project?.sessionId} documentCount={project?.manifest.documents.length ?? 0} buffers={documents.map(document => ({ id: document.sourceId, source: document.source }))} busy={busy} onRunning={setAgentBusy} onState={acceptAgent} onNotify={notify} />
       </DockPanel>
     </div>
     {githubOpen && <GitHubDialog busy={busy} onClone={cloneProject} {...(project ? { onRemote: associateRemote } : {})} onClose={() => setGithubOpen(false)} />}
