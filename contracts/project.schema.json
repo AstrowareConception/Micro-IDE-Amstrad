@@ -148,8 +148,125 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 255
+          },
+          "knowledge": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "category",
+              "editable",
+              "access",
+              "versions"
+            ],
+            "properties": {
+              "category": {
+                "enum": [
+                  "reference",
+                  "design",
+                  "progress",
+                  "resource"
+                ]
+              },
+              "editable": {
+                "type": "boolean"
+              },
+              "access": {
+                "enum": [
+                  "excluded",
+                  "available",
+                  "essential"
+                ]
+              },
+              "versions": {
+                "type": "array",
+                "maxItems": 10,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "path",
+                    "sha256",
+                    "savedAt"
+                  ],
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "pattern": "^documents/note-[a-f0-9-]+\\.md$"
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "savedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
           }
-        }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "knowledge": {
+                  "properties": {
+                    "editable": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "editable"
+                  ]
+                }
+              },
+              "required": [
+                "knowledge"
+              ]
+            },
+            "then": {
+              "properties": {
+                "mediaType": {
+                  "const": "text/markdown"
+                },
+                "path": {
+                  "pattern": "^documents/note-[a-f0-9-]+\\.md$"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "knowledge": {
+                  "properties": {
+                    "access": {
+                      "const": "essential"
+                    }
+                  },
+                  "required": [
+                    "access"
+                  ]
+                }
+              },
+              "required": [
+                "knowledge"
+              ]
+            },
+            "then": {
+              "properties": {
+                "mediaType": {
+                  "enum": [
+                    "text/plain",
+                    "text/markdown"
+                  ]
+                }
+              }
+            }
+          }
+        ]
       }
     },
     "build": {

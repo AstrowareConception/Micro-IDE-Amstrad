@@ -18,6 +18,7 @@ import type { DiskImportPreview, DiskImportRequest } from '../../../packages/cpc
 export interface FileResult { name: string; source?: string }
 export interface Failure { error: string }
 export interface DesktopPort {
+  knowledge?: import('../../../packages/workspace/src/knowledge.ts').KnowledgePort;
   open(): Promise<FileResult | Failure | null>;
   save(source: string, saveAs?: boolean): Promise<FileResult | Failure | null>;
   exportDisk(source: string): Promise<FileResult | Failure | null>;

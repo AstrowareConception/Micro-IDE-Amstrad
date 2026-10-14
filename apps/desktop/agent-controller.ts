@@ -1,3 +1,4 @@
+import { documentAllowed, knowledgeContext } from '../../packages/workspace/src/knowledge.ts';
 import { BinaryWorkspaceTools, BINARY_INSTRUCTIONS } from '../../packages/agent/src/binary-tools.ts';
 import { mkdir, writeFile, rename, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -86,11 +87,10 @@ export class AgentController {
     const budget = parseBudget(budgetInput);
     const initial = await store.agentState(buffers); const binary = initial.manifest.kind === 'binary';
     if (binary && !initial.binaryAnalysis?.regions.length) throw Error('Enregistrez une zone Z80 avant la mission.');
-    if (binary && includeDocuments) throw Error('Documents externes non disponibles pour les missions Z80.');
     const corpus = binary ? [] : await this.corpus();
-    const documents = includeDocuments ? await store.agentDocuments() : [];
+    const documents = (await store.agentDocuments()).filter(document => documentAllowed(document,includeDocuments));
     const id = randomUUID(), directory = join(this.storage, id); await mkdir(directory, { recursive: true, mode: 0o700 });
-    const context = { kind: binary ? 'binary' : 'basic', target: initial.manifest.target, entryPoint: initial.manifest.entryPoint, files: binary ? initial.manifest.assets.map(({ id, cpcName, byteLength, sha256 }) => ({ id, cpcName, byteLength, sha256 })) : initial.manifest.sources, documents: documents.map(item => ({ id: item.id, originalName: item.originalName, mediaType: item.mediaType, sha256: item.sha256, bytes: item.bytes })), corpusVersion: 'initial-import-1' };
+    const context = { kind: binary ? 'binary' : 'basic', target: initial.manifest.target, entryPoint: initial.manifest.entryPoint, files: binary ? initial.manifest.assets.map(({ id, cpcName, byteLength, sha256 }) => ({ id, cpcName, byteLength, sha256 })) : initial.manifest.sources, documents: documents.map(item => ({ id: item.id, originalName: item.originalName, mediaType: item.mediaType, sha256: item.sha256, bytes: item.bytes })), knowledge: knowledgeContext(documents), corpusVersion: 'initial-import-1' };
     const job: Job = { id, store, initial, directory, documentIds: documents.map(item => item.id), abort: new AbortController(), steering: [], events: [], running: true,
       state: createRunState(objective, context), budget, provider: this.provider, model: this.provider.model, pricing: this.prices.get(this.provider.model), continuations: 0, restored: false,
       tools: undefined as unknown as WorkspaceTools, result: { status: 'blocked', turns: 0, calls: 0, tokens: 0, summary: 'Mission en cours.' } };
@@ -103,7 +103,7 @@ export class AgentController {
       job.tools.buildVerified = false;
       try { await this.record(job, state, 'committed'); } catch { job.abort.abort(); throw new Error('Écriture journal interrompue après commit ; modifications conservées.'); }
     };
-    job.tools = binary ? new BinaryWorkspaceTools(initial, persist, digest) : new WorkspaceTools(initial, persist, digest, corpus, documents);
+    job.tools = binary ? new BinaryWorkspaceTools(initial, persist, digest, documents) : new WorkspaceTools(initial, persist, digest, corpus, documents);
     await this.record(job, initial, 'initial'); this.job = job;
     this.launch(job);
     return { taskId: id };

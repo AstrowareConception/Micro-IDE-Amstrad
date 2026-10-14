@@ -1,4 +1,4 @@
-# Provenance des captures — CPCéleste 0.36.0 à 0.41.8
+# Provenance des captures — CPCéleste 0.36.0 à 0.41.9
 
 [Notice utilisateur](../../guide-utilisateur.md) · [README du produit](../../../README.md)
 
@@ -70,3 +70,7 @@ Reproduction : `npm run build:renderer`, puis `npm run test:editor` (Playwright 
 ## Capture 27 — Bibliothèque de missions 0.41.8
 
 [27-missions-ia.png](27-missions-ia.png) est une copie octet pour octet de `out/mission-library-alpha.png`, produite le 14 octobre 2026 par [tests/mission-library-smoke.mjs](../../../tests/mission-library-smoke.mjs), appelé depuis la recette agent navigateur. Renderer réel 0.41.8, base `b283e2b4d7c982da26145ed7012f8751301a47da`, Chromium Linux, fenêtre 1440 × 1000. Projet de démonstration et port agent contrôlé ; aucun appel fournisseur ni fichier privé. Pixels sans retouche. Reproduction : `npm run build:renderer` puis `npm run test:editor`.
+
+## Capture 28 — Connaissances et Markdown 0.41.9
+
+[28-connaissances-markdown.png](28-connaissances-markdown.png) est une copie octet pour octet de `out/knowledge-markdown-alpha.png`, produite par [tests/knowledge-smoke.mjs](../../../tests/knowledge-smoke.mjs) le 14 octobre 2026 sur la base `352700c3be610c2554992c15bab8dc45cec08ff5`. Renderer 0.41.9 et ProjectStore réels, Chromium Linux, viewport 1440 × 1000. Projet temporaire original, sauvegarde/version/restauration exécutées sur disque ; aucune API IA appelée et aucun document privé inclus. Pixels non retouchés. Reproduction : `npm run build:renderer` puis `npm run test:editor`.

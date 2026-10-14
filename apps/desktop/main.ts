@@ -569,6 +569,7 @@ route('documents:import', async payload => {
   if (!(value.kind === 'pdf' ? /\.pdf$/i : value.kind === 'image' ? /\.(png|jpe?g)$/i : /\.(txt|md)$/i).test(selection.filePaths[0])) throw new Error('Extension hors de la catégorie choisie.');
   return store.importDocument(selection.filePaths[0]);
 });
+route('knowledge:write', async payload => { const { store, value } = projectRequest(payload); return store.writeKnowledge(value.request); });
 route('documents:read', async payload => {
   const { store, value } = projectRequest(payload);
   if (typeof value.id !== 'string') throw new Error('Identifiant de document requis.');

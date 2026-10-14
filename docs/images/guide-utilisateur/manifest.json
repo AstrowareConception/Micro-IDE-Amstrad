@@ -251,6 +251,17 @@
       "sha256": "4714d8f264414c55b8a140689a9f3fbd16520c5ecd0edb27613d906e8ddea9e3",
       "origin": "local-browser-real-renderer-no-ai-call",
       "scenario": "tests/mission-library-smoke.mjs"
+    },
+    {
+      "file": "28-connaissances-markdown.png",
+      "version": "0.41.9",
+      "baseCommit": "352700c3be610c2554992c15bab8dc45cec08ff5",
+      "capturedOn": "2026-10-14",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "f560e622255869bf4d52fae8a4157b05c04ce93a882a6e4bf746a5457a563a94",
+      "origin": "local-browser-real-project-store-no-ai-call",
+      "scenario": "tests/knowledge-smoke.mjs"
     }
   ]
 }
