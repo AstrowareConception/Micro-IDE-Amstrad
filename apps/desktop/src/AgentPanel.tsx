@@ -1,5 +1,6 @@
 import type { Notify } from './notifications.ts';
 import { AgentSettingsDialog } from './AgentSettingsDialog.tsx';
+import { MissionLibraryDialog } from './MissionLibraryDialog.tsx';
 import { DEFAULT_BUDGET } from '../../../packages/agent/src/consumption.ts';
 import { Button } from './Icon.tsx';
 import { useEffect, useRef, useState } from 'react';
@@ -15,6 +16,7 @@ interface Props {
   onRunning(running: boolean): void; onState(state: AgentWorkspaceState): void;
 }
 export function AgentPanel(props: Props) {
+  const [libraryOpen, setLibraryOpen] = useState(false), [previousObjective, setPreviousObjective] = useState<string>();
   const [settingsOpen, setSettingsOpen] = useState(false), [budget, setBudget] = useState<AgentBudget>({ ...DEFAULT_BUDGET });
   const [pricing, setPricing] = useState<PricingProfile>(), [pricingNotice, setPricingNotice] = useState('');
   const [pollRevision, setPollRevision] = useState(0);
@@ -143,6 +145,8 @@ export function AgentPanel(props: Props) {
     <p className="muted">{configured && model ? `Modèle : ${model}` : 'Ouvrez les réglages IA pour connecter votre clé et choisir un modèle.'}</p>
     <p className="muted">{props.binary ? 'Zones enregistrées et notes consultées transmises à OpenAI ; aucun binaire brut ni ROM envoyé.' : 'Sources et extraits consultés transmis à OpenAI.'} L’agent enregistre ses modifications avec checkpoint local. API facturée par OpenAI.</p>
     <label htmlFor="agent-objective">Mission de programmation</label><textarea id="agent-objective" value={objective} onChange={event => setObjective(event.target.value)} maxLength={20000} rows={4} placeholder={props.binary ? 'Explique une routine, annote ses hypothèses ou demande une modification précise…' : 'Crée un écran de titre CPC en MODE 1…'} disabled={props.busy || requesting} />
+    <div className="mission-launcher"><Button icon="file" disabled={props.busy || requesting} onClick={() => setLibraryOpen(true)}>Choisir une mission…</Button>{previousObjective !== undefined && <Button icon="undo" disabled={props.busy || requesting} onClick={() => { setObjective(previousObjective); setPreviousObjective(undefined); }}>Rétablir la mission précédente</Button>}</div>
+    {libraryOpen && !props.busy && !requesting && <MissionLibraryDialog key={`${props.sessionId}:${props.binary}`} kind={props.binary ? 'binary' : 'basic'} objective={objective} onClose={() => setLibraryOpen(false)} onUse={text => { setPreviousObjective(objective); setObjective(text); }} />}
     {settingsOpen && <AgentSettingsDialog onClose={() => setSettingsOpen(false)}>
     <fieldset><legend><span className="agent-setting-step" aria-hidden="true">1</span> Connexion OpenAI</legend>
       <p className="agent-connection-status" role="status">{configured ? 'Clé configurée pour cette session' : 'Clé API à configurer'}</p>

@@ -2,6 +2,16 @@
 
 **Pause demandée le 8 octobre 2026.** Ce document conserve l’état vérifié, les décisions et la suite ; il n’archive pas les conversations. Confronter son contenu au `main` distant avant toute reprise.
 
+## Incrément du 14 octobre — bibliothèque de missions 0.41.8
+
+Base : `main` à `b283e2b4d7c982da26145ed7012f8751301a47da`, PR #68 fusionnée, préversion 0.41.7 publiée par le workflow 38616060931. Branche `feat/agent-mission-library`. Vérifier sa PR et ses contrôles avant d’annoncer sa fusion ; aucun packaging supplémentaire déclenché par cet incrément.
+
+Réalisé : sept modèles originaux adaptés au type de projet, paramètres littéraux, recherche/catégories, résultat attendu et limites, aperçu modifiable, ajout/remplacement explicite avec retour à la consigne précédente. Modèles personnels locaux versionnés : copie, mise à jour, suppression/rétablissement, bornes et garde contre données invalides ou périmées. Dialogue natif accessible, petite largeur, documentation illustrée et attribution de l’inspiration Portage_Opti. Aucun outil agent ni dépendance supplémentaire. [Guide](implementation/mission-library-alpha.md), [ADR 0066](adr/0066-bibliotheque-missions.md).
+
+Vérifications locales : 427 tests réussis ; parcours Chromium BASIC et Z80 avec fournisseur contrôlé, persistance après rechargement, focus, recherche, paramètres, sauvegarde et restauration, absence d’appel IA pendant la préparation. Fenêtres 420 et 1440 pixels contrôlées. Capture réelle inspectée ; aucun fichier de jeu ni ROM incorporé. TypeScript et builds renderer/main réussis ; contrôle documentaire réussi (158 Markdown, 21 JSON, six schémas/six exemples). Qualification complète Windows/Linux, natif et WASM à vérifier dans la CI de cette branche.
+
+Limites : stockage local non chiffré, vingt modèles/200 000 caractères sérialisés, pas de synchronisation/export ni verrou interfenêtres transactionnel. Les consignes d’analyse ne constituent pas un mode lecture seule imposé. Les missions ne donnent pas accès au RUN CPC, aux conversions d’images ou au portage automatique. Suite : outils d’exécution/tests CPC pour l’agent, conversion graphique puis traces/profilage ; conserver FN/portées, retokenisation et qualification assembleur au backlog.
+
 ## Correctif du 14 octobre — import historique 0.41.7
 
 Base : `main` à `1fdb4a59ae342fff76402e2e3d38f2b58c711430`, PR #67 fusionnée et préversion 0.41.6 publiée par le workflow 38475890518. Branche `fix/dsk-fer-flamme`. Demande : corriger le refus d’import sur Fer & Flamme, disquette 1 fournie localement.

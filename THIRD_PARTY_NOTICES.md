@@ -29,3 +29,7 @@ Le SDK comprend aussi LLVM/Binaryen et un Node embarqué, outils de construction
 CPCBasicTS : MIT ; Caprice32 : GPLv2. Ils sont étudiés et référencés ; Caprice32 est un oracle externe prévu, pas un composant embarqué. L'intégration future préservera les notices exactes de chaque version effectivement utilisée.
 
 Les ROM OS/BASIC/AMSDOS ne sont pas incluses. Les droits firmware sont distincts de ceux des émulateurs.
+
+## Portage_Opti — inspiration méthodologique, alpha 0.41.8
+
+La bibliothèque de missions s’inspire de la démarche de [bfggamepassion/Portage_Opti](https://github.com/bfggamepassion/Portage_Opti/tree/f5599fc41af0c6a320dca54a45c79da6ff9b5b80), commit `f5599fc41af0c6a320dca54a45c79da6ff9b5b80` : cadrage par étapes, objectifs explicites, distinction faits/hypothèses et vérification. Les sept textes sont rédigés pour les outils de CPCéleste ; aucun code, PDF, simulateur ou kit de ce dépôt n’est redistribué ici. Cette attribution ne place pas les composants tiers de Portage_Opti sous la licence MIT de CPCéleste. Leurs conditions restent à examiner séparément avant toute intégration future. [Périmètre et suite](docs/implementation/mission-library-alpha.md).

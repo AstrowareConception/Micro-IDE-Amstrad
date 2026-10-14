@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { verifyMissionLibrary } from './mission-library-smoke.mjs';
 import { AgentController } from '../apps/desktop/agent-controller.ts';
 import assert from 'node:assert/strict';
 import { expect } from '@playwright/test';
@@ -67,6 +68,7 @@ export async function verifyBinaryWorkbench(browser) {
     await panel.getByRole('button',{name:'Expliquer cette zone avec l’IA',exact:true}).click();
     const agent=page.getByRole('region',{name:'Agent OpenAI',exact:true});
     await expect(agent.getByLabel('Mission de programmation')).toHaveValue(/Explique et annote/);
+    await verifyMissionLibrary(page, agent, 'binary');
     await agent.getByRole('button',{name:'Réglages IA',exact:true}).click();
     await page.getByLabel('Clé API OpenAI',{exact:true}).fill('sk-fixture-not-real');await page.getByRole('button',{name:'Configurer la clé',exact:true}).click();
     await page.getByLabel('Modèle OpenAI',{exact:true}).selectOption('gpt-5.6-luna');await page.getByRole('button',{name:'Fermer les réglages IA',exact:true}).click();

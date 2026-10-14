@@ -1,4 +1,4 @@
-# Provenance des captures — CPCéleste 0.36.0 à 0.41.6
+# Provenance des captures — CPCéleste 0.36.0 à 0.41.8
 
 [Notice utilisateur](../../guide-utilisateur.md) · [README du produit](../../../README.md)
 
@@ -66,3 +66,7 @@ Le fichier [manifest.json](manifest.json) fournit chemin, dimensions, origine et
 Les captures [25-agent-z80.png](25-agent-z80.png) et [26-comparaison-z80.png](26-comparaison-z80.png) proviennent du parcours [binary-workbench-smoke](../../../tests/binary-workbench-smoke.mjs), le 13 octobre 2026, renderer 0.41.6 construit sur la base `11bd3f817b8118f862f1a726855dae0613714393`. Chromium, viewport 1440 × 1000 ; pixels réels sans retouche. Contrôleur, worker d’import, stockage, assembleur et restauration réellement exécutés ; réponses OpenAI et modèle affiché contrôlés par le scénario, sans appel réseau facturé. Programme témoin original, aucune image commerciale ni ROM incluse. Le manifeste conserve les empreintes des PNG.
 
 Reproduction : `npm run build:renderer`, puis `npm run test:editor` (Playwright Chromium installé). Les deux captures sont produites dans `out/` ; leurs copies versionnées illustrent le [guide de l’agent Z80](../../implementation/binary-agent-alpha.md).
+
+## Capture 27 — Bibliothèque de missions 0.41.8
+
+[27-missions-ia.png](27-missions-ia.png) est une copie octet pour octet de `out/mission-library-alpha.png`, produite le 14 octobre 2026 par [tests/mission-library-smoke.mjs](../../../tests/mission-library-smoke.mjs), appelé depuis la recette agent navigateur. Renderer réel 0.41.8, base `b283e2b4d7c982da26145ed7012f8751301a47da`, Chromium Linux, fenêtre 1440 × 1000. Projet de démonstration et port agent contrôlé ; aucun appel fournisseur ni fichier privé. Pixels sans retouche. Reproduction : `npm run build:renderer` puis `npm run test:editor`.

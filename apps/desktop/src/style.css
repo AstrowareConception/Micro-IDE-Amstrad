@@ -369,3 +369,22 @@ select{font:inherit;width:100%;margin:8px 0;background:var(--input);color:inheri
 .binary-region-actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }.binary-actions { flex-shrink:0; margin:0 20px 12px; padding:12px; background:var(--panel); border:1px solid var(--line-strong); border-radius:8px; z-index:1; }
 .binary-comparison { padding:14px; border:1px solid var(--line); border-radius:8px; margin:14px 0; }.binary-table-scroll { overflow:auto; max-height:300px; }.binary-comparison table { width:100%; border-collapse:collapse; font-family:monospace; }.binary-comparison th,.binary-comparison td { text-align:left; padding:8px; border-bottom:1px solid var(--line); }.binary-comparison td:last-child { color:var(--accent); font-weight:bold; }
 .binary-range-details { margin-top:14px; }.binary-range-details > summary { cursor:pointer; padding:12px; border:1px solid var(--line); border-radius:6px; background:var(--panel); }.binary-workbench textarea:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+/* Mission library: one bounded dialog, adapted to both desktop and narrow panels. */
+.mission-launcher{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px}
+.mission-library{width:min(1080px,94vw);max-height:90vh;overflow:auto;padding:24px}
+.mission-library-heading{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.agent-panel .mission-library-heading h2{display:block;font-size:22px;margin:4px 0 12px}.mission-eyebrow{color:var(--accent);letter-spacing:.12em;font-size:11px;font-weight:700;margin:0}
+.mission-library-layout{display:grid;grid-template-columns:minmax(220px, .8fr) minmax(0,1.5fr);gap:24px;margin-top:20px}
+.mission-library label{display:block;font-weight:600;margin:12px 0 6px}
+.mission-library input,.mission-library select,.mission-library textarea{width:100%;min-width:0;padding:9px;box-sizing:border-box}
+.mission-recipe-list{display:flex;flex-direction:column;gap:8px;max-height:440px;overflow:auto;margin:14px 0}
+.mission-recipe{display:flex;flex-direction:column;align-items:flex-start;gap:7px;text-align:left;padding:13px;border:1px solid var(--line);border-radius:8px;white-space:normal;overflow-wrap:anywhere}
+.mission-recipe[aria-pressed=true]{border-color:var(--accent);background:var(--selected);box-shadow:inset 3px 0 var(--accent)}
+.mission-recipe small{color:var(--accent)}.mission-recipe span{color:var(--muted);font-size:12px;line-height:1.5}
+.mission-library-editor h3{margin:0 0 12px}.mission-outcome{border-left:3px solid var(--accent);padding:12px;background:var(--bar);border-radius:0 8px 8px 0}.mission-outcome p{margin:6px 0}
+.mission-preview{font:13px/1.6 Consolas,monospace;resize:vertical;min-height:180px}
+.mission-library-actions{position:sticky;bottom:-24px;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;padding:14px 0;margin-top:16px;background:var(--panel);border-top:1px solid var(--line)}
+.mission-library-actions p{flex-basis:100%;margin:0 0 6px;color:var(--muted)}
+.mission-personal{border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:14px}.mission-personal summary{cursor:pointer;font-weight:600}.mission-personal-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.mission-credit{font-size:12px;line-height:1.6;margin-top:18px}
+@media(max-width:700px){.mission-library{padding:16px;width:94vw}.mission-library-layout{grid-template-columns:1fr;gap:20px}.mission-recipe-list{max-height:230px}.mission-library-actions{bottom:-16px}.mission-library-heading{align-items:flex-start}.mission-library-actions button{flex:1 1 140px}}

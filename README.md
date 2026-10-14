@@ -1,5 +1,7 @@
 # CPCéleste
 
+**Missions IA 0.41.8 :** sept modèles BASIC/Z80, recherche, paramètres, aperçu modifiable et modèles personnels locaux. Préparez votre objectif sans lancer l’agent ; conservez ou remplacez explicitement votre consigne. [Guide illustré](docs/implementation/mission-library-alpha.md).
+
 **Import DSK 0.41.7 :** correction pour la variante Extended de Fer & Flamme et les noms contenant `&`. Les fichiers récupérables sont importés avec avertissements sur les secteurs supplémentaires et la capacité de reconstruction. [Détails et limites](docs/implementation/recovery-protection-alpha.md#import-historique-et-diagnostic--0417).
 
 **Agent Z80 0.41.6 :** explication et annotation des zones, modifications assembleur contrôlées, checkpoint restaurable et comparaison des octets. Une interface plus lisible accompagne ce parcours ; [guide illustré](docs/implementation/binary-agent-alpha.md). Les tests CPC restent distincts de la vérification IA.
@@ -31,7 +33,7 @@ Les archives Actions initiales 0.38.1 du 7 octobre restent disponibles jusqu’a
 | Complétion, diagnostics, recherche et renumérotation | Projets, documents, agent OpenAI et rapports de qualité | Historique, brouillons, checkpoints et Git/GitHub |
 | F5 depuis les buffers, CPC 6128 intégré et export DSK | Thèmes, profils, raccourcis et panneaux ajustables | Sources locales et utilisation sans IA possible |
 
-**Version du code : alpha desktop 0.41.7 — compatibilité DSK historique.** Les binaires publiés peuvent correspondre à une version antérieure : consulter la version de la release. L’édition et la construction DSK fonctionnent sans ROM ni clé IA. L’exécution demande vos ROM locales ; l’agent utilise votre accès API OpenAI. La notice distingue les fonctions disponibles des évolutions encore prévues.
+**Version du code : alpha desktop 0.41.8 — bibliothèque de missions IA.** Les binaires publiés peuvent correspondre à une version antérieure : consulter la version de la release. L’édition et la construction DSK fonctionnent sans ROM ni clé IA. L’exécution demande vos ROM locales ; l’agent utilise votre accès API OpenAI. La notice distingue les fonctions disponibles des évolutions encore prévues.
 
 [Installer et démarrer](docs/guide-utilisateur.md#premiers-pas) · [Exécuter avec F5](docs/guide-utilisateur.md#execution) · [Découvrir l’agent](docs/guide-utilisateur.md#agent) · [Personnaliser l’atelier](docs/guide-utilisateur.md#personnalisation) · [Roadmap](docs/specifications/17-roadmap-ide-complet.md)
 

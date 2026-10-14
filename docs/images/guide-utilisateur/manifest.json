@@ -240,6 +240,17 @@
       "sha256": "ef40d2aa4a82f18492aa642009d62856ff14c1f10cecf74e9c696d5259790034",
       "origin": "local-browser-real-controller-controlled-openai",
       "scenario": "tests/binary-workbench-smoke.mjs"
+    },
+    {
+      "file": "27-missions-ia.png",
+      "version": "0.41.8",
+      "baseCommit": "b283e2b4d7c982da26145ed7012f8751301a47da",
+      "capturedOn": "2026-10-14",
+      "width": 1440,
+      "height": 1000,
+      "sha256": "4714d8f264414c55b8a140689a9f3fbd16520c5ecd0edb27613d906e8ddea9e3",
+      "origin": "local-browser-real-renderer-no-ai-call",
+      "scenario": "tests/mission-library-smoke.mjs"
     }
   ]
 }
