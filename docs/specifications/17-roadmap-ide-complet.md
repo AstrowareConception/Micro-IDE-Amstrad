@@ -1,6 +1,8 @@
 # 17 — Roadmap qualifiée d’un IDE CPCéleste abouti
 
-**Fonctions FN 0.41.12 :** [déclarations, paramètres, variables libres et appels navigables](../implementation/basic-symbols-alpha.md#fonctions-fn-et-parametres--04112). Types et redéfinitions ambigus signalés ; index à la demande, exports version 3 et sources modifiées protégées. Suite : accès depuis le curseur, puis renommage avec aperçu. IDE-015 reste partiel, IDE-017 non réalisé.
+**Navigation au curseur 0.41.13 :** [F12, Maj+F12 et résultats navigables](../implementation/basic-symbols-alpha.md#navigation-au-curseur--04113). Usages, paramètres FN et déclarations/affectations possibles dans la source courante ; calcul explicite et liens obsolètes bloqués. Suite : renommage avec aperçu après résolution suffisante des identités. IDE-015 reste partiel, IDE-017 non réalisé.
+
+**Fonctions FN 0.41.12 :** [déclarations, paramètres, variables libres et appels navigables](../implementation/basic-symbols-alpha.md#fonctions-fn-et-parametres--04112). Types et redéfinitions ambigus signalés ; index à la demande, exports version 3 et sources modifiées protégées. Accès depuis le curseur complété en 0.41.13 ; renommage avec aperçu encore ouvert. IDE-015 reste partiel, IDE-017 non réalisé.
 
 **Qualification FN — 15 octobre 2026 :** [matrice firmware des identités et contre-exemples](../implementation/basic-fn-qualification.md). IDE-015 demeure partiel : index FN et navigation à réaliser ; IDE-017 demeure non réalisé. La qualification prépare ces lots sans en annoncer la livraison.
 
@@ -58,7 +60,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | --- | --- | --- | --- | --- | --- |
 | IDE-013 | Coloration, complétion contextuelle, aide sourcée | P | P0 | Corpus 15 | Fiches exhaustives et cas opaques/dialectes qualifiés ; sous-ensemble livré |
 | IDE-014 | Lexer/parser et diagnostics fiables avec provenance | P | P0 | IDE-013 | 0.34 : worker temporisé/révisionné, grammaire structurelle étendue, couverture opaque explicite et diagnostics multifichiers ; corpus/qualification ROM exhaustifs ouverts |
-| IDE-015 | Navigation définitions/cibles, usages et symboles BASIC | P | P1 | IDE-014 | 0.41.12 : index variables/tableaux et vue FN dédiée, paramètres/variables libres et candidats navigables, ambiguïtés explicites ; types possibles et directives navigables ; F12 littéral/F8 livrés ; définitions/types actifs, accès depuis le curseur et navigation sémantique complète ouverts |
+| IDE-015 | Navigation définitions/cibles, usages et symboles BASIC | P | P1 | IDE-014 | 0.41.13 : index variables/tableaux et FN, usages au curseur (Maj+F12), déclarations/affectations possibles (F12), menu/palette/contexte et garde des snapshots ; F12 littéral/F8 conservés ; définitions/types actifs et navigation sémantique complète ouverts |
 | IDE-016 | Renumérotation sûre, plages et références | P | P0 | IDE-014 | Cibles couvertes réécrites ; formes ambiguës bloquées ; undo livré |
 | IDE-017 | Renommage sémantique de variables/fonctions | N | P1 | IDE-015 qualifié | Aperçu par source, identité et collisions vérifiées, suffixes/types et portée préservés, chaînes/DATA/commentaires intacts, sources modifiées refusées et undo ; aucun renommage livré en 0.41.1 |
 | IDE-018 | Templates/snippets, insertion de lignes et conventions | N | P1 | IDE-014 | Numéros sans collision ; génération minimale conforme au profil |

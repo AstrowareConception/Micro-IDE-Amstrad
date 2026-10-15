@@ -284,6 +284,17 @@
       "sha256": "85f69a89329137a17e1307f0eae9840b956c879524dfb7566f6ca04e4706e130",
       "origin": "local-browser",
       "scenario": "tests/basic-function-symbols-smoke.mjs"
+    },
+    {
+      "file": "32-navigation-curseur.png",
+      "version": "0.41.13",
+      "baseCommit": "9b2db1768aab2f310356f755ea796b2336f62c9f",
+      "capturedOn": "2026-10-15",
+      "width": 1398,
+      "height": 392,
+      "sha256": "13d1e38629f8ccf571b0c72ececd2ed4c7ef8b1f82398125febaf07f2c9e7183",
+      "origin": "local-browser",
+      "scenario": "tests/basic-cursor-navigation-smoke.mjs"
     }
   ]
 }

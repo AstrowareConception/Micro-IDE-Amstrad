@@ -1,6 +1,8 @@
 # 12 — Feuille de route et backlog de réalisation
 
-**Fonctions FN 0.41.12 :** [déclarations, paramètres, variables libres et appels navigables](../implementation/basic-symbols-alpha.md#fonctions-fn-et-parametres--04112). Types et redéfinitions ambigus signalés ; index à la demande, exports version 3 et sources modifiées protégées. Suite : accès depuis le curseur, puis renommage avec aperçu. IDE-015 reste partiel, IDE-017 non réalisé.
+**Navigation au curseur 0.41.13 :** [F12, Maj+F12 et résultats navigables](../implementation/basic-symbols-alpha.md#navigation-au-curseur--04113). Usages, paramètres FN et déclarations/affectations possibles dans la source courante ; calcul explicite et liens obsolètes bloqués. Suite : renommage avec aperçu après résolution suffisante des identités. IDE-015 reste partiel, IDE-017 non réalisé.
+
+**Fonctions FN 0.41.12 :** [déclarations, paramètres, variables libres et appels navigables](../implementation/basic-symbols-alpha.md#fonctions-fn-et-parametres--04112). Types et redéfinitions ambigus signalés ; index à la demande, exports version 3 et sources modifiées protégées. Accès depuis le curseur complété en 0.41.13 ; renommage avec aperçu encore ouvert. IDE-015 reste partiel, IDE-017 non réalisé.
 
 **Qualification FN — 15 octobre 2026 :** [matrice firmware des paramètres, variables libres, types, redéfinitions et erreurs](../implementation/basic-fn-qualification.md), [ADR 0070](../adr/0070-qualification-fn-avant-renommage.md). Suite immédiate : index FN/portées borné (ordre 2 du plan), puis accès depuis le curseur et renommage avec aperçu. L’index actuel et la version applicative 0.41.11 restent inchangés.
 

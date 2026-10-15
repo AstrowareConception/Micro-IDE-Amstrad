@@ -1,13 +1,17 @@
+import { CursorSymbolsView } from './CursorSymbolsView.tsx';
+import type { SymbolNavigationQuery, SymbolNavigationResult } from '../../../packages/basic-language/src/symbol-navigation.ts';
 import { FunctionSymbolsView } from './FunctionSymbolsView.tsx';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import SymbolsWorker from './symbols-worker.ts?worker';
 import { Button } from './Icon.tsx';
 import { SYMBOL_LIMITS, SYMBOL_ROLE_LABELS, symbolTypeLabel, symbolsMarkdown, type SymbolSource, type SymbolReport, type SymbolLocation, type SymbolRole } from '../../../packages/basic-language/src/symbols.ts';
-interface Props { documents: SymbolSource[]; activeId: string; scopeId: string; onReveal(id: string, occurrence: SymbolLocation): void }
-interface Snapshot { report: SymbolReport; documents: SymbolSource[]; scopeId: string; createdAt: string }
-export const SymbolsPanel = memo(function SymbolsPanel({documents,activeId,scopeId,onReveal}:Props) {
+export interface CursorSymbolRequest extends SymbolNavigationQuery { nonce: string; scopeId: string; source: string }
+interface Props { request?: CursorSymbolRequest | undefined; documents: SymbolSource[]; activeId: string; scopeId: string; onReveal(id: string, occurrence: SymbolLocation): void }
+interface Snapshot { report: SymbolReport; documents: SymbolSource[]; scopeId: string; createdAt: string; navigation?: SymbolNavigationResult | undefined }
+export const SymbolsPanel = memo(function SymbolsPanel({request,documents,activeId,scopeId,onReveal}:Props) {
  const [scope,setScope]=useState('active'), [snapshot,setSnapshot]=useState<Snapshot>(), [running,setRunning]=useState(false), [error,setError]=useState(''), [query,setQuery]=useState(''), [selection,setSelection]=useState(''), [role,setRole]=useState('all');
- const [view,setView]=useState<'variables'|'functions'>('variables');
+ const [view,setView]=useState<'variables'|'functions'|'cursor'>('variables');
+ const handledRequest=useRef<string | undefined>(undefined);
  const sequence=useRef(0), job=useRef<{worker:Worker;timeout:ReturnType<typeof setTimeout>;id:number} | undefined>(undefined);
  const stop=useCallback(()=>{const current=job.current;job.current=undefined;if(current){clearTimeout(current.timeout);current.worker.onmessage=null;current.worker.onerror=null;current.worker.terminate();}},[]);
  useEffect(()=>{stop();setRunning(false);setSnapshot(undefined);setError('');setSelection('');return stop;},[scopeId,stop]);
@@ -20,22 +24,28 @@ export const SymbolsPanel = memo(function SymbolsPanel({documents,activeId,scope
  const declarations=useMemo(()=>snapshot?.report.sources.flatMap(source=>source.typeDeclarations.map(declaration=>({source,declaration}))) ?? [],[snapshot]);
  const selected=matches.find(item=>item.key===selection) ?? matches[0];
  const occurrences=selected?.symbol.occurrences.filter(item=>role==='all'||item.role===role) ?? [];
- function run() {
+ function run(cursorRequest?:CursorSymbolRequest) {
   stop();setSnapshot(undefined);setError('');setSelection('');
-  const sources=documents.filter(doc=>scope==='loaded'||doc.id===activeId).map(({id,name,source})=>({id,name,source}));
+  if(cursorRequest&&(cursorRequest.scopeId!==scopeId||current.get(cursorRequest.sourceId)?.source!==cursorRequest.source)){setRunning(false);setError('Source modifiée depuis la commande : relancez la recherche au curseur.');return;}
+  if(cursorRequest){setScope('active');setView('cursor');}else if(view==='cursor')setView('variables');
+  const sources=documents.filter(doc=>cursorRequest?doc.id===cursorRequest.sourceId:scope==='loaded'||doc.id===activeId).map(({id,name,source})=>({id,name,source}));
   if(!sources.length || sources.length>SYMBOL_LIMITS.sources || sources.reduce((n,s)=>n+s.source.length,0)>SYMBOL_LIMITS.totalCharacters){setRunning(false);setError('Choisissez entre 1 et 100 sources, avec au plus 4 Mio de caractères.');return;}
   const id=++sequence.current, createdAt=new Date().toISOString();setRunning(true);
   const fail=(message:string)=>{if(job.current?.id!==id)return;stop();setRunning(false);setError(message);};
   try {
    const worker=new SymbolsWorker(), timeout=setTimeout(()=>fail('Indexation interrompue après 15 secondes. Réessayez sur la source active.'),15000);job.current={worker,timeout,id};
-   worker.onmessage=(event:MessageEvent<{id:number;report?:SymbolReport;error?:string}>)=>{
+   worker.onmessage=(event:MessageEvent<{id:number;report?:SymbolReport;navigation?:SymbolNavigationResult;error?:string}>)=>{
     if(job.current?.id!==id||event.data.id!==id)return;
     if(event.data.error||!event.data.report){fail(event.data.error??'Index indisponible.');return;}
-    stop();setRunning(false);setSnapshot({report:event.data.report,documents:sources,scopeId,createdAt});
+    stop();setRunning(false);setSnapshot({report:event.data.report,documents:sources,scopeId,createdAt,navigation:event.data.navigation});
    };
-   worker.onerror=event=>{event.preventDefault();fail('Indexation indisponible. Réessayez.');};worker.postMessage({id,sources});
+   worker.onerror=event=>{event.preventDefault();fail('Indexation indisponible. Réessayez.');};worker.postMessage({id,sources,query:cursorRequest?{sourceId:cursorRequest.sourceId,line:cursorRequest.line,column:cursorRequest.column,mode:cursorRequest.mode}:undefined});
   } catch {stop();setRunning(false);setError('Impossible de démarrer l’indexation. Réessayez.');}
  }
+ useEffect(()=>{
+  if(!request||request.nonce===handledRequest.current||request.scopeId!==scopeId)return;
+  handledRequest.current=request.nonce;run(request);
+ },[request,scopeId]);
  function reveal(id:string,occurrence:SymbolLocation){
   const before=snapshot?.documents.find(doc=>doc.id===id),now=current.get(id);
   if(!before||!now||snapshot?.scopeId!==scopeId||before.source!==now.source||before.name!==now.name){setError('Source modifiée : actualisez l’index pour naviguer.');return;}
@@ -48,15 +58,15 @@ export const SymbolsPanel = memo(function SymbolsPanel({documents,activeId,scope
  }
  return <section className="symbols-panel" aria-label="Symboles et usages BASIC" aria-busy={running}>
   <h2>Symboles et usages BASIC</h2><p className="muted">Retrouvez les variables, tableaux, fonctions FN et leurs occurrences dans vos buffers. Index local à la demande, sans analyse supplémentaire pendant la frappe.</p>
-  <div className="quality-actions"><label>Périmètre de l’index<select aria-label="Périmètre de l’index" value={scope} disabled={running} onChange={e=>setScope(e.target.value)}><option value="active">Source active</option><option value="loaded">Sources chargées ({documents.length})</option></select></label><Button disabled={running} onClick={run}>Actualiser l’index</Button>{running&&<Button onClick={()=>{stop();setRunning(false);setError('Indexation annulée.');}}>Annuler l’indexation</Button>}<Button disabled={!snapshot} onClick={()=>download('md')}>Exporter Markdown</Button><Button disabled={!snapshot} onClick={()=>download('json')}>Exporter JSON</Button></div>
+  <div className="quality-actions"><label>Périmètre de l’index<select aria-label="Périmètre de l’index" value={scope} disabled={running} onChange={e=>setScope(e.target.value)}><option value="active">Source active</option><option value="loaded">Sources chargées ({documents.length})</option></select></label><Button disabled={running} onClick={()=>run()}>Actualiser l’index</Button>{running&&<Button onClick={()=>{stop();setRunning(false);setError('Indexation annulée.');}}>Annuler l’indexation</Button>}<Button disabled={!snapshot} onClick={()=>download('md')}>Exporter Markdown</Button><Button disabled={!snapshot} onClick={()=>download('json')}>Exporter JSON</Button></div>
   {running&&<p role="status">Indexation en cours…</p>}{error&&<p role="alert">{error}</p>}
   {!snapshot&&!running&&!error&&<p>Choisissez le périmètre puis actualisez l’index.</p>}
   {snapshot&&<><p role="status" className={stale?'warning':'muted'}>{stale?'Index obsolète : des sources ont changé. Actualisez pour naviguer.':'Index sur les sources inchangées.'}</p>
    <details><summary>Périmètre, types et limites</summary><p>{snapshot.report.method}</p></details>
    <p className="muted">Les exports incluent les noms des variables, fonctions, paramètres et sources. Aucun rapprochement entre programmes ni renommage automatique.</p>
    {snapshot.report.sources.map(source=><details key={source.id} className={source.status==='indexed'?'muted':'warning'}><summary>{source.name} · {source.symbols.length} variable(s) · {source.functions.definitions.length} déclaration(s) FN · {source.status==='indexed'?'segments couverts':source.status==='limited'?'budget atteint — index retiré':'index partiel'}</summary><p>{source.skippedStatements} segment(s) omis.</p><ul>{source.reasons.map(reason=><li key={reason}>{reason}</li>)}</ul>{source.omittedReasons>0&&<p>{source.omittedReasons} autres limites omises.</p>}</details>)}
-   <div className="quality-actions" aria-label="Vue des symboles"><Button aria-pressed={view==='variables'} onClick={()=>setView('variables')}>Variables et tableaux</Button><Button aria-pressed={view==='functions'} onClick={()=>setView('functions')}>Fonctions FN et paramètres</Button></div>
-   {view==='functions'?<FunctionSymbolsView sources={snapshot.report.sources} stale={stale} onReveal={reveal}/>:<>
+   <div className="quality-actions" aria-label="Vue des symboles">{snapshot.navigation&&<Button aria-pressed={view==='cursor'} onClick={()=>setView('cursor')}>Résultats au curseur</Button>}<Button aria-pressed={view==='variables'} onClick={()=>setView('variables')}>Variables et tableaux</Button><Button aria-pressed={view==='functions'} onClick={()=>setView('functions')}>Fonctions FN et paramètres</Button></div>
+   {view==='cursor'&&snapshot.navigation?<CursorSymbolsView result={snapshot.navigation} stale={stale} onReveal={reveal}/>:view==='functions'?<FunctionSymbolsView sources={snapshot.report.sources} stale={stale} onReveal={reveal}/>:<>
    {declarations.length>0&&<details className="symbol-type-declarations"><summary>Déclarations de type</summary><p className="muted">Plages alphabétiques relevées, sans présumer leur exécution. La navigation sélectionne la déclaration entière.</p><ul>{declarations.slice(0,200).map(({source,declaration})=><li key={`${source.id}:${declaration.location.line}:${declaration.location.start}`}><Button disabled={stale} onClick={()=>reveal(source.id,declaration.location)}>{source.name} · {declaration.command} · {declaration.letters} · BASIC {declaration.location.basicLine}</Button></li>)}</ul>{declarations.length>200&&<p>200 déclarations affichées sur {declarations.length}. Choisissez la source active ou consultez l’export.</p>}</details>}
    <div className="symbols-columns"><div><label>Rechercher un symbole<input aria-label="Rechercher un symbole" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Nom de variable ou de source"/></label><p>{matches.length} symbole(s) trouvé(s).</p>
     <ul className="symbols-list">{matches.slice(0,200).map(item=><li key={item.key}><Button aria-pressed={selected?.key===item.key} onClick={()=>setSelection(item.key)}><strong>{item.symbol.name}{item.symbol.kind==='array'?'(…)':''}</strong><span>{item.symbol.kind==='array'?'Tableau':'Scalaire'} · {item.symbol.occurrences.length} occurrence(s)</span><small>{item.source.name} · {symbolTypeLabel(item.symbol.type)}</small></Button></li>)}</ul>{matches.length>200&&<p>200 symboles affichés. Affinez la recherche ou consultez l’export.</p>}

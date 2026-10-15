@@ -419,3 +419,6 @@ select{font:inherit;width:100%;margin:8px 0;background:var(--input);color:inheri
 .fn-calls { max-height:480px; }
 .fn-calls > li { padding:10px; border:1px solid var(--line-strong); border-radius:8px; margin-bottom:10px; }
 .fn-calls p { margin:6px 0; }
+
+.cursor-symbols { margin-top:16px; padding:16px; border:1px solid var(--line-strong); border-radius:8px; background:var(--panel); }
+.cursor-symbols small { display:block; color:var(--muted); }

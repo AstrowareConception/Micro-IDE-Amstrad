@@ -1,3 +1,4 @@
+import type { SymbolNavigationMode } from '../../../packages/basic-language/src/symbol-navigation.ts';
 import type { Preferences } from './preferences.ts';
 import { useEffect, useRef } from 'react';
 import { monaco, language } from './monaco-language.ts';
@@ -15,6 +16,7 @@ interface Props {
   problemNavigation: { id: string; source: string; diagnostic: Diagnostic } | undefined;
   onNextProblem(reverse: boolean, line: number, column: number): void;
   onChange(id: string, source: string): void; onCommand(card: CommandCard | undefined): void;
+  onSymbols(id:string, source:string, line:number, column:number, mode:SymbolNavigationMode):void;
   onPosition(line: number, column: number): void;
   onSave(): void; onReady(editor: monaco.editor.IStandaloneCodeEditor): void;
   onRenumber(): void; onPalette(): void; onExport(): void;
@@ -50,7 +52,13 @@ export function Editor(props: Props) {
     const navigateProblem = (reverse: boolean) => {
       const position = editor.getPosition(); if (position) latest.current.onNextProblem(reverse, position.lineNumber, position.column);
     };
+    const requestSymbols=(mode:SymbolNavigationMode)=>{
+      const position=editor.getPosition(), model=editor.getModel();
+      if(position&&model&&!latest.current.busy)latest.current.onSymbols(latest.current.activeId,model.getValue(),position.lineNumber,position.column-1,mode);
+    };
     const actions = [
+      editor.addAction({id:'cpc-symbol-usages',label:'Rechercher les usages du symbole',contextMenuGroupId:'navigation',contextMenuOrder:2,keybindings:[monaco.KeyMod.Shift|monaco.KeyCode.F12],run:()=>requestSymbols('usages')}),
+      editor.addAction({id:'cpc-symbol-declarations',label:'Déclarations possibles du symbole',contextMenuGroupId:'navigation',contextMenuOrder:3,run:()=>requestSymbols('declarations')}),
       editor.addAction({ id: 'basic-comment', label: 'Commenter / décommenter les lignes BASIC', keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Slash], run: () => {
         const model = editor.getModel(), selection = editor.getSelection(); if (!model || !selection || latest.current.busy) return;
         const last = selection.endColumn === 1 && selection.endLineNumber > selection.startLineNumber ? selection.endLineNumber - 1 : selection.endLineNumber;
@@ -72,10 +80,12 @@ export function Editor(props: Props) {
       if (!position || !model) return;
       const version = model.getVersionId();
       const analysis = await awaitModelAnalysis(model);
-      if (!analysis || editor.getModel() !== model || model.getVersionId() !== version) return;
+      if (editor.getModel() !== model || model.getVersionId() !== version || !editor.getPosition()?.equals(position)) return;
+      if(!analysis){requestSymbols('declarations');return;}
       const reference = analysis.references.find(ref => ref.line === position.lineNumber && ref.start <= position.column - 1 && position.column - 1 <= ref.end);
       const target = analysis.targets.find(item => item.number === reference?.number);
       if (target) { editor.setPosition({ lineNumber: target.line, column: target.start + 1 }); editor.revealLineInCenter(target.line); }
+      else if(!reference)requestSymbols('declarations');
     } });
     latest.current.onReady(editor);
     latest.current.onWorkspaceReady({ source: id => models.current.get(id)?.model.getValue(), apply(changes) {
