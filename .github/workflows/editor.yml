@@ -126,6 +126,7 @@ jobs:
             out/emulator-desktop-alpha.png
             out/emulator-failure.png
             out/firmware-runtime.json
+            out/basic-fn-symbols.png
             out/basic-debug-qualification.json
             out/basic-fn-qualification.json
             out/basic-quality-browser.png

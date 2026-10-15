@@ -1,3 +1,4 @@
+import { createFnCollector, FN_METHOD, FN_BINDING_LABELS, FN_CALL_LABELS, type FnIndex } from './function-symbols.ts';
 import { tokenize, type Token } from './language.ts';
 
 export const SYMBOL_LIMITS = Object.freeze({ sources: 100, totalCharacters: 4_194_304, characters: 1_048_576, lines: 10_000, lineCharacters: 8192, tokens: 2048, symbols: 4096, occurrences: 20_000, totalOccurrences: 50_000, reasons: 100, typeDeclarations: 256 });
@@ -16,10 +17,10 @@ export function symbolTypeLabel(type: SymbolType): string {
 }
 export interface BasicSymbol { key: string; name: string; kind: 'scalar' | 'array'; suffix: '' | '$' | '%' | '!'; type: SymbolType; occurrences: SymbolOccurrence[] }
 export interface SymbolSource { id: string; name: string; source: string }
-export interface SymbolIndex { id: string; name: string; status: 'indexed' | 'partial' | 'limited'; symbols: BasicSymbol[]; typeDeclarations: TypeDeclaration[]; inspectedOccurrences: number; skippedStatements: number; reasons: string[]; omittedReasons: number }
-export interface SymbolReport { version: 2; method: string; sources: SymbolIndex[] }
+export interface SymbolIndex { id: string; name: string; status: 'indexed' | 'partial' | 'limited'; symbols: BasicSymbol[]; typeDeclarations: TypeDeclaration[]; functions: FnIndex; inspectedOccurrences: number; skippedStatements: number; reasons: string[]; omittedReasons: number }
+export interface SymbolReport { version: 3; method: string; sources: SymbolIndex[] }
 export const SYMBOL_ROLE_LABELS: Record<SymbolRole, string> = { read: 'Lecture', write: 'Écriture', 'read-write': 'Lecture/écriture', dimension: 'Dimensionnement', erase: 'Suppression' };
-export const SYMBOL_METHOD = 'Index textuel par source : casse ignorée, suffixes et scalaires/tableaux séparés. Les suffixes fixent le type explicite. Pour un RUN autonome démarrant avec les réglages BASIC standards, le type implicite possible comprend le réel initial et tous les DEFINT/DEFREAL/DEFSTR visant la première lettre, sans présumer leur exécution ou leur ordre. Un segment omis, un accès machine, CONT ou RUN externe rend ce contexte incomplet. Aucun rapprochement des alias A/A!/A%, aucune preuve de définition, de chemin exécuté ou de type à une occurrence donnée. Chaînes, DATA et commentaires exclus ; DEF FN/appels FN, RSX, CALL, adresses, MID$ en écriture et commandes non couvertes omis. Aucun renommage ni modification du code. Les exports incluent noms, types possibles, plages alphabétiques et positions, sans code ni valeurs.';
+export const SYMBOL_METHOD = 'Index textuel par source : casse ignorée, suffixes et scalaires/tableaux séparés. Les suffixes fixent le type explicite. Pour un RUN autonome démarrant avec les réglages BASIC standards, le type implicite possible comprend le réel initial et tous les DEFINT/DEFREAL/DEFSTR visant la première lettre, sans présumer leur exécution ou leur ordre. Un segment omis, un accès machine, CONT ou RUN externe rend ce contexte incomplet. Pour les variables globales, aucun rapprochement des alias A/A!/A%, aucune preuve de définition, de chemin exécuté ou de type à une occurrence donnée. Chaînes, DATA et commentaires exclus ; Segments FN présentés séparément, exclus des usages globaux ; RSX, CALL, adresses, MID$ en écriture et commandes non couvertes omis. Aucun renommage ni modification du code. Les exports incluent noms, types possibles, plages alphabétiques et positions, sans code ni valeurs. '+FN_METHOD;
 const upper = (token: Token | undefined) => token?.text.toUpperCase() ?? '';
 const readCommands = new Set('PRINT WRITE IF WHILE ON AFTER EVERY MODE MEMORY ERROR BORDER INK LOCATE MOVE MOVER DRAW DRAWR PLOT PLOTR POKE OUT ORIGIN SOUND WAIT KEY OPENIN OPENOUT RANDOMIZE FILL WIDTH ZONE RELEASE SYMBOL SPEED'.split(' '));
 const emptyCommands = new Set('END STOP RETURN WEND TRON TROFF FRAME DI EI DEG RAD NEW CAT CONT CLOSEIN CLOSEOUT CLEAR GOTO GOSUB RESTORE RUN RESUME'.split(' '));
@@ -51,14 +52,18 @@ function typeLetters(items: Token[]): string | null {
  return [...letters].sort().join('');
 }
 export function indexSymbols(input: SymbolSource, occurrenceBudget: number = SYMBOL_LIMITS.occurrences): SymbolIndex {
- const result: SymbolIndex = { id: input.id, name: input.name, status: 'indexed', symbols: [], typeDeclarations: [], inspectedOccurrences: 0, skippedStatements: 0, reasons: [], omittedReasons: 0 };
+ const result: SymbolIndex = { id: input.id, name: input.name, status: 'indexed', symbols: [], typeDeclarations: [], functions: {definitions:[],calls:[],inspectedOccurrences:0}, inspectedOccurrences: 0, skippedStatements: 0, reasons: [], omittedReasons: 0 };
  const isLimited=()=>result.status==='limited';
  const symbols = new Map<string, BasicSymbol>(), reasons = new Set<string>();
  const budget = Math.max(0,Math.min(SYMBOL_LIMITS.occurrences,Math.floor(occurrenceBudget)||0));
  function reason(text: string, limited = false) { if(limited) result.status='limited'; else if(!isLimited()) result.status='partial'; if(reasons.has(text)) return; reasons.add(text); if(result.reasons.length<SYMBOL_LIMITS.reasons) result.reasons.push(text); else result.omittedReasons++; }
  if (input.source.length > SYMBOL_LIMITS.characters) { reason('Source supérieure à 1 Mio de caractères : index retiré.',true);return result; }
  const lines=input.source.split('\n');if(lines.length>SYMBOL_LIMITS.lines) { reason('Plus de 10 000 lignes : index retiré.',true);return result; }
- let previous=0, opaqueTypeEffects=false;
+ let previous=0, opaqueTypeEffects=false, fnSegments=0;
+ const functions=createFnCollector(()=>{
+  if(result.inspectedOccurrences>=budget){reason(`Budget atteint (${budget} occurrences) : index de cette source retiré.`,true);return false;}
+  result.inspectedOccurrences++;return true;
+ },message=>reason(message,true));
  for (let line=1;line<=lines.length && !isLimited();line++) {
   const text=lines[line-1]!;if(!text.trim()) continue;
   const prefix=/^\s*(\d+)(?=\s|[a-zA-Z?'&]|$)/.exec(text), basicLine=Number(prefix?.[1]);
@@ -87,8 +92,14 @@ export function indexSymbols(input: SymbolSource, occurrenceBudget: number = SYM
    let depth=0, invalid=false;
    for(const token of items) { if(token.text==='(')depth++;else if(token.text===')')depth--;if(depth<0 || depth>64)invalid=true; }
    if(depth || invalid || items.some(t=>t.kind==='string' && (t.text.length<2 || !t.text.endsWith('"')))) { skip('parenthèses ou chaîne non fermées : segment omis.');continue; }
-   if(items.some(t=>t.text==='@' || upper(t)==='FN' || t.kind==='identifier' && /^FN/i.test(t.text))) { skip('FN ou adresse : portée/effets non qualifiés, segment omis.');continue; }
-   if(items.some(t=>t.kind==='identifier' && t.text.replace(/[$%!]$/,'').length>40)) { skip('identifiant supérieur à 40 caractères : segment omis.');continue; }
+   const hasFn=items.some(t=>upper(t)==='FN'||t.kind==='identifier'&&/^FN/i.test(t.text));
+   if(items.some(t=>t.text==='@')) { skip('Adresse : effets non qualifiés, segment omis.');continue; }
+   if(items.some(t=>t.kind==='identifier' && t.text.replace(/[$%!]$/,'').length>(/^FN/i.test(t.text)?42:40))) { skip('identifiant supérieur à 40 caractères : segment omis.');continue; }
+   if(hasFn){
+    if(functions.collect(items,line,basicLine)){fnSegments++;skip('FN relevé dans la vue Fonctions ; segment exclu des usages globaux.');}
+    else skip('FN : forme non couverte ou ambiguë, segment omis.');
+    continue;
+   }
    if(['DEFINT','DEFREAL','DEFSTR'].includes(command)) {
     const letters=typeLetters(args);
     if(!letters) { skip('plage DEFINT/DEFREAL/DEFSTR non reconnue : contexte de type incomplet.');continue; }
@@ -127,6 +138,7 @@ export function indexSymbols(input: SymbolSource, occurrenceBudget: number = SYM
    skip('commande hors du périmètre des usages : segment omis.');
   }
  }
+ if(!isLimited()) result.functions=functions.finish(result.typeDeclarations,opaqueTypeEffects||result.skippedStatements>fnSegments);
  if(!isLimited()) {
   // At most 26 * 3 defaults; do not multiply declarations by every occurrence.
   const defaults=new Map<string,Set<BasicValueType>>();
@@ -143,13 +155,13 @@ export function indexSymbols(input: SymbolSource, occurrenceBudget: number = SYM
     {basis:'standalone-default',candidates:['real']};
   }
   result.symbols=[...symbols.values()].sort((a,b)=>a.name.localeCompare(b.name)||a.kind.localeCompare(b.kind));
- } else result.typeDeclarations=[];
+ } else {result.typeDeclarations=[];result.functions={definitions:[],calls:[],inspectedOccurrences:functions.index.inspectedOccurrences};}
  return result;
 }
 export function analyzeSymbols(inputs:SymbolSource[]):SymbolReport {
  if(inputs.length>SYMBOL_LIMITS.sources || inputs.reduce((n,s)=>n+s.source.length,0)>SYMBOL_LIMITS.totalCharacters) throw new Error('Index limité à 100 sources et 4 Mio de caractères au total. Choisissez la source active.');
  let remaining=SYMBOL_LIMITS.totalOccurrences;
- return {version:2,method:SYMBOL_METHOD,sources:inputs.map(input=>{const result=indexSymbols(input,remaining);remaining-=result.inspectedOccurrences;return result;})};
+ return {version:3,method:SYMBOL_METHOD,sources:inputs.map(input=>{const result=indexSymbols(input,remaining);remaining-=result.inspectedOccurrences;return result;})};
 }
 export function symbolsMarkdown(report:SymbolReport):string {
  const escape=(text:string)=>text.replace(/[\\`*_[\]<>#|]/g,'\\$&').replace(/[\r\n]/g,' ');
@@ -158,6 +170,13 @@ export function symbolsMarkdown(report:SymbolReport):string {
   lines.push(`## ${escape(source.name)}`, '', `État : ${source.status} ; ${source.symbols.length} symboles ; ${source.skippedStatements} segments omis.`, ...source.reasons.map(r=>`- ${r}`));
   if(source.omittedReasons)lines.push(`- ${source.omittedReasons} autres limites omises.`);
   for(const declaration of source.typeDeclarations) lines.push(`- ${declaration.command} · lettres ${declaration.letters} · BASIC ${declaration.location.basicLine} · L${declaration.location.line} · C${declaration.location.start+1}`);
+  lines.push('', '### Fonctions FN', FN_METHOD);
+  for(const definition of source.functions.definitions){
+   lines.push(`- FN ${escape(definition.name)} · déclaration BASIC ${definition.location.basicLine} · L${definition.location.line} · C${definition.location.start+1}`);
+   for(const parameter of definition.parameters)lines.push(`  - Paramètre ${escape(parameter.name)} · L${parameter.location.line} · C${parameter.location.start+1}`);
+   for(const read of definition.reads)lines.push(`  - ${escape(read.name)} · ${read.kind==='array'?'tableau':'scalaire'} · ${FN_BINDING_LABELS[read.binding]} · L${read.location.line} · C${read.location.start+1}`);
+  }
+  for(const call of source.functions.calls)lines.push(`- Appel FN ${escape(call.name)} · ${call.arity} argument(s) · ${FN_CALL_LABELS[call.resolution]} · ${call.definitionKeys.length} déclaration(s) possible(s) · BASIC ${call.location.basicLine} · L${call.location.line} · C${call.location.start+1}`);
   for(const symbol of source.symbols) { lines.push('',`### ${escape(symbol.name)} · ${symbol.kind==='array'?'tableau':'scalaire'}`,symbolTypeLabel(symbol.type)); for(const use of symbol.occurrences)lines.push(`- ${SYMBOL_ROLE_LABELS[use.role]} · BASIC ${use.basicLine} · L${use.line} · C${use.start+1}–${use.end+1}`); }
  }
  return lines.join('\n')+'\n';

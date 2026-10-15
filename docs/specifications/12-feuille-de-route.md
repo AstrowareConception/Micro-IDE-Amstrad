@@ -1,5 +1,7 @@
 # 12 — Feuille de route et backlog de réalisation
 
+**Fonctions FN 0.41.12 :** [déclarations, paramètres, variables libres et appels navigables](../implementation/basic-symbols-alpha.md#fonctions-fn-et-parametres--04112). Types et redéfinitions ambigus signalés ; index à la demande, exports version 3 et sources modifiées protégées. Suite : accès depuis le curseur, puis renommage avec aperçu. IDE-015 reste partiel, IDE-017 non réalisé.
+
 **Qualification FN — 15 octobre 2026 :** [matrice firmware des paramètres, variables libres, types, redéfinitions et erreurs](../implementation/basic-fn-qualification.md), [ADR 0070](../adr/0070-qualification-fn-avant-renommage.md). Suite immédiate : index FN/portées borné (ordre 2 du plan), puis accès depuis le curseur et renommage avec aperçu. L’index actuel et la version applicative 0.41.11 restent inchangés.
 
 **Lisibilité et tests agent 0.41.11 :** [mission paramétrable, index des noms/types et suites CPC avant/après](../implementation/agent-readability-alpha.md). Rapports avec empreintes, limites et checkpoint ; FN et extraction multifichier restent à qualifier.

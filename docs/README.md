@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.41.10
+# CPCéleste — Dossier de conception et réalisation — version 0.41.12
+
+**Fonctions FN 0.41.12 :** [déclarations, paramètres, variables libres et appels navigables](implementation/basic-symbols-alpha.md#fonctions-fn-et-parametres--04112). Types et redéfinitions ambigus signalés ; index à la demande, exports version 3 et sources modifiées protégées. Suite : accès depuis le curseur, puis renommage avec aperçu. IDE-015 reste partiel, IDE-017 non réalisé.
 
 **Qualification FN — 15 octobre 2026 :** [matrice firmware et contre-exemples](implementation/basic-fn-qualification.md), [ADR 0070](adr/0070-qualification-fn-avant-renommage.md). Prochaine étape : index FN et ambiguïtés ; renommage toujours non réalisé.
 

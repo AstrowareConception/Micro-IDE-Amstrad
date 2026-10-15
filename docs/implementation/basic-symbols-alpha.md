@@ -1,6 +1,6 @@
-# Symboles et usages BASIC — alpha 0.41.1
+# Symboles, usages et fonctions BASIC — alpha 0.41.12
 
-Date : 8 octobre 2026. Intelligence IDE 0.41, enrichie par les types possibles en 0.41.1. [ADR 0059](../adr/0059-symboles-usages-basic.md). IDE-015 reste partiel ; aucun renommage sémantique livré.
+Mise à jour : 15 octobre 2026. Intelligence IDE 0.41, types possibles en 0.41.1 et [vue FN dédiée en 0.41.12](#fonctions-fn-et-parametres--04112). Les descriptions ci-dessous concernent d’abord la vue des variables globales ; la section FN précise son extension. [ADR 0059](../adr/0059-symboles-usages-basic.md). IDE-015 reste partiel ; aucun renommage sémantique livré.
 
 ## Utilisation
 
@@ -76,3 +76,26 @@ Validation : sept nouveaux tests de domaine pour suffixes, plages, branches/saut
 ## Qualification FN — 15 octobre 2026
 
 La [matrice firmware](basic-fn-qualification.md) précise paramètres, variables libres, types au moment de l’appel, redéfinitions et effets partiels des erreurs. [Exemple exécutable](../../examples/symbols/functions.bas). Ce lot prépare l’extension de l’index ; les exclusions FN, le rapport version 2 et l’absence de renommage restent en vigueur.
+
+<a id="fonctions-fn-et-parametres--04112"></a>
+## Fonctions FN et paramètres — 0.41.12
+
+Dans **BASIC → Symboles et usages BASIC…**, actualiser puis choisir **Fonctions FN et paramètres**. Les buffers courants sont utilisés, y compris les brouillons. La recherche porte sur noms de fonction, paramètres, variables lues ou source pour les déclarations ; sur nom de fonction ou source pour les appels.
+
+![Fonctions, paramètres et appels FN](../images/guide-utilisateur/31-fonctions-fn.png)
+
+À gauche, sélectionner une déclaration. À droite, lire ses paramètres et les usages dans son corps : **Paramètre local**, **Variable libre (globale)** ou **Liaison ambiguë**. Les boutons sélectionnent précisément le nom dans le code, sans le préfixe FN. Un paramètre et une globale homonymes ne sont pas fusionnés ; les tableaux restent distincts. [functions.bas](../../examples/symbols/functions.bas) illustre cette séparation avec le résultat 104 et la globale 99.
+
+La liste **Appels FN** indique le nombre d’arguments et les déclarations possibles. Cliquer un appel ou un lien rejoint son emplacement ; les onglets chargés peuvent être rouverts. Un lien unique n’est pas une preuve que la déclaration a été exécutée ni que les arguments sont valides. Une redéfinition garde plusieurs candidats. **Aucune déclaration couverte** ne signifie pas une erreur certaine : elle peut appartenir à une forme omise.
+
+Les suffixes explicites sont distingués. Un nom implicite et son alias réel peuvent être rapprochés seulement sous l’hypothèse d’un RUN autonome, sans directive pertinente ni contexte opaque. DEFINT/DEFREAL/DEFSTR ne sont pas simulés dans l’ordre du texte. Les changements de type et paramètres homonymes compatibles rendent la liaison ambiguë ; les [42 témoins firmware](basic-fn-qualification.md) expliquent cette prudence.
+
+### Périmètre et limites
+
+Déclarations `DEF FNnom=expression` ou avec un à plusieurs paramètres scalaires, forme `FN nom`, appels imbriqués, constantes, variables/tableaux et opérateurs arithmétiques/comparatifs/logiques sont relevés. Expressions avec quelques fonctions natives unaires (ABS, INT, LEN, conversions, etc.) reconnues ; ce n’est pas une validation exhaustive de leurs signatures. Appels hors définition relevés dans les affectations scalaires, PRINT/WRITE, IF/WHILE. Les appels dans les indices/cibles, FOR, commandes machine, flux PRINT et autres formes non couvertes sont omis avec raison. Chaînes, DATA et commentaires ne créent aucun usage.
+
+Les segments FN restent exclus de l’ancienne liste des variables/tableaux globaux : le statut général peut donc rester **index partiel** même si leur vue dédiée contient des résultats. Le nom libre d’une fonction ne se lie jamais au paramètre d’une autre définition. Types et définitions actifs à l’exécution ne sont pas reconstruits. Aucun renommage automatique livré ; la mission IA conserve sa restriction FN et son outil de symboles ne retourne pas encore les détails de cette vue.
+
+Budgets supplémentaires par source : 256 définitions, 32 paramètres par définition, 4096 occurrences FN et 8192 liens. Les occurrences FN partagent le budget total existant ; dépassement : retrait complet de l’index de cette source. Les listes affichent 200 éléments et 20 liens par appel, avec indication du reste. Source modifiée : liens désactivés jusqu’à actualisation. Annulation et délai de 15 secondes inchangés.
+
+Les exports **JSON version 3** et Markdown incluent noms des fonctions/paramètres/variables lues, positions, liaisons et candidats. Ils ne contiennent ni expressions ni valeurs ni commentaires. Les identités sont propres à une source et au snapshot, pas des identifiants persistants après édition. Le format du rapport Qualité reste inchangé. [Contrat et décision](../adr/0071-index-fn-et-portees-textuelles.md).

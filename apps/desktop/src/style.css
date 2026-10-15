@@ -412,3 +412,10 @@ select{font:inherit;width:100%;margin:8px 0;background:var(--input);color:inheri
 .readability-panel fieldset { display: grid; gap: .5rem; min-width: 0; border: 0; padding: 0; }
 .readability-panel .document-consent { margin: .3rem 0; }
 .readability-panel input:not([type="checkbox"]) { width: 100%; box-sizing: border-box; }
+
+.fn-symbols > label { display:grid; gap:6px; max-width:560px; margin-top:16px; }
+.fn-symbols h4 { margin-bottom:6px; }
+.fn-symbols small { display:block; }
+.fn-calls { max-height:480px; }
+.fn-calls > li { padding:10px; border:1px solid var(--line-strong); border-radius:8px; margin-bottom:10px; }
+.fn-calls p { margin:6px 0; }

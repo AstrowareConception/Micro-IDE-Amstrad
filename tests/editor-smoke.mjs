@@ -1,3 +1,4 @@
+import { verifyFunctionSymbols } from './basic-function-symbols-smoke.mjs';
 import { verifyAgentReadability } from './agent-readability-smoke.mjs';
 import { verifyAgentKnowledge } from './agent-knowledge-smoke.mjs';
 import { verifyKnowledge } from './knowledge-smoke.mjs';
@@ -360,6 +361,7 @@ try {
   await verifyPersonalization(browser, errors);
   await verifyNotifications(browser, errors);
   await verifyBasicDiagnostics(browser, errors);
+  await verifyFunctionSymbols(browser, errors);
   await verifyBasicSymbols(browser, errors);
   await verifyBasicQuality(browser, errors);
   await verifyBasicFlow(browser, errors);
