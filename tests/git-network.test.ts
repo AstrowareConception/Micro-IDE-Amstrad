@@ -10,7 +10,9 @@ import { GitOperations } from '../apps/desktop/git-operations.ts';
 import { newProject } from '../packages/workspace/src/project.ts';
 import { PROJECT_GIT_IGNORE } from '../packages/version-control/src/inspection.ts';
 import type { GitRequest } from '../packages/version-control/src/operations.ts';
-const git = (root: string, ...args: string[]) => execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', ...args], { cwd: root, stdio: 'ignore', env: { ...process.env, GIT_CONFIG_GLOBAL: GIT_NULL, GIT_CONFIG_NOSYSTEM: '1' } });
+// Keep fixture commits synchronous: background maintenance can remove its lock during metadata inspection.
+// Production Git commands already disable automatic maintenance; all inspection guards remain active.
+const git = (root: string, ...args: string[]) => execFileSync('git', ['-c', 'maintenance.auto=false', '-c', 'gc.auto=0', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', ...args], { cwd: root, stdio: 'ignore', env: { ...process.env, GIT_CONFIG_GLOBAL: GIT_NULL, GIT_CONFIG_NOSYSTEM: '1' } });
 async function perform(operations: GitOperations, request: GitRequest) { const state = await operations.overview(); const plan = await operations.prepare(state.revision, request); return operations.apply(plan.id); }
 test('real authenticated HTTPS supports push, private-style clone, fetch/pull and rejects credentials/TLS without exposing secrets', { skip: process.platform === 'win32', timeout: 60_000 }, async () => {
   const server = await gitHttpsFixture();
