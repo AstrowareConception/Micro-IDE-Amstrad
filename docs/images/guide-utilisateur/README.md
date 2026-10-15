@@ -90,3 +90,7 @@ Reproduction : `npm run build:renderer`, puis `npm run test:editor` (Playwright 
 ## Capture 32 — Navigation au curseur 0.41.13
 
 [32-navigation-curseur.png](32-navigation-curseur.png) est la copie exacte de `out/basic-cursor-navigation.png`, produite le 15 octobre 2026 par [tests/basic-cursor-navigation-smoke.mjs](../../../tests/basic-cursor-navigation-smoke.mjs), base `9b2db1768aab2f310356f755ea796b2336f62c9f`. Renderer 0.41.13 et worker Symboles réels, Chromium Linux ; capture directe de la région des résultats, viewport 1440 × 1600. Listings originaux et ouverture de projet contrôlée ; aucun appel IA, ROM ou contenu privé. Pixels non retouchés. Reproduction : `npm run build:renderer`, puis `npm run test:editor`.
+
+## Capture 33 — Renommage de variables 0.41.14
+
+[33-renommage-variable.png](33-renommage-variable.png) est la copie exacte de `out/basic-variable-rename.png`, produite le 15 octobre 2026 par [tests/basic-variable-rename-smoke.mjs](../../../tests/basic-variable-rename-smoke.mjs), base `73c3da83825fc912dad51a83c1df8ae649fabc7e`. Renderer 0.41.14 et worker de renommage réels, Chromium Linux, viewport 1440 × 1100 ; capture de la région du panneau. Listing original de démonstration, port projet contrôlé, aucun appel IA, ROM ni fichier personnel. Pixels non retouchés. Reproduction : `npm run build:renderer`, puis `npm run test:editor`.

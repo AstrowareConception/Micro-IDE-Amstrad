@@ -1,3 +1,5 @@
+import { RenameVariablePanel, type VariableRenameRequest } from './RenameVariablePanel.tsx';
+import { applyVariableRename, type VariableRenamePlan } from '../../../packages/basic-language/src/rename-variable.ts';
 import { DEFAULT_KEYMAP, shortcutFromEvent, shortcutLabel, type Keymap } from './keymap.ts';
 import { SourceOperationDialog, SourceDraftDialog } from './SourceOperationDialog.tsx';
 import type { SourceOperation, SourceMutationResult, SourceDraft } from '../../../packages/workspace/src/source-operations.ts';
@@ -122,6 +124,7 @@ export function App() {
   const [fileBusy, setBusy] = useState(false);
   const [agentBusy, setAgentBusy] = useState(false);
   const [distributionOpen, setDistributionOpen] = useState(false);
+  const [variableRename,setVariableRename]=useState<VariableRenameRequest>();
   const [renumberOpen, setRenumberOpen] = useState(false);
   const [palette, setPalette] = useState<'all' | 'sources' | undefined>();
   const [contextSource, setContextSource] = useState<string>();
@@ -394,6 +397,20 @@ export function App() {
     finally { setBusy(false); }
   }
   const exportDisk = () => perform(() => project && files.project ? files.project.exportDisk(project.sessionId, documents.map(item => ({ id: item.sourceId, source: item.source }))) : files.exportDisk(source), 'DSK DATA construit — validation structurelle uniquement');
+  function beginVariableRename(){
+    const model=editor.current?.getModel(),at=editor.current?.getPosition();
+    if(busy||binaryProject||knowledgeOpen||!model||!at)return;
+    setVariableRename({nonce:crypto.randomUUID(),documentId:activeId,documentName:active.name,scopeId:project?.sessionId??'standalone',source:model.getValue(),line:at.lineNumber,column:at.column-1,version:model.getVersionId(),modelUri:model.uri.toString()});
+  }
+  const renameStale=!!variableRename&&(variableRename.scopeId!==(project?.sessionId??'standalone')||variableRename.documentId!==activeId||variableRename.documentName!==active.name||variableRename.source!==source||variableRename.modelUri!==editor.current?.getModel()?.uri.toString()||variableRename.version!==editor.current?.getModel()?.getVersionId());
+  function renameVariable(plan:VariableRenamePlan){
+    const instance=editor.current,model=instance?.getModel();
+    if(busy||renameStale||!variableRename||!instance||!model||model.getVersionId()!==variableRename.version||model.uri.toString()!==variableRename.modelUri)throw new Error('Document ou révision modifié : relancez F2.');
+    applyVariableRename(plan,model.getValue());
+    instance.pushUndoStop();
+    if(!instance.executeEdits('basic-variable-rename',plan.edits.map(edit=>({range:new monaco.Range(edit.line,edit.start+1,edit.line,edit.end+1),text:edit.after}))))throw new Error('Application du renommage refusée.');
+    instance.pushUndoStop();setStatus('Variable renommée dans le buffer, non enregistré. Ctrl Z pour annuler.');
+  }
   function renumber(request: RenumberRequest) {
     const instance = editor.current, model = instance?.getModel();
     if (busy || !instance || !model || activeId !== request.documentId || model.getVersionId() !== request.version)
@@ -425,6 +442,7 @@ export function App() {
     { id: 'search-sources', label: 'Rechercher dans toutes les sources', detail: 'Ctrl Maj F', run: () => { setSearchOpen(true); showTool('search'); } },
     { id: 'replace', label: 'Remplacer dans le listing', detail: 'Ctrl H', disabled: busy, run: () => editorAction('editor.action.startFindReplaceAction') },
     { id: 'line', label: 'Aller à une ligne physique', detail: 'Ctrl G · distinct du numéro BASIC', run: () => editorAction('editor.action.gotoLine') },
+    { id: 'cpc-rename-variable', label: 'Renommer la variable…', detail: 'F2', disabled: busy || binaryProject || knowledgeOpen, run: () => editorAction('cpc-rename-variable') },
     { id: 'renumber', detail: 'Ctrl Maj R', label: 'Renuméroter le BASIC', disabled: busy || binaryProject, run: () => setRenumberOpen(true) },
     { id: 'complete', label: 'Compléter le BASIC', detail: 'Ctrl Espace', disabled: busy || binaryProject, run: () => editorAction('editor.action.triggerSuggest') },
     { id: 'minimap', label: preferences.minimap ? 'Masquer la minimap' : 'Afficher la minimap', run: () => setPreferences(previous => ({ ...previous, minimap: !previous.minimap })) },
@@ -503,13 +521,13 @@ export function App() {
   ] : [];
   return <main className="workbench" style={{ '--sidebar-width': `${preferences.sidebarWidth}px`, '--agent-width': `${preferences.agentWidth}px`, '--output-height': `${preferences.outputHeight}px` } as CSSProperties}>
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.41.13 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.41.14 · AstroWare Conception</p></div></div>
       <div className="topbar-actions"><Button icon="bell" aria-label={`Centre de notifications · ${unreadNotifications} non lue(s)`} onClick={() => setNotificationsOpen(true)}><span className="notification-badge">{unreadNotifications}</span></Button><span className="profile">CPC 6128 · BASIC 1.1</span></div>
     </header>
     <WorkbenchMenus groups={[
       ['Fichier', ['open', 'project', 'import-dsk', 'recover-file', 'recent-projects', 'clone', 'create-project', 'save', 'save-all', 'save-as', 'local-history', 'export', 'distribution']],
       ['Édition', ['undo', 'redo', 'find', 'replace', 'search-sources', 'line', 'basic-comment', 'editor.action.copyLinesDownAction', 'editor.action.moveLinesUpAction', 'editor.action.moveLinesDownAction', 'editor.action.deleteLines', 'editor.action.addSelectionToNextFindMatch', 'next-tab', 'previous-tab', 'close-tab']],
-      ['BASIC', ['run', 'basic-tests', 'symbols', 'cpc-symbol-usages', 'cpc-symbol-declarations', 'quality', 'renumber', 'complete', 'editor.action.revealDefinition', 'editor.action.marker.next', 'editor.action.marker.prev', 'reference']],
+      ['BASIC', ['run', 'basic-tests', 'symbols', 'cpc-symbol-usages', 'cpc-symbol-declarations', 'quality', 'cpc-rename-variable', 'renumber', 'complete', 'editor.action.revealDefinition', 'editor.action.marker.next', 'editor.action.marker.prev', 'reference']],
       ['Git', ['git', 'git-refresh', 'git-init', 'git-commit', 'git-ai-message', 'git-history', 'git-branches', 'git-create-branch', 'git-remotes', 'git-fetch', 'git-pull', 'git-push', 'clone', 'github', 'git-prs']],
       ['Projet', ['explorer', 'source-rename', 'source-move', 'source-delete', 'source-restore', 'source-archive', 'documents', 'recovery']],
       ['Affichage', ['sidebar', 'agent', 'output', 'problems', 'performance', 'notifications', 'terminal', 'git-history', 'reset-layout', 'layout-edit', 'layout-run', 'layout-agent', 'focus-mode', 'minimap', 'zoom-in', 'zoom-out', 'palette', 'quick-sources']],
@@ -519,6 +537,7 @@ export function App() {
     {newProjectOpen && <NewProjectDialog busy={busy} onClose={() => setNewProjectOpen(false)} onCreate={name => { setProjectName(name); openProject(true, name); }} />}
     {distributionOpen && <DistributionDialog sessionId={project?.sessionId} sources={project ? documents.map(item=>({ id:item.sourceId, name:project.manifest.sources.find(s=>s.id===item.sourceId)!.cpcName, source:item.source })) : [{id:'main',name:'MAIN.BAS',source}]} onClose={()=>setDistributionOpen(false)} />}
     {diskPreview && <DiskImportDialog preview={diskPreview} onCreate={importDisk} onClose={() => setDiskPreview(undefined)} />}
+    {variableRename && <RenameVariablePanel key={variableRename.nonce} request={variableRename} stale={renameStale} busy={busy} onApply={renameVariable} onClose={()=>{setVariableRename(undefined);requestAnimationFrame(()=>editor.current?.focus());}} />}
     {renumberOpen && <RenumberPanel source={source} documentId={activeId} busy={busy} defaultStart={preferences.renumberStart} defaultStep={preferences.renumberStep} revision={() => editor.current?.getModel()?.getVersionId() ?? -1} onApply={renumber} onClose={() => setRenumberOpen(false)} />}
     {palette && <CommandPalette key={palette} title={palette === 'all' ? 'Commandes CPCéleste' : 'Ouvrir rapidement une source'} commands={palette === 'all' ? commands : commands.filter(command => command.id.startsWith('source:'))} onClose={() => setPalette(undefined)} />}
     {selectedSource && <CommandPalette title={`Actions de ${selectedSource.name}`} searchable={false} commands={sourceCommands} onClose={() => setContextSource(undefined)} />}
@@ -606,7 +625,7 @@ export function App() {
         <Editor preferences={preferences} documents={documents} activeId={activeId} analyses={indexed} problemNavigation={problemNavigation} onNextProblem={nextProblem} busy={busy} onChange={(id, value) => setDocuments(items => items.map(item => item.id === id ? { ...item, source: value } : item))} onCommand={setCard}
           navigation={navigation} onSymbols={(sourceId,source,line,column,mode)=>{setSymbolRequest({nonce:crypto.randomUUID(),scopeId:project?.sessionId??'standalone',sourceId,source,line,column,mode});showOutput('symbols');}} onWorkspaceReady={value => { editorWorkspace.current = value; }}
           onPosition={(line, column) => setPosition({ line, column })}
-          onSave={() => void save()} onReady={value => { editor.current = value; }} onPalette={() => setPalette('all')} onRenumber={() => setRenumberOpen(true)} onExport={() => void exportDisk()} /></>}
+          onSave={() => void save()} onReady={value => { editor.current = value; }} onPalette={() => setPalette('all')} onRenameVariable={beginVariableRename} onRenumber={() => setRenumberOpen(true)} onExport={() => void exportDisk()} /></>}
         </div>
         <ResizeHandle label="Hauteur des sorties" orientation="horizontal" reverse value={Math.min(preferences.outputHeight, Math.max(120, workspaceSize.height - 180))} min={120} max={Math.min(1200, workspaceSize.height - 180)} hidden={!outputOpen || knowledgeOpen || panels.output.floating} onChange={outputHeight => setPreferences(previous => ({ ...previous, outputHeight }))} />
         <DockPanel className="output-dock" label="Sorties de l’atelier" name="les sorties" hidden={!outputOpen || knowledgeOpen} layout={panels.output} onLayout={value => updatePanel('output', value)} onHide={() => setOutputOpen(false)} tabs={<nav className="output-tabs" aria-label="Panneaux de sortie"><Button aria-pressed={outputTab === 'problems'} onClick={() => showOutput('problems')} icon="warning">Problèmes {allProblems.length}</Button><Button aria-pressed={outputTab === 'emulator'} onClick={() => showOutput('emulator')} icon="chip">CPC</Button><Button aria-pressed={outputTab === 'terminal'} onClick={() => showOutput('terminal')} icon="terminal">Terminal</Button><Button aria-pressed={outputTab === 'symbols'} onClick={() => showOutput('symbols')} icon="search">Symboles</Button><Button aria-pressed={outputTab === 'quality'} onClick={() => showOutput('quality')} icon="warning">Qualité</Button><Button aria-pressed={outputTab === 'basic-tests'} onClick={() => showOutput('basic-tests')} icon="chip">Tests BASIC</Button><Button aria-pressed={outputTab === 'performance'} onClick={() => showOutput('performance')} icon="settings">Performance</Button><Button aria-pressed={outputTab === 'git-log'} onClick={() => showOutput('git-log')} icon="git">Git</Button></nav>}><div hidden={outputTab !== 'problems'}><ProblemsPanel documents={documents} entries={analysis.entries} onReveal={revealProblem} onRetry={analysis.retry} /></div>

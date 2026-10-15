@@ -1,5 +1,17 @@
 # CPCéleste — Point de reprise du développement
 
+## Incrément du 15 octobre — renommage de variables 0.41.14
+
+Base : main `73c3da83825fc912dad51a83c1df8ae649fabc7e`, PR #75 fusionnée après CI verte sur `2344c38` (Specifications 38806296266, J0 38806296219, Desktop 38806296196 ; Linux 116667924344 confirme 455 tests et 42 recettes FN). Branche `feat/basic-variable-rename` ; vérifier sa PR et la CI de sa tête avant d’annoncer la fusion. Installateurs publiés 0.41.10 ; aucun packaging supplémentaire déclenché.
+
+Réalisé : premier renommage déterministe de variables/tableaux par F2, menus et palette, calcul explicite en worker, aperçu avant/après et positions, refus des collisions/alias/types dynamiques/FN/accès opaques, suffixes conservés et un undo. Application uniquement au buffer courant après contrôle exact du texte, de la session, du modèle et de sa révision, même après une modification annulée. Guide illustré, ADR 0073, roadmaps et banc firmware avant/après ajoutés. Contrat SymbolReport, obfuscateur et outils agent inchangés.
+
+Vérifications locales : TypeScript, 461 tests Node et builds renderer/main réussis. Parcours navigateur ciblé réussi : F2/menu, vrai worker, noms/suffixes et scalaire/tableau, collision, aperçu exact, export des buffers courants vers port contrôlé, undo/redo, texte modifié puis annulé, changement de source/projet, annulation/réponse tardive et fenêtre étroite. Huit paires indépendantes avant/après, soit 16 recettes firmware CPC réussies. Suite navigateur complète réussie ; capture réelle inspectée et versionnée. Contrôle documentaire réussi : 169 Markdown, 21 JSON, six schémas et six exemples. Vérifier ensuite la CI de la tête publiée avant fusion. Aucun appel IA facturé, ROM ou fichier personnel ajouté.
+
+Première CI de PR #76 sur `81a672f` : Specifications et J0 réussis ; Linux a échoué dans le test HTTPS Git préexistant, avant build/UI. Un commit de la fixture lançait la maintenance Git en arrière-plan ; son fichier `objects/maintenance.lock` disparaissait pendant l’inspection. Désactivation de la maintenance automatique uniquement pour les commandes de préparation de cette fixture, comme dans les commandes de production ; aucune garde ni assertion retirée. Les 17 tests ciblés Git réseau/inspection/index ont réussi après correction ; vérifier la CI de la nouvelle tête avant fusion.
+
+Limites : fichier autonome ASCII exécuté depuis le début, 65 535 caractères, 255 par ligne et 2 000 occurrences. FN, directives de type, alias suffixés et accès machine/mémoire/temps/externes exclus ; les autres sources ne sont pas renommées. Les noms peuvent modifier consommation mémoire et timing. IDE-017 partiel, aucune équivalence universelle ni nouveau matériel/émulateur indépendant qualifié. Suite : témoins supplémentaires pour étendre les identités, puis FN/types dynamiques ; découpage multifichier toujours à concevoir.
+
 ## Incrément du 15 octobre — navigation au curseur 0.41.13
 
 Base : main `9b2db1768aab2f310356f755ea796b2336f62c9f`, PR #74 fusionnée après CI verte (Specifications 38802392944, J0 38802392762, Desktop 38802393111) sur `7102b4d`. Branche `feat/basic-cursor-navigation` ; vérifier sa PR et la CI de sa tête avant d’annoncer la fusion. Installateurs publiés 0.41.10 ; aucun packaging supplémentaire déclenché.
