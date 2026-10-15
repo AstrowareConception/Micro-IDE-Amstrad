@@ -1,5 +1,7 @@
 # CPCéleste — Dossier de conception et réalisation — version 0.41.10
 
+**Qualification FN — 15 octobre 2026 :** [matrice firmware et contre-exemples](implementation/basic-fn-qualification.md), [ADR 0070](adr/0070-qualification-fn-avant-renommage.md). Prochaine étape : index FN et ambiguïtés ; renommage toujours non réalisé.
+
 **Lisibilité et tests agent 0.41.11 :** [mission paramétrable, index des noms/types et suites CPC avant/après](implementation/agent-readability-alpha.md). Rapports avec empreintes, limites et checkpoint ; FN et extraction multifichier restent à qualifier.
 
 **Connaissances 0.41.10 :** l’agent crée et révise des notes Markdown, avec comparaison et restauration commune au code. L’espace réunit documentation du projet, lecture Markdown mise en forme, édition/vue partagée, modèles de notes, versions restaurables et accès IA persistant en BASIC/Z80. [Guide illustré](implementation/knowledge-alpha.md).

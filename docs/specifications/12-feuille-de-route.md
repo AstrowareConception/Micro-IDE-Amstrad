@@ -1,5 +1,7 @@
 # 12 — Feuille de route et backlog de réalisation
 
+**Qualification FN — 15 octobre 2026 :** [matrice firmware des paramètres, variables libres, types, redéfinitions et erreurs](../implementation/basic-fn-qualification.md), [ADR 0070](../adr/0070-qualification-fn-avant-renommage.md). Suite immédiate : index FN/portées borné (ordre 2 du plan), puis accès depuis le curseur et renommage avec aperçu. L’index actuel et la version applicative 0.41.11 restent inchangés.
+
 **Lisibilité et tests agent 0.41.11 :** [mission paramétrable, index des noms/types et suites CPC avant/après](../implementation/agent-readability-alpha.md). Rapports avec empreintes, limites et checkpoint ; FN et extraction multifichier restent à qualifier.
 
 **Connaissances 0.41.10 :** [espace documentaire et Markdown](../implementation/knowledge-alpha.md), édition humaine et rédaction agent BASIC/Z80 : création de notes, révision après lecture avec contrôle de version, comparaison et restauration commune code/documents. Références importées et politiques d’accès immuables pour l’agent. [ADR 0068](../adr/0068-redaction-documentaire-agent.md). Suite : recherche humaine plein texte, onglets multiples ; tests CPC agent selon la roadmap générale. La construction structurelle ne qualifie pas le contenu documentaire.

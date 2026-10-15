@@ -1,5 +1,15 @@
 # CPCéleste — Point de reprise du développement
 
+## Incrément du 15 octobre — qualification DEF FN
+
+Base : `main` à `5b564d6f00ee6a0ff42e2d952928ab1371d2a53a`, PR #72 fusionnée après succès des trois workflows sur `0c8917c7d721e150e3521656167d8ea83f112207`. Les réserves CI du compte rendu précédent sont donc levées. Version applicative 0.41.11 ; installateurs publiés 0.41.10. Branche `test/basic-fn-qualification` ; vérifier sa PR et les contrôles de sa tête avant d’annoncer la fusion. Aucun packaging supplémentaire déclenché.
+
+Réalisé : 41 témoins FN et un exemple exécutable, recette WASM dédiée et bloquante dans la CI Linux, rapport avec ROM/source/DSK/moteur/fixtures identifiés, codes ERR/ERL et bornes. Paramètres/globaux, variables libres imbriquées, tableaux, suffixes/alias, types au moment de l’appel, redéfinitions et erreurs avec effets partiels sont confrontés au firmware. [Matrice et contre-exemples](implementation/basic-fn-qualification.md), [ADR 0070](adr/0070-qualification-fn-avant-renommage.md). Aucun changement au domaine Symboles, contrat d’export, UI ou permissions IA.
+
+Vérifications : TypeScript et 439 tests Node réussis localement. 42 recettes firmware réussies dans la matrice complète, dont les deux témoins supplémentaires sur les changements de type entre appels et la séquence 6/102/103 confirmée par sondes RAM. Contrôle documentaire réussi : 165 Markdown, 21 JSON, six schémas et six exemples. Le premier passage expérimental a réfuté cinq attentes ; sondes RAM ciblées pour les valeurs litigieuses, résultats précis consignés puis fixés en assertions. Aucun échec transformé en succès par timeout. ROM de référence et outils de construction conservés hors Git ; aucun appel IA facturé.
+
+Suite immédiate : après validation de cette tranche, réaliser l’index FN/portées borné à partir de la matrice, avec fonctions/paramètres/variables libres distincts, ambiguïtés visibles, coordonnées/navigation, exports et garde des snapshots. Les types implicites et définitions actives dépendent de l’exécution. Conserver les cas non prouvés en omissions ; ensuite accès depuis le curseur puis renommage avec diff préalable, collisions, révisions et undo. IDE-015 reste partiel, IDE-017 non réalisé. Ni firmware différent, ni matériel, ni émulateur indépendant qualifié par ce lot.
+
 ## Incrément du 14 octobre — Lisibilité et tests agent 0.41.11
 
 Base : main `729ba9fca150d1ad27d9c952fccb5cf18da0692c`, PR #71 fusionnée, CI main réussie. Installateurs **0.41.10 publiés** par le run `38644488916`, Windows/Linux, neuf assets dont checksums/provenance. Branche `feat/agent-readability-tests` ; vérifier sa PR et sa CI avant d’annoncer la fusion. Aucun second packaging déclenché.
@@ -181,7 +191,7 @@ Ne pas déclarer J0–J6, R1–R9 ou la version 1.0 achevés sur la seule base d
 ## Méthode de continuité
 
 1. Lire ce document, `AGENTS.md`, les deux roadmaps et le guide du lot. Vérifier `main` distant, les PR, contrôles et la version des Releases. Si `main` a dépassé `0152099…`, prendre ses changements comme état courant et actualiser ce document. Ne pas repartir automatiquement d’une ancienne branche locale.
-2. Choisir une seule tranche cohérente (détokenisation DSK selon la demande du 13 octobre), créer sa branche depuis `main`, puis fixer la matrice de preuves et les limites. Regrouper code, exemples, tests utiles, ADR/guide/roadmap et nouveau point de reprise dans une PR. Vérifier les contrôles adaptés au diff et lire la première erreur réelle avant toute relance.
+2. Choisir une seule tranche cohérente selon l’état le plus récent en tête de ce document, créer sa branche depuis `main`, puis fixer la matrice de preuves et les limites. Regrouper code, exemples, tests utiles, ADR/guide/roadmap et nouveau point de reprise dans une PR. Vérifier les contrôles adaptés au diff et lire la première erreur réelle avant toute relance.
 3. Avant la prochaine pause, inscrire ici commit de `main`, PR, preuves effectivement observées, limites et prochaine action. Les fichiers temporaires et logs locaux ne remplacent pas un commit publié. Ne jamais y copier clé API, ROM, document personnel ou conversation privée.
 
-**Instruction de reprise courte :** « Reprends CPCéleste depuis `main` après lecture de `AGENTS.md` et `docs/reprise.md`. Vérifie d'abord la PR `feat/dsk-project-import` et ses contrôles, puis poursuis la récupération des anciens programmes par la détokenisation BASIC DSK-B. Garde FN/portées au backlog et mets à jour le point de reprise. »
+**Instruction de reprise courte :** « Reprends CPCéleste après lecture d’AGENTS.md et du dernier incrément en tête de docs/reprise.md. Vérifie main distant, la PR de cette branche et ses contrôles ; la suite prévue est l’index FN/portées après sa qualification firmware. Préserve les limites, garde la documentation à jour et ne déclenche pas un packaging par commit. »
