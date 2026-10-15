@@ -273,6 +273,17 @@
       "sha256": "3c16d4e59d9b6a3e3bb85e4fdcfd01485023abe5a53d8c34d5ed304a56833288",
       "origin": "local-browser-real-controller-controlled-openai",
       "scenario": "tests/agent-knowledge-smoke.mjs"
+    },
+    {
+      "file": "31-fonctions-fn.png",
+      "version": "0.41.12",
+      "baseCommit": "d6ebc8de14386824c0a159218f83be926cd924b7",
+      "capturedOn": "2026-10-15",
+      "width": 1398,
+      "height": 1180,
+      "sha256": "85f69a89329137a17e1307f0eae9840b956c879524dfb7566f6ca04e4706e130",
+      "origin": "local-browser",
+      "scenario": "tests/basic-function-symbols-smoke.mjs"
     }
   ]
 }

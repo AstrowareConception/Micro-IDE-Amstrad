@@ -1,6 +1,6 @@
 # DEF FN — qualification préalable des identités
 
-Date : 15 octobre 2026. Tranche de qualification après 0.41.11, avant l'extension de l'index. [ADR 0070](../adr/0070-qualification-fn-avant-renommage.md). L'interface et le rapport Symboles version 2 conservent leurs exclusions FN ; aucun renommage de fonctions n'est livré ici.
+Date : 15 octobre 2026. Tranche de qualification après 0.41.11, avant l'extension de l'index. [ADR 0070](../adr/0070-qualification-fn-avant-renommage.md). Lors de cette tranche, l’interface et le rapport Symboles version 2 conservaient leurs exclusions FN. La [vue FN 0.41.12](basic-symbols-alpha.md#fonctions-fn-et-parametres--04112) exploite désormais ces témoins ; aucun renommage de fonctions n’est livré.
 
 ## Pourquoi ces essais
 

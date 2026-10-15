@@ -1,5 +1,7 @@
 # CPCéleste — Vos idées prennent vie en BASIC
 
+**Fonctions FN 0.41.12 :** dans **BASIC → Symboles et usages BASIC…**, actualiser puis choisir **Fonctions FN et paramètres** pour naviguer entre déclarations, paramètres, variables libres et appels possibles. [Mode d’emploi illustré et limites](implementation/basic-symbols-alpha.md#fonctions-fn-et-parametres--04112).
+
 **Nouveau 0.41.11 :** [améliorer la lisibilité avec l’IA et consulter les essais CPC avant/après](implementation/agent-readability-alpha.md).
 
 **Nouveau — agent Z80 0.41.6 :** expliquer une zone, annoter ses hypothèses, modifier une copie assembleur et comparer ses octets, avec restauration du checkpoint. [Guide illustré pas à pas](implementation/binary-agent-alpha.md).

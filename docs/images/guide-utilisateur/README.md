@@ -1,4 +1,4 @@
-# Provenance des captures — CPCéleste 0.36.0 à 0.41.9
+# Provenance des captures — CPCéleste 0.36.0 à 0.41.12
 
 [Notice utilisateur](../../guide-utilisateur.md) · [README du produit](../../../README.md)
 
@@ -82,3 +82,7 @@ Reproduction : `npm run build:renderer`, puis `npm run test:editor` (Playwright 
 ## Lisibilité assistée — 0.41.11
 
 [30-lisibilite-agent.png](30-lisibilite-agent.png) est la copie exacte de `out/agent-readability-alpha.png`, produite par [tests/agent-readability-smoke.mjs](../../../tests/agent-readability-smoke.mjs) sur la base `729ba9fca150d1ad27d9c952fccb5cf18da0692c`, renderer 0.41.11. Chromium Linux, viewport 1440 × 1000, programme original de tests de score. Préparation de mission sans appel IA ; contrôleur et stockage réels, fournisseur et exécution CPC simulés pour le parcours UI. Pixels non retouchés, aucun secret ni ROM. Reproduction : `npm run build:renderer` puis `npm run test:editor`.
+
+## Capture 31 — Fonctions FN et paramètres 0.41.12
+
+[31-fonctions-fn.png](31-fonctions-fn.png) est une copie octet pour octet de `out/basic-fn-symbols.png`, produite par [tests/basic-function-symbols-smoke.mjs](../../../tests/basic-function-symbols-smoke.mjs) sur la base `d6ebc8de14386824c0a159218f83be926cd924b7`, le 15 octobre 2026. Renderer 0.41.12 et worker Symboles réels, Chromium Linux ; capture directe de la région FN, fenêtre 1440 × 2200. Ouverture de projet contrôlée avec deux listings originaux de test. Aucun appel IA, firmware ou fichier personnel. Les listes restent défilantes comme dans l’application ; pixels non retouchés. Reproduction : `npm run build:renderer` puis `npm run test:editor`.

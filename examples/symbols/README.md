@@ -8,4 +8,4 @@ L’exécution qualifiée sur CPC 6128 anglais affiche **Total 60**. TOTAL et TO
 
 ## Fonctions et homonymes
 
-[functions.bas](functions.bas) affiche **Resultat 104 Globale 99** sur le firmware 6128 anglais identifié. Le `x` libre de FNinner lit la globale 99, tandis que le `x` de FNouter reçoit 3 : `(99+2)+3`. Le panneau Symboles reste partiel sur les définitions/appels FN. [Qualification, cas de type et limites](../../docs/implementation/basic-fn-qualification.md).
+[functions.bas](functions.bas) affiche **Resultat 104 Globale 99** sur le firmware 6128 anglais identifié. Le `x` libre de FNinner lit la globale 99, tandis que le `x` de FNouter reçoit 3 : `(99+2)+3`. Dans la vue **Fonctions FN et paramètres** du panneau Symboles, comparer les lectures de FNinner et FNouter. Le statut général reste partiel, car ces segments ne rejoignent pas l’ancienne liste globale. [Qualification, cas de type et limites](../../docs/implementation/basic-fn-qualification.md).

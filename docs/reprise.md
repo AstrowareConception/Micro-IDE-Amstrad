@@ -1,5 +1,15 @@
 # CPCéleste — Point de reprise du développement
 
+## Incrément du 15 octobre au soir — index FN 0.41.12
+
+Base : main `d6ebc8de14386824c0a159218f83be926cd924b7`, PR #73 fusionnée après CI verte et 42 recettes FN firmware réussies. Branche `feat/basic-fn-symbols` ; vérifier sa PR et la CI de sa tête avant d’annoncer la fusion. Installateurs publiés 0.41.10, aucun packaging supplémentaire déclenché.
+
+Réalisé : vue Fonctions FN et paramètres dans Symboles, définitions séparées, paramètres locaux/variables libres/liaisons ambiguës, appels avec candidats sans preuve de définition active, recherche et navigation exacte avec garde des snapshots. Collecteur TypeScript borné dans le worker existant ; types implicites conservateurs, budgets communs et retrait complet sur dépassement. Rapport JSON 3 et Markdown sans expressions/valeurs ; guide illustré, exemple, ADR 0071 et roadmaps actualisés. L’outil agent de symboles conserve son périmètre variables/types ; aucun renommage FN automatique.
+
+Vérifications locales : TypeScript, 450 tests Node et builds renderer/main réussis. Suite navigateur complète réussie, dont worker FN réel, navigation, ambiguïtés, export, obsolescence et fenêtre étroite. Capture réelle inspectée et intégrée au guide. Contrôle documentaire réussi : 166 Markdown, 21 JSON, six schémas et six exemples. Vérifier la CI de la tête publiée avant fusion. Aucun appel IA facturé, ROM ou projet personnel ajouté.
+
+Limites : reconnaissance d’un sous-ensemble d’expressions et de contextes d’appel ; segments FN exclus de la liste globale. Les liens ne prouvent ni l’exécution ni l’arité valide. Types actifs/caches firmware, redéfinitions conditionnelles et formes opaques non résolus. Pas de qualification d’un nouveau firmware, matériel ou émulateur indépendant. Suite : accès explicite depuis le curseur aux usages/déclarations reconnus, puis renommage avec aperçu et révisions après résolution suffisante des identités. IDE-015 partiel, IDE-017 non réalisé.
+
 ## Incrément du 15 octobre — qualification DEF FN
 
 Base : `main` à `5b564d6f00ee6a0ff42e2d952928ab1371d2a53a`, PR #72 fusionnée après succès des trois workflows sur `0c8917c7d721e150e3521656167d8ea83f112207`. Les réserves CI du compte rendu précédent sont donc levées. Version applicative 0.41.11 ; installateurs publiés 0.41.10. Branche `test/basic-fn-qualification` ; vérifier sa PR et les contrôles de sa tête avant d’annoncer la fusion. Aucun packaging supplémentaire déclenché.
@@ -194,4 +204,4 @@ Ne pas déclarer J0–J6, R1–R9 ou la version 1.0 achevés sur la seule base d
 2. Choisir une seule tranche cohérente selon l’état le plus récent en tête de ce document, créer sa branche depuis `main`, puis fixer la matrice de preuves et les limites. Regrouper code, exemples, tests utiles, ADR/guide/roadmap et nouveau point de reprise dans une PR. Vérifier les contrôles adaptés au diff et lire la première erreur réelle avant toute relance.
 3. Avant la prochaine pause, inscrire ici commit de `main`, PR, preuves effectivement observées, limites et prochaine action. Les fichiers temporaires et logs locaux ne remplacent pas un commit publié. Ne jamais y copier clé API, ROM, document personnel ou conversation privée.
 
-**Instruction de reprise courte :** « Reprends CPCéleste après lecture d’AGENTS.md et du dernier incrément en tête de docs/reprise.md. Vérifie main distant, la PR de cette branche et ses contrôles ; la suite prévue est l’index FN/portées après sa qualification firmware. Préserve les limites, garde la documentation à jour et ne déclenche pas un packaging par commit. »
+**Instruction de reprise courte :** « Reprends CPCéleste après lecture d’AGENTS.md et du dernier incrément en tête de docs/reprise.md. Vérifie main distant, la PR de cette branche et ses contrôles ; la suite prévue est l’accès aux usages/déclarations depuis le curseur, après la vue FN/portées 0.41.12. Préserve les limites, garde la documentation à jour et ne déclenche pas un packaging par commit. »

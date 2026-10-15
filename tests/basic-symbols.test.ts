@@ -135,7 +135,7 @@ test('declaration budget removes all source results instead of hiding defaults',
 });
 test('types remain independent across sources and exported without code or values',()=>{
  const report=analyzeSymbols([{id:'a',name:'one.bas',source:'10 DEFSTR a:alpha="PRIVATE"'},{id:'b',name:'two.bas',source:'10 alpha=12345'}]);
- assert.equal(report.version,2);assert.deepEqual(report.sources.map(s=>s.symbols[0]!.type.basis),['declarations','standalone-default']);
+ assert.equal(report.version,3);assert.deepEqual(report.sources.map(s=>s.symbols[0]!.type.basis),['declarations','standalone-default']);
  const md=symbolsMarkdown(report);assert.match(md,/Types possibles : réel, chaîne/);assert.match(md,/DEFSTR · lettres A · BASIC 10/);
  for(const hidden of ['PRIVATE','12345','alpha='])assert.ok(!md.includes(hidden)&&!JSON.stringify(report).includes(hidden));
 });

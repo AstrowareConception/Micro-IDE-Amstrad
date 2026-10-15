@@ -4,6 +4,7 @@ Une ADR explique une décision durable et ses conséquences. **Acceptée** signi
 
 | ADR | Décision | Statut |
 | --- | --- | --- |
+| [0071](0071-index-fn-et-portees-textuelles.md) | Index FN, portées textuelles et candidats bornés | Acceptée pour 0.41.12 |
 | [0070](0070-qualification-fn-avant-renommage.md) | Matrice firmware DEF FN avant résolution et renommage | Acceptée après 0.41.11 |
 | [0064](0064-agent-z80-et-comparaison.md) | Agent Z80 sur zones enregistrées, comparaison et restauration | Acceptée pour 0.41.6 |
 | [0063](0063-atelier-projets-binaires.md) | Projets binaires, annotations et réassemblage | Acceptée pour 0.41.5 |
