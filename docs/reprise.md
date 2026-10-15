@@ -1,5 +1,15 @@
 # CPCéleste — Point de reprise du développement
 
+## Incrément du 15 octobre — navigation au curseur 0.41.13
+
+Base : main `9b2db1768aab2f310356f755ea796b2336f62c9f`, PR #74 fusionnée après CI verte (Specifications 38802392944, J0 38802392762, Desktop 38802393111) sur `7102b4d`. Branche `feat/basic-cursor-navigation` ; vérifier sa PR et la CI de sa tête avant d’annoncer la fusion. Installateurs publiés 0.41.10 ; aucun packaging supplémentaire déclenché.
+
+Réalisé : F12 sur un nom ouvre les déclarations/affectations possibles ; Maj+F12 ouvre les usages. Menus BASIC, palette et contexte ; saut F12 vers numéro BASIC conservé. Nouveau résolveur pur dans le worker Symboles, une source exacte par demande, 200 résultats affichés avec total, séparation paramètres/variables libres, ambiguïtés et absence de couverture explicites. Résultats au curseur dans Symboles, garde des snapshots, annulation/remplacement et refus des réponses tardives. Contrat d’export 3 et outils agent inchangés. Guide illustré, ADR 0072 et roadmaps mis à jour.
+
+Vérifications locales : TypeScript, 455 tests Node, builds renderer/main et parcours navigateur ciblé réussis. Clavier/menu, coordonnées exactes, candidats multiples, frappe sans indexation, modification pendant/après calcul, réponse remplacée et changement de projet testés avec worker réel. Capture inspectée et versionnée. Suite navigateur complète réussie. Contrôle documentaire réussi : 167 Markdown, 21 JSON, six schémas et six exemples. Vérifier la CI de la tête publiée avant fusion. Aucun appel IA facturé ni ROM ou projet personnel ajouté.
+
+Limites : rapprochement textuel des variables (suffixes/scalaire/tableau séparés), candidats FN sans définition active ni validation d’arité, sous-ensemble syntaxique de l’index conservé. Pas de liens intersources, recherche dans texte arbitraire ni renommage. Les appels sans candidat ne sont pas regroupés ; les usages partageant un candidat FN ne forment pas une identité sémantique. Prochaine tranche : cadrer le renommage sûr avec aperçu, collisions, suffixes/types, révisions et undo, en commençant par les formes dont l’identité peut être suffisamment établie. IDE-015 partiel, IDE-017 non réalisé. Aucune nouvelle qualification firmware/matérielle.
+
 ## Incrément du 15 octobre au soir — index FN 0.41.12
 
 Base : main `d6ebc8de14386824c0a159218f83be926cd924b7`, PR #73 fusionnée après CI verte et 42 recettes FN firmware réussies. Branche `feat/basic-fn-symbols` ; vérifier sa PR et la CI de sa tête avant d’annoncer la fusion. Installateurs publiés 0.41.10, aucun packaging supplémentaire déclenché.
@@ -204,4 +214,4 @@ Ne pas déclarer J0–J6, R1–R9 ou la version 1.0 achevés sur la seule base d
 2. Choisir une seule tranche cohérente selon l’état le plus récent en tête de ce document, créer sa branche depuis `main`, puis fixer la matrice de preuves et les limites. Regrouper code, exemples, tests utiles, ADR/guide/roadmap et nouveau point de reprise dans une PR. Vérifier les contrôles adaptés au diff et lire la première erreur réelle avant toute relance.
 3. Avant la prochaine pause, inscrire ici commit de `main`, PR, preuves effectivement observées, limites et prochaine action. Les fichiers temporaires et logs locaux ne remplacent pas un commit publié. Ne jamais y copier clé API, ROM, document personnel ou conversation privée.
 
-**Instruction de reprise courte :** « Reprends CPCéleste après lecture d’AGENTS.md et du dernier incrément en tête de docs/reprise.md. Vérifie main distant, la PR de cette branche et ses contrôles ; la suite prévue est l’accès aux usages/déclarations depuis le curseur, après la vue FN/portées 0.41.12. Préserve les limites, garde la documentation à jour et ne déclenche pas un packaging par commit. »
+**Instruction de reprise courte :** « Reprends CPCéleste après lecture d’AGENTS.md et du dernier incrément en tête de docs/reprise.md. Vérifie main distant, la PR de cette branche et ses contrôles ; la suite prévue est le cadrage du renommage avec aperçu après la navigation au curseur 0.41.13. Préserve les limites, garde la documentation à jour et ne déclenche pas un packaging par commit. »

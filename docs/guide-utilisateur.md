@@ -1,5 +1,7 @@
 # CPCéleste — Vos idées prennent vie en BASIC
 
+**Navigation au curseur 0.41.13 :** [F12, Maj+F12 et résultats navigables](implementation/basic-symbols-alpha.md#navigation-au-curseur--04113). Usages, paramètres FN et déclarations/affectations possibles dans la source courante ; calcul explicite et liens obsolètes bloqués. Suite : renommage avec aperçu après résolution suffisante des identités. IDE-015 reste partiel, IDE-017 non réalisé.
+
 **Fonctions FN 0.41.12 :** dans **BASIC → Symboles et usages BASIC…**, actualiser puis choisir **Fonctions FN et paramètres** pour naviguer entre déclarations, paramètres, variables libres et appels possibles. [Mode d’emploi illustré et limites](implementation/basic-symbols-alpha.md#fonctions-fn-et-parametres--04112).
 
 **Nouveau 0.41.11 :** [améliorer la lisibilité avec l’IA et consulter les essais CPC avant/après](implementation/agent-readability-alpha.md).

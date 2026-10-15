@@ -1,4 +1,4 @@
-# Symboles, usages et fonctions BASIC — alpha 0.41.12
+# Symboles, usages et fonctions BASIC — alpha 0.41.13
 
 Mise à jour : 15 octobre 2026. Intelligence IDE 0.41, types possibles en 0.41.1 et [vue FN dédiée en 0.41.12](#fonctions-fn-et-parametres--04112). Les descriptions ci-dessous concernent d’abord la vue des variables globales ; la section FN précise son extension. [ADR 0059](../adr/0059-symboles-usages-basic.md). IDE-015 reste partiel ; aucun renommage sémantique livré.
 
@@ -99,3 +99,37 @@ Les segments FN restent exclus de l’ancienne liste des variables/tableaux glob
 Budgets supplémentaires par source : 256 définitions, 32 paramètres par définition, 4096 occurrences FN et 8192 liens. Les occurrences FN partagent le budget total existant ; dépassement : retrait complet de l’index de cette source. Les listes affichent 200 éléments et 20 liens par appel, avec indication du reste. Source modifiée : liens désactivés jusqu’à actualisation. Annulation et délai de 15 secondes inchangés.
 
 Les exports **JSON version 3** et Markdown incluent noms des fonctions/paramètres/variables lues, positions, liaisons et candidats. Ils ne contiennent ni expressions ni valeurs ni commentaires. Les identités sont propres à une source et au snapshot, pas des identifiants persistants après édition. Le format du rapport Qualité reste inchangé. [Contrat et décision](../adr/0071-index-fn-et-portees-textuelles.md).
+
+<a id="navigation-au-curseur--04113"></a>
+
+## Navigation au curseur — 0.41.13
+
+![Usages du symbole sous le curseur](../images/guide-utilisateur/32-navigation-curseur.png)
+
+Placez le curseur **dans le nom** d’une variable, d’un tableau, d’un paramètre ou d’une fonction FN. La recherche porte sur le buffer courant, même non enregistré. Pour FN, viser le nom après le préfixe `FN` ; ni le préfixe ni la ponctuation après le nom ne désignent un symbole.
+
+| Action | Résultat |
+| --- | --- |
+| **Maj+F12** | Usages couverts du symbole dans cette source |
+| **F12 sur un nom** | Paramètres ou déclarations FN possibles ; affectations/dimensions possibles pour une variable |
+| **F12 sur une référence de ligne** | Saut à la ligne BASIC cible, comportement antérieur conservé |
+| **BASIC → Rechercher les usages du symbole** | Même recherche que Maj+F12 |
+| **BASIC → Déclarations possibles du symbole** | Même recherche de déclarations, sans saut numérique |
+
+Les deux commandes de symbole figurent aussi dans la palette et le menu contextuel de l’éditeur. Elles ouvrent **Symboles → Résultats au curseur**. Chaque lien sélectionne le nom exact, avec numéro BASIC, ligne physique et colonne. Un résultat unique reste présenté dans le panneau : sa présence ne prouve pas qu’il s’agit d’une définition active. Les onglets Variables et Fonctions FN permettent ensuite d’explorer l’index obtenu.
+
+### Ce que les liens signifient
+
+- **Variable/tableau :** occurrences textuelles de même nom, casse ignorée, suffixes et scalaires/tableaux séparés. Les lectures libres couvertes dans les corps FN sont incluses ; les paramètres locaux homonymes en sont exclus. Les alias implicites ne sont pas fusionnés.
+- **Déclaration de variable :** le BASIC n’en exige pas. La commande propose les écritures, lectures/écritures et dimensionnements couverts, sans preuve d’initialisation ni de leur ordre d’exécution.
+- **Paramètre FN :** sa déclaration et les lectures qui lui sont liées, uniquement dans cette définition. Les liaisons ambiguës restent signalées comme possibles ; elles ne sont pas attribuées arbitrairement à un seul homonyme.
+- **Fonction FN :** candidats de déclaration de l’appel, ou appels liés à la définition sélectionnée. Depuis un appel, les usages proposés partagent au moins un candidat de déclaration. Il ne s’agit pas d’une classe d’identité sémantique. Deux appels sans déclaration couverte ne sont pas regroupés par simple nom.
+- **Position non couverte :** un message explicite remplace la liste vide ; chaînes, DATA, commentaires, syntaxe hors périmètre et résultats retirés par budget n’inventent pas de liens.
+
+### Calcul, protection et limites
+
+Chaque commande déclenche un worker jetable sur **une seule source**, sans indexer pendant la frappe ni lors d’un déplacement du curseur. Les budgets Symboles/FN et le délai de 15 secondes sont conservés. Les résultats affichent au plus 200 positions, avec le nombre total trouvé ; les exports existants contiennent l’index complet conservé, sans changement du contrat JSON 3. La sélection au curseur n’est pas un nouvel export.
+
+Une modification de texte ou de nom rend le snapshot obsolète, y compris si elle survient pendant le calcul ; les liens sont désactivés. Relancer F12/Maj+F12 reconstruit la recherche. **Actualiser l’index** revient à l’exploration générale et efface la recherche au curseur. Annuler, remplacer la demande ou ouvrir un autre projet retire le worker précédent ; ses réponses tardives sont ignorées. Aucun changement de code, appel IA ou rapprochement entre fichiers.
+
+Validation : tests de domaine sur identités, suffixes, paramètres libres/locaux, ambiguïtés, coordonnées UTF-16/CRLF, exclusions et limites ; parcours navigateur avec worker réel, clavier/menu, liens exacts, plusieurs candidats, snapshots périmés pendant/après calcul, réponse remplacée et changement de projet. [ADR 0072](../adr/0072-navigation-symboles-au-curseur.md). Suite : compléter la résolution des identités avant un renommage avec aperçu, collisions, révisions et undo. Aucun renommage automatique livré.

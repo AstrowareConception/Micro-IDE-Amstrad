@@ -1,4 +1,4 @@
-# Provenance des captures — CPCéleste 0.36.0 à 0.41.12
+# Provenance des captures — CPCéleste 0.36.0 à 0.41.13
 
 [Notice utilisateur](../../guide-utilisateur.md) · [README du produit](../../../README.md)
 
@@ -86,3 +86,7 @@ Reproduction : `npm run build:renderer`, puis `npm run test:editor` (Playwright 
 ## Capture 31 — Fonctions FN et paramètres 0.41.12
 
 [31-fonctions-fn.png](31-fonctions-fn.png) est une copie octet pour octet de `out/basic-fn-symbols.png`, produite par [tests/basic-function-symbols-smoke.mjs](../../../tests/basic-function-symbols-smoke.mjs) sur la base `d6ebc8de14386824c0a159218f83be926cd924b7`, le 15 octobre 2026. Renderer 0.41.12 et worker Symboles réels, Chromium Linux ; capture directe de la région FN, fenêtre 1440 × 2200. Ouverture de projet contrôlée avec deux listings originaux de test. Aucun appel IA, firmware ou fichier personnel. Les listes restent défilantes comme dans l’application ; pixels non retouchés. Reproduction : `npm run build:renderer` puis `npm run test:editor`.
+
+## Capture 32 — Navigation au curseur 0.41.13
+
+[32-navigation-curseur.png](32-navigation-curseur.png) est la copie exacte de `out/basic-cursor-navigation.png`, produite le 15 octobre 2026 par [tests/basic-cursor-navigation-smoke.mjs](../../../tests/basic-cursor-navigation-smoke.mjs), base `9b2db1768aab2f310356f755ea796b2336f62c9f`. Renderer 0.41.13 et worker Symboles réels, Chromium Linux ; capture directe de la région des résultats, viewport 1440 × 1600. Listings originaux et ouverture de projet contrôlée ; aucun appel IA, ROM ou contenu privé. Pixels non retouchés. Reproduction : `npm run build:renderer`, puis `npm run test:editor`.
