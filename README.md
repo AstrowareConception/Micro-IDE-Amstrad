@@ -1,5 +1,7 @@
 # CPCéleste
 
+**Qualification FN — 15 octobre 2026 :** [matrice firmware des fonctions, paramètres et types](docs/implementation/basic-fn-qualification.md), préalable au renommage. Aucun changement d’interface ni nouvel installateur dans cette tranche.
+
 **Lisibilité et tests agent 0.41.11 :** [mission paramétrable, index des noms/types et suites CPC avant/après](docs/implementation/agent-readability-alpha.md). Rapports avec empreintes, limites et checkpoint ; FN et extraction multifichier restent à qualifier.
 
 **Connaissances 0.41.10 :** l’agent crée et révise des notes Markdown, avec comparaison et restauration commune au code. L’espace réunit documentation du projet, lecture Markdown mise en forme, édition/vue partagée, modèles de notes, versions restaurables et accès IA persistant en BASIC/Z80. [Guide illustré](docs/implementation/knowledge-alpha.md).

@@ -1,5 +1,7 @@
 # 15 — Corpus de référence Locomotive BASIC
 
+**Qualification FN — 15 octobre 2026 :** la syntaxe abrégée du corpus est confrontée à [41 témoins et un exemple firmware](../implementation/basic-fn-qualification.md). Les conclusions sont limitées aux formes testées sur le profil 6128 anglais identifié ; ni fiche exhaustive ni nouvelle capacité du parser annoncée. Les originaux restent inchangés.
+
 **Connaissances 0.41.10 :** [espace documentaire et Markdown](../implementation/knowledge-alpha.md), édition humaine et rédaction agent BASIC/Z80 : création de notes, révision après lecture avec contrôle de version, comparaison et restauration commune code/documents. Références importées et politiques d’accès immuables pour l’agent. [ADR 0068](../adr/0068-redaction-documentaire-agent.md). Suite : recherche humaine plein texte, onglets multiples ; tests CPC agent selon la roadmap générale. La construction structurelle ne qualifie pas le contenu documentaire.
 
 ## Finalité

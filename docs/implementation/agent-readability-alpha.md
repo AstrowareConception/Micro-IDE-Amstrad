@@ -31,3 +31,5 @@ Tests de domaine : lecture/révision requise, ID inconnu, quotas, empreintes, r�
 À poursuivre : qualifications FN/portées et renommage sémantique avec diff préalable ; liens explicites entre tests et code testé ; extraction multifichier avec stratégie de chargement vérifiée ; instrumentation et profilage. Aucun gain de vitesse ou secret retrouvé n’est promis.
 
 [Décision d’architecture](../adr/0069-lisibilite-et-tests-agent.md).
+
+La [qualification FN du 15 octobre](basic-fn-qualification.md) fournit maintenant des témoins firmware pour la suite. Le renommage FN dans les missions reste une proposition : l’index ne résout pas encore ces identités.

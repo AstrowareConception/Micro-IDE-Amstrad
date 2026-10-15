@@ -72,3 +72,7 @@ Ce modèle ne simule pas les chemins. Une déclaration conditionnelle, inatteign
 Le rapport JSON passe à la version 2 avec `type` pour chaque symbole et `typeDeclarations` pour chaque source. Le rapport Markdown présente les mêmes informations. Aucun changement au rapport Qualité. Cette tranche prépare la résolution des types et le renommage ; elle ne livre ni les portées DEF FN ni une identité sémantique fusionnée.
 
 Validation : sept nouveaux tests de domaine pour suffixes, plages, branches/sauts, contexte opaque, quotas, confidentialité et séparation des sources. Six nouveaux cas firmware pour plages, recouvrements, suffixes prioritaires, déclaration sautée, tableau entier et changements successifs de type. Recette navigateur : affichage, navigation vers la déclaration, export et blocage du lien obsolète. Voir le [point de reprise](../reprise.md) pour les exécutions effectivement terminées.
+
+## Qualification FN — 15 octobre 2026
+
+La [matrice firmware](basic-fn-qualification.md) précise paramètres, variables libres, types au moment de l’appel, redéfinitions et effets partiels des erreurs. [Exemple exécutable](../../examples/symbols/functions.bas). Ce lot prépare l’extension de l’index ; les exclusions FN, le rapport version 2 et l’absence de renommage restent en vigueur.
