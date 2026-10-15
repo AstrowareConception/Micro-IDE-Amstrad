@@ -1,8 +1,10 @@
 # 17 — Roadmap qualifiée d’un IDE CPCéleste abouti
 
-**Navigation au curseur 0.41.13 :** [F12, Maj+F12 et résultats navigables](../implementation/basic-symbols-alpha.md#navigation-au-curseur--04113). Usages, paramètres FN et déclarations/affectations possibles dans la source courante ; calcul explicite et liens obsolètes bloqués. Suite : renommage avec aperçu après résolution suffisante des identités. IDE-015 reste partiel, IDE-017 non réalisé.
+**Renommage de variables 0.41.14 :** [F2, aperçu avant/après et annulation](../implementation/basic-variable-rename-alpha.md). Premier profil autonome : variables et tableaux, suffixes préservés, collisions refusées et révision contrôlée. Fonctions FN, directives de type et accès machine/externe exclus. IDE-017 désormais partiel.
 
-**Fonctions FN 0.41.12 :** [déclarations, paramètres, variables libres et appels navigables](../implementation/basic-symbols-alpha.md#fonctions-fn-et-parametres--04112). Types et redéfinitions ambigus signalés ; index à la demande, exports version 3 et sources modifiées protégées. Accès depuis le curseur complété en 0.41.13 ; renommage avec aperçu encore ouvert. IDE-015 reste partiel, IDE-017 non réalisé.
+**Navigation au curseur 0.41.13 :** [F12, Maj+F12 et résultats navigables](../implementation/basic-symbols-alpha.md#navigation-au-curseur--04113). Usages, paramètres FN et déclarations/affectations possibles dans la source courante ; calcul explicite et liens obsolètes bloqués. Suite de cette tranche : premier renommage borné livré en 0.41.14 ; FN et types dynamiques restent ouverts. IDE-015 reste partiel.
+
+**Fonctions FN 0.41.12 :** [déclarations, paramètres, variables libres et appels navigables](../implementation/basic-symbols-alpha.md#fonctions-fn-et-parametres--04112). Types et redéfinitions ambigus signalés ; index à la demande, exports version 3 et sources modifiées protégées. Accès depuis le curseur complété en 0.41.13 ; renommage des fonctions FN encore ouvert. IDE-015 reste partiel.
 
 **Qualification FN — 15 octobre 2026 :** [matrice firmware des identités et contre-exemples](../implementation/basic-fn-qualification.md). IDE-015 demeure partiel : index FN et navigation à réaliser ; IDE-017 demeure non réalisé. La qualification prépare ces lots sans en annoncer la livraison.
 
@@ -62,7 +64,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-014 | Lexer/parser et diagnostics fiables avec provenance | P | P0 | IDE-013 | 0.34 : worker temporisé/révisionné, grammaire structurelle étendue, couverture opaque explicite et diagnostics multifichiers ; corpus/qualification ROM exhaustifs ouverts |
 | IDE-015 | Navigation définitions/cibles, usages et symboles BASIC | P | P1 | IDE-014 | 0.41.13 : index variables/tableaux et FN, usages au curseur (Maj+F12), déclarations/affectations possibles (F12), menu/palette/contexte et garde des snapshots ; F12 littéral/F8 conservés ; définitions/types actifs et navigation sémantique complète ouverts |
 | IDE-016 | Renumérotation sûre, plages et références | P | P0 | IDE-014 | Cibles couvertes réécrites ; formes ambiguës bloquées ; undo livré |
-| IDE-017 | Renommage sémantique de variables/fonctions | N | P1 | IDE-015 qualifié | Aperçu par source, identité et collisions vérifiées, suffixes/types et portée préservés, chaînes/DATA/commentaires intacts, sources modifiées refusées et undo ; aucun renommage livré en 0.41.1 |
+| IDE-017 | Renommage sémantique de variables/fonctions | P | P1 | IDE-015 qualifié | 0.41.14 : F2 variables/tableaux dans un fichier autonome sans FN/DEF*/accès opaque ; aperçu, collisions, suffixes, révision exacte et undo. Fonctions, types dynamiques, alias et intersources restent exclus |
 | IDE-018 | Templates/snippets, insertion de lignes et conventions | N | P1 | IDE-014 | Numéros sans collision ; génération minimale conforme au profil |
 | IDE-078 | Export BASIC obfusqué, protégé ou combiné, source claire conservée | P | P1 | Index complet et codec | 0.41.3 : trois modes avec aperçu et recette firmware native ; obfuscation autonome conservatrice, FN/accès machine/multifichier refusés |
 | IDE-019 | Formatage optionnel et inspections/corrections ciblées | N | P2 | IDE-014 | Sémantique inchangée ; aperçu ; aucune casse/espacement opaque détruit |

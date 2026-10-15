@@ -19,6 +19,7 @@ interface Props {
   onSymbols(id:string, source:string, line:number, column:number, mode:SymbolNavigationMode):void;
   onPosition(line: number, column: number): void;
   onSave(): void; onReady(editor: monaco.editor.IStandaloneCodeEditor): void;
+  onRenameVariable():void;
   onRenumber(): void; onPalette(): void; onExport(): void;
   onWorkspaceReady(workspace: EditorWorkspace | undefined): void;
   navigation: SearchMatch | undefined;
@@ -57,6 +58,7 @@ export function Editor(props: Props) {
       if(position&&model&&!latest.current.busy)latest.current.onSymbols(latest.current.activeId,model.getValue(),position.lineNumber,position.column-1,mode);
     };
     const actions = [
+      editor.addAction({id:'cpc-rename-variable',label:'Renommer la variable…',keybindings:[monaco.KeyCode.F2],contextMenuGroupId:'2_cpc',contextMenuOrder:1.5,run:()=>{if(!latest.current.busy)latest.current.onRenameVariable();}}),
       editor.addAction({id:'cpc-symbol-usages',label:'Rechercher les usages du symbole',contextMenuGroupId:'navigation',contextMenuOrder:2,keybindings:[monaco.KeyMod.Shift|monaco.KeyCode.F12],run:()=>requestSymbols('usages')}),
       editor.addAction({id:'cpc-symbol-declarations',label:'Déclarations possibles du symbole',contextMenuGroupId:'navigation',contextMenuOrder:3,run:()=>requestSymbols('declarations')}),
       editor.addAction({ id: 'basic-comment', label: 'Commenter / décommenter les lignes BASIC', keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Slash], run: () => {

@@ -1,3 +1,4 @@
+import { verifyVariableRename } from './basic-variable-rename-smoke.mjs';
 import { verifyCursorNavigation } from './basic-cursor-navigation-smoke.mjs';
 import { verifyFunctionSymbols } from './basic-function-symbols-smoke.mjs';
 import { verifyAgentReadability } from './agent-readability-smoke.mjs';
@@ -362,6 +363,7 @@ try {
   await verifyPersonalization(browser, errors);
   await verifyNotifications(browser, errors);
   await verifyBasicDiagnostics(browser, errors);
+  await verifyVariableRename(browser, errors);
   await verifyCursorNavigation(browser, errors);
   await verifyFunctionSymbols(browser, errors);
   await verifyBasicSymbols(browser, errors);

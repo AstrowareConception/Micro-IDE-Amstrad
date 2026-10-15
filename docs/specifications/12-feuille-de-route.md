@@ -1,8 +1,10 @@
 # 12 — Feuille de route et backlog de réalisation
 
-**Navigation au curseur 0.41.13 :** [F12, Maj+F12 et résultats navigables](../implementation/basic-symbols-alpha.md#navigation-au-curseur--04113). Usages, paramètres FN et déclarations/affectations possibles dans la source courante ; calcul explicite et liens obsolètes bloqués. Suite : renommage avec aperçu après résolution suffisante des identités. IDE-015 reste partiel, IDE-017 non réalisé.
+**Renommage de variables 0.41.14 :** [F2, aperçu avant/après et annulation](../implementation/basic-variable-rename-alpha.md). Premier profil autonome : variables et tableaux, suffixes préservés, collisions refusées et révision contrôlée. Fonctions FN, directives de type et accès machine/externe exclus. IDE-017 désormais partiel.
 
-**Fonctions FN 0.41.12 :** [déclarations, paramètres, variables libres et appels navigables](../implementation/basic-symbols-alpha.md#fonctions-fn-et-parametres--04112). Types et redéfinitions ambigus signalés ; index à la demande, exports version 3 et sources modifiées protégées. Accès depuis le curseur complété en 0.41.13 ; renommage avec aperçu encore ouvert. IDE-015 reste partiel, IDE-017 non réalisé.
+**Navigation au curseur 0.41.13 :** [F12, Maj+F12 et résultats navigables](../implementation/basic-symbols-alpha.md#navigation-au-curseur--04113). Usages, paramètres FN et déclarations/affectations possibles dans la source courante ; calcul explicite et liens obsolètes bloqués. Suite de cette tranche : premier renommage borné livré en 0.41.14 ; FN et types dynamiques restent ouverts. IDE-015 reste partiel.
+
+**Fonctions FN 0.41.12 :** [déclarations, paramètres, variables libres et appels navigables](../implementation/basic-symbols-alpha.md#fonctions-fn-et-parametres--04112). Types et redéfinitions ambigus signalés ; index à la demande, exports version 3 et sources modifiées protégées. Accès depuis le curseur complété en 0.41.13 ; renommage des fonctions FN encore ouvert. IDE-015 reste partiel.
 
 **Qualification FN — 15 octobre 2026 :** [matrice firmware des paramètres, variables libres, types, redéfinitions et erreurs](../implementation/basic-fn-qualification.md), [ADR 0070](../adr/0070-qualification-fn-avant-renommage.md). Suite immédiate : index FN/portées borné (ordre 2 du plan), puis accès depuis le curseur et renommage avec aperçu. L’index actuel et la version applicative 0.41.11 restent inchangés.
 

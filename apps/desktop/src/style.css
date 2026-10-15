@@ -422,3 +422,7 @@ select{font:inherit;width:100%;margin:8px 0;background:var(--input);color:inheri
 
 .cursor-symbols { margin-top:16px; padding:16px; border:1px solid var(--line-strong); border-radius:8px; background:var(--panel); }
 .cursor-symbols small { display:block; color:var(--muted); }
+
+.rename-variable-panel { position:fixed; z-index:130; top:120px; right:18px; width:min(720px,calc(100vw - 36px)); max-height:calc(100vh - 145px); overflow:auto; padding:18px; border:1px solid var(--accent); border-radius:8px; background:var(--panel); box-shadow:0 12px 38px #0009; }
+.rename-variable-panel header { display:flex; align-items:center; justify-content:space-between; gap:12px; }.rename-variable-panel h2 { margin:0; }.rename-variable-panel form { display:flex; align-items:end; gap:12px; flex-wrap:wrap; }.rename-variable-panel label { display:grid; gap:6px; min-width:0; }.rename-variable-panel input { max-width:100%; }.rename-comparison { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; margin:14px 0; }.rename-comparison textarea { width:100%; min-width:0; padding:8px; color:var(--fg); background:var(--input); border:1px solid var(--line); border-radius:4px; font:12px/1.5 monospace; }.rename-edits { max-height:210px; overflow:auto; }.rename-edits table { width:100%; text-align:left; }.rename-variable-panel p,.rename-variable-panel li,.rename-edits td { overflow-wrap:anywhere; }
+@media(max-width:650px){.rename-comparison{grid-template-columns:minmax(0,1fr)}.rename-variable-panel{top:95px;max-height:calc(100vh - 110px)}}

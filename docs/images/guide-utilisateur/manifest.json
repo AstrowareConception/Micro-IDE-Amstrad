@@ -295,6 +295,17 @@
       "sha256": "13d1e38629f8ccf571b0c72ececd2ed4c7ef8b1f82398125febaf07f2c9e7183",
       "origin": "local-browser",
       "scenario": "tests/basic-cursor-navigation-smoke.mjs"
+    },
+    {
+      "file": "33-renommage-variable.png",
+      "version": "0.41.14",
+      "baseCommit": "73c3da83825fc912dad51a83c1df8ae649fabc7e",
+      "capturedOn": "2026-10-15",
+      "width": 720,
+      "height": 795,
+      "sha256": "152f27b1f7f1ff138ad04def49377471253d3b42e57a7fee68931b8e162b364d",
+      "origin": "local-browser",
+      "scenario": "tests/basic-variable-rename-smoke.mjs"
     }
   ]
 }
