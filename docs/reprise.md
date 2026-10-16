@@ -1,5 +1,17 @@
 # CPCéleste — Point de reprise du développement
 
+## Incrément 0.41.18 — lisibilité BASIC et formatage conservateur
+
+Base : `main` version 0.41.17, commit `eb947ecee654a381cbddd3f2895d79a65eec3b46` ; PR #79 fusionnée après les trois workflows réussis. Branche actuelle `feat/basic-readability-formatter` ; qualifier ses contrôles CI sur le commit exact avant fusion. Les installateurs publics restent indépendants de chaque PR.
+
+Réalisé dans cette branche : `language_readability_review` expose métriques, constats et pistes documentaires localisées sans inventer des faits métier ; `language_format_preview` prépare un diff borné et le bilan avant/après ; `language_format_apply` écrit seulement le plan exact si la source et le projet n'ont pas changé. Le profil formateur agit uniquement sur les espaces des lignes simples et conserve chaînes, DATA, commentaires et structures sensibles. Les opérations sont visibles dans le panneau IA et restaurables via le checkpoint initial. Les tests de non-régression portent sur l'idempotence, les refus, les snapshots et l'application contrôlée.
+
+Limites : pas de réécriture automatique des commentaires dans les sources BASIC ; le modèle peut rédiger des suggestions ou des notes Markdown avec vérification humaine. Pas d'équivalence mémoire/timing ou matérielle universelle, pas de découpage multifichier, pas de formatage des branches. Suite prioritaire : consolidation firmware et insertion contrôlée de commentaires, puis stratégie de découpage.
+
+[Guide du lot et limites](implementation/basic-readability-formatter-alpha.md).
+
+
+
 ## Incrément 0.41.17 — renommage déterministe assisté par l’agent
 
 Base : `main` 0.41.16 (PR #78 fusionnée après les trois workflows verts), branche `feat/agent-deterministic-rename`. L'état CI/fusion de ce nouvel incrément doit être vérifié sur sa tête exacte ; aucun packaging ni release supplémentaire déclenché.
