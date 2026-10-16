@@ -1,5 +1,7 @@
 # 17 — Roadmap qualifiée d’un IDE CPCéleste abouti
 
+**0.41.24 — Découpage sans écriture :** [simulation d'une extraction terminale GOTO → CHAIN MERGE](../implementation/basic-multifile-dry-run-alpha.md) avec aperçu global MAIN/PART, construction de deux DSK AMSDOS et qualification sur ROM CPC. Pas de commande apply ni d'extraction persistée. Prochain jalon : transaction atomique de commit/rollback contrôlée par révision.
+
 **CPC 0.41.23 :** [banc de comparaison de CHAIN MERGE en présence de tableaux/chaînes, pointeur DATA, DELETE et mémoire sollicitée](../implementation/basic-chain-merge-edge-alpha.md). Qualification limitée aux témoins et à la ROM, aucune extraction automatique. Prochain incrément : transaction d'extraction réversible et aperçu complet.
 
 

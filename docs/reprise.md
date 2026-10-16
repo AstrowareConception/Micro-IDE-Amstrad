@@ -1,5 +1,15 @@
 # CPCéleste — Point de reprise du développement
 
+## Incrément 0.41.24 — premier découpage multifichier simulé, sans écriture
+
+Base : `main` version 0.41.23, commit `71fb1db25ab0a57852622217b9446578fdf2df75` ; PR #85 fusionnée après 499 tests Node et ROM 8 témoins. Branche `feat/basic-multifile-dry-run`, CI à contrôler avant fusion ; aucun packaging automatique.
+
+Un moteur de simulation `previewTerminalExtraction` compare un monolithe et une version MAIN/PART après remplacement d'un GOTO littéral final par CHAIN MERGE. **Profil réduit** : une seule source, pas d'actifs, pas de GOSUB/RETURN/IF/READ/DATA ni chargement préexistant, seulement MEMORY &7FFF, affectations entières, POKE &8000–&8003 et END. Construction DSK originale et candidate sur clones ; aucune mutation de l'espace de travail. Outil agent `language_extraction_simulate` lié au SHA source, avec affichage et péremption. Il n'existe volontairement aucun apply. Nouveau témoin firmware comparant les deux DSK et les marqueurs RAM [11,42,24], vérifié en CI Linux quand la recette aura terminé.
+
+Suite : conception et qualification de la transaction atomique d'écriture/restauration avec contrôles de révision, puis extension prudente de l'espace de transformations.
+
+[Guide et limites](implementation/basic-multifile-dry-run-alpha.md).
+
 ## 0.41.23 — témoins d'état CHAIN MERGE étendus
 
 Base : `main` version 0.41.22, commit `5c18d5e1ee54caa960e2bcedda45538e9007a6ae` ; PR #84 fusionnée avec 497 tests Node et recette ROM. Branche `feat/cpc-chain-merge-edge-cases`. Nouveau banc bloquant `scripts/qualify-basic-chain-merge-edge.mjs` avec huit DSK : tableaux/chaînes, pointeur DATA sans RESTORE, DELETE et grande allocation en mémoire. Les contrastes attendus sont inscrits dans les témoins : ne pas confondre divergence et régression, ni déclarer qualifié avant réussite de la CI exacte. Les rapports JSON sont conservés sans ROM. Le moteur `inspectChainMergeOverlay` signale les risques associés, l'agent ne modifie aucun fichier au titre de cet audit. **Aucune extraction multifichier automatique.** Suite : plan global de transformation réversible et tests de projet réels. [Guide](implementation/basic-chain-merge-edge-alpha.md).
