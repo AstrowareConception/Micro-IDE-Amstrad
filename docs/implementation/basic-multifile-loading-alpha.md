@@ -1,5 +1,8 @@
 # Contrat de chargement CPC multifichier — qualification alpha 0.41.21
 
+**Complément 0.41.22 :** [qualification ciblée de CHAIN MERGE et de l'état persistant](basic-chain-merge-state-alpha.md) avec comparaisons monolithique/deux fichiers. Les conclusions restent propres aux témoins et au firmware testés.
+
+
 ## Portée
 
 La 0.41.20 repérait les sous-programmes GOSUB et les limites d'un éventuel découpage. La 0.41.21 étudie **comment plusieurs fichiers BASIC se chargent réellement depuis une disquette AMSDOS**, sans encore déplacer de code historique.
