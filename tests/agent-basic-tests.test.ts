@@ -58,3 +58,33 @@ test('real controller runs suites, exposes reports, persists history and blocks 
   assert.equal((await suites.history()).length,2);
  }finally{await rm(root,{recursive:true,force:true});}
 });
+
+test('CPC proof requires execution of the actual changed source, not an identical copy', async()=>{
+ const original=state(),modified=structuredClone(original);
+ modified.files[0]!.source+='9990 REM revised\\n';
+ const revision='suite-revision';let n=0;
+ const testPort={load:async()=>({revision,suites:[{id:'real',name:'True source',sourceIds:['main'],seconds:3}]}),run:async(source:{id:string;name:string;source:string})=>passed(source),record:async()=>{}};
+ const agent=new AgentBasicTests(testPort,hash,()=>`run-${++n}`,()=>new AbortController().signal);
+ await agent.list(original);
+ await agent.run(original,'real',revision);
+ let coverage=agent.coverage(original,modified);
+ assert.equal(coverage.sources.length,1);
+ assert.equal(coverage.directlyTested,0,'an initial passing test cannot certify a modified buffer');
+ await agent.run(modified,'real',revision);
+ coverage=agent.coverage(original,modified);
+ assert.equal(coverage.directlyTested,1);
+ assert.equal(coverage.baselined,1);
+ assert.equal(coverage.sources[0]!.beforeSha256,hash(original.files[0]!.source));
+ assert.equal(coverage.sources[0]!.afterSha256,hash(modified.files[0]!.source));
+ const withCopy=structuredClone(modified);
+ const copy={id:'copy',path:'src/copied.bas',cpcName:'COPY.BAS',source:modified.files[0]!.source,saved:modified.files[0]!.source};
+ withCopy.files.push(copy);
+ const baselineWithCopy=structuredClone(original);baselineWithCopy.files.push(copy);
+ const copyAgent=new AgentBasicTests({load:async()=>({revision:'copy',suites:[{id:'copy',name:'Isolated fixture',sourceIds:['copy'],seconds:3}]}),run:async source=>passed(source),record:async()=>{}},hash,()=> 'copy-run',()=>new AbortController().signal);
+ await copyAgent.list(withCopy);
+ await copyAgent.run(withCopy,'copy','copy');
+ const isolated=copyAgent.coverage(baselineWithCopy,withCopy);
+ assert.equal(isolated.sources.length,1);
+ assert.equal(isolated.directlyTested,0,'the copied test listing cannot cover a different project source ID');
+ assert.equal(isolated.sources[0]!.afterPassed,false);
+});
