@@ -107,11 +107,11 @@ const fixtures=[
   "files": [
    {
     "name": "MAIN",
-    "source": "10 MEMORY &7FFF\n20 dest=300\n30 POKE &8000,11\n40 CHAIN MERGE \"PART.BAS\",100\n50 END\n100 POKE &8001,99\n110 END\n300 POKE &8002,44\n310 END\n"
+    "source": "10 MEMORY &7FFF\n20 POKE &8000,11\n30 CHAIN MERGE \"PART.BAS\",100\n40 END\n100 POKE &8001,99\n110 ON ERROR GOTO 800:GOTO 300\n120 END\n300 POKE &8002,44\n310 END\n800 POKE &8002,77\n810 END\n"
    },
    {
     "name": "PART",
-    "source": "100 POKE &8001,55:ON ERROR GOTO 800\n110 GOTO dest\n120 END\n800 POKE &8002,77\n810 END\n"
+    "source": "100 POKE &8001,55\n"
    }
   ],
   "expected": [
@@ -128,11 +128,11 @@ const fixtures=[
   "files": [
    {
     "name": "MAIN",
-    "source": "10 MEMORY &7FFF\n20 dest=300\n30 POKE &8000,11\n40 CHAIN MERGE \"PART.BAS\",100,DELETE 300-399\n50 END\n100 POKE &8001,99\n110 END\n300 POKE &8002,44\n310 END\n"
+    "source": "10 MEMORY &7FFF\n20 POKE &8000,11\n30 CHAIN MERGE \"PART.BAS\",100,DELETE 300-399\n40 END\n100 POKE &8001,99\n110 ON ERROR GOTO 800:GOTO 300\n120 END\n300 POKE &8002,44\n310 END\n800 POKE &8002,77\n810 END\n"
    },
    {
     "name": "PART",
-    "source": "100 POKE &8001,55:ON ERROR GOTO 800\n110 GOTO dest\n120 END\n800 POKE &8002,77\n810 END\n"
+    "source": "100 POKE &8001,55\n"
    }
   ],
   "expected": [
