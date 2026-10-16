@@ -73,7 +73,7 @@ test('preview planning rejects ambiguous aliases and never mutates, even when th
 });
 
 test('agent rename refuses CRLF sources rather than silently applying a different newline format',async()=>{
- const source='10 score=1:PRINT score\\r\\n20 END\\r\\n';
+ const source='10 score=1:PRINT score\r\n20 END\r\n';
  const tools=new WorkspaceTools(state(source),async()=>assert.fail('CRLF preview must not write'),hash,[]);
  await assert.rejects(tools.execute('language_rename_preview',{id:'main',expectedHash:hash(source),line:1,column:3,newStem:'points'}),/CRLF/);
  assert.equal(tools.renameOperations.length,0);
