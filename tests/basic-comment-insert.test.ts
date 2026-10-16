@@ -25,13 +25,13 @@ test('source with adjacent line numbers, missing anchor or changed initial entry
 });
 test('opaque runtime, computed transfer, missing static branch and malformed listing fail closed',()=>{
  for(const source of ['10 RUN "OTHER"\n20 END\n','10 ON ERROR GOTO 20\n20 END\n','10 GOTO target\n20 END\n','10 GOTO 19\n20 END\n','10 PRINT "ouvert\n20 END\n']){
-  assert.throws(()=>planBasicCommentInsert(source,20,'Une remarque'),undefined,source);
+  assert.throws(()=>planBasicCommentInsert(source,20,'Une remarque'));
  }
 });
 test('comment content must be ASCII conservative and cannot inject executable BASIC',()=>{
  const source='10 score=1\n20 PRINT score\n30 END\n';
  for(const comment of ['ok','État du score','Valeur:PRINT "BOOM"','Ligne\n10 RUN','Trop   long '.repeat(10),' espace ','A|CPM','A"b']){
-  assert.throws(()=>planBasicCommentInsert(source,20,comment),undefined,JSON.stringify(comment));
+  assert.throws(()=>planBasicCommentInsert(source,20,comment));
  }
 });
 test('agent preview is a true no-op; an apply uses only the prepared plan and checkpoints',async()=>{
