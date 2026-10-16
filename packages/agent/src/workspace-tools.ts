@@ -3,6 +3,7 @@ import { planSymbolRename } from '../../basic-language/src/rename-symbol.ts';
 import { planBasicReadabilityFormat, type BasicFormatPlan } from '../../basic-language/src/readability-format.ts';
 import { planBasicCommentInsert, type BasicCommentPlan } from '../../basic-language/src/comment-insert.ts';
 import { analyzeQuality } from '../../basic-language/src/quality.ts';
+import { analyzeBasicModules, type BasicModuleReview } from '../../basic-language/src/module-review.ts';
 import type { VariableRenamePlan } from '../../basic-language/src/rename-variable.ts';
 import { TEST_DEFINITIONS, type AgentBasicTests } from './basic-tests.ts';
 import { analyze, tokenize } from '../../basic-language/src/language.ts';
@@ -41,6 +42,7 @@ export const DEFINITIONS = [
   tool('language_format_apply', 'Applique seulement le plan de mise en forme précédemment préparé, sur la même source et le même instantané du projet ; checkpoint et reconstruction DSK requis.', { id: s, expectedHash: s, previewId: s }),
   tool('language_comment_preview', 'Prépare sans écriture l’insertion d’une ligne BASIC REM autonome à un numéro libre juste avant une ligne BASIC existante. Refuse changements de numéros existants, branches opaques, commentaire ASCII invalide ou absence de numéro libre. L’IA doit prouver ce qu’elle commente.', { id: s, expectedHash: s, beforeBasicLine: n, comment: s }),
   tool('language_comment_apply', 'Applique strictement un commentaire REM dont l’aperçu est encore valable dans le même état du projet ; aucune insertion non contrôlée, checkpoint de mission et reconstruction DSK requis.', { id: s, expectedHash: s, previewId: s }),
+  tool('language_module_review', 'Analyse sans écriture les sous-programmes GOSUB et les risques d’une extraction en modules BASIC : frontières RETURN, flux, état partagé, appels et chargements CHAIN/MERGE. Retourne des régions candidates pour revue seulement ; aucun découpage, DSK ou nouveau fichier créé. Hash exact du listing requis.', { id:s, expectedHash:s }),
   tool('build_project', 'Construit réellement le DSK de tous les buffers et le relit ; renvoie taille/hash/noms. Ne lance pas de CPC.'),
 ];
 function args(value: unknown, fields: string[]): Record<string, unknown> {
@@ -68,6 +70,13 @@ export class WorkspaceTools implements ToolPort {
   readonly renameOperations: AgentRenameRecord[] = [];
   readonly formatOperations: AgentFormatRecord[] = [];
   readonly commentOperations: AgentCommentRecord[] = [];
+  readonly moduleReviews:{sourceId:string;sourceSha256:string;workspaceHash:string;review:BasicModuleReview}[]=[];
+  moduleReviewViews():({sourceId:string;sourceSha256:string;stale:boolean;review:BasicModuleReview})[] {
+    const current=this.workspaceHash();
+    return this.moduleReviews.map(({sourceId,sourceSha256,workspaceHash,review})=>({
+      sourceId,sourceSha256,stale:workspaceHash!==current||this.state.files.find(file=>file.id===sourceId)?.source===undefined||this.hash(this.state.files.find(file=>file.id===sourceId)!.source)!==sourceSha256,review
+    }));
+  }
   private commentPlan: { id:string; fileId:string; sourceHash:string; workspaceHash:string; epoch:number; plan:BasicCommentPlan; record:AgentCommentRecord } | undefined;
   private formatPlan: { id:string; fileId:string; sourceHash:string; workspaceHash:string; epoch:number; plan:BasicFormatPlan; record:AgentFormatRecord } | undefined;
   private renamePlan: { id: string; fileId: string; sourceHash: string; workspaceHash: string; epoch: number; plan: VariableRenamePlan; record: AgentRenameRecord } | undefined;
@@ -249,6 +258,15 @@ export class WorkspaceTools implements ToolPort {
         const result=await this.execute('project_replace_source',{id:item.id,expectedHash:pending.sourceHash,source:pending.plan.after}) as Record<string,unknown>;
         pending.record.status='applied';
         return {...result,previewId:pending.id,newBasicLine:pending.plan.basicLine,comment:pending.plan.comment,checkpoint:'initial-mission',warning:'Ajout REM validé structurellement ; pertinence du commentaire et equivalence ROM non garanties. Tester le programme.'};
+      }
+      case 'language_module_review': {
+        const item=file(),expectedHash=str(value.expectedHash,64);
+        if(this.hash(item.source)!==expectedHash)throw Error('stale-read : relire le listing avant de préparer le découpage.');
+        const review=analyzeBasicModules({id:item.id,path:item.path,cpcName:item.cpcName,source:item.source},
+          this.state.files.filter(other=>other.id!==item.id).map(({id,path,cpcName})=>({id,path,cpcName})));
+        this.moduleReviews.push({sourceId:item.id,sourceSha256:expectedHash,workspaceHash:this.workspaceHash(),review});
+        if(this.moduleReviews.length>4)this.moduleReviews.shift();
+        return {sourceSha256:expectedHash,projectRevision:this.workspaceHash(),...review,disclaimer:'Analyse en lecture seule : les programmes CPC existants et le manifeste ne sont pas modifiés. review signifie étude humaine, pas extraction autorisée.'};
       }
       case 'language_readability_review': {
         const item=file();

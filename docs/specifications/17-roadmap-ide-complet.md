@@ -1,5 +1,8 @@
 # 17 — Roadmap qualifiée d’un IDE CPCéleste abouti
 
+**Découpage 0.41.20 :** [audit en lecture seule des frontières GOSUB/RETURN, dépendances et risques CHAIN/MERGE](../implementation/basic-module-analysis-alpha.md), avec aperçu, contexte de projet, vérification de révision et zones à étudier ou bloquées. Aucun déplacement automatique ; prochaine étape : chargement et équivalence firmware.
+
+
 **Commentaires IA 0.41.19 :** [prévisualisation/application protégées de nouvelles lignes REM](../implementation/basic-comment-insert-alpha.md) sans renuméroter les lignes existantes, avec refus des formes de branchement/mémoire opaques, archive d'aperçus et restauration de mission. L'intention métier des commentaires reste à vérifier. Prochain chantier : découpage multifichier CPC, chargements et état partagé.
 
 
