@@ -1,5 +1,7 @@
 # CHAIN MERGE — profils limites et divergences sur firmware CPC (0.41.23)
 
+**Complément 0.41.24 :** [extraction terminale simulée et vérification sur ROM CPC](basic-multifile-dry-run-alpha.md). Le domaine de validité reste extrêmement étroit ; aucun déplacement de code utilisateur n'est appliqué.
+
 Cette version étend les témoins sur ROM CPC 6128 : **tableaux et chaînes**, **READ sans RESTORE**, **DELETE d'une plage de lignes** et **allocation d'un tableau entier important sous MEMORY &7FFF**. Le moteur et les ROM sont identifiés par SHA-256 ; aucun fichier ROM n'est publié.
 
 Le script `scripts/qualify-basic-chain-merge-edge.mjs` fabrique huit DSK témoins et relève quatre octets mémoire après exécution. Les quatre paires servent à distinguer une équivalence locale d'une **divergence attendue**. Les hypothèses de test sont : tableaux/chaînes conservés ; pointeur DATA repositionné si un CHAIN MERGE survient entre deux READ sans RESTORE ; suppression d'une plage via DELETE ; tableau fortement alloué toujours accessible dans la configuration testée. Seule la CI sur les véritables ROM peut transformer ces hypothèses en observations qualifiées.

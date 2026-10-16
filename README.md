@@ -1,5 +1,7 @@
 # CPCéleste
 
+**Découpage simulé 0.41.24 :** [prévisualisation sans écriture d'une extraction BASIC terminale, contrôles AMSDOS et essai firmware](docs/implementation/basic-multifile-dry-run-alpha.md). Aucun fichier n'est déplacé et aucune commande d'application n'est exposée.
+
 **CPC 0.41.23 :** [qualification des tableaux, chaînes, DATA sans RESTORE, DELETE et pression mémoire dans CHAIN MERGE](docs/implementation/basic-chain-merge-edge-alpha.md). Des différences de comportement sont des résultats de test, pas des équivalences.
 
 

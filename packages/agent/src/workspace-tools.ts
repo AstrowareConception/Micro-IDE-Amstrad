@@ -6,6 +6,7 @@ import { analyzeQuality } from '../../basic-language/src/quality.ts';
 import { analyzeBasicModules, type BasicModuleReview } from '../../basic-language/src/module-review.ts';
 import { inspectLoadContract, type LoadContractReport } from '../../basic-language/src/load-contract.ts';
 import { inspectChainMergeOverlay, type ChainMergeOverlayReport } from '../../basic-language/src/chain-merge-overlay.ts';
+import { previewTerminalExtraction } from '../../workspace/src/multifile-dry-run.ts';
 import type { VariableRenamePlan } from '../../basic-language/src/rename-variable.ts';
 import { TEST_DEFINITIONS, type AgentBasicTests } from './basic-tests.ts';
 import { analyze, tokenize } from '../../basic-language/src/language.ts';
@@ -14,7 +15,7 @@ import { planRenumber } from '../../basic-language/src/renumber.ts';
 import { addProjectSource, buildProjectDisk } from '../../workspace/src/project.ts';
 import type { KnowledgeRequest, KnowledgeResult } from '../../workspace/src/knowledge.ts';
 import type { DocumentSnapshot } from '../../workspace/src/project.ts';
-import type { AgentWorkspaceState, ToolDefinition, ToolPort, AgentRenameRecord, AgentFormatRecord, AgentCommentRecord } from './types.ts';
+import type { AgentWorkspaceState, ToolDefinition, ToolPort, AgentRenameRecord, AgentFormatRecord, AgentCommentRecord, AgentExtractionSimulation } from './types.ts';
 
 const s = { type: 'string' }, n = { type: 'integer' };
 function tool(name: string, description: string, properties: Record<string, unknown> = {}): ToolDefinition {
@@ -47,6 +48,7 @@ export const DEFINITIONS = [
   tool('language_module_review', 'Analyse sans écriture les sous-programmes GOSUB et les risques d’une extraction en modules BASIC : frontières RETURN, flux, état partagé, appels et chargements CHAIN/MERGE. Retourne des régions candidates pour revue seulement ; aucun découpage, DSK ou nouveau fichier créé. Hash exact du listing requis.', { id:s, expectedHash:s }),
   tool('language_loading_contract', 'Dresse en lecture seule le contrat de chargement de toutes les sources du projet : CHAIN, CHAIN MERGE, MERGE, RUN fichier et LOAD. Détecte liens CPC 8.3, cibles dynamiques, manquantes et cycles. Aucune preuve firmware ni autorisation d’extraire ; hash exact d’une source courante requis.', {id:s,expectedHash:s}),
   tool('language_chain_merge_review', 'Étudie en lecture seule un éventuel CHAIN MERGE entre deux fichiers déclarés : numéros de ligne identiques, identifiants textuels communs, DATA/RESTORE, mémoire et flux risqués. Exige l’ID/empreinte SHA-256 de chaque source ; aucune mutation ni preuve firmware du programme utilisateur.', {id:s,expectedHash:s,overlayId:s,overlayHash:s}),
+  tool('language_extraction_simulate', 'Simule SANS ÉCRITURE un découpage d’un seul fichier BASIC : GOTO littéral terminal vers une suite d’affectations ou POKE qui se termine par END, remplacé par CHAIN MERGE vers un nouveau nom CPC. Refuse GOSUB/RETURN, branches, DATA, mémoire dynamique et sources multiples ; contrôle les DSK avant/après, sans autoriser apply.', {id:s,expectedHash:s,entryLine:n,newFileName:s}),
   tool('build_project', 'Construit réellement le DSK de tous les buffers et le relit ; renvoie taille/hash/noms. Ne lance pas de CPC.'),
 ];
 function args(value: unknown, fields: string[]): Record<string, unknown> {
@@ -77,6 +79,11 @@ export class WorkspaceTools implements ToolPort {
   readonly moduleReviews:{sourceId:string;sourceSha256:string;workspaceHash:string;review:BasicModuleReview}[]=[];
   readonly loadingReports:{workspaceHash:string;report:LoadContractReport}[]=[];
   readonly chainMergeReviews:{workspaceHash:string;report:ChainMergeOverlayReport}[]=[];
+  readonly extractionSimulations:{workspaceHash:string;record:AgentExtractionSimulation}[]=[];
+  extractionSimulationViews():{stale:boolean;record:AgentExtractionSimulation}[] {
+    const now=this.workspaceHash();
+    return this.extractionSimulations.map(({workspaceHash,record})=>({stale:workspaceHash!==now,record}));
+  }
   chainMergeViews():{stale:boolean;report:ChainMergeOverlayReport}[] {
     const now=this.workspaceHash();
     return this.chainMergeReviews.map(({workspaceHash,report})=>({stale:workspaceHash!==now,report}));
@@ -281,6 +288,29 @@ export class WorkspaceTools implements ToolPort {
         this.chainMergeReviews.push({workspaceHash:this.workspaceHash(),report});
         if(this.chainMergeReviews.length>4)this.chainMergeReviews.shift();
         return {...report,warning:'Contrat de risque documentaire : absence de preuve de conservation de l’état, du timing ou des ressources dans le programme utilisateur.'};
+      }
+      case 'language_extraction_simulate': {
+        const item=file(),expected=str(value.expectedHash,64);
+        if(this.hash(item.source)!==expected)throw Error('stale-read : relire la source avant la simulation multifichier.');
+        const proposal=previewTerminalExtraction({
+          manifest:this.state.manifest,
+          sources:this.state.files.map(({id,path,cpcName,source})=>({id,path,cpcName,source})),
+          sourceId:item.id,entryLine:value.entryLine as number,newFileName:str(value.newFileName,8)
+        });
+        const originalMain=proposal.original.sources[0]!,newMain=proposal.proposed.sources[0]!,part=proposal.proposed.sources[1]!;
+        const record:AgentExtractionSimulation={
+          profile:proposal.profile,sourceId:item.id,entryLine:proposal.entryLine,gotoLine:proposal.gotoLine,
+          createdPath:part.path,createdCpcName:part.cpcName,movedLines:proposal.linesMoved,
+          beforeMain:originalMain.source.slice(0,4096),afterMain:newMain.source.slice(0,4096),
+          newPart:part.source.slice(0,4096),
+          originalDiskSha256:this.hash(proposal.original.disk),proposedDiskSha256:this.hash(proposal.proposed.disk),
+          originalSourceSha256:this.hash(originalMain.source),newMainSha256:this.hash(newMain.source),
+          newPartSha256:this.hash(part.source),checks:proposal.checks,warnings:proposal.warnings,
+          applicationEnabled:false,persistentWrites:0
+        };
+        this.extractionSimulations.push({workspaceHash:this.workspaceHash(),record});
+        if(this.extractionSimulations.length>4)this.extractionSimulations.shift();
+        return {...record,projectSha256:this.workspaceHash(),status:'simulated-only',rollback:'no-write-required'};
       }
       case 'language_loading_contract': {
         const item=file();
