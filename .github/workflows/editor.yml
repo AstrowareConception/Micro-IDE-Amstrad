@@ -99,6 +99,7 @@ jobs:
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-basic-fn.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-basic-rename.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-basic-multifile-loading.mjs
+          CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-basic-chain-merge-state.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node tests/basic-test-runtime-smoke.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node tests/basic-tests-firmware-smoke.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-basic-debug.mjs
@@ -134,6 +135,7 @@ jobs:
             out/basic-fn-rename.png
             out/basic-rename-qualification.json
             out/basic-multifile-loading-qualification.json
+            out/basic-chain-merge-state-qualification.json
             out/basic-debug-qualification.json
             out/basic-fn-qualification.json
             out/basic-quality-browser.png
