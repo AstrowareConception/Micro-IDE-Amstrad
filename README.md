@@ -1,5 +1,8 @@
 # CPCéleste
 
+**Persistance et chargements 0.41.22 :** [nouveaux témoins firmware CHAIN MERGE et étude des variables, DATA/RESTORE, numéros de ligne et HIMEM](docs/implementation/basic-chain-merge-state-alpha.md). Pas d'extraction automatique ; les résultats restent limités aux programmes témoins effectivement exécutés.
+
+
 **Contrat de chargement 0.41.21 :** [étude statique des dépendances CHAIN/MERGE et qualification firmware de disquettes BASIC multifichiers](docs/implementation/basic-multifile-loading-alpha.md). Aucun déplacement automatique ; les résultats de test sont limités aux témoins CPC réellement exécutés.
 
 
