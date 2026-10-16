@@ -1,5 +1,16 @@
 # CPCéleste — Point de reprise du développement
 
+## Incrément 0.41.17 — renommage déterministe assisté par l’agent
+
+Base : `main` 0.41.16 (PR #78 fusionnée après les trois workflows verts), branche `feat/agent-deterministic-rename`. L'état CI/fusion de ce nouvel incrément doit être vérifié sur sa tête exacte ; aucun packaging ni release supplémentaire déclenché.
+
+Deux outils BASIC sont ajoutés à l'agent : `language_rename_preview` (plan sans écriture, positions et hash, diff avant/après borné) et `language_rename_apply` (application de ce plan exact, identité et snapshot de projet revalidés). Les profils permis sont ceux déjà reconnus par F2 : variables/tableaux, fonctions FN et paramètres dans les cas qualifiés. Un refus du moteur demeure bloquant. Le panneau Agent IA affiche les plans préparés/appliqués/périmés ; le checkpoint initial reste restaurable.
+
+Précautions : pas d'approbation humaine individuelle obligatoire, pas d'équivalence universelle, pas d'élargissement Z80/multifichier, pas de modification implicite de la politique de tests ou builds. Le lot suivant portera sur le formatage/conseils de lisibilité, puis les transformations multifichiers.
+
+[Guide et limites](implementation/agent-deterministic-rename-alpha.md).
+
+
 ## Incrément 0.41.16 — rattachement des tests aux sources
 
 Base : `main` 0.41.15, commit `35512f7cb58fb28a028fd4a6d7ae9c378ec8ef5f`. Branche `feat/basic-tested-source-coverage`. Réalisation proposée, **CI/fusion non acquises** tant que les vérifications GitHub ne sont pas terminées. Installateurs publics encore en 0.41.10 ; aucun packaging lancé.
