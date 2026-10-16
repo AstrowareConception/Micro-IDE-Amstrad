@@ -1,5 +1,7 @@
 # CPCéleste
 
+**Refactorisation IA 0.41.17 :** [prévisualiser puis appliquer les renommages BASIC avec le moteur déterministe de F2](docs/implementation/agent-deterministic-rename-alpha.md). Aperçu et refus des identités ambiguës, révisions protégées, journal et checkpoint de restauration. Le découpage multifichier reste à qualifier.
+
 **Contrôle des sources testées 0.41.16 :** [essais CPC reliés aux vrais fichiers modifiés](docs/implementation/basic-tested-sources-alpha.md). Une suite réussie sur une copie ne couvre pas la source métier ; le panneau Agent IA distingue les essais directs et les références avant/après.
 
 **Renommage FN 0.41.15 :** [F2 sur une fonction ou un paramètre local](docs/implementation/basic-fn-rename-alpha.md). Portée affichée, définitions initiales uniques, appels couverts, aperçu et undo ; globales homonymes conservées. Types dynamiques et redéfinitions restent exclus.
