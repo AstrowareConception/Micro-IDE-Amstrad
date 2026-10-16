@@ -1,5 +1,7 @@
 # CPCéleste
 
+**Commentaires BASIC contrôlés 0.41.19 :** [insertion vérifiée d'une ligne REM sans renumérotation](docs/implementation/basic-comment-insert-alpha.md), avec aperçu exact, refus des flux opaques et restauration du checkpoint initial.
+
 **Lisibilité BASIC 0.41.18 :** [formatage conservateur avec aperçu, audit qualité avant/après et pistes de commentaires justifiées](docs/implementation/basic-readability-formatter-alpha.md). Les transformations sensibles sont laissées intactes ; le checkpoint de l'agent conserve la possibilité de restauration.
 
 

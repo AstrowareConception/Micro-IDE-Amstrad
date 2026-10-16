@@ -1,6 +1,7 @@
 import { indexSymbols, SYMBOL_METHOD } from '../../basic-language/src/symbols.ts';
 import { planSymbolRename } from '../../basic-language/src/rename-symbol.ts';
 import { planBasicReadabilityFormat, type BasicFormatPlan } from '../../basic-language/src/readability-format.ts';
+import { planBasicCommentInsert, type BasicCommentPlan } from '../../basic-language/src/comment-insert.ts';
 import { analyzeQuality } from '../../basic-language/src/quality.ts';
 import type { VariableRenamePlan } from '../../basic-language/src/rename-variable.ts';
 import { TEST_DEFINITIONS, type AgentBasicTests } from './basic-tests.ts';
@@ -10,7 +11,7 @@ import { planRenumber } from '../../basic-language/src/renumber.ts';
 import { addProjectSource, buildProjectDisk } from '../../workspace/src/project.ts';
 import type { KnowledgeRequest, KnowledgeResult } from '../../workspace/src/knowledge.ts';
 import type { DocumentSnapshot } from '../../workspace/src/project.ts';
-import type { AgentWorkspaceState, ToolDefinition, ToolPort, AgentRenameRecord, AgentFormatRecord } from './types.ts';
+import type { AgentWorkspaceState, ToolDefinition, ToolPort, AgentRenameRecord, AgentFormatRecord, AgentCommentRecord } from './types.ts';
 
 const s = { type: 'string' }, n = { type: 'integer' };
 function tool(name: string, description: string, properties: Record<string, unknown> = {}): ToolDefinition {
@@ -38,6 +39,8 @@ export const DEFINITIONS = [
   tool('language_readability_review', 'Rapport à la demande des métriques de qualité et pistes de commentaires pour un fichier BASIC réel. Propositions documentaires non exécutables : ne jamais présenter une hypothèse IA comme une certitude.', { id: s }),
   tool('language_format_preview', 'Aperçu non mutatif de la mise en forme BASIC conservatrice. N’affecte que les espaces de lignes lexicalement simples, laisse intacts chaînes, DATA, commentaires et branches. Exige le SHA-256 exact du fichier.', { id: s, expectedHash: s }),
   tool('language_format_apply', 'Applique seulement le plan de mise en forme précédemment préparé, sur la même source et le même instantané du projet ; checkpoint et reconstruction DSK requis.', { id: s, expectedHash: s, previewId: s }),
+  tool('language_comment_preview', 'Prépare sans écriture l’insertion d’une ligne BASIC REM autonome à un numéro libre juste avant une ligne BASIC existante. Refuse changements de numéros existants, branches opaques, commentaire ASCII invalide ou absence de numéro libre. L’IA doit prouver ce qu’elle commente.', { id: s, expectedHash: s, beforeBasicLine: n, comment: s }),
+  tool('language_comment_apply', 'Applique strictement un commentaire REM dont l’aperçu est encore valable dans le même état du projet ; aucune insertion non contrôlée, checkpoint de mission et reconstruction DSK requis.', { id: s, expectedHash: s, previewId: s }),
   tool('build_project', 'Construit réellement le DSK de tous les buffers et le relit ; renvoie taille/hash/noms. Ne lance pas de CPC.'),
 ];
 function args(value: unknown, fields: string[]): Record<string, unknown> {
@@ -64,6 +67,8 @@ export class WorkspaceTools implements ToolPort {
   buildVerified = false;
   readonly renameOperations: AgentRenameRecord[] = [];
   readonly formatOperations: AgentFormatRecord[] = [];
+  readonly commentOperations: AgentCommentRecord[] = [];
+  private commentPlan: { id:string; fileId:string; sourceHash:string; workspaceHash:string; epoch:number; plan:BasicCommentPlan; record:AgentCommentRecord } | undefined;
   private formatPlan: { id:string; fileId:string; sourceHash:string; workspaceHash:string; epoch:number; plan:BasicFormatPlan; record:AgentFormatRecord } | undefined;
   private renamePlan: { id: string; fileId: string; sourceHash: string; workspaceHash: string; epoch: number; plan: VariableRenamePlan; record: AgentRenameRecord } | undefined;
   private mutationEpoch = 0;
@@ -77,6 +82,8 @@ export class WorkspaceTools implements ToolPort {
     this.renamePlan=undefined;
     if (this.formatPlan?.record.status==='preview') this.formatPlan.record.status='obsolete';
     this.formatPlan=undefined;
+    if(this.commentPlan?.record.status==='preview')this.commentPlan.record.status='obsolete';
+    this.commentPlan=undefined;
   }
   readonly tests: AgentBasicTests | undefined;
   private consulted = new Set<string>();
@@ -223,6 +230,26 @@ export class WorkspaceTools implements ToolPort {
         return { id: item.id, path: item.path, hash: this.hash(source), saved: true };
       }
       case 'language_analyze': return { files: this.state.files.map(file => ({ id: file.id, diagnostics: analyze(file.source).diagnostics })), coverage: 'partial-static-only' };
+      case 'language_comment_preview': {
+        const item=file(),sourceHash=str(value.expectedHash,64);
+        if(this.hash(item.source)!==sourceHash)throw Error('stale-read : relire le fichier avant insertion REM.');
+        const plan=planBasicCommentInsert(item.source,value.beforeBasicLine as number,str(value.comment,96));
+        const workspaceHash=this.workspaceHash();
+        if(this.commentPlan?.record.status==='preview')this.commentPlan.record.status='obsolete';
+        const previewId=this.hash(JSON.stringify({sessionId:this.state.sessionId,workspaceHash,epoch:this.mutationEpoch,sequence:++this.previewSequence,fileId:item.id,sourceHash,basicLine:plan.basicLine,comment:plan.comment,afterHash:this.hash(plan.after)}));
+        const record:AgentCommentRecord={previewId,fileId:item.id,path:item.path,status:'preview',comment:plan.comment,basicLine:plan.basicLine,beforeBasicLine:plan.beforeBasicLine,warnings:[...plan.warnings],before:plan.before.slice(0,4096),after:plan.after.slice(0,4096),truncated:plan.before.length>4096||plan.after.length>4096};
+        this.commentOperations.push(record);if(this.commentOperations.length>10)this.commentOperations.shift();
+        this.commentPlan={id:previewId,fileId:item.id,sourceHash,workspaceHash,epoch:this.mutationEpoch,plan,record};
+        return {previewId,id:item.id,path:item.path,sourceSha256:sourceHash,afterSha256:this.hash(plan.after),newBasicLine:plan.basicLine,beforeBasicLine:plan.beforeBasicLine,comment:plan.comment,before:record.before,after:record.after,previewTruncated:record.truncated,warnings:record.warnings,persisted:false,method:plan.method};
+      }
+      case 'language_comment_apply': {
+        const item=file(),pending=this.commentPlan;
+        if(!pending||pending.id!==str(value.previewId,64)||pending.fileId!==item.id)throw Error('stale-preview : préparer un nouvel aperçu REM.');
+        if(pending.epoch!==this.mutationEpoch||pending.workspaceHash!==this.workspaceHash()||pending.sourceHash!==str(value.expectedHash,64)||this.hash(item.source)!==pending.sourceHash||item.source!==pending.plan.before)throw Error('stale-preview : source ou projet modifié depuis l’aperçu.');
+        const result=await this.execute('project_replace_source',{id:item.id,expectedHash:pending.sourceHash,source:pending.plan.after}) as Record<string,unknown>;
+        pending.record.status='applied';
+        return {...result,previewId:pending.id,newBasicLine:pending.plan.basicLine,comment:pending.plan.comment,checkpoint:'initial-mission',warning:'Ajout REM validé structurellement ; pertinence du commentaire et equivalence ROM non garanties. Tester le programme.'};
+      }
       case 'language_readability_review': {
         const item=file();
         const quality=analyzeQuality([{id:item.id,name:item.path,source:item.source}]).sources[0]!;
