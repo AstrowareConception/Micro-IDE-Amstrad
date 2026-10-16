@@ -39,7 +39,7 @@ export function previewTerminalExtraction(input:TerminalExtractionInput):Termina
  if(lines.some((line,i)=>!line.trim()&&i<lines.length-1))deny('lignes physiques vides au milieu du listing.');
  const entries=nonblank.map(raw=>{
   if(raw.length>255)deny('ligne de plus de 255 caractères.');
-  const match=/^(\d+) (.+)$/.exec(raw);if(!match)deny('format numéroté strict avec un espace obligatoire.');
+  const match=/^(\d+) (.+)$/.exec(raw);if(match===null)throw Error('Extraction simulée refusée : format numéroté strict avec un espace obligatoire.');
   return {number:Number(match[1]),raw,body:match[2]!};
  });
  if(entries.some((e,i)=>e.number<1||e.number>65535||i>0&&e.number<=entries[i-1]!.number))
