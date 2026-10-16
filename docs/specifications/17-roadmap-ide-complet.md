@@ -1,5 +1,10 @@
 # 17 — Roadmap qualifiée d’un IDE CPCéleste abouti
 
+**État courant 0.41.25 :** [application du découpage terminal et restauration après réouverture](../implementation/basic-multifile-apply-alpha.md). Une mutation journalisée pour sources/manifeste, préconditions complètes et commande durable dans Projet. Profil syntaxique 0.41.24 inchangé ; aucune atomicité physique du dossier ni extraction générale annoncée.
+
+**Ordre actuel :** élargir progressivement les transformations avec témoins firmware ; compléter la mission de lisibilité sur des programmes représentatifs ; reprendre ensuite profiler 0.42 et observation CPC 0.43. Les anciennes indications « prochain lot » ci-dessous sont historiques et ne remplacent pas ce point ni [la reprise](../reprise.md).
+
+
 **0.41.24 — Découpage sans écriture :** [simulation d'une extraction terminale GOTO → CHAIN MERGE](../implementation/basic-multifile-dry-run-alpha.md) avec aperçu global MAIN/PART, construction de deux DSK AMSDOS et qualification sur ROM CPC. Pas de commande apply ni d'extraction persistée. Prochain jalon : transaction atomique de commit/rollback contrôlée par révision.
 
 **CPC 0.41.23 :** [banc de comparaison de CHAIN MERGE en présence de tableaux/chaînes, pointeur DATA, DELETE et mémoire sollicitée](../implementation/basic-chain-merge-edge-alpha.md). Qualification limitée aux témoins et à la ROM, aucune extraction automatique. Prochain incrément : transaction d'extraction réversible et aperçu complet.
@@ -94,7 +99,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-017 | Renommage sémantique de variables/fonctions | P | P1 | IDE-015 qualifié | 0.41.15 : F2 variables/tableaux sans FN, ou fonctions/paramètres dans un bloc initial unique, sans DEF*/effets opaques ; aperçu, collisions, révision et undo. Globales des fichiers FN, types dynamiques, alias et intersources restent exclus |
 | IDE-018 | Templates/snippets, insertion de lignes et conventions | N | P1 | IDE-014 | Numéros sans collision ; génération minimale conforme au profil |
 | IDE-078 | Export BASIC obfusqué, protégé ou combiné, source claire conservée | P | P1 | Index complet et codec | 0.41.3 : trois modes avec aperçu et recette firmware native ; obfuscation autonome conservatrice, FN/accès machine/multifichier refusés |
-| IDE-019 | Formatage optionnel et inspections/corrections ciblées | N | P2 | IDE-014 | Sémantique inchangée ; aperçu ; aucune casse/espacement opaque détruit |
+| IDE-019 | Formatage optionnel et inspections/corrections ciblées | P | P2 | IDE-014 | 0.41.18/19 : formatage conservateur et insertion REM avec aperçu/application agent ; branches, corrections générales et contenu métier restent ouverts |
 | IDE-076 | Rapport de qualité BASIC à la demande | P | P2 | IDE-014 | 0.40.9 : piles mixtes appels/FOR/WHILE contextuelles, divisions simples/erreurs possibles, reprises conditionnelles et contextes des ERROR explicites, cartographie événementielle et reprises, résumés GOSUB, graphe structurel, boucles contenues dans THEN/ELSE, sorties de NEXT qualifiées, appels/cycles et complexité locale ; fermetures intermédiaires sautées, portées traversées, événements et retours contextuels restent ouverts |
 | IDE-077 | Tests de programmes BASIC à la demande | P | P1 | IDE-050, FW | 0.39.1 : suites persistantes, assertions natives, clavier programmé, fixtures ASCII, observations exactes écran/fichier et rapports conservés ; couverture, fixtures binaires, scénarios sans signature et génération IA restent ouverts |
 | IDE-020 | Multi-curseurs, pliage, signets, navigation retour/avance | P | P1 | Monaco | Gestes repris explicitement en recette, sessions conservées ; capacité Monaco seule insuffisante |

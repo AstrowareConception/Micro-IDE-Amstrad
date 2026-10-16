@@ -48,7 +48,8 @@ export const DEFINITIONS = [
   tool('language_module_review', 'Analyse sans écriture les sous-programmes GOSUB et les risques d’une extraction en modules BASIC : frontières RETURN, flux, état partagé, appels et chargements CHAIN/MERGE. Retourne des régions candidates pour revue seulement ; aucun découpage, DSK ou nouveau fichier créé. Hash exact du listing requis.', { id:s, expectedHash:s }),
   tool('language_loading_contract', 'Dresse en lecture seule le contrat de chargement de toutes les sources du projet : CHAIN, CHAIN MERGE, MERGE, RUN fichier et LOAD. Détecte liens CPC 8.3, cibles dynamiques, manquantes et cycles. Aucune preuve firmware ni autorisation d’extraire ; hash exact d’une source courante requis.', {id:s,expectedHash:s}),
   tool('language_chain_merge_review', 'Étudie en lecture seule un éventuel CHAIN MERGE entre deux fichiers déclarés : numéros de ligne identiques, identifiants textuels communs, DATA/RESTORE, mémoire et flux risqués. Exige l’ID/empreinte SHA-256 de chaque source ; aucune mutation ni preuve firmware du programme utilisateur.', {id:s,expectedHash:s,overlayId:s,overlayHash:s}),
-  tool('language_extraction_simulate', 'Simule SANS ÉCRITURE un découpage d’un seul fichier BASIC : GOTO littéral terminal vers une suite d’affectations ou POKE qui se termine par END, remplacé par CHAIN MERGE vers un nouveau nom CPC. Refuse GOSUB/RETURN, branches, DATA, mémoire dynamique et sources multiples ; contrôle les DSK avant/après, sans autoriser apply.', {id:s,expectedHash:s,entryLine:n,newFileName:s}),
+  tool('language_extraction_simulate', 'Simule SANS ÉCRITURE un découpage d’un seul fichier BASIC : GOTO littéral terminal vers une suite d’affectations ou POKE qui se termine par END, remplacé par CHAIN MERGE vers un nouveau nom CPC. Refuse GOSUB/RETURN, branches, DATA, mémoire dynamique et sources multiples ; contrôle les DSK avant/après, retourne un previewId pour une application séparée et contrôlée.', {id:s,expectedHash:s,entryLine:n,newFileName:s}),
+  tool('language_extraction_apply', 'Applique le découpage exact du dernier aperçu encore courant, en une mutation journalisée des deux sources et du manifeste. Exige les références BASIC consultées et la même révision de projet. Le profil terminal reste strictement limité ; reconstruire et tester ensuite.', {id:s,expectedHash:s,previewId:s}),
   tool('build_project', 'Construit réellement le DSK de tous les buffers et le relit ; renvoie taille/hash/noms. Ne lance pas de CPC.'),
 ];
 function args(value: unknown, fields: string[]): Record<string, unknown> {
@@ -101,6 +102,7 @@ export class WorkspaceTools implements ToolPort {
   private commentPlan: { id:string; fileId:string; sourceHash:string; workspaceHash:string; epoch:number; plan:BasicCommentPlan; record:AgentCommentRecord } | undefined;
   private formatPlan: { id:string; fileId:string; sourceHash:string; workspaceHash:string; epoch:number; plan:BasicFormatPlan; record:AgentFormatRecord } | undefined;
   private renamePlan: { id: string; fileId: string; sourceHash: string; workspaceHash: string; epoch: number; plan: VariableRenamePlan; record: AgentRenameRecord } | undefined;
+  private extractionPlan: { id:string; fileId:string; sourceHash:string; workspaceHash:string; epoch:number; candidate:AgentWorkspaceState; diskHash:string; record:AgentExtractionSimulation } | undefined;
   private mutationEpoch = 0;
   private previewSequence = 0;
   private workspaceHash(): string {
@@ -108,6 +110,8 @@ export class WorkspaceTools implements ToolPort {
   }
   private invalidateRename(): void {
     this.mutationEpoch++;
+    if(this.extractionPlan?.record.status==='preview')this.extractionPlan.record.status='obsolete';
+    this.extractionPlan=undefined;
     if (this.renamePlan?.record.status==='preview') this.renamePlan.record.status='obsolete';
     this.renamePlan=undefined;
     if (this.formatPlan?.record.status==='preview') this.formatPlan.record.status='obsolete';
@@ -117,7 +121,7 @@ export class WorkspaceTools implements ToolPort {
   }
   readonly tests: AgentBasicTests | undefined;
   private consulted = new Set<string>();
-  private readonly persist: (state: AgentWorkspaceState) => Promise<void>;
+  private readonly persist: (state: AgentWorkspaceState, expected?: AgentWorkspaceState) => Promise<void>;
   private readonly hash: (value: string | Uint8Array) => string;
   private readonly corpus: { id: string; text: string; sha256: string }[];
   private documents: DocumentSnapshot[];
@@ -125,7 +129,7 @@ export class WorkspaceTools implements ToolPort {
   private readonly writeKnowledge: ((request: Extract<KnowledgeRequest, { action: 'create' | 'save' }>) => Promise<KnowledgeResult>) | undefined;
   updateDocuments(documents: DocumentSnapshot[]): void { this.documents = structuredClone(documents); }
 
-  constructor(state: AgentWorkspaceState, persist: (state: AgentWorkspaceState) => Promise<void>, hash: (value: string | Uint8Array) => string, corpus: { id: string; text: string; sha256: string }[], documents: DocumentSnapshot[] = [], writeKnowledge?: (request: Extract<KnowledgeRequest, { action: 'create' | 'save' }>) => Promise<KnowledgeResult>, tests?: AgentBasicTests) {
+  constructor(state: AgentWorkspaceState, persist: (state: AgentWorkspaceState, expected?: AgentWorkspaceState) => Promise<void>, hash: (value: string | Uint8Array) => string, corpus: { id: string; text: string; sha256: string }[], documents: DocumentSnapshot[] = [], writeKnowledge?: (request: Extract<KnowledgeRequest, { action: 'create' | 'save' }>) => Promise<KnowledgeResult>, tests?: AgentBasicTests) {
     this.state = structuredClone(state); this.persist = persist; this.hash = hash; this.corpus = corpus;
     this.documents = structuredClone(documents); this.writeKnowledge = writeKnowledge; this.tests = tests;
     this.definitions = [...DEFINITIONS, ...(tests ? TEST_DEFINITIONS : []), ...(writeKnowledge ? [
@@ -298,19 +302,45 @@ export class WorkspaceTools implements ToolPort {
           sourceId:item.id,entryLine:value.entryLine as number,newFileName:str(value.newFileName,8)
         });
         const originalMain=proposal.original.sources[0]!,newMain=proposal.proposed.sources[0]!,part=proposal.proposed.sources[1]!;
+        if(this.extractionPlan?.record.status==='preview')this.extractionPlan.record.status='obsolete';
+        const previewId='extraction-'+(++this.previewSequence);
         const record:AgentExtractionSimulation={
+          previewId,status:'preview',
           profile:proposal.profile,sourceId:item.id,entryLine:proposal.entryLine,gotoLine:proposal.gotoLine,
           createdPath:part.path,createdCpcName:part.cpcName,movedLines:proposal.linesMoved,
           beforeMain:originalMain.source.slice(0,4096),afterMain:newMain.source.slice(0,4096),
           newPart:part.source.slice(0,4096),
           originalDiskSha256:this.hash(proposal.original.disk),proposedDiskSha256:this.hash(proposal.proposed.disk),
           originalSourceSha256:this.hash(originalMain.source),newMainSha256:this.hash(newMain.source),
-          newPartSha256:this.hash(part.source),checks:proposal.checks,warnings:proposal.warnings,
-          applicationEnabled:false,persistentWrites:0
+          newPartSha256:this.hash(part.source),checks:proposal.checks,warnings:proposal.warnings
         };
         this.extractionSimulations.push({workspaceHash:this.workspaceHash(),record});
         if(this.extractionSimulations.length>4)this.extractionSimulations.shift();
-        return {...record,projectSha256:this.workspaceHash(),status:'simulated-only',rollback:'no-write-required'};
+        const candidate:AgentWorkspaceState={...structuredClone(this.state),manifest:proposal.proposed.manifest,
+          files:proposal.proposed.sources.map(source=>({...source,saved:source.source}))};
+        this.extractionPlan={id:previewId,fileId:item.id,sourceHash:expected,workspaceHash:this.workspaceHash(),epoch:this.mutationEpoch,candidate,diskHash:record.proposedDiskSha256,record};
+        return {...record,projectSha256:this.workspaceHash(),status:'simulated-only',persistentWrites:0,applicationEnabled:true,rollback:'no-write-required'};
+      }
+      case 'language_extraction_apply': {
+        const item=file(),pending=this.extractionPlan;
+        if(!pending||pending.id!==str(value.previewId,64)||pending.fileId!==item.id)throw Error('stale-preview : préparer un nouvel aperçu de découpage.');
+        if(pending.epoch!==this.mutationEpoch||pending.workspaceHash!==this.workspaceHash()||pending.sourceHash!==str(value.expectedHash,64)||this.hash(item.source)!==pending.sourceHash)
+          throw Error('stale-preview : source ou projet modifié depuis l’aperçu.');
+        const candidate=structuredClone(pending.candidate),expected=structuredClone(this.state);
+        for(const source of candidate.files)this.validateSource(source.source);
+        if(this.hash(buildProjectDisk(candidate.manifest,candidate.files))!==pending.diskHash)throw Error('stale-preview : DSK candidat différent de l’aperçu.');
+        // One persistence call owns the complete source/manifest transaction. Never adopt a partial write.
+        try {
+          await this.persist(candidate,expected);
+          this.state=candidate;this.buildVerified=false;pending.record.status='applied';
+        } catch(error) {
+          // The controller may have adopted a disk commit before a mission-log failure.
+          pending.record.status=JSON.stringify(this.state)===JSON.stringify(candidate)?'applied':'failed';
+          throw error;
+        } finally { this.invalidateRename(); }
+        return {previewId:pending.id,status:'applied',saved:true,files:candidate.files.map(({id,path,cpcName,source})=>({id,path,cpcName,sha256:this.hash(source)})),
+          proposedDiskSha256:pending.diskHash,checkpoint:'initial-mission',recovery:'project-agent-journal',
+          warning:'Découpage enregistré. Reconstruire et tester les fichiers réellement enregistrés ; aucune équivalence universelle annoncée.'};
       }
       case 'language_loading_contract': {
         const item=file();

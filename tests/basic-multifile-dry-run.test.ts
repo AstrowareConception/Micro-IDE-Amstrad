@@ -73,5 +73,5 @@ test('agent requires exact source hash, keeps build verified, writes nothing and
  await tools.execute('project_replace_source',{id:'main',expectedHash:hash(source),source:source.replace('score%=42','score%=43')});
  assert.equal(tools.extractionSimulationViews()[0]!.stale,true);
  assert.equal(writes,1,'only explicit project mutation should write');
- await assert.rejects(tools.execute('language_extraction_apply',{}),/scope-denied/,'there is deliberately no apply tool');
+ await assert.rejects(tools.execute('language_extraction_apply',{id:'main',expectedHash:hash(source),previewId:'unknown'}),/stale-preview/,'an invalid preview never authorizes application');
 });

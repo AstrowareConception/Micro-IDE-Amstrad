@@ -309,6 +309,22 @@ export function App() {
     } catch { setStatus('Restauration impossible ; rouvrez le projet si une reprise est nécessaire.', 'error'); }
     finally { setBusy(false); }
   }
+  async function restoreAgentMutation() {
+    if(!project||!files.agentMutations||busy)return;
+    if(dirty){setStatus('Enregistrez ou conservez les brouillons avant la restauration.','error');return;}
+    setBusy(true);
+    try {
+      const last=await files.agentMutations.last(project.sessionId);
+      if(!last){setStatus('Aucune modification IA récente rétablissable sur les versions actuelles.');return;}
+      if('error' in last){setStatus(last.error,'error');return;}
+      const result=await files.agentMutations.restore(project.sessionId,last.revision,documents.map(({sourceId,source})=>({id:sourceId,source})));
+      if(!result){setStatus('Restauration annulée.');return;}
+      if('error' in result){setStatus(result.error,'error');return;}
+      acceptAgent(result);setAgentOpen(false);setClosedTabs(new Set());setKnowledgeOpen(false);
+      setStatus('Dernière modification IA rétablie : sources et manifeste restaurés.');
+    }catch(error){setStatus(error instanceof Error?error.message:'Restauration impossible ; rouvrir le projet.','error');}
+    finally{setBusy(false);}
+  }
   function sourceOperationCommands(sourceId: string): WorkbenchCommand[] {
     return (['rename', 'move', 'delete'] as const).map(action => ({ id: `source-${action}`, label: `${action === 'rename' ? 'Renommer' : action === 'move' ? 'Déplacer' : 'Supprimer'} cette source…`, disabled: busy || !project || !files.sourceOperations || action === 'delete' && project.manifest.sources.length === 1, run: () => setSourceDialog({ sourceId, action }) }));
   }
@@ -464,6 +480,7 @@ export function App() {
     ...sourceOperationCommands(active.sourceId),
     { id: 'source-archive', label: 'Consulter le brouillon conservé…', disabled: busy || binaryProject || !project || !files.sourceOperations?.draft, run: () => void showSourceDraft() },
     { id: 'source-restore', label: 'Rétablir la dernière organisation des sources…', disabled: busy || binaryProject || !project || !files.sourceOperations, run: () => void restoreSourceMutation() },
+    { id: 'agent-mutation-restore', label: 'Rétablir la dernière modification IA…', disabled: busy || dirty || binaryProject || !project || !files.agentMutations, run: () => void restoreAgentMutation() },
     { id: 'explorer', label: 'Afficher l’explorateur', detail: 'Ctrl Maj E', run: () => showTool('project') },
     { id: 'git', label: 'Afficher Git', detail: 'Ctrl Maj G', run: () => showTool('git') },
     { id: 'github', label: 'Compte GitHub et dépôts privés…', disabled: busy || !files.github, run: () => setGithubOpen(true) },
@@ -529,7 +546,7 @@ export function App() {
       ['Édition', ['undo', 'redo', 'find', 'replace', 'search-sources', 'line', 'basic-comment', 'editor.action.copyLinesDownAction', 'editor.action.moveLinesUpAction', 'editor.action.moveLinesDownAction', 'editor.action.deleteLines', 'editor.action.addSelectionToNextFindMatch', 'next-tab', 'previous-tab', 'close-tab']],
       ['BASIC', ['run', 'basic-tests', 'symbols', 'cpc-symbol-usages', 'cpc-symbol-declarations', 'quality', 'cpc-rename-variable', 'renumber', 'complete', 'editor.action.revealDefinition', 'editor.action.marker.next', 'editor.action.marker.prev', 'reference']],
       ['Git', ['git', 'git-refresh', 'git-init', 'git-commit', 'git-ai-message', 'git-history', 'git-branches', 'git-create-branch', 'git-remotes', 'git-fetch', 'git-pull', 'git-push', 'clone', 'github', 'git-prs']],
-      ['Projet', ['explorer', 'source-rename', 'source-move', 'source-delete', 'source-restore', 'source-archive', 'documents', 'recovery']],
+      ['Projet', ['explorer', 'source-rename', 'source-move', 'source-delete', 'source-restore', 'agent-mutation-restore', 'source-archive', 'documents', 'recovery']],
       ['Affichage', ['sidebar', 'agent', 'output', 'problems', 'performance', 'notifications', 'terminal', 'git-history', 'reset-layout', 'layout-edit', 'layout-run', 'layout-agent', 'focus-mode', 'minimap', 'zoom-in', 'zoom-out', 'palette', 'quick-sources']],
       ['Outils', ['firmware', 'settings', 'shortcuts']],
       ['Aide', ['reference', 'shortcuts', 'feedback']],

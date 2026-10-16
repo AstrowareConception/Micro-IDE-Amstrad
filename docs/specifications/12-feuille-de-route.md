@@ -1,5 +1,10 @@
 # 12 — Feuille de route et backlog de réalisation
 
+**État courant 0.41.25 :** [application du découpage terminal et restauration après réouverture](../implementation/basic-multifile-apply-alpha.md). Une mutation journalisée pour sources/manifeste, préconditions complètes et commande durable dans Projet. Profil syntaxique 0.41.24 inchangé ; aucune atomicité physique du dossier ni extraction générale annoncée.
+
+**Ordre actuel :** élargir progressivement les transformations avec témoins firmware ; compléter la mission de lisibilité sur des programmes représentatifs ; reprendre ensuite profiler 0.42 et observation CPC 0.43. Les anciennes indications « prochain lot » ci-dessous sont historiques et ne remplacent pas ce point ni [la reprise](../reprise.md).
+
+
 **Renommage FN 0.41.15 :** [F2 sur une fonction ou un paramètre local](../implementation/basic-fn-rename-alpha.md). Portée affichée, définitions initiales uniques, appels couverts, aperçu et undo ; globales homonymes conservées. Types dynamiques et redéfinitions restent exclus.
 
 **Renommage de variables 0.41.14 :** [F2, aperçu avant/après et annulation](../implementation/basic-variable-rename-alpha.md). Premier profil autonome : variables et tableaux, suffixes préservés, collisions refusées et révision contrôlée. Fonctions FN, directives de type et accès machine/externe exclus. IDE-017 désormais partiel.
@@ -313,7 +318,7 @@ Premier index textuel à la demande des variables et tableaux par source : rôle
 
 Types explicites par suffixe, union conservatrice des types par première lettre et déclarations DEFINT/DEFREAL/DEFSTR navigables. Les segments omis et effets opaques empêchent une conclusion implicite ; aucun ordre lexical assimilé à une exécution, aucun alias fusionné. Rapports Symboles version 2, budgets et calcul à la demande conservés. [Guide](../implementation/basic-symbols-alpha.md#types-0411), [ADR 0060](../adr/0060-types-possibles-symboles-basic.md), [point de reprise](../reprise.md). Suite : qualifier DEF FN et les identités/portées, accès depuis le curseur, puis renommage avec aperçu. IDE-015 reste partiel ; IDE-017 non réalisé.
 
-## Arrêt et ordre de reprise — 8 octobre 2026
+## Historique de la pause — 8 octobre 2026 (ordre remplacé par l’état courant)
 
 `main` est au merge **`0152099bd6b74b87d58a9a567e6a03d41dbf1f7f`** (PR #60, 0.41.1) ; les cinq contrôles de la tête de PR étaient verts et aucune PR n’était ouverte lors du constat. Ce point remplace les indications « prochain lot 0.41 » des comptes rendus historiques ci-dessus. Vérifier à nouveau le dépôt après la pause. [État, limites, preuves et consigne de reprise](../reprise.md).
 

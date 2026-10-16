@@ -102,11 +102,14 @@ jobs:
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-basic-chain-merge-state.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-basic-chain-merge-edge.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-basic-multifile-dry-run.mjs
+          CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-basic-multifile-apply.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node tests/basic-test-runtime-smoke.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node tests/basic-tests-firmware-smoke.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-basic-debug.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms CPC_UI_MODE=browser node tests/emulator-ui-smoke.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms xvfb-run -a node tests/emulator-ui-smoke.mjs
+      - name: Native BASIC extraction, restart and durable restoration
+        run: xvfb-run -a node tests/multifile-desktop-smoke.mjs
       - name: Native source organization and draft restoration
         run: xvfb-run -a npm run test:sources-desktop
       - name: Native personalization, notifications and restart
@@ -140,6 +143,8 @@ jobs:
             out/basic-chain-merge-state-qualification.json
             out/basic-chain-merge-edge-qualification.json
             out/basic-multifile-dry-run-qualification.json
+            out/basic-multifile-apply-qualification.json
+            out/basic-multifile-apply-desktop*.png
             out/basic-debug-qualification.json
             out/basic-fn-qualification.json
             out/basic-quality-browser.png

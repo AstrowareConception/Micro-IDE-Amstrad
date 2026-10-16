@@ -1,5 +1,18 @@
 # CPCéleste — Point de reprise du développement
 
+## Incrément 0.41.25 — application du découpage et restauration durable
+
+Base distante vérifiée : `main` 0.41.24, `0cd7e9a6f36457c5b0d70f1571a540ad52114a7f`, PR #86 fusionnée et ses trois workflows réussis sur `d61ab8b9e3a93a0289cac88f72f59ad8ff7733f3`. Branche `feat/basic-multifile-apply`. Consulter sa PR et la CI exacte avant de conclure à sa fusion. Aucun packaging déclenché.
+
+Livré dans cet incrément : `language_extraction_apply` consomme uniquement le plan prévisualisé, avec SHA source, snapshot projet et compteur de mutations. Application des deux sources/manifeste via le journal existant ; état adopté après commit, échecs explicites et collisions de casse refusées. Nouveau menu Projet « Rétablir la dernière modification IA… » : restauration du dernier checkpoint disque après fermeture/réouverture, sans clé API, buffers propres et révision exacte exigés. Profil BASIC strict inchangé. [Guide](implementation/basic-multifile-apply-alpha.md), [ADR 0075](adr/0075-application-decoupage-journalise.md).
+
+Preuves locales : TypeScript, 507 tests Node, builds renderer/main et dix interruptions de processus ciblées réussis. Essai firmware du projet réellement appliqué, réouvert puis restauré : trois DSK produisent [11,42,24], retour exact des octets CRLF et du manifeste. Rapport sans ROM. Chromium/Electron non installés dans cet environnement local : recette navigateur/native laissée à la CI existante, avec nouvelle recette Electron bloquante couvrant l’agent contrôlé, le redémarrage complet, l’annulation, les brouillons et la restauration. Contrôle documentaire réussi : 182 Markdown, 21 JSON, 84 exigences, 37 scénarios, six schémas et six exemples.
+
+Limites : journal avec reprise, pas d’écriture indivisible du répertoire, pas de preuve panne électrique/verrou interprocessus. Une interruption peut laisser un état mixte bloqué jusqu’à reprise. Les choix Terminer/Rétablir se rapportent toujours à la transaction initiale, y compris après interruption de sa restauration. Retour durable à la dernière mutation disque, distinct du checkpoint initial de mission et de ses brouillons. Aucune nouvelle qualification CPC physique/émulateur indépendant, aucune équivalence universelle. Les tests du témoin ne qualifient pas un jeu arbitraire.
+
+Suite : élargir le profil par classes de programmes et témoins discriminants (expressions/affichage, puis conditions/boucles), avant GOSUB/RETURN/DATA et ressources. Finaliser ensuite la mission de lisibilité sur des programmes représentatifs, puis profiler 0.42 et observation CPC 0.43. Les consignes historiques plus bas sont remplacées par ce point courant.
+
+
 ## Incrément 0.41.24 — premier découpage multifichier simulé, sans écriture
 
 Base : `main` version 0.41.23, commit `71fb1db25ab0a57852622217b9446578fdf2df75` ; PR #85 fusionnée après 499 tests Node et ROM 8 témoins. Branche `feat/basic-multifile-dry-run`, CI à contrôler avant fusion ; aucun packaging automatique.
@@ -340,4 +353,4 @@ Ne pas déclarer J0–J6, R1–R9 ou la version 1.0 achevés sur la seule base d
 2. Choisir une seule tranche cohérente selon l’état le plus récent en tête de ce document, créer sa branche depuis `main`, puis fixer la matrice de preuves et les limites. Regrouper code, exemples, tests utiles, ADR/guide/roadmap et nouveau point de reprise dans une PR. Vérifier les contrôles adaptés au diff et lire la première erreur réelle avant toute relance.
 3. Avant la prochaine pause, inscrire ici commit de `main`, PR, preuves effectivement observées, limites et prochaine action. Les fichiers temporaires et logs locaux ne remplacent pas un commit publié. Ne jamais y copier clé API, ROM, document personnel ou conversation privée.
 
-**Instruction de reprise courte :** « Reprends CPCéleste après lecture d’AGENTS.md et du dernier incrément en tête de docs/reprise.md. Vérifie main distant, la PR de cette branche et ses contrôles ; la suite prévue est le cadrage du renommage avec aperçu après la navigation au curseur 0.41.13. Préserve les limites, garde la documentation à jour et ne déclenche pas un packaging par commit. »
+**Instruction de reprise courte :** « Reprends CPCéleste après lecture d’AGENTS.md et du dernier incrément en tête de docs/reprise.md. Vérifie main distant, la PR feat/basic-multifile-apply et ses contrôles. La suite après 0.41.25 est l’élargissement progressif du découpage avec preuves firmware. Préserve le journal, les brouillons et les limites ; aucun packaging par commit. »

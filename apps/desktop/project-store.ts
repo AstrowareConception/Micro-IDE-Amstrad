@@ -504,6 +504,26 @@ export class ProjectStore {
     return { manifest: structuredClone(manifest), files: versions.map(({ source, content }) => ({ ...source, source: text(content) })) };
   }
   async lastSourceOperation() { await this.checkManifest(); return new SourceJournal(this.root).last(); }
+  async lastAgentMutation() {
+    await this.checkManifest();
+    if(this.manifest.kind==='binary')throw Error('Restauration durable réservée aux projets BASIC.');
+    return new AgentJournal(this.root).last();
+  }
+  async restoreAgentMutation(revision:string,buffers:{id:string;source:string}[]):Promise<AgentWorkspaceState> {
+    const current=await this.agentState(buffers);
+    if(current.manifest.kind==='binary'||current.files.some(file=>file.source!==file.saved))
+      throw Error('Enregistrez ou conservez les brouillons avant de restaurer la dernière modification IA.');
+    await new SaveJournal(this.root,this.manifest,this.manifestHash).assertResolved();
+    let restored;
+    try { restored=await new AgentJournal(this.root).restoreLast(revision); }
+    catch(error) {
+      if(await new AgentJournal(this.root).status().catch(()=>true))this.faulted=true;
+      throw error;
+    }
+    this.sourcePlan=undefined;this.manifest=restored.result.manifest;this.manifestHash=restored.manifestHash;this.hashes.clear();
+    for(const file of restored.hashes)this.hashes.set(file.id,file.hash);
+    return this.agentState(restored.result.files.map(({id,source})=>({id,source})));
+  }
   async sourceDraft() { await this.checkManifest(); return new SourceJournal(this.root).draft(this.manifest.projectId); }
   async restoreSourceOperation(revision: string): Promise<SourceMutationResult> {
     await this.checkManifest(); await new SaveJournal(this.root, this.manifest, this.manifestHash).assertResolved();

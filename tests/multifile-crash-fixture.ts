@@ -1,0 +1,17 @@
+import fs from 'node:fs';
+import {syncBuiltinESMExports} from 'node:module';
+import {join} from 'node:path';
+import {AgentJournal} from '../apps/desktop/agent-journal.ts';
+const root=process.argv[2]!,stop=process.argv[3]!;
+const pause=async()=>{process.on('message',()=>{});process.send?.({ready:true});await new Promise(()=>{});};
+const prepareJournal=AgentJournal.prototype.prepare;
+AgentJournal.prototype.prepare=async function(...args){const result=await prepareJournal.apply(this,args);if(stop==='prepared')await pause();return result;};
+const rename=fs.promises.rename;
+fs.promises.rename=async(old,next)=>{await rename(old,next);if(['main','part','manifest'].includes(stop)&&String(next)===join(root,stop==='manifest'?'microide.project.json':`src/${stop}.bas`))await pause();};
+const unlink=fs.promises.unlink;
+fs.promises.unlink=async path=>{await unlink(path);if(stop==='removed'&&String(path)===join(root,'src/part.bas'))await pause();};
+syncBuiltinESMExports();
+const {prepare}=await import('./multifile-fixture.ts');
+const p=await prepare(root);await p.apply();
+if(stop==='removed')await p.store.restoreAgentMutation((await p.store.lastAgentMutation())!.revision,p.tools.state.files);
+throw Error('Crash boundary not reached: '+stop);
