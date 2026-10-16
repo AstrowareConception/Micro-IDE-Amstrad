@@ -24,7 +24,8 @@ const fixtures=[
  {name:'chain-monolith',files:[{name:'MAIN',source:'10 MEMORY &7FFF\n20 POKE &8000,11\n30 POKE &8001,0\n40 POKE &8002,0\n50 POKE &8001,23\n60 POKE &8002,24\n70 END\n'}],expected:[11,23,24]},
  {name:'chain-two-files',files:[{name:'MAIN',source:'10 MEMORY &7FFF\n20 POKE &8000,11\n30 POKE &8001,0\n40 POKE &8002,0\n50 CHAIN "LEVEL.BAS"\n60 POKE &8001,99\n70 END\n'},{name:'LEVEL',source:'10 POKE &8001,23\n20 POKE &8002,24\n30 END\n'}],expected:[11,23,24]},
  {name:'merge-monolith',files:[{name:'MAIN',source:'10 MEMORY &7FFF\n20 POKE &8000,11\n30 POKE &8001,0\n40 POKE &8002,0\n50 GOSUB 100\n60 POKE &8001,PEEK(&8002)+1\n70 END\n100 POKE &8002,23\n110 RETURN\n'}],expected:[11,24,23]},
- {name:'merge-two-files',files:[{name:'MAIN',source:'10 MEMORY &7FFF\n20 POKE &8000,11\n30 POKE &8001,0\n40 POKE &8002,0\n50 MERGE "PART.BAS"\n60 GOSUB 100\n70 POKE &8001,PEEK(&8002)+1\n80 END\n100 REM PLACEHOLDER\n110 RETURN\n'},{name:'PART',source:'100 POKE &8002,23\n110 RETURN\n'}],expected:[11,24,23]}
+ {name:'merge-runtime-stop',files:[{name:'MAIN',source:'10 MEMORY &7FFF\n20 POKE &8000,11\n30 POKE &8001,0\n40 POKE &8002,0\n50 MERGE "PART.BAS"\n60 GOSUB 100\n70 POKE &8001,PEEK(&8002)+1\n80 END\n100 REM PLACEHOLDER\n110 RETURN\n'},{name:'PART',source:'100 POKE &8002,23\n110 RETURN\n'}],expected:[11,0,0]},
+ {name:'merge-direct-then-run',files:[{name:'MAIN',source:'10 MEMORY &7FFF\n20 POKE &8000,11\n30 POKE &8001,0\n40 POKE &8002,0\n50 GOSUB 100\n60 POKE &8001,PEEK(&8002)+1\n70 END\n100 REM PLACEHOLDER\n110 RETURN\n'},{name:'PART',source:'100 POKE &8002,23\n110 RETURN\n'}],commands:['LOAD"MAIN.BAS"\r','MERGE"PART.BAS"\r','RUN\r'],expected:[11,24,23]}
 ];
 const report={version:1,profile:'cpc6128-classic-v1',dialect:'locomotive-1.1',
  engineSha256:sha(wasmBinary),firmware:BASIC_TEST_FIRMWARE,
@@ -54,13 +55,15 @@ for(const item of fixtures){
   for(let y=0;y<108;y++)ready.set(cpc.HEAPU8.subarray(frame+y*stride,frame+y*stride+width),y*width);
   assert.equal(sha(ready),BASIC_TEST_READY,'Reference ROM ready fingerprint');
   assert.equal(cpc._cpc_bridge_mount(put(disk),disk.length),0);
-  for(const char of 'RUN"MAIN.BAS"\r'){
-   assert.ok(cpc._cpc_bridge_key(char.charCodeAt(0),1)>=0);
-   for(let i=0;i<6;i++)assert.ok(cpc._cpc_bridge_step(10000)>=0);
-   assert.ok(cpc._cpc_bridge_key(char.charCodeAt(0),0)>=0);
-   for(let i=0;i<6;i++)assert.ok(cpc._cpc_bridge_step(10000)>=0);
+  for(const command of item.commands??['RUN"MAIN.BAS"\r']){
+   for(const char of command){
+    assert.ok(cpc._cpc_bridge_key(char.charCodeAt(0),1)>=0);
+    for(let i=0;i<6;i++)assert.ok(cpc._cpc_bridge_step(10000)>=0);
+    assert.ok(cpc._cpc_bridge_key(char.charCodeAt(0),0)>=0);
+    for(let i=0;i<6;i++)assert.ok(cpc._cpc_bridge_step(10000)>=0);
+   }
+   for(let i=0;i<500;i++)assert.ok(cpc._cpc_bridge_step(20000)>=0);
   }
-  for(let i=0;i<500;i++)assert.ok(cpc._cpc_bridge_step(20000)>=0);
   observed=[0x8000,0x8001,0x8002].map(address=>cpc._cpc_bridge_peek(address));
  }finally{
   cpc._cpc_bridge_release_keys();
@@ -75,9 +78,12 @@ for(const item of fixtures){
  console.log(item.name+': '+JSON.stringify({observed,expected:item.expected,passed:outcome.passed}));
 }
 const byName=name=>report.cases.find(x=>x.name===name);
-assert.deepEqual(byName('chain-monolith').observed,byName('chain-two-files').observed,'CHAIN vs monolith RAM marker');
-assert.deepEqual(byName('merge-monolith').observed,byName('merge-two-files').observed,'MERGE vs monolith RAM marker');
-report.status=report.cases.every(c=>c.passed)?'passed':'failed';
+report.comparisons={
+ chainEquivalent:JSON.stringify(byName('chain-monolith').observed)===JSON.stringify(byName('chain-two-files').observed),
+ mergeDirectEquivalent:JSON.stringify(byName('merge-monolith').observed)===JSON.stringify(byName('merge-direct-then-run').observed),
+ mergeRuntimeStops:JSON.stringify(byName('merge-runtime-stop').observed)===JSON.stringify([11,0,0])
+};
+report.status=report.cases.every(c=>c.passed)&&Object.values(report.comparisons).every(Boolean)?'passed':'failed';
 await writeFile('out/basic-multifile-loading-qualification.json',JSON.stringify(report,null,2)+'\n');
 assert.equal(report.status,'passed','Actual CPC firmware multi-file scenario failed; see qualification log.');
-console.log('CPC 6128 CHAIN/MERGE sample RAM markers matched monoliths; no generalized equivalence claim.');
+console.log('CPC 6128: CHAIN transfers execution; MERGE in a running program stops, MERGE at direct prompt followed by RUN needs explicit qualification.');
