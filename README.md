@@ -1,5 +1,8 @@
 # CPCéleste
 
+**CPC 0.41.23 :** [qualification des tableaux, chaînes, DATA sans RESTORE, DELETE et pression mémoire dans CHAIN MERGE](docs/implementation/basic-chain-merge-edge-alpha.md). Des différences de comportement sont des résultats de test, pas des équivalences.
+
+
 **Persistance et chargements 0.41.22 :** [nouveaux témoins firmware CHAIN MERGE et étude des variables, DATA/RESTORE, numéros de ligne et HIMEM](docs/implementation/basic-chain-merge-state-alpha.md). Pas d'extraction automatique ; les résultats restent limités aux programmes témoins effectivement exécutés.
 
 

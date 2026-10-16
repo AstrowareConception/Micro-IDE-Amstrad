@@ -1,5 +1,11 @@
 # CPCéleste — Point de reprise du développement
 
+## 0.41.23 — témoins d'état CHAIN MERGE étendus
+
+Base : `main` version 0.41.22, commit `5c18d5e1ee54caa960e2bcedda45538e9007a6ae` ; PR #84 fusionnée avec 497 tests Node et recette ROM. Branche `feat/cpc-chain-merge-edge-cases`. Nouveau banc bloquant `scripts/qualify-basic-chain-merge-edge.mjs` avec huit DSK : tableaux/chaînes, pointeur DATA sans RESTORE, DELETE et grande allocation en mémoire. Les contrastes attendus sont inscrits dans les témoins : ne pas confondre divergence et régression, ni déclarer qualifié avant réussite de la CI exacte. Les rapports JSON sont conservés sans ROM. Le moteur `inspectChainMergeOverlay` signale les risques associés, l'agent ne modifie aucun fichier au titre de cet audit. **Aucune extraction multifichier automatique.** Suite : plan global de transformation réversible et tests de projet réels. [Guide](implementation/basic-chain-merge-edge-alpha.md).
+
+
+
 ## 0.41.22 — CHAIN MERGE et persistance de l'état
 
 Base : `main` 0.41.21 commit `7f3c8a58f2f9d8774dfeb82eb8e0b99842ed6fb5`. Branche : `feat/cpc-chain-merge-state-qualification`. PR à qualifier sur son SHA exact avant fusion ; aucun packaging automatique.
