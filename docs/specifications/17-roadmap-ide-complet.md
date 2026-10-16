@@ -1,5 +1,8 @@
 # 17 — Roadmap qualifiée d’un IDE CPCéleste abouti
 
+**Commentaires IA 0.41.19 :** [prévisualisation/application protégées de nouvelles lignes REM](../implementation/basic-comment-insert-alpha.md) sans renuméroter les lignes existantes, avec refus des formes de branchement/mémoire opaques, archive d'aperçus et restauration de mission. L'intention métier des commentaires reste à vérifier. Prochain chantier : découpage multifichier CPC, chargements et état partagé.
+
+
 **Lisibilité 0.41.18 :** [rapport qualité et formatage BASIC conservateur avec aperçu/application protégés](../implementation/basic-readability-formatter-alpha.md). La génération de commentaires métier reste une suggestion documentée, sans insertion automatique. Les transformations de branches et le découpage multifichier sont des lots futurs ; pas de garantie de comportement équivalent.
 
 
