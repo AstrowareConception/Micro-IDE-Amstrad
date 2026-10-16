@@ -1,5 +1,8 @@
 # CPCéleste
 
+**Contrat de chargement 0.41.21 :** [étude statique des dépendances CHAIN/MERGE et qualification firmware de disquettes BASIC multifichiers](docs/implementation/basic-multifile-loading-alpha.md). Aucun déplacement automatique ; les résultats de test sont limités aux témoins CPC réellement exécutés.
+
+
 **Analyse de découpage 0.41.20 :** [identifier les frontières GOSUB, les dépendances et les risques de chargement avant de créer des fichiers BASIC](docs/implementation/basic-module-analysis-alpha.md). Cette étape est strictement en lecture seule : aucune extraction automatique, et les rapports périmés sont signalés.
 
 
