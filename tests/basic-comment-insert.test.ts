@@ -25,7 +25,7 @@ test('source with adjacent line numbers, missing anchor or changed initial entry
 });
 test('opaque runtime, computed transfer, missing static branch and malformed listing fail closed',()=>{
  for(const source of ['10 RUN "OTHER"\n20 END\n','10 ON ERROR GOTO 20\n20 END\n','10 GOTO target\n20 END\n','10 GOTO 19\n20 END\n','10 PRINT "ouvert\n20 END\n']){
-  assert.throws(()=>planBasicCommentInsert(source,20,'Une remarque'));
+  assert.throws(()=>planBasicCommentInsert(source,20,'Une remarque'),{message:/.+/},'Un flux non couvert doit être refusé : '+source);
  }
 });
 test('comment content must be ASCII conservative and cannot inject executable BASIC',()=>{
