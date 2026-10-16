@@ -72,6 +72,24 @@ test('preview reference gate, replacement, ABA mutation, session change and fail
  const third=await simulate();tools.state.sessionId='different-session';await assert.rejects(apply(third.previewId),/stale-preview/);assert.equal(writes,2);
 });
 
+test('persistence errors invalidate the build and distinguish an uncommitted write from an adopted disk commit',async t=>{
+ const f=await fixture();t.after(()=>rm(f.root,{recursive:true,force:true}));const {initial}=await prepare(f.root);
+ for(const committed of [false,true]){
+  const tools=new WorkspaceTools(initial,async candidate=>{
+   if(committed)tools.state=structuredClone(candidate); // Controller adoption precedes its mission-log write.
+   throw Error(committed?'mission-log-failed':'disk-write-failed');
+  },digest,[]);
+  const preview=await tools.execute('language_extraction_simulate',{id:'main',expectedHash:digest(SOURCE),entryLine:100,newFileName:'PART'}) as {previewId:string};
+  await tools.execute('reference_read_many',{names:['MEMORY','POKE','END','CHAIN','MERGE']});
+  await tools.execute('build_project',{});assert.equal(tools.buildVerified,true);
+  const apply=()=>tools.execute('language_extraction_apply',{id:'main',expectedHash:digest(SOURCE),previewId:preview.previewId});
+  await assert.rejects(apply,/failed/);
+  assert.equal(tools.buildVerified,false);assert.equal(tools.state.files.length,committed?2:1);
+  assert.equal(tools.extractionSimulationViews()[0]!.record.status,committed?'applied':'failed');
+  await assert.rejects(apply,/stale-preview/);
+ }
+});
+
 async function crash(root:string,stop:string) {
  const child=spawn(process.execPath,['tests/multifile-crash-fixture.ts',root,stop],{stdio:['ignore','ignore','pipe','ipc']});let errors='';
  child.stderr?.on('data',bytes=>{errors+=bytes;});

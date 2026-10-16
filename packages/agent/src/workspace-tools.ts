@@ -329,6 +329,8 @@ export class WorkspaceTools implements ToolPort {
         const candidate=structuredClone(pending.candidate),expected=structuredClone(this.state);
         for(const source of candidate.files)this.validateSource(source.source);
         if(this.hash(buildProjectDisk(candidate.manifest,candidate.files))!==pending.diskHash)throw Error('stale-preview : DSK candidat différent de l’aperçu.');
+        // Once persistence starts, the previous build cannot certify the disk outcome of a failed write.
+        this.buildVerified=false;
         // One persistence call owns the complete source/manifest transaction. Never adopt a partial write.
         try {
           await this.persist(candidate,expected);
