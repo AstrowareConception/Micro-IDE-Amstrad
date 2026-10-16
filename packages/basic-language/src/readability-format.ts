@@ -14,6 +14,7 @@ const signature=(line:string)=>JSON.stringify(tokenize(line).map(token=>[token.k
 export function planBasicReadabilityFormat(source:string):BasicFormatPlan {
  if(source.includes('\r'))throw Error('Formatage agent refusé : fins de ligne CRLF non prises en charge dans ce profil de sauvegarde.');
  validateListing(source);
+ if(source.split('\n').some(line=>tokenize(line).some(token=>token.kind==='string' && (token.text.length<2||!token.text.endsWith('"')))))throw Error('Formatage refusé : chaîne non terminée, vérification manuelle nécessaire.');
  const lines=source.split('\n'),edits:BasicFormatEdit[]=[];
  let skipped=0,inspected=0;
  for(let i=0;i<lines.length;i++){
