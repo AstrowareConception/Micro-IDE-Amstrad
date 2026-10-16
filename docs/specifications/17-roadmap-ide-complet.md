@@ -1,5 +1,7 @@
 # 17 — Roadmap qualifiée d’un IDE CPCéleste abouti
 
+**Renommage FN 0.41.15 :** [F2 sur une fonction ou un paramètre local](../implementation/basic-fn-rename-alpha.md). Portée affichée, définitions initiales uniques, appels couverts, aperçu et undo ; globales homonymes conservées. Types dynamiques et redéfinitions restent exclus.
+
 **Renommage de variables 0.41.14 :** [F2, aperçu avant/après et annulation](../implementation/basic-variable-rename-alpha.md). Premier profil autonome : variables et tableaux, suffixes préservés, collisions refusées et révision contrôlée. Fonctions FN, directives de type et accès machine/externe exclus. IDE-017 désormais partiel.
 
 **Navigation au curseur 0.41.13 :** [F12, Maj+F12 et résultats navigables](../implementation/basic-symbols-alpha.md#navigation-au-curseur--04113). Usages, paramètres FN et déclarations/affectations possibles dans la source courante ; calcul explicite et liens obsolètes bloqués. Suite de cette tranche : premier renommage borné livré en 0.41.14 ; FN et types dynamiques restent ouverts. IDE-015 reste partiel.
@@ -64,7 +66,7 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-014 | Lexer/parser et diagnostics fiables avec provenance | P | P0 | IDE-013 | 0.34 : worker temporisé/révisionné, grammaire structurelle étendue, couverture opaque explicite et diagnostics multifichiers ; corpus/qualification ROM exhaustifs ouverts |
 | IDE-015 | Navigation définitions/cibles, usages et symboles BASIC | P | P1 | IDE-014 | 0.41.13 : index variables/tableaux et FN, usages au curseur (Maj+F12), déclarations/affectations possibles (F12), menu/palette/contexte et garde des snapshots ; F12 littéral/F8 conservés ; définitions/types actifs et navigation sémantique complète ouverts |
 | IDE-016 | Renumérotation sûre, plages et références | P | P0 | IDE-014 | Cibles couvertes réécrites ; formes ambiguës bloquées ; undo livré |
-| IDE-017 | Renommage sémantique de variables/fonctions | P | P1 | IDE-015 qualifié | 0.41.14 : F2 variables/tableaux dans un fichier autonome sans FN/DEF*/accès opaque ; aperçu, collisions, suffixes, révision exacte et undo. Fonctions, types dynamiques, alias et intersources restent exclus |
+| IDE-017 | Renommage sémantique de variables/fonctions | P | P1 | IDE-015 qualifié | 0.41.15 : F2 variables/tableaux sans FN, ou fonctions/paramètres dans un bloc initial unique, sans DEF*/effets opaques ; aperçu, collisions, révision et undo. Globales des fichiers FN, types dynamiques, alias et intersources restent exclus |
 | IDE-018 | Templates/snippets, insertion de lignes et conventions | N | P1 | IDE-014 | Numéros sans collision ; génération minimale conforme au profil |
 | IDE-078 | Export BASIC obfusqué, protégé ou combiné, source claire conservée | P | P1 | Index complet et codec | 0.41.3 : trois modes avec aperçu et recette firmware native ; obfuscation autonome conservatrice, FN/accès machine/multifichier refusés |
 | IDE-019 | Formatage optionnel et inspections/corrections ciblées | N | P2 | IDE-014 | Sémantique inchangée ; aperçu ; aucune casse/espacement opaque détruit |
@@ -171,6 +173,18 @@ Chaque ligne a un identifiant stable `IDE-*`, une capacité, un état, une prior
 | IDE-073 | Performance, gros projets, travailleurs et accessibilité mesurées | P | P0 | J6 | 0.34 : limites parser/cache, benchmark 5 000 lignes et monitoring visible seulement ; mesure de bout en bout sur matériel cible et sessions longues ouvertes |
 | IDE-074 | Guides intégrés, onboarding, exemples et diagnostic support | P | P1 | IDE-071 | Guides français livrés ; aide in-app/export diagnostic expurgé et exemples CPC qualifiés |
 | IDE-075 | Identité CPCéleste, icônes et cohérence visuelle | L | P1 | PR 14 | Nom/logo intégrés, charte disponible ; déclinaisons packaging à compléter avec IDE-072 |
+
+## Priorités validées le 16 octobre 2026
+
+1. Renommage FN/paramètres : premier profil livré en 0.41.15 ; types dynamiques et redéfinitions restent au backlog.
+2. Relier les tests aux sources réellement transformées, puis aider leur préparation avec l’IA.
+3. Compléter la lisibilité assistée avec transformations déterministes, formatage et bilan vérifié.
+4. Concevoir le découpage des programmes et leur construction/chargement CPC.
+5. Élargir import DSK, projets mixtes et qualification indépendante Z80.
+6. Recherche plein texte et navigation dans le corpus documentaire.
+7. Variables/pile et pas à pas du debugger, puis profilage et outils graphiques.
+
+Documentation, UX, durabilité et vérifications accompagnent chaque incrément. Packaging par ensembles cohérents selon la politique existante, sans reconstruction à chaque PR.
 
 ## Ordre des lots à réaliser
 

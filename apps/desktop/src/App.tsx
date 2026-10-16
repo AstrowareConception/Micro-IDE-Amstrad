@@ -409,7 +409,7 @@ export function App() {
     applyVariableRename(plan,model.getValue());
     instance.pushUndoStop();
     if(!instance.executeEdits('basic-variable-rename',plan.edits.map(edit=>({range:new monaco.Range(edit.line,edit.start+1,edit.line,edit.end+1),text:edit.after}))))throw new Error('Application du renommage refusée.');
-    instance.pushUndoStop();setStatus('Variable renommée dans le buffer, non enregistré. Ctrl Z pour annuler.');
+    instance.pushUndoStop();setStatus('Symbole renommé dans le buffer, non enregistré. Ctrl Z pour annuler.');
   }
   function renumber(request: RenumberRequest) {
     const instance = editor.current, model = instance?.getModel();
@@ -442,7 +442,7 @@ export function App() {
     { id: 'search-sources', label: 'Rechercher dans toutes les sources', detail: 'Ctrl Maj F', run: () => { setSearchOpen(true); showTool('search'); } },
     { id: 'replace', label: 'Remplacer dans le listing', detail: 'Ctrl H', disabled: busy, run: () => editorAction('editor.action.startFindReplaceAction') },
     { id: 'line', label: 'Aller à une ligne physique', detail: 'Ctrl G · distinct du numéro BASIC', run: () => editorAction('editor.action.gotoLine') },
-    { id: 'cpc-rename-variable', label: 'Renommer la variable…', detail: 'F2', disabled: busy || binaryProject || knowledgeOpen, run: () => editorAction('cpc-rename-variable') },
+    { id: 'cpc-rename-variable', label: 'Renommer le symbole…', detail: 'F2', disabled: busy || binaryProject || knowledgeOpen, run: () => editorAction('cpc-rename-variable') },
     { id: 'renumber', detail: 'Ctrl Maj R', label: 'Renuméroter le BASIC', disabled: busy || binaryProject, run: () => setRenumberOpen(true) },
     { id: 'complete', label: 'Compléter le BASIC', detail: 'Ctrl Espace', disabled: busy || binaryProject, run: () => editorAction('editor.action.triggerSuggest') },
     { id: 'minimap', label: preferences.minimap ? 'Masquer la minimap' : 'Afficher la minimap', run: () => setPreferences(previous => ({ ...previous, minimap: !previous.minimap })) },
@@ -521,7 +521,7 @@ export function App() {
   ] : [];
   return <main className="workbench" style={{ '--sidebar-width': `${preferences.sidebarWidth}px`, '--agent-width': `${preferences.agentWidth}px`, '--output-height': `${preferences.outputHeight}px` } as CSSProperties}>
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.41.14 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.41.15 · AstroWare Conception</p></div></div>
       <div className="topbar-actions"><Button icon="bell" aria-label={`Centre de notifications · ${unreadNotifications} non lue(s)`} onClick={() => setNotificationsOpen(true)}><span className="notification-badge">{unreadNotifications}</span></Button><span className="profile">CPC 6128 · BASIC 1.1</span></div>
     </header>
     <WorkbenchMenus groups={[
@@ -537,7 +537,7 @@ export function App() {
     {newProjectOpen && <NewProjectDialog busy={busy} onClose={() => setNewProjectOpen(false)} onCreate={name => { setProjectName(name); openProject(true, name); }} />}
     {distributionOpen && <DistributionDialog sessionId={project?.sessionId} sources={project ? documents.map(item=>({ id:item.sourceId, name:project.manifest.sources.find(s=>s.id===item.sourceId)!.cpcName, source:item.source })) : [{id:'main',name:'MAIN.BAS',source}]} onClose={()=>setDistributionOpen(false)} />}
     {diskPreview && <DiskImportDialog preview={diskPreview} onCreate={importDisk} onClose={() => setDiskPreview(undefined)} />}
-    {variableRename && <RenameVariablePanel key={variableRename.nonce} request={variableRename} stale={renameStale} busy={busy} onApply={renameVariable} onClose={()=>{setVariableRename(undefined);requestAnimationFrame(()=>editor.current?.focus());}} />}
+    {variableRename && <RenameVariablePanel key={variableRename.nonce} request={variableRename} stale={renameStale} busy={busy} onApply={renameVariable} onClose={()=>{setVariableRename(undefined);editor.current?.focus();}} />}
     {renumberOpen && <RenumberPanel source={source} documentId={activeId} busy={busy} defaultStart={preferences.renumberStart} defaultStep={preferences.renumberStep} revision={() => editor.current?.getModel()?.getVersionId() ?? -1} onApply={renumber} onClose={() => setRenumberOpen(false)} />}
     {palette && <CommandPalette key={palette} title={palette === 'all' ? 'Commandes CPCéleste' : 'Ouvrir rapidement une source'} commands={palette === 'all' ? commands : commands.filter(command => command.id.startsWith('source:'))} onClose={() => setPalette(undefined)} />}
     {selectedSource && <CommandPalette title={`Actions de ${selectedSource.name}`} searchable={false} commands={sourceCommands} onClose={() => setContextSource(undefined)} />}

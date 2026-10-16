@@ -1,6 +1,7 @@
 import type { Token } from './language.ts';
 import type { SymbolLocation, TypeDeclaration } from './symbols.ts';
 
+export const FN_SEGMENT_OMISSION = 'FN relevé dans la vue Fonctions ; segment exclu des usages globaux.';
 export const FN_LIMITS = Object.freeze({ definitions: 256, parameters: 32, occurrences: 4096, links: 8192 });
 export interface FnParameter { key: string; name: string; location: SymbolLocation }
 export interface FnRead { name: string; kind: 'scalar' | 'array'; location: SymbolLocation; binding: 'parameter' | 'free' | 'ambiguous'; parameterKeys: string[] }

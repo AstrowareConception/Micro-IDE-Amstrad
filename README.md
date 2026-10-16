@@ -1,5 +1,7 @@
 # CPCéleste
 
+**Renommage FN 0.41.15 :** [F2 sur une fonction ou un paramètre local](docs/implementation/basic-fn-rename-alpha.md). Portée affichée, définitions initiales uniques, appels couverts, aperçu et undo ; globales homonymes conservées. Types dynamiques et redéfinitions restent exclus.
+
 **Renommage de variables 0.41.14 :** [F2, aperçu avant/après et annulation](docs/implementation/basic-variable-rename-alpha.md). Premier profil autonome : variables et tableaux, suffixes préservés, collisions refusées et révision contrôlée. Fonctions FN, directives de type et accès machine/externe exclus. IDE-017 désormais partiel.
 
 **Navigation au curseur 0.41.13 :** [F12, Maj+F12 et résultats navigables](docs/implementation/basic-symbols-alpha.md#navigation-au-curseur--04113). Usages, paramètres FN et déclarations/affectations possibles dans la source courante ; calcul explicite et liens obsolètes bloqués. Suite de cette tranche : premier renommage borné livré en 0.41.14 ; FN et types dynamiques restent ouverts. IDE-015 reste partiel.

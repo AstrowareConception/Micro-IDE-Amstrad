@@ -6,7 +6,7 @@ export interface VariableRenameRequest { nonce:string; documentId:string; docume
 interface Props { request:VariableRenameRequest; stale:boolean; busy:boolean; onApply(plan:VariableRenamePlan):void; onClose():void }
 export function RenameVariablePanel({request,stale,busy,onApply,onClose}:Props){
  const [target,setTarget]=useState<RenameTarget>(),[newStem,setNewStem]=useState(''),[plan,setPlan]=useState<VariableRenamePlan>(),[pending,setPending]=useState(false),[message,setMessage]=useState('');
- const input=useRef<HTMLInputElement>(null),sequence=useRef(0),job=useRef<{id:number;worker:Worker;timer:ReturnType<typeof setTimeout>}|undefined>(undefined);
+ const panel=useRef<HTMLElement>(null),input=useRef<HTMLInputElement>(null),sequence=useRef(0),job=useRef<{id:number;worker:Worker;timer:ReturnType<typeof setTimeout>}|undefined>(undefined);
  function stop(){const current=job.current;job.current=undefined;if(current){clearTimeout(current.timer);current.worker.onmessage=null;current.worker.onerror=null;current.worker.terminate();}}
  function run(preview=false){
   stop();setPlan(undefined);setMessage('');if(stale||busy)return;
@@ -24,17 +24,18 @@ export function RenameVariablePanel({request,stale,busy,onApply,onClose}:Props){
    worker.postMessage({id,source:request.source,position:{line:request.line,column:request.column},...(preview?{newStem}:{} )});
   }catch{stop();setPending(false);setMessage('Impossible de démarrer le calcul de renommage.');}
  }
- useEffect(()=>{run();return stop;},[]);
+ useEffect(()=>{panel.current?.focus();run();return stop;},[]);
  useEffect(()=>{if(stale){stop();setPending(false);}},[stale]);
- return <section className="panel rename-variable-panel" aria-label="Renommer une variable BASIC" aria-busy={pending} onKeyDown={event=>{if(event.key==='Escape'){event.stopPropagation();onClose();}}}>
-  <header><h2>Renommer une variable</h2><Button onClick={onClose} aria-label="Fermer le renommage">Fermer</Button></header>
+ return <section ref={panel} tabIndex={-1} className="panel rename-variable-panel" aria-label="Renommer un symbole BASIC" aria-busy={pending} onKeyDown={event=>{if(event.key==='Escape'){event.stopPropagation();onClose();}}}>
+  <header><h2>Renommer un symbole</h2><Button onClick={onClose} aria-label="Fermer le renommage">Fermer</Button></header>
   <p>{request.documentName} · L{request.line} · C{request.column+1}</p>
-  <p className="muted">Fichier autonome, sans FN, directives de type, alias ambigus ni accès machine/externe. Seul ce buffer sera modifié. Annulation avec Ctrl+Z.</p>
+  <p className="muted">Fichier autonome : variables simples ou FN à définitions initiales, sans types dynamiques ni accès machine/externe. Seul ce buffer sera modifié. Annulation avec Ctrl+Z.</p>
   {stale&&<p role="alert">Aperçu périmé : document ou révision modifié. Fermez puis relancez F2 depuis le code.</p>}
-  {target&&<><p><strong>{target.name}</strong> · {target.kind==='array'?'tableau':'scalaire'} · {target.occurrences} occurrence(s) · suffixe conservé : {target.suffix||'aucun (réel par défaut)'}</p>
+  {target&&<><p><strong>{target.name}</strong> · {{array:'tableau',scalar:'scalaire',function:'fonction FN',parameter:'paramètre FN'}[target.kind]} · {target.occurrences} occurrence(s) · suffixe conservé : {target.suffix||'aucun (réel par défaut)'}</p>
+   {target.scope&&<p className="rename-scope">{target.scope} · Préfixe FN et suffixe de type conservés.</p>}
    <form onSubmit={event=>{event.preventDefault();run(true);}}><label>Nouveau nom sans suffixe<input ref={input} autoComplete="off" spellCheck={false} maxLength={40} value={newStem} disabled={stale||busy} onChange={event=>{stop();setPending(false);setNewStem(event.target.value);setPlan(undefined);setMessage('');}}/></label>
    <Button type="submit" disabled={stale||busy||pending||!newStem}>Prévisualiser le renommage</Button></form></>}
-  {pending&&<p role="status">{target?'Préparation de l’aperçu…':'Analyse de la variable…'} <Button onClick={()=>{stop();setPending(false);setMessage('Calcul annulé.');}}>Annuler le calcul</Button></p>}
+  {pending&&<p role="status">{target?'Préparation de l’aperçu…':'Analyse du symbole…'} <Button onClick={()=>{stop();setPending(false);setMessage('Calcul annulé.');}}>Annuler le calcul</Button></p>}
   {!target&&!pending&&!stale&&<Button disabled={busy} onClick={()=>run()}>Réessayer l’analyse</Button>}
   <p role="status">{message}</p>
   {plan&&<><h3>{plan.target.name} → {plan.newName}</h3><ul>{plan.warnings.map(w=><li key={w}>{w}</li>)}</ul>

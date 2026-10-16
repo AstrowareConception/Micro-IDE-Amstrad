@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import {expect} from '@playwright/test';
+const original='10 DEF FNinterne(y)=x+y\n20 DEF FNexterne(x)=FNinterne(2)+x\n30 x=99:resultat=FNexterne(3):PRINT x;resultat\n40 REM x FNexterne\n50 DATA x,FNexterne';
+const parameterAfter='10 DEF FNinterne(y)=x+y\n20 DEF FNexterne(valeur)=FNinterne(2)+valeur\n30 x=99:resultat=FNexterne(3):PRINT x;resultat\n40 REM x FNexterne\n50 DATA x,FNexterne';
+const functionAfter='10 DEF FNinterne(y)=x+y\n20 DEF FNcalculFinal(x)=FNinterne(2)+x\n30 x=99:resultat=FNcalculFinal(3):PRINT x;resultat\n40 REM x FNexterne\n50 DATA x,FNexterne';
+export async function verifyFnRename(browser,errors){
+ const page=await browser.newPage({viewport:{width:1440,height:1100}});page.on('pageerror',e=>errors.push(e.message));
+ await page.addInitScript(({original})=>{window.desktop={setDirty(){},project:{open:async()=>({sessionId:'fn-rename',manifest:{name:'Portées FN',entryPoint:'main',sources:[{id:'main',path:'src/main.bas',cpcName:'MAIN.BAS'}],documents:[]},files:[{id:'main',path:'src/main.bas',cpcName:'MAIN.BAS',source:original}]}),exportDisk:async(_id,sources)=>{window.fnExported=sources[0].source;return {name:'fn.dsk'};}}};},{original});
+ try{
+  await page.goto('http://127.0.0.1:5173');await page.locator('.view-lines').first().waitFor();await page.getByRole('button',{name:'Ouvrir projet',exact:true}).click();
+  const editor=page.locator('.listing .monaco-editor textarea'),panel=page.getByRole('region',{name:'Renommer un symbole BASIC',exact:true}),name=panel.getByRole('textbox',{name:'Nouveau nom sans suffixe',exact:true}),preview=panel.getByRole('button',{name:'Prévisualiser le renommage',exact:true}),apply=panel.getByRole('button',{name:'Appliquer au buffer',exact:true});
+  async function open(line,column){await editor.focus();await page.keyboard.press('Control+Home');for(let i=1;i<line;i++)await page.keyboard.press('ArrowDown');await page.keyboard.press('Home');for(let i=0;i<column;i++)await page.keyboard.press('ArrowRight');await page.keyboard.press('F2');await expect(panel).toBeVisible();}
+  async function exported(){await page.getByRole('button',{name:'Exporter DSK',exact:true}).click();await expect(page.getByRole('button',{name:'Exporter DSK',exact:true})).toBeEnabled();return page.evaluate(()=>window.fnExported);}
+  await open(2,original.split('\n')[1].indexOf('(x)')+1);await expect(panel).toContainText('Paramètre local de FN EXTERNE');await expect(panel).toContainText('2 occurrence(s)');await name.fill('y');await preview.click();await expect(panel).toContainText('collision');await expect(apply).toHaveCount(0);
+  await name.fill('valeur');await preview.click();await expect(apply).toBeEnabled();await expect(panel.getByRole('textbox',{name:'Après',exact:true})).toHaveValue(parameterAfter);await panel.screenshot({path:'out/basic-fn-rename.png'});await apply.click();assert.equal(await exported(),parameterAfter);await editor.focus();await page.keyboard.press('Control+z');assert.equal(await exported(),original);
+  await open(3,original.split('\n')[2].indexOf('FNexterne')+2);await expect(panel).toContainText('Définition et appels de FN EXTERNE');await name.fill('calculFinal');await preview.click();await expect(apply).toBeEnabled();await expect(panel.getByRole('textbox',{name:'Après',exact:true})).toHaveValue(functionAfter);await apply.click();assert.equal(await exported(),functionAfter);await editor.focus();await page.keyboard.press('Control+z');assert.equal(await exported(),original);
+  await open(2,original.split('\n')[1].indexOf('(x)')+1);await name.fill('valeur');await preview.click();await expect(apply).toBeEnabled();await editor.focus();await page.keyboard.press('Control+End');await page.keyboard.insertText(' ');await expect(apply).toBeDisabled();await expect(panel).toContainText('Aperçu périmé');await panel.getByRole('button',{name:'Fermer le renommage'}).click();
+  await open(1,0);await expect(panel).toContainText('placer le curseur');await expect(panel).toBeFocused();await page.keyboard.press('Escape');await expect(panel).toHaveCount(0);
+  console.log('FN rename UI: local scope, free/global homonyms, collision, function call target, exact previews, buffer export, undo, stale guard and Escape on refusal passed.');
+ }finally{await page.close();}
+}

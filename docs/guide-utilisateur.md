@@ -1,5 +1,7 @@
 # CPCéleste — Vos idées prennent vie en BASIC
 
+**Renommage FN 0.41.15 :** [F2 sur une fonction ou un paramètre local](implementation/basic-fn-rename-alpha.md). Portée affichée, définitions initiales uniques, appels couverts, aperçu et undo ; globales homonymes conservées. Types dynamiques et redéfinitions restent exclus.
+
 **Renommage de variables 0.41.14 :** [F2, aperçu avant/après et annulation](implementation/basic-variable-rename-alpha.md). Premier profil autonome : variables et tableaux, suffixes préservés, collisions refusées et révision contrôlée. Fonctions FN, directives de type et accès machine/externe exclus. IDE-017 désormais partiel.
 
 **Navigation au curseur 0.41.13 :** [F12, Maj+F12 et résultats navigables](implementation/basic-symbols-alpha.md#navigation-au-curseur--04113). Usages, paramètres FN et déclarations/affectations possibles dans la source courante ; calcul explicite et liens obsolètes bloqués. Suite de cette tranche : premier renommage borné livré en 0.41.14 ; FN et types dynamiques restent ouverts. IDE-015 reste partiel.
@@ -24,7 +26,7 @@ Il suffit parfois d’un `MODE 1`, de quelques couleurs et d’une idée pour re
 
 Le fil conducteur est simple : **garder la création au centre, raccourcir le chemin entre une idée et son résultat, et vous laisser comprendre ce que l’outil fait.** Le BASIC reste du BASIC, vos sources restent des fichiers texte et votre projet reste un dossier que vous pouvez conserver, déplacer et versionner.
 
-Cette notice rassemble les fonctions livrées jusqu’à **CPCéleste 0.41.14, alpha desktop**, au **15 octobre 2026**. Les captures antérieures gardent leur version et leur provenance propres. Elle réunit découverte du produit et mode d’emploi. Les captures représentent l’interface réelle ; celles issues des recettes automatisées utilisent des données de démonstration. Leur [provenance détaillée](images/guide-utilisateur/README.md) distingue captures locales, Electron et services distants simulés. Cliquez sur une image pour l’ouvrir en grand dans GitHub.
+Cette notice rassemble les fonctions livrées jusqu’à **CPCéleste 0.41.15, alpha desktop**, au **16 octobre 2026**. Les captures antérieures gardent leur version et leur provenance propres. Elle réunit découverte du produit et mode d’emploi. Les captures représentent l’interface réelle ; celles issues des recettes automatisées utilisent des données de démonstration. Leur [provenance détaillée](images/guide-utilisateur/README.md) distingue captures locales, Electron et services distants simulés. Cliquez sur une image pour l’ouvrir en grand dans GitHub.
 
 <a id="sommaire"></a>
 ## Votre parcours dans la notice
@@ -768,7 +770,7 @@ Valeurs de la base **CPCéleste**. `Ctrl/Cmd` signifie Ctrl sous Windows/Linux e
 | Suggestions du code | `Ctrl + Espace` |
 | Rejoindre une cible BASIC ou ses déclarations possibles | `F12` |
 | Rechercher les usages du nom au curseur | `Maj + F12` |
-| Renommer une variable avec aperçu | `F2` |
+| Renommer une variable, une fonction FN ou un paramètre couvert | `F2` |
 | Diagnostic suivant / précédent | `F8` / `Maj + F8` |
 | Palette de commandes | `Ctrl/Cmd + Maj + P` |
 | Ouverture rapide des sources | `Ctrl/Cmd + P` |

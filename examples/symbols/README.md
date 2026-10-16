@@ -15,3 +15,7 @@ En 0.41.13, placer le curseur dans un nom puis utiliser **Maj+F12** pour ses usa
 ## Essayer le renommage
 
 Le profil 0.41.14 refuse volontairement les alias TOTAL/TOTAL! de `main.bas` et les FN de `functions.bas`. Pour essayer F2, utiliser le petit listing autonome du [guide du renommage](../../docs/implementation/basic-variable-rename-alpha.md). Aucun nom de fonction n’est renommé automatiquement.
+
+## Renommage FN et paramètres — 0.41.15
+
+[rename-functions.bas](rename-functions.bas) reprend le témoin firmware `parameter-nested-free`. F2 sur le paramètre `x` de FNouter permet de le renommer en `value` ; le `x` libre de FNinner et la globale restent inchangés. Après F5, `PRINT result` donne 203. F2 sur le nom FNinner/FNouter permet de renommer la fonction et ses appels. [Guide et limites du profil initial](../../docs/implementation/basic-fn-rename-alpha.md).

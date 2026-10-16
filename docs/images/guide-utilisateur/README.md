@@ -94,3 +94,7 @@ Reproduction : `npm run build:renderer`, puis `npm run test:editor` (Playwright 
 ## Capture 33 — Renommage de variables 0.41.14
 
 [33-renommage-variable.png](33-renommage-variable.png) est la copie exacte de `out/basic-variable-rename.png`, produite le 15 octobre 2026 par [tests/basic-variable-rename-smoke.mjs](../../../tests/basic-variable-rename-smoke.mjs), base `73c3da83825fc912dad51a83c1df8ae649fabc7e`. Renderer 0.41.14 et worker de renommage réels, Chromium Linux, viewport 1440 × 1100 ; capture de la région du panneau. Listing original de démonstration, port projet contrôlé, aucun appel IA, ROM ni fichier personnel. Pixels non retouchés. Reproduction : `npm run build:renderer`, puis `npm run test:editor`.
+
+## Capture 34 — Renommage FN et paramètres 0.41.15
+
+[34-renommage-fn.png](34-renommage-fn.png) est la copie exacte de `out/basic-fn-rename.png`, produite le 16 octobre 2026 par [tests/basic-fn-rename-smoke.mjs](../../../tests/basic-fn-rename-smoke.mjs), base `55722797e5ed5fac524ade4f8d4a457541961323`. Renderer 0.41.15 et worker de renommage réels, Chromium Linux ; capture directe du panneau montrant la portée locale et les deux changements proposés. Listing original de démonstration, port projet contrôlé, aucun appel IA, ROM ni fichier personnel. Pixels non retouchés. Reproduction : `npm run build:renderer`, puis `npm run test:editor`.
