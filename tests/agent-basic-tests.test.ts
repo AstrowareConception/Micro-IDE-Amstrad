@@ -61,7 +61,7 @@ test('real controller runs suites, exposes reports, persists history and blocks 
 
 test('CPC proof requires execution of the actual changed source, not an identical copy', async()=>{
  const original=state(),modified=structuredClone(original);
- modified.files[0]!.source+='9990 REM revised\\n';
+ modified.files[0]!.source+='9990 REM revised\n';
  const revision='suite-revision';let n=0;
  const testPort={load:async()=>({revision,suites:[{id:'real',name:'True source',sourceIds:['main'],seconds:3}]}),run:async(source:{id:string;name:string;source:string})=>passed(source),record:async()=>{}};
  const agent=new AgentBasicTests(testPort,hash,()=>`run-${++n}`,()=>new AbortController().signal);
