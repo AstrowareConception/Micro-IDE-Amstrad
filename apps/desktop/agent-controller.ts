@@ -155,7 +155,7 @@ export class AgentController {
           'Aucune source BASIC modifiée à rattacher.';
         job.result={...result,status:latest&&!valid?'blocked':result.status,summary:`${result.summary}\nValidation IDE : DSK structurel. ${latest ? valid ? 'Suites CPC réussies sur cette révision.' : 'Tests CPC non concluants ou sources modifiées non couvertes ; validation non obtenue.' : 'Aucun test CPC exécuté ; comportement non vérifié.'} ${proof}`};
       }
-      if (result.status === 'completed' && !job.tools.buildVerified) job.result = { ...result, status: 'blocked', summary: `${result.summary}\nAucune construction réussie de la révision finale ; mission non validée.` };
+      if (result.status === 'completed' && !job.tools.buildVerified) job.result = { ...job.result, status: 'blocked', summary: `${job.result.summary}\nAucune construction réussie de la révision finale ; mission non validée.` };
       try { await this.record(job, job.tools.state, 'finished'); }
       catch { job.result = { ...job.result, status: 'failed', summary: 'Journal final non écrit ; modifications terminées conservées.' }; }
       finally { clearTimeout(deadline); job.running = false; }
