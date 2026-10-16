@@ -1,0 +1,21 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {inspectChainMergeOverlay} from '../packages/basic-language/src/chain-merge-overlay.ts';
+
+const src=(id,source)=>({id,path:'src/'+id+'.bas',cpcName:id.toUpperCase()+'.BAS',source});
+test('CHAIN MERGE overlay exposes DELETE, array, strings and pointer risks without approving extraction',()=>{
+ const host=src('main','10 DIM v%(4)\n20 label$="ok"\n30 READ x\n40 CHAIN MERGE "PART.BAS",100,DELETE 300-399\n100 END\n300 DATA 7,19\n');
+ const overlay=src('part','100 POKE &8001,v%(2)\n110 PRINT label$\n120 READ y\n130 END\n');
+ const r=inspectChainMergeOverlay(host,overlay);
+ assert.equal(r.extractionPermitted,false);
+ assert.equal(r.behavioralProof,'not-run');
+ assert.equal(r.referencesData,true);
+ assert.equal(r.usesMemoryControl,true);
+ assert.ok(r.sharedIdentifiers.includes('LABEL$'));
+ assert.ok(r.warnings.length>0);
+});
+test('no overlay hazard claim can authorize auto extraction',()=>{
+ const r=inspectChainMergeOverlay(src('main','10 PRINT "CHAIN MERGE DELETE"\n20 END'),src('part','100 END'));
+ assert.equal(r.extractionPermitted,false);
+ assert.equal(r.behavioralProof,'not-run');
+});
