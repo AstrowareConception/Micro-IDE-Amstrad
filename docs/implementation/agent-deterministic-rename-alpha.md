@@ -17,6 +17,8 @@ L'agent reçoit l'instruction de **préférer cette séquence à une réécritur
 
 Les mêmes restrictions que F2 restent en vigueur : aucun renommage partiel d'une identité ambiguë, de formes opaques, de variables sous directives de types dynamiques, de redéfinitions FN non qualifiées ou d'interactions machine susceptibles d'affecter la résolution. Les suffixes BASIC `$`, `%` et `!`, les chaînes, les instructions DATA et les numéros de ligne sont préservés par le moteur dans les profils admis.
 
+Les sources contenant des retours chariot CRLF sont provisoirement refusées par l'agent : la sauvegarde actuelle normalise ces fins de ligne, ce qui rendrait l'aperçu inexact. Le renommage F2 interactif conserve sa prise en charge propre des CRLF ; une adaptation contrôlée du chemin d'enregistrement agent est à prévoir.
+
 La consultation préalable des fiches de commandes BASIC demeure nécessaire pour enregistrer le fichier. L'agent ne peut pas appliquer un aperçu inexistant, issu d'un autre fichier, remplacé, périmé ou portant sur une ancienne révision. Les scripts provenant de projets binaires Z80 n'obtiennent pas ces outils BASIC.
 
 **Approbation et restauration :** les opérations restent soumises à l'autorisation générale donnée lors du lancement de la mission IA. L'aperçu fait partie du journal visible, **ce n'est pas encore une validation manuelle obligatoire pour chaque renommage**. Les modifications sont enregistrées et restaurables au moyen de **Restaurer le checkpoint initial**, avec les mêmes préconditions de révision que les autres mutations agentiques.
