@@ -11,6 +11,19 @@ test('CHAIN MERGE overlay exposes DELETE, array, strings and pointer risks witho
  assert.equal(r.behavioralProof,'not-run');
  assert.equal(r.referencesData,true);
  assert.equal(r.usesMemoryControl,true);
+ assert.equal(r.hasDeleteClause,true);
+ assert.equal(r.readWithoutRestore,true);
+ assert.ok(r.arrayNames.includes('V%'));
+ assert.ok(r.stringNames.includes('LABEL
+ assert.ok(r.sharedIdentifiers.includes('LABEL$'));
+ assert.ok(r.warnings.length>0);
+});
+test('no overlay hazard claim can authorize auto extraction',()=>{
+ const r=inspectChainMergeOverlay(src('main','10 PRINT "CHAIN MERGE DELETE"\n20 END'),src('part','100 END'));
+ assert.equal(r.extractionPermitted,false);
+ assert.equal(r.behavioralProof,'not-run');
+});
+));
  assert.ok(r.sharedIdentifiers.includes('LABEL$'));
  assert.ok(r.warnings.length>0);
 });
