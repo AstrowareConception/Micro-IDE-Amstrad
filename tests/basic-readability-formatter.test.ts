@@ -26,7 +26,7 @@ test('conservative format normalizes only simple whitespace, preserving content 
 
 test('formatter rejects malformed or CRLF input and never changes quoted/commented/data text',()=>{
  assert.throws(()=>planBasicReadabilityFormat('10 x=1\r\n20 END\r\n'),/CRLF/);
- assert.throws(()=>planBasicReadabilityFormat('10 PRINT "unclosed'),/Listing BASIC/);
+ assert.throws(()=>planBasicReadabilityFormat('10 PRINT "unclosed'),/chaîne non terminée|Listing BASIC/);
  const text='10 PRINT "A : B"  \n20 REM not: a =  b  \n30 DATA  1,  2  \n';
  const plan=planBasicReadabilityFormat(text);
  assert.equal(plan.after,text);assert.equal(plan.edits.length,0);
