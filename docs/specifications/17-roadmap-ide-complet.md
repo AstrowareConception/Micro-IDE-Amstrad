@@ -1,5 +1,8 @@
 # 17 — Roadmap qualifiée d’un IDE CPCéleste abouti
 
+**Refactorisation IA 0.41.17 :** [nouveaux outils de prévisualisation et application déterministe du renommage](../implementation/agent-deterministic-rename-alpha.md), réutilisant les gardes F2 sur un seul fichier. Historique d'aperçus dans l'agent, refus des cas ambigus, état du projet contrôlé et checkpoint initial. IDE-017/062/064 restent partiels ; suite : formatage conservateur, tests avant/après et découpage contrôlé.
+
+
 **Provenance des tests CPC 0.41.16 :** [contrôle de couverture directe des sources modifiées](../implementation/basic-tested-sources-alpha.md). Identifiant/chemin/SHA-256 exacts et résultat ROM exigés ; les suites sur copies indépendantes ne suffisent plus à valider une mission. Suite : harnais exécutant le code de production non instrumenté.
 
 **Renommage FN 0.41.15 :** [F2 sur une fonction ou un paramètre local](../implementation/basic-fn-rename-alpha.md). Portée affichée, définitions initiales uniques, appels couverts, aperçu et undo ; globales homonymes conservées. Types dynamiques et redéfinitions restent exclus.

@@ -1,4 +1,6 @@
 import { indexSymbols, SYMBOL_METHOD } from '../../basic-language/src/symbols.ts';
+import { planSymbolRename } from '../../basic-language/src/rename-symbol.ts';
+import type { VariableRenamePlan } from '../../basic-language/src/rename-variable.ts';
 import { TEST_DEFINITIONS, type AgentBasicTests } from './basic-tests.ts';
 import { analyze, tokenize } from '../../basic-language/src/language.ts';
 import { COMMANDS, REFERENCE } from '../../basic-language/src/catalog.ts';
@@ -6,7 +8,7 @@ import { planRenumber } from '../../basic-language/src/renumber.ts';
 import { addProjectSource, buildProjectDisk } from '../../workspace/src/project.ts';
 import type { KnowledgeRequest, KnowledgeResult } from '../../workspace/src/knowledge.ts';
 import type { DocumentSnapshot } from '../../workspace/src/project.ts';
-import type { AgentWorkspaceState, ToolDefinition, ToolPort } from './types.ts';
+import type { AgentWorkspaceState, ToolDefinition, ToolPort, AgentRenameRecord } from './types.ts';
 
 const s = { type: 'string' }, n = { type: 'integer' };
 function tool(name: string, description: string, properties: Record<string, unknown> = {}): ToolDefinition {
@@ -29,6 +31,8 @@ export const DEFINITIONS = [
   tool('language_symbols', 'Index textuel partiel des variables/types possibles, 50 symboles par page. Pas un oracle de renommage ; FN et formes opaques non résolus.', {id:s,offset:n}),
   tool('language_analyze', 'Diagnostics réels du sous-ensemble pour toutes les sources. Aucun test ROM.'),
   tool('language_renumber', 'Renumérote et enregistre une source avec références locales littérales ; hash requis. Refuse formes opaques/collisions. Références de commandes à consulter ; même checkpoint que les autres mutations.', { id: s, expectedHash: s, start: n, step: n, from: n, to: n }),
+  tool('language_rename_preview', 'Prépare sans écriture un renommage déterministe BASIC dans une source. Position physique ligne/colonne (colonne zéro-indexée), hash exact et nouveau radical requis. Refuse les identités ambiguës, effets opaques, collisions et FN non qualifiées. Retourne le plan et un identifiant pour l’application.', { id: s, expectedHash: s, line: n, column: n, newStem: s }),
+  tool('language_rename_apply', 'Applique uniquement le plan de renommage précédemment prévisualisé sur la même source et la même révision de projet. Checkpoint, contrôles de références et persistance identiques aux mutations BASIC ; aucune modification arbitraire du modèle.', { id: s, expectedHash: s, previewId: s }),
   tool('build_project', 'Construit réellement le DSK de tous les buffers et le relit ; renvoie taille/hash/noms. Ne lance pas de CPC.'),
 ];
 function args(value: unknown, fields: string[]): Record<string, unknown> {
@@ -53,6 +57,18 @@ export class WorkspaceTools implements ToolPort {
   definitions = DEFINITIONS;
   state: AgentWorkspaceState;
   buildVerified = false;
+  readonly renameOperations: AgentRenameRecord[] = [];
+  private renamePlan: { id: string; fileId: string; sourceHash: string; workspaceHash: string; epoch: number; plan: VariableRenamePlan; record: AgentRenameRecord } | undefined;
+  private mutationEpoch = 0;
+  private previewSequence = 0;
+  private workspaceHash(): string {
+    return this.hash(JSON.stringify({sessionId:this.state.sessionId,manifest:this.state.manifest,files:this.state.files.map(({id,path,cpcName,source,saved})=>({id,path,cpcName,source,saved}))}));
+  }
+  private invalidateRename(): void {
+    this.mutationEpoch++;
+    if (this.renamePlan?.record.status==='preview') this.renamePlan.record.status='obsolete';
+    this.renamePlan=undefined;
+  }
   readonly tests: AgentBasicTests | undefined;
   private consulted = new Set<string>();
   private readonly persist: (state: AgentWorkspaceState) => Promise<void>;
@@ -108,7 +124,7 @@ export class WorkspaceTools implements ToolPort {
         const result = await this.writeKnowledge(request);
         this.state.manifest = structuredClone(result.manifest);
         this.documents = [...this.documents.filter(d => d.id !== result.document.id), structuredClone(result.document)];
-        this.documentReads.delete(result.document.id); this.buildVerified = false;
+        this.documentReads.delete(result.document.id); this.buildVerified = false; this.invalidateRename();
         return { id:result.document.id, originalName:result.document.originalName, revision:result.document.revision, sha256:result.document.sha256, saved:true, previousVersions:result.document.knowledge?.versions.length ?? 0 };
       }
       case 'documents_list': return { complete: true, documents: this.documents.map(item => ({ id: item.id, path: item.path, originalName: item.originalName, mediaType: item.mediaType, role: item.role, sha256: item.sha256, bytes: item.bytes, editable: !!this.writeKnowledge && !!item.knowledge?.editable,
@@ -186,7 +202,7 @@ export class WorkspaceTools implements ToolPort {
         const candidate = structuredClone(this.state); const changed = candidate.files.find(file => file.id === item.id)!;
         changed.source = source; changed.saved = source;
         if (candidate.files.reduce((size, file) => size + new TextEncoder().encode(file.source).length, 0) > 256 * 1024) throw new Error('quota-exceeded');
-        await this.persist(candidate); this.state = candidate; this.buildVerified = false;
+        await this.persist(candidate); this.state = candidate; this.buildVerified = false; this.invalidateRename();
         return { id: item.id, hash: this.hash(source), saved: true };
       }
       case 'project_create_source': {
@@ -194,10 +210,33 @@ export class WorkspaceTools implements ToolPort {
         const manifest = addProjectSource(this.state.manifest, str(value.name, 8)); const item = manifest.sources.at(-1)!;
         const candidate = { ...structuredClone(this.state), manifest }; candidate.files.push({ ...item, source, saved: source });
         if (candidate.files.reduce((size, file) => size + new TextEncoder().encode(file.source).length, 0) > 256 * 1024) throw new Error('quota-exceeded : mission limitée à 256 Kio de buffers.');
-        await this.persist(candidate); this.state = candidate; this.buildVerified = false;
+        await this.persist(candidate); this.state = candidate; this.buildVerified = false; this.invalidateRename();
         return { id: item.id, path: item.path, hash: this.hash(source), saved: true };
       }
       case 'language_analyze': return { files: this.state.files.map(file => ({ id: file.id, diagnostics: analyze(file.source).diagnostics })), coverage: 'partial-static-only' };
+      case 'language_rename_preview': {
+        const item=file();
+        if(this.hash(item.source)!==str(value.expectedHash,64))throw Error('stale-read : relire la source avant de préparer le renommage.');
+        if(/\r/.test(item.source))throw Error('Renommage agent refusé : normaliser préalablement les fins de ligne CRLF pour garantir un aperçu identique à la sauvegarde.');
+        if(!Number.isInteger(value.line)||!Number.isInteger(value.column)||Number(value.line)<1||Number(value.column)<0)throw Error('invalid-range : position de source incorrecte.');
+        const plan=planSymbolRename(item.source,{line:Number(value.line),column:Number(value.column)},str(value.newStem,40));
+        const workspaceHash=this.workspaceHash(), sourceHash=this.hash(item.source);
+        if(this.renamePlan?.record.status==='preview')this.renamePlan.record.status='obsolete';
+        const previewId=this.hash(JSON.stringify({sessionId:this.state.sessionId,workspaceHash,epoch:this.mutationEpoch,sequence:++this.previewSequence,fileId:item.id,sourceHash,newName:plan.newName,edits:plan.edits}));
+        const record:AgentRenameRecord={previewId,fileId:item.id,path:item.path,kind:plan.target.kind,originalName:plan.target.name,newName:plan.newName,occurrences:plan.edits.length,status:'preview',warnings:[...plan.warnings],before:plan.before.slice(0,4096),after:plan.after.slice(0,4096),truncated:plan.before.length>4096||plan.after.length>4096};
+        this.renameOperations.push(record);
+        if(this.renameOperations.length>10)this.renameOperations.shift();
+        this.renamePlan={id:previewId,fileId:item.id,sourceHash,workspaceHash,epoch:this.mutationEpoch,plan,record};
+        return {previewId,id:item.id,path:item.path,sourceSha256:sourceHash,afterSha256:this.hash(plan.after),target:plan.target,newName:plan.newName,occurrences:plan.edits.length,edits:plan.edits.slice(0,80),editsTruncated:plan.edits.length>80,before:record.before,after:record.after,previewTruncated:record.truncated,warnings:record.warnings,persisted:false};
+      }
+      case 'language_rename_apply': {
+        const item=file(), pending=this.renamePlan;
+        if(!pending||pending.id!==str(value.previewId,64)||pending.fileId!==item.id)throw Error('stale-preview : préparer un nouvel aperçu du renommage.');
+        if(pending.epoch!==this.mutationEpoch||pending.workspaceHash!==this.workspaceHash()||pending.sourceHash!==str(value.expectedHash,64)||this.hash(item.source)!==pending.sourceHash||item.source!==pending.plan.before)throw Error('stale-preview : projet ou source modifié depuis l’aperçu.');
+        const result=await this.execute('project_replace_source',{id:item.id,expectedHash:pending.sourceHash,source:pending.plan.after}) as Record<string,unknown>;
+        pending.record.status='applied';
+        return {...result,previewId:pending.id,kind:pending.plan.target.kind,previousName:pending.plan.target.name,newName:pending.plan.newName,substitutions:pending.plan.edits.length,checkpoint:'initial-mission',warning:'Construction DSK et tests CPC sur la source finale requis ; equivalence non garantie.'};
+      }
       case 'language_renumber': {
         const item = file(); if (this.hash(item.source) !== str(value.expectedHash, 64)) throw new Error('stale-read : relire la source.');
         const plan = planRenumber(item.source, { start: value.start as number, step: value.step as number, from: value.from as number, to: value.to as number });
