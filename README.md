@@ -1,5 +1,8 @@
 # CPCéleste
 
+**Analyse de découpage 0.41.20 :** [identifier les frontières GOSUB, les dépendances et les risques de chargement avant de créer des fichiers BASIC](docs/implementation/basic-module-analysis-alpha.md). Cette étape est strictement en lecture seule : aucune extraction automatique, et les rapports périmés sont signalés.
+
+
 **Commentaires BASIC contrôlés 0.41.19 :** [insertion vérifiée d'une ligne REM sans renumérotation](docs/implementation/basic-comment-insert-alpha.md), avec aperçu exact, refus des flux opaques et restauration du checkpoint initial.
 
 **Lisibilité BASIC 0.41.18 :** [formatage conservateur avec aperçu, audit qualité avant/après et pistes de commentaires justifiées](docs/implementation/basic-readability-formatter-alpha.md). Les transformations sensibles sont laissées intactes ; le checkpoint de l'agent conserve la possibilité de restauration.
