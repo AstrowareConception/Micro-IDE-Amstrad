@@ -1,5 +1,8 @@
 # Lisibilité et tests CPC de l’agent — alpha 0.41.11
 
+**Complément 0.41.20 :** [analyse exploratoire des sous-programmes et des risques de découpage multifichier](basic-module-analysis-alpha.md). Les résultats sont des propositions documentaires, non des transformations automatiques.
+
+
 **Complément 0.41.19 :** [insertion de commentaires `REM` dans les listings Locomotive BASIC](basic-comment-insert-alpha.md), avec numéro disponible, preview/apply déterministe et documentation des refus, effets mémoire et hypothèses IA.
 
 **Complément 0.41.18 :** [audit qualité, pistes de commentaires et formatage conservateur avec comparaison avant/après](basic-readability-formatter-alpha.md). Le formateur est limité aux lignes simples ; les commentaires restent des suggestions tant qu'ils ne sont pas justifiés et validés.
