@@ -217,6 +217,7 @@ export class WorkspaceTools implements ToolPort {
       case 'language_rename_preview': {
         const item=file();
         if(this.hash(item.source)!==str(value.expectedHash,64))throw Error('stale-read : relire la source avant de préparer le renommage.');
+        if(/\r/.test(item.source))throw Error('Renommage agent refusé : normaliser préalablement les fins de ligne CRLF pour garantir un aperçu identique à la sauvegarde.');
         if(!Number.isInteger(value.line)||!Number.isInteger(value.column)||Number(value.line)<1||Number(value.column)<0)throw Error('invalid-range : position de source incorrecte.');
         const plan=planSymbolRename(item.source,{line:Number(value.line),column:Number(value.column)},str(value.newStem,40));
         const workspaceHash=this.workspaceHash(), sourceHash=this.hash(item.source);
