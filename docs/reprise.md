@@ -1,5 +1,19 @@
 # CPCéleste — Point de reprise du développement
 
+## 0.41.22 — CHAIN MERGE et persistance de l'état
+
+Base : `main` 0.41.21 commit `7f3c8a58f2f9d8774dfeb82eb8e0b99842ed6fb5`. Branche : `feat/cpc-chain-merge-state-qualification`. PR à qualifier sur son SHA exact avant fusion ; aucun packaging automatique.
+
+Incrément : moteur en lecture seule `inspectChainMergeOverlay` recensant les collisions de lignes, identifiants communs, DATA/READ/RESTORE, effets mémoire et formes dynamiques ; outil `language_chain_merge_review` avec SHA des deux sources et résultats périmés ; panneau Agent IA. Six programmes témoins sur ROM CPC 6128 réellement exécutée : trois monolithes et leurs variantes CHAIN MERGE à deux fichiers, comparant variables entières, ligne surchargée, données avec RESTORE et valeur HIMEM. Rapport JSON avec empreintes firmware/disques/sources et quatre octets RAM ; ROM non publiée. La nouvelle recette est un verrou bloquant dans le workflow Desktop Linux.
+
+**Important :** ne déclarer la persistance validée qu'après succès réel des témoins en CI. Les tests ne démontrent ni timing, ni pile, ni tableaux ni le comportement d'un programme historique arbitraire ; extraction automatique non autorisée.
+
+Prochain chantier après qualification : témoins tableaux/chaînes, DATA sans RESTORE, CHAIN MERGE DELETE, mémoire proche des limites et transaction d'extraction multifichier réversible.
+
+[Guide 0.41.22](implementation/basic-chain-merge-state-alpha.md).
+
+
+
 ## Incrément 0.41.21 — contrat de chargement et comparaison firmware CHAIN/MERGE
 
 Base : `main` 0.41.20, commit `2da1aede6315f2a96472b54af526e4ce3cde20c1`, PR #82 fusionnée après Specifications, J0 (489 tests) et Desktop Windows/Linux verts. Branche `feat/cpc-multifile-loading-contract`. La CI et la fusion de ce nouveau lot ne sont pas acquises sans inspection des workflows sur le commit exact. Pas de release applicative automatique.
