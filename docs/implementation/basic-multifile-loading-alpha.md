@@ -10,16 +10,17 @@ Le moteur `inspectLoadContract` inventorie, en lecture seule, CHAIN, CHAIN MERGE
 
 ## Qualification sur le véritable firmware CPC 6128
 
-Le script `scripts/qualify-basic-multifile-loading.mjs` construit via `buildProjectDisk` quatre disquettes de référence puis démarre le moteur CPC WASM avec les ROM réelles OS/BASIC 1.1/AMSDOS validées par empreintes SHA-256. Les ROM sont des entrées externes : elles ne sont jamais intégrées au dépôt, au rapport ni aux artefacts publiés.
+Le script `scripts/qualify-basic-multifile-loading.mjs` construit via `buildProjectDisk` cinq disquettes de référence puis démarre le moteur CPC WASM avec les ROM réelles OS/BASIC 1.1/AMSDOS validées par empreintes SHA-256. Les ROM sont des entrées externes : elles ne sont jamais intégrées au dépôt, au rapport ni aux artefacts publiés.
 
 | Scénario | Configuration | Assertion |
 | --- | --- | --- |
 | CHAIN monolithique | MAIN.BAS seul | Marqueurs mémoire 11, 23, 24 |
 | CHAIN multifichier | MAIN.BAS et LEVEL.BAS, CHAIN du second | Marqueurs 11, 23, 24 ; comparaison avec le témoin |
 | MERGE monolithique | MAIN.BAS avec une routine GOSUB 100 | Marqueurs 11, 24, 23 |
-| MERGE multifichier | MAIN.BAS et PART.BAS, MERGE puis GOSUB 100 | Marqueurs 11, 24, 23 ; comparaison avec le témoin |
+| MERGE pendant RUN | MAIN.BAS et PART.BAS, remplacement potentiel des lignes 100/110 | Marqueurs 11, 0, 0 : aucune continuation automatique observée dans ce témoin |
+| MERGE au prompt, puis RUN | LOAD MAIN.BAS, MERGE PART.BAS, RUN explicite | Marqueurs 11, 24, 23 ; comparaison avec le témoin monolithique |
 
-Le script vérifie l'identité du firmware et de l'écran de démarrage, l'inventaire AMSDOS des fichiers de chaque disque et les valeurs réellement écrites en RAM par la machine après RUN. Il compare les scénarios monolithiques et multifichiers **uniquement pour ces témoins**. Les résultats comprenant les empreintes des disques, du moteur et des sources, et les observations mémoire, sont enregistrés dans `out/basic-multifile-loading-qualification.json`.
+Le script vérifie l'identité du firmware et de l'écran de démarrage, l'inventaire AMSDOS des fichiers de chaque disque et les valeurs réellement écrites en RAM par la machine après RUN. La première recette a **observé que MERGE exécuté à l'intérieur du programme ne poursuivait pas les instructions suivantes** : le quatrième témoin est donc un test de non-continuation, et non une équivalence. Le cinquième teste séparément l'emploi de MERGE au prompt avant un RUN explicite ; sa réussite doit être confirmée par la CI. Les comparaisons restent **limitées à ces témoins**. Les résultats comprenant les empreintes des disques, du moteur et des sources, et les observations mémoire, sont enregistrés dans `out/basic-multifile-loading-qualification.json`.
 
 Cette recette est **bloquante dans la CI Linux Desktop** ; un échec CHAIN ou MERGE empêche la validation de la PR. Elle ne repose pas sur une simulation abstraite des commandes BASIC. Toute différence ou limitation doit être conservée dans les logs/rapports, et ne doit pas être masquée en modifiant le résultat attendu.
 
