@@ -1,5 +1,19 @@
 # CPCéleste — Point de reprise du développement
 
+## Incrément 0.41.21 — contrat de chargement et comparaison firmware CHAIN/MERGE
+
+Base : `main` 0.41.20, commit `2da1aede6315f2a96472b54af526e4ce3cde20c1`, PR #82 fusionnée après Specifications, J0 (489 tests) et Desktop Windows/Linux verts. Branche `feat/cpc-multifile-loading-contract`. La CI et la fusion de ce nouveau lot ne sont pas acquises sans inspection des workflows sur le commit exact. Pas de release applicative automatique.
+
+Réalisation : moteur en lecture seule `inspectLoadContract` (CHAIN, CHAIN MERGE, MERGE, RUN fichier, LOAD, noms AMSDOS et cycles), outil agent `language_loading_contract` avec empreinte de source et historique de rapport périmé, panneau de restitution. Aucun mécanisme d'extraction, aucune création de fichier métier par l'analyse.
+
+Qualification : script `scripts/qualify-basic-multifile-loading.mjs` utilisant les ROM de référence hors dépôt, le vrai moteur CPC WASM, un DSK monolithique et son équivalent à deux fichiers pour CHAIN ; même comparaison pour MERGE. Contrôle de la liste des fichiers AMSDOS, du fingerprint ROM et des marqueurs en RAM. Ajouter ce script comme garde bloquante dans `.github/workflows/editor.yml`, archiver uniquement le rapport JSON des empreintes et observations. **Ne déclarer les scénarios qualifiés qu'après leur exécution réellement réussie en CI**.
+
+Limites : les témoins ne prouvent ni CHAIN MERGE ni les variables/ressources persistantes dans tous les cas. Pas de test physique ni d'émulateur indépendant. Prochaine étape : qualification de CHAIN MERGE, collisions de numéros, DATA/RESTORE et persistance ; ensuite seulement protocoles atomiques de déplacement.
+
+[Guide, scénarios et limites](implementation/basic-multifile-loading-alpha.md).
+
+
+
 ## Incrément 0.41.20 — analyse préalable au découpage multifichier
 
 Base : main 0.41.19, commit a3fc0efa10ad63959f7db3e97539a1a58afbcc5e, PR #81 fusionnée après Specifications, J0 (484 tests) et Desktop Windows/Linux verts. Branche de travail : feat/basic-module-analysis. CI et fusion de ce nouveau lot à confirmer ; aucune publication d'installateur automatique.

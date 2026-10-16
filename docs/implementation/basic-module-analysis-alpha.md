@@ -1,5 +1,8 @@
 # Analyse préalable au découpage BASIC multifichier — alpha 0.41.20
 
+**Complément 0.41.21 :** [contrat des commandes de chargement et témoins firmware CHAIN/MERGE](basic-multifile-loading-alpha.md). L'analyse des GOSUB reste consultative, même après réussite de recettes spécialisées.
+
+
 ## Objectif
 
 Les renommages, la mise en forme et l'insertion REM disposent de moteurs contrôlés. En revanche, déplacer un sous-programme dans un second fichier CPC peut modifier les références GOSUB/GOTO, le comportement de DATA/RESTORE, l'état partagé, les chargements disque, la pile et le point d'entrée. CHAIN, MERGE, RUN et LOAD ne sont pas interchangeables. Cette tranche apporte donc une **étude en lecture seule** : aucun code BASIC ni manifeste n'est modifié.

@@ -4,6 +4,7 @@ import { planBasicReadabilityFormat, type BasicFormatPlan } from '../../basic-la
 import { planBasicCommentInsert, type BasicCommentPlan } from '../../basic-language/src/comment-insert.ts';
 import { analyzeQuality } from '../../basic-language/src/quality.ts';
 import { analyzeBasicModules, type BasicModuleReview } from '../../basic-language/src/module-review.ts';
+import { inspectLoadContract, type LoadContractReport } from '../../basic-language/src/load-contract.ts';
 import type { VariableRenamePlan } from '../../basic-language/src/rename-variable.ts';
 import { TEST_DEFINITIONS, type AgentBasicTests } from './basic-tests.ts';
 import { analyze, tokenize } from '../../basic-language/src/language.ts';
@@ -43,6 +44,7 @@ export const DEFINITIONS = [
   tool('language_comment_preview', 'Prépare sans écriture l’insertion d’une ligne BASIC REM autonome à un numéro libre juste avant une ligne BASIC existante. Refuse changements de numéros existants, branches opaques, commentaire ASCII invalide ou absence de numéro libre. L’IA doit prouver ce qu’elle commente.', { id: s, expectedHash: s, beforeBasicLine: n, comment: s }),
   tool('language_comment_apply', 'Applique strictement un commentaire REM dont l’aperçu est encore valable dans le même état du projet ; aucune insertion non contrôlée, checkpoint de mission et reconstruction DSK requis.', { id: s, expectedHash: s, previewId: s }),
   tool('language_module_review', 'Analyse sans écriture les sous-programmes GOSUB et les risques d’une extraction en modules BASIC : frontières RETURN, flux, état partagé, appels et chargements CHAIN/MERGE. Retourne des régions candidates pour revue seulement ; aucun découpage, DSK ou nouveau fichier créé. Hash exact du listing requis.', { id:s, expectedHash:s }),
+  tool('language_loading_contract', 'Dresse en lecture seule le contrat de chargement de toutes les sources du projet : CHAIN, CHAIN MERGE, MERGE, RUN fichier et LOAD. Détecte liens CPC 8.3, cibles dynamiques, manquantes et cycles. Aucune preuve firmware ni autorisation d’extraire ; hash exact d’une source courante requis.', {id:s,expectedHash:s}),
   tool('build_project', 'Construit réellement le DSK de tous les buffers et le relit ; renvoie taille/hash/noms. Ne lance pas de CPC.'),
 ];
 function args(value: unknown, fields: string[]): Record<string, unknown> {
@@ -71,6 +73,11 @@ export class WorkspaceTools implements ToolPort {
   readonly formatOperations: AgentFormatRecord[] = [];
   readonly commentOperations: AgentCommentRecord[] = [];
   readonly moduleReviews:{sourceId:string;sourceSha256:string;workspaceHash:string;review:BasicModuleReview}[]=[];
+  readonly loadingReports:{workspaceHash:string;report:LoadContractReport}[]=[];
+  loadingReportViews():{stale:boolean;report:LoadContractReport}[] {
+    const now=this.workspaceHash();
+    return this.loadingReports.map(({workspaceHash,report})=>({stale:workspaceHash!==now,report}));
+  }
   moduleReviewViews():({sourceId:string;sourceSha256:string;stale:boolean;review:BasicModuleReview})[] {
     const current=this.workspaceHash();
     return this.moduleReviews.map(({sourceId,sourceSha256,workspaceHash,review})=>({
@@ -258,6 +265,15 @@ export class WorkspaceTools implements ToolPort {
         const result=await this.execute('project_replace_source',{id:item.id,expectedHash:pending.sourceHash,source:pending.plan.after}) as Record<string,unknown>;
         pending.record.status='applied';
         return {...result,previewId:pending.id,newBasicLine:pending.plan.basicLine,comment:pending.plan.comment,checkpoint:'initial-mission',warning:'Ajout REM validé structurellement ; pertinence du commentaire et equivalence ROM non garanties. Tester le programme.'};
+      }
+      case 'language_loading_contract': {
+        const item=file();
+        if(this.hash(item.source)!==str(value.expectedHash,64))throw Error('stale-read : source modifiée depuis la lecture des dépendances.');
+        const report=inspectLoadContract(this.state.files.map(({id,path,cpcName,source})=>({id,path,cpcName,source})));
+        const projectHash=this.workspaceHash();
+        this.loadingReports.push({workspaceHash:projectHash,report});
+        if(this.loadingReports.length>4)this.loadingReports.shift();
+        return {...report,projectSha256:projectHash,warning:'Inspection textuelle en lecture seule ; aucune extraction de modules ni preuve du comportement firmware.'};
       }
       case 'language_module_review': {
         const item=file(),expectedHash=str(value.expectedHash,64);
