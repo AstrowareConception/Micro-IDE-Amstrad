@@ -11,8 +11,14 @@ export interface AgentBudget { maxTurns: number; maxCalls: number; maxTokens: nu
 export interface PricingProfile { model: string; billedModels?: string[]; input: number; cached: number; output: number; cacheWriteMultiplier: number; longContext?: { threshold: number; inputMultiplier: number; outputMultiplier: number }; fetchedAt: string; source: string }
 export interface AgentEvent { kind: 'model' | 'tool' | 'tool-result' | 'message' | 'limit' | 'error'; text: string; tool?: string; success?: boolean }
 export interface AgentResult { status: 'completed' | 'blocked' | 'failed' | 'cancelled' | 'paused-limit'; turns: number; calls: number; tokens: number; summary: string; usage?: TokenUsage | undefined; failedCalls?: number; estimatedUsd?: number; costComplete?: boolean }
+export interface AgentFormatRecord {
+ previewId:string; fileId:string; path:string; status:'preview'|'applied'|'obsolete';
+ changedLines:number; skipped:number; warnings:string[]; before:string; after:string; truncated:boolean;
+ beforeMetrics:import('../../basic-language/src/quality.ts').QualityMetrics|null;
+ afterMetrics:import('../../basic-language/src/quality.ts').QualityMetrics|null;
+}
 export interface AgentRenameRecord { previewId:string; fileId:string; path:string; kind:string; originalName:string; newName:string; occurrences:number; status:'preview'|'applied'|'obsolete'; warnings:string[]; before:string; after:string; truncated:boolean }
-export interface AgentView extends AgentResult { testRuns?: import('./basic-tests.ts').AgentTestRun[]; testCoverage?: import('./basic-tests.ts').AgentTestCoverage | undefined; renameOperations?: AgentRenameRecord[]; taskId: string; running: boolean; events: AgentEvent[]; workspace: AgentWorkspaceState; changed: string[]; documentChanges?: {id:string;title:string;created:boolean;before?:string;after:string;truncated:boolean}[]; before: { id: string; source: string }[]; binaryBefore?: import('../../z80/src/workbench.ts').BinaryAnalysis; buildVerified: boolean; model?: string | undefined; budget?: AgentBudget; pricing?: PricingProfile | undefined; resumable?: boolean }
+export interface AgentView extends AgentResult { testRuns?: import('./basic-tests.ts').AgentTestRun[]; testCoverage?: import('./basic-tests.ts').AgentTestCoverage | undefined; renameOperations?: AgentRenameRecord[]; formatOperations?: AgentFormatRecord[]; taskId: string; running: boolean; events: AgentEvent[]; workspace: AgentWorkspaceState; changed: string[]; documentChanges?: {id:string;title:string;created:boolean;before?:string;after:string;truncated:boolean}[]; before: { id: string; source: string }[]; binaryBefore?: import('../../z80/src/workbench.ts').BinaryAnalysis; buildVerified: boolean; model?: string | undefined; budget?: AgentBudget; pricing?: PricingProfile | undefined; resumable?: boolean }
 export interface OpenAIModel { id: string; created: number; owner: string; shutdownDate?: string }
 export interface ModelCatalog { models: OpenAIModel[]; fetchedAt: string; model: string }
 export interface AgentPort {
