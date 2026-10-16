@@ -1,5 +1,17 @@
 # CPCéleste — Point de reprise du développement
 
+## Incrément 0.41.20 — analyse préalable au découpage multifichier
+
+Base : main 0.41.19, commit a3fc0efa10ad63959f7db3e97539a1a58afbcc5e, PR #81 fusionnée après Specifications, J0 (484 tests) et Desktop Windows/Linux verts. Branche de travail : feat/basic-module-analysis. CI et fusion de ce nouveau lot à confirmer ; aucune publication d'installateur automatique.
+
+Livraison visée : analyseur borné des régions GOSUB avec RETURN autonome, appels, frontières entrantes/sortantes, identifiants observés comme partagés, liens CHAIN/MERGE/RUN/LOAD avec correspondance des noms CPC. Outil agent language_module_review purement consultatif, hash exact de source requis, aucun DSK, source ni manifeste modifiés ; affichage des rapports et de leur éventuelle péremption dans Agent IA. Les conditions ambiguës sont bloquées et les limites expliquées.
+
+Limites : les noms partagés ne prouvent pas des dépendances sémantiques ; CHAIN/MERGE et états mémoire non modélisés, le statut « review » ne constitue pas une qualification d'extraction. Aucun découpage automatique n'est autorisé. Prochaine tranche : contrat d'exécution/chargement et témoins ROM pour la stratégie multifichier.
+
+[Guide technique 0.41.20](implementation/basic-module-analysis-alpha.md).
+
+
+
 ## Incrément 0.41.19 — insertion REM contrôlée par l'agent
 
 Base : `main` 0.41.18, commit `8d640472ae0f62346c242e7ae9a2af434d7beccd`, PR #80 fusionnée après réussite Specifications, J0 et desktop Windows/Linux (478 tests Node). Branche : `feat/basic-comment-insertion`. Publication des exécutables indépendante des PR, inchangée. Vérifier la CI exacte de cette branche avant toute fusion.
