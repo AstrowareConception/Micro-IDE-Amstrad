@@ -147,10 +147,15 @@ export class AgentController {
         const runs=job.tools instanceof WorkspaceTools ? await job.tools.tests?.validate(job.tools.state) ?? [] : [];
         const latest=runs.at(-1);
         const latestBySuite=[...new Map(runs.map(run=>[run.report.suiteId,run])).values()];
-        const valid=latest && latestBySuite.every(run=>!run.stale && run.report.results.every(r=>r.outcome==='passed'));
-        job.result={...result,status:latest&&!valid?'blocked':result.status,summary:`${result.summary}\nValidation IDE : DSK structurel. ${latest ? valid ? 'Suite CPC réussie sur cette révision ; uniquement les assertions des listings autonomes sélectionnés.' : 'Au moins une suite CPC non réussie ou périmée ; validation non obtenue.' : 'Aucun test CPC exécuté.'}`};
+        const coverage=job.tools instanceof WorkspaceTools ? job.tools.tests?.coverage(job.initial,job.tools.state) : undefined;
+        const untested=coverage?.sources.filter(source=>!source.afterPassed) ?? [];
+        const valid=!!latest && latestBySuite.every(run=>!run.stale && run.report.results.every(r=>r.outcome==='passed')) && !untested.length;
+        const proof=untested.length ? `Sources BASIC modifiées non exécutées directement : ${untested.map(source=>source.path).join(', ')}. Une copie ou un témoin autonome ne couvre pas ces fichiers.` :
+          coverage?.sources.length ? `${coverage.directlyTested}/${coverage.sources.length} sources modifiées directement testées ; ${coverage.baselined} avec essai initial sur la même suite. Les assertions ne prouvent pas une équivalence universelle.` :
+          'Aucune source BASIC modifiée à rattacher.';
+        job.result={...result,status:latest&&!valid?'blocked':result.status,summary:`${result.summary}\nValidation IDE : DSK structurel. ${latest ? valid ? 'Suites CPC réussies sur cette révision.' : 'Tests CPC non concluants ou sources modifiées non couvertes ; validation non obtenue.' : 'Aucun test CPC exécuté ; comportement non vérifié.'} ${proof}`};
       }
-      if (result.status === 'completed' && !job.tools.buildVerified) job.result = { ...result, status: 'blocked', summary: `${result.summary}\nAucune construction réussie de la révision finale ; mission non validée.` };
+      if (result.status === 'completed' && !job.tools.buildVerified) job.result = { ...job.result, status: 'blocked', summary: `${job.result.summary}\nAucune construction réussie de la révision finale ; mission non validée.` };
       try { await this.record(job, job.tools.state, 'finished'); }
       catch { job.result = { ...job.result, status: 'failed', summary: 'Journal final non écrit ; modifications terminées conservées.' }; }
       finally { clearTimeout(deadline); job.running = false; }
@@ -177,7 +182,7 @@ export class AgentController {
     });
     const { assets: _assets, ...binaryWorkspace } = job.tools.state;
     const workspace = job.tools.state.binaryAnalysis ? binaryWorkspace : job.tools.state;
-    return structuredClone({ ...job.result, taskId: job.id, running: job.running, events: job.events, workspace, changed, documentChanges, testRuns:job.tools instanceof WorkspaceTools ? job.tools.tests?.views(job.tools.state) ?? [] : [], before: job.initial.files.filter(file => changed.includes(file.path)).map(({ id, source }) => ({ id, source })), ...(job.initial.binaryAnalysis ? { binaryBefore: job.initial.binaryAnalysis } : {}), buildVerified: job.tools.buildVerified,
+    return structuredClone({ ...job.result, taskId: job.id, running: job.running, events: job.events, workspace, changed, documentChanges, testRuns:job.tools instanceof WorkspaceTools ? job.tools.tests?.views(job.tools.state) ?? [] : [], testCoverage:job.tools instanceof WorkspaceTools ? job.tools.tests?.coverage(job.initial,job.tools.state) : undefined, before: job.initial.files.filter(file => changed.includes(file.path)).map(({ id, source }) => ({ id, source })), ...(job.initial.binaryAnalysis ? { binaryBefore: job.initial.binaryAnalysis } : {}), buildVerified: job.tools.buildVerified,
       model: job.model, budget: job.budget, pricing: job.pricing, resumable: !!job.provider && !job.running && !job.restored && job.continuations < 10 && job.result.status === 'paused-limit' && !/^Budget de contexte|^Stagnation/.test(job.result.summary) });
   }
   cancel(id: unknown): { ok: boolean } { this.get(id).abort.abort(); return { ok: true }; }

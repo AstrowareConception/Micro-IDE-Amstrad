@@ -1,5 +1,16 @@
 # CPCéleste — Point de reprise du développement
 
+## Incrément 0.41.16 — rattachement des tests aux sources
+
+Base : `main` 0.41.15, commit `35512f7cb58fb28a028fd4a6d7ae9c378ec8ef5f`. Branche `feat/basic-tested-source-coverage`. Réalisation proposée, **CI/fusion non acquises** tant que les vérifications GitHub ne sont pas terminées. Installateurs publics encore en 0.41.10 ; aucun packaging lancé.
+
+Le contrôle déterministe relie les assertions CPC à l'identifiant, au chemin, au SHA-256 et au résultat de chaque source réellement transformée. Une copie exécutée sous un autre ID ne compte pas. Le panneau Agent IA distingue la preuve sur la version finale et, lorsque la même suite a tourné initialement, la référence avant modification. Une mission qui a exécuté des suites mais a laissé des fichiers modifiés sans couverture directe réussie ne peut pas être validée.
+
+Limites : pas de harnais d'instrumentation automatique, de fusion de listings ni de preuve universelle d'équivalence. Sans suite, l'absence de vérification est explicitée sans changer le comportement historique. Priorité suivante : tests réellement liés au code métier non instrumenté, puis transformations déterministes dans les missions IA.
+
+[Guide technique](implementation/basic-tested-sources-alpha.md).
+
+
 ## Incrément du 16 octobre — renommage FN/paramètres 0.41.15
 
 Base : main `55722797e5ed5fac524ade4f8d4a457541961323`, PR #76 fusionnée après CI verte sur `1532b17` : Specifications 38810588488, J0 38810588510, Desktop Windows/Linux 38810588508 ; Linux 116682688144 confirme 461 tests et 16 recettes de renommage. Branche `feat/basic-fn-rename` ; vérifier sa PR et la CI de sa tête avant d’annoncer la fusion. Installateurs publiés 0.41.10 ; aucun packaging supplémentaire déclenché.

@@ -1,5 +1,7 @@
 # Lisibilité et tests CPC de l’agent — alpha 0.41.11
 
+**Complément 0.41.16 :** [preuve que les essais ont réellement exécuté les sources modifiées](basic-tested-sources-alpha.md). Une copie autonome ne suffit plus à valider une transformation.
+
 ## Améliorer un programme historique
 
 Dans **Agent IA**, ouvrir **Améliorer la lisibilité du code…**. Choisir les traitements, préciser le périmètre puis **Préparer la mission de lisibilité**. Le texte apparaît dans la mission : relire, ajuster et lancer lorsque prêt. Cette préparation ne contacte pas OpenAI. La mission précédente peut être rétablie.

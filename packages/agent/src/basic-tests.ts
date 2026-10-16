@@ -8,6 +8,9 @@ export interface AgentTestPort {
  record(report: BasicTestReport): Promise<void>;
 }
 export interface AgentTestRun { report: BasicTestReport; workspaceHash: string; suiteRevision: string; stale: boolean; archiveError?: string }
+/** A passing fixture with a different project source ID never covers the changed program. */
+export interface AgentTestCoverageSource { id: string; path: string; beforeSha256: string | null; afterSha256: string; beforePassed: boolean; afterPassed: boolean }
+export interface AgentTestCoverage { sources: AgentTestCoverageSource[]; directlyTested: number; baselined: number }
 export const TEST_DEFINITIONS: ToolDefinition[] = [
  { type:'function', name:'basic_tests_list', description:'Liste les suites BASIC enregistrées et leur révision. Chaque listing est autonome, exécuté seul ; aucune couverture implicite du projet.', strict:true, parameters:{type:'object',properties:{},required:[],additionalProperties:false} },
  { type:'function', name:'basic_tests_run', description:'Exécute une suite préalablement lue sur des CPC isolés, ROM locales qualifiées requises. 60 s réelles par suite, 5 suites par mission. Retourne assertions et empreintes, jamais les ROM. Ne modifie pas les sources ni les attentes.', strict:true, parameters:{type:'object',properties:{suiteId:{type:'string'},expectedRevision:{type:'string'}},required:['suiteId','expectedRevision'],additionalProperties:false} },
@@ -21,6 +24,30 @@ export class AgentBasicTests {
  constructor(port:AgentTestPort,hash:(text:string)=>string,id:()=>string,signal:()=>AbortSignal){this.port=port;this.hash=hash;this.id=id;this.signal=signal;}
  fingerprint(state:AgentWorkspaceState):string { const {documents:_documents,...manifest}=state.manifest; return this.hash(JSON.stringify({manifest,files:state.files.map(({id,path,cpcName,source})=>({id,path,cpcName,source}))})); }
  views(state:AgentWorkspaceState):AgentTestRun[] { const hash=this.fingerprint(state); return this.runs.map(run=>({...run,stale:run.stale || run.workspaceHash!==hash})); }
+ /** Only an exact executed project source can attest a transformation; comparisons are per mission. */
+ coverage(initial:AgentWorkspaceState,current:AgentWorkspaceState):AgentTestCoverage {
+  const beforeHash=this.fingerprint(initial),afterHash=this.fingerprint(current);
+  const successful=(fingerprint:string,id:string,path:string,digest:string,suiteId?:string|null):boolean=>this.runs.some(run=>
+   !run.stale && run.workspaceHash===fingerprint && (suiteId===undefined || run.report.suiteId===suiteId) &&
+   run.report.sources.length===run.report.results.length && run.report.results.every(result=>result.outcome==='passed') &&
+   run.report.sources.some((source,index)=>source.id===id && source.name===path && source.sha256===digest &&
+    run.report.results[index]?.sourceId===id && run.report.results[index]?.name===path &&
+    run.report.results[index]?.sourceSha256===digest)
+  );
+  const sources=current.files.flatMap(file=>{
+   const old=initial.files.find(item=>item.id===file.id);
+   if(old?.source===file.source && old.path===file.path && old.cpcName===file.cpcName)return [];
+   const beforeSha256=old?this.hash(old.source):null,afterSha256=this.hash(file.source);
+   const finalRuns=this.runs.filter(run=>!run.stale && run.workspaceHash===afterHash &&
+    run.report.sources.some((source,index)=>source.id===file.id && source.name===file.path && source.sha256===afterSha256 &&
+     run.report.results[index]?.sourceSha256===afterSha256 && run.report.results[index]?.outcome==='passed') &&
+    run.report.results.every(result=>result.outcome==='passed'));
+   const afterPassed=finalRuns.length>0;
+   const beforePassed=!!old && finalRuns.some(run=>successful(beforeHash,old.id,old.path,beforeSha256!,run.report.suiteId));
+   return [{id:file.id,path:file.path,beforeSha256,afterSha256,beforePassed,afterPassed}];
+  });
+  return {sources,directlyTested:sources.filter(source=>source.afterPassed).length,baselined:sources.filter(source=>source.beforePassed).length};
+ }
  async validate(state:AgentWorkspaceState):Promise<AgentTestRun[]> {
   if(!this.runs.length)return [];
   let revision:string|null=null;try{revision=(await this.port.load()).revision;}catch{/* Unreadable suite cannot validate a report. */}
