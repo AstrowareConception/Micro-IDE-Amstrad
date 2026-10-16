@@ -1,5 +1,17 @@
 # CPCéleste — Point de reprise du développement
 
+## Incrément 0.41.19 — insertion REM contrôlée par l'agent
+
+Base : `main` 0.41.18, commit `8d640472ae0f62346c242e7ae9a2af434d7beccd`, PR #80 fusionnée après réussite Specifications, J0 et desktop Windows/Linux (478 tests Node). Branche : `feat/basic-comment-insertion`. Publication des exécutables indépendante des PR, inchangée. Vérifier la CI exacte de cette branche avant toute fusion.
+
+Le moteur pur `planBasicCommentInsert` refuse les commentaires non ASCII, changements de numéros existants, manque de numéro libre, premiers points d'entrée et formes opaques. Il vérifie la conservation intégrale du listing précédent moins l'unique nouvelle ligne REM. L'agent expose `language_comment_preview` et `language_comment_apply`, avec empreinte de source, état du projet, checkpoint et historique visible des aperçus/appliqués/périmés. Le contenu proposé par l'IA reste une hypothèse documentaire à vérifier, pas une preuve métier.
+
+Tests : conservation des anciens labels et sauts statiques, refus de l'injection, refus des numéros contigus ou manquants, blocage des branches calculées, aperçu sans mutation, quotas et conflits de révision. Aucun test firmware complet de cette nouvelle insertion n'est encore déclaré validé tant que la CI et les recettes dédiées ne l'ont pas confirmé.
+
+Prochaine étape : découpage BASIC multifichier et stratégie de chargement `CHAIN`/`MERGE`/disque. [Guide 0.41.19](implementation/basic-comment-insert-alpha.md).
+
+
+
 ## Incrément 0.41.18 — lisibilité BASIC et formatage conservateur
 
 Base : `main` version 0.41.17, commit `eb947ecee654a381cbddd3f2895d79a65eec3b46` ; PR #79 fusionnée après les trois workflows réussis. Branche actuelle `feat/basic-readability-formatter` ; qualifier ses contrôles CI sur le commit exact avant fusion. Les installateurs publics restent indépendants de chaque PR.
