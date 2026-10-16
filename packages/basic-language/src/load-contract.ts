@@ -27,18 +27,20 @@ function cyclesOf(links:LoadContractLink[]):string[][] {
  for(const link of links) if(link.targetId&&(link.operation==='CHAIN'||link.operation==='CHAIN MERGE')){
   const next=edges.get(link.sourceId)??[];next.push(link.targetId);edges.set(link.sourceId,next);
  }
- const found:string[][]=[],seen=new Set<string>();
- for(const root of edges.keys()){
-  const path:string[]=[];
-  function visit(id:string):void {
-   const pos=path.indexOf(id);
-   if(pos>=0){const cycle=path.slice(pos);const key=[...cycle].sort().join(':');if(!seen.has(key)){seen.add(key);found.push(cycle);}return;}
-   if(path.length>LOAD_CONTRACT_LIMITS.sources)return;
-   path.push(id);for(const next of edges.get(id)??[])visit(next);path.pop();
+ const found:string[][]=[],visited=new Set<string>(),active=new Map<string,number>(),path:string[]=[];
+ const visit=(id:string):void=>{
+  if(visited.has(id))return;
+  const start=active.get(id);
+  if(start!==undefined){
+   if(found.length<8)found.push(path.slice(start));
+   return;
   }
-  visit(root);
- }
- return found.slice(0,8);
+  active.set(id,path.length);path.push(id);
+  for(const to of edges.get(id)??[])visit(to);
+  path.pop();active.delete(id);visited.add(id);
+ };
+ for(const root of edges.keys())visit(root);
+ return found;
 }
 /** A link audit, not a valid BASIC semantics or execution oracle. */
 export function inspectLoadContract(sources:LoadContractSource[]):LoadContractReport {
