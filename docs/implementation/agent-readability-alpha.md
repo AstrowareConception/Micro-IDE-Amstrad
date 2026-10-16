@@ -1,5 +1,7 @@
 # Lisibilité et tests CPC de l’agent — alpha 0.41.11
 
+**Complément 0.41.17 :** [renommage déterministe préparé/appliqué par l'agent](agent-deterministic-rename-alpha.md), avec aperçu, contrôle de portée, collisions et checkpoint. Les transformations refusées par F2 restent refusées ; le découpage automatique n'est pas livré.
+
 **Complément 0.41.16 :** [preuve que les essais ont réellement exécuté les sources modifiées](basic-tested-sources-alpha.md). Une copie autonome ne suffit plus à valider une transformation.
 
 ## Améliorer un programme historique
