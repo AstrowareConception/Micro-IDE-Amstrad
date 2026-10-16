@@ -1,5 +1,8 @@
 # 17 — Roadmap qualifiée d’un IDE CPCéleste abouti
 
+**État CHAIN MERGE 0.41.22 :** [contrat d'overlay et témoins firmware sur variables, collisions, DATA/RESTORE, HIMEM](../implementation/basic-chain-merge-state-alpha.md). Le contrôle par source reste consultatif ; aucune extraction automatique de routine BASIC n'est permise. Qualifier ensuite DELETE, les tableaux, chaînes, fichiers ouverts, mémoire limite et restauration atomique.
+
+
 **Chargement 0.41.21 :** [contrat CHAIN/MERGE et qualification sur ROM CPC réelle](../implementation/basic-multifile-loading-alpha.md) par témoins comparatifs monolithique/multifichier. Audit en lecture seule, empreintes, cibles 8.3 et cycles. CHAIN MERGE et mémoire partagée sont encore non qualifiés ; déplacement automatique toujours interdit.
 
 
