@@ -1,5 +1,8 @@
 # 17 — Roadmap qualifiée d’un IDE CPCéleste abouti
 
+**Chargement 0.41.21 :** [contrat CHAIN/MERGE et qualification sur ROM CPC réelle](../implementation/basic-multifile-loading-alpha.md) par témoins comparatifs monolithique/multifichier. Audit en lecture seule, empreintes, cibles 8.3 et cycles. CHAIN MERGE et mémoire partagée sont encore non qualifiés ; déplacement automatique toujours interdit.
+
+
 **Découpage 0.41.20 :** [audit en lecture seule des frontières GOSUB/RETURN, dépendances et risques CHAIN/MERGE](../implementation/basic-module-analysis-alpha.md), avec aperçu, contexte de projet, vérification de révision et zones à étudier ou bloquées. Aucun déplacement automatique ; prochaine étape : chargement et équivalence firmware.
 
 
