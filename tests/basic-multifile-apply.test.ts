@@ -4,7 +4,7 @@ import {readFile,writeFile,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {spawn} from 'node:child_process';
 import {ProjectStore} from '../apps/desktop/project-store.ts';
-import {buildProjectDisk} from '../packages/workspace/src/project.ts';
+import {buildProjectDisk,newProject} from '../packages/workspace/src/project.ts';
 import {WorkspaceTools} from '../packages/agent/src/workspace-tools.ts';
 import {fixture,prepare,SOURCE,digest} from './multifile-fixture.ts';
 
@@ -88,6 +88,19 @@ test('persistence errors invalidate the build and distinguish an uncommitted wri
   assert.equal(tools.extractionSimulationViews()[0]!.record.status,committed?'applied':'failed');
   await assert.rejects(apply,/stale-preview/);
  }
+});
+
+test('a maximum-size accepted listing shows the entire longer loading instruction in its preview',async()=>{
+ const rows=['1 MEMORY &7FFF'];for(let n=2;n<=17;n++)rows.push(n+' '+('v'.repeat(240))+'=1');
+ const prefix=rows.join('\n')+'\n',tail='90 GOTO 100\n100 x=1\n110 END\n';
+ const source=prefix+'18 '+('x'.repeat(4096-prefix.length-tail.length-6))+'=1\n'+tail;
+ assert.equal(source.length,4096);
+ const manifest=newProject('Aperçu complet','647f023d-1272-4b66-8c47-b064b8de9512');
+ const tools=new WorkspaceTools({sessionId:'long-preview',manifest,files:[{...manifest.sources[0]!,source,saved:source}]},async()=>{throw Error('preview must never write');},digest,[]);
+ const preview=await tools.execute('language_extraction_simulate',{id:'main',expectedHash:digest(source),entryLine:100,newFileName:'PART'}) as {afterMain:string;newMainSha256:string};
+ assert.equal(preview.afterMain.length,4098);
+ assert.ok(preview.afterMain.endsWith('90 CHAIN MERGE "PART.BAS",100\n'));
+ assert.equal(digest(preview.afterMain),preview.newMainSha256,'visible preview must match the exact proposed source');
 });
 
 async function crash(root:string,stop:string) {

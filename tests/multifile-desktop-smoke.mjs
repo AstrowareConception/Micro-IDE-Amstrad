@@ -56,8 +56,11 @@ try{
  await desktop.evaluate(({dialog})=>{dialog.showMessageBox=async()=>({response:0});});
  await (await restoreMenu()).click();await expect(page.getByRole('status').filter({hasText:'Restauration annulée.'})).toBeVisible();
  assert.match(await readFile(join(f.root,'src/main.bas'),'utf8'),/CHAIN MERGE/);
- const input=page.locator('.listing .monaco-editor textarea');await input.focus();await page.keyboard.press('Control+End');await page.keyboard.insertText('130 REM DRAFT');
+ // One character is one Monaco undo element; a sentence can span word-level elements.
+ const input=page.locator('.listing .monaco-editor textarea');await input.focus();await page.keyboard.press('Control+End');await page.keyboard.insertText('x');
+ await expect(page.getByRole('tab',{name:/^src\/main\.bas • modifié/})).toBeVisible();
  await expect(await restoreMenu()).toBeDisabled();await page.keyboard.press('Escape');await input.focus();await page.keyboard.press('Control+z');
+ await expect(page.getByRole('tab',{name:'src/main.bas',exact:true})).toBeVisible();
  await desktop.evaluate(({dialog})=>{dialog.showMessageBox=async()=>({response:1});});
  await (await restoreMenu()).click();
  await expect(page.getByRole('status').filter({hasText:'Dernière modification IA rétablie'})).toBeVisible();
@@ -68,5 +71,5 @@ try{
  await assert.rejects(readFile(join(f.root,'src/part.bas')),{code:'ENOENT'});
  assert.deepEqual(errors,[]);
  console.log('Native agent extraction, actual persistence, full restart, cancellation, dirty-buffer guard and durable exact-byte restoration passed.');
-}catch(error){await page?.screenshot({path:'out/basic-multifile-apply-desktop-failure.png'}).catch(()=>undefined);throw error;}
+}catch(error){console.error('Editor at failure:',await page?.locator('.view-lines').allTextContents().catch(()=>[]));await page?.screenshot({path:'out/basic-multifile-apply-desktop-failure.png'}).catch(()=>undefined);throw error;}
 finally{if(desktop)await close().catch(()=>undefined);await rm(f.root,{recursive:true,force:true});}

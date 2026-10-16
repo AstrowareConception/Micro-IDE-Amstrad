@@ -308,8 +308,8 @@ export class WorkspaceTools implements ToolPort {
           previewId,status:'preview',
           profile:proposal.profile,sourceId:item.id,entryLine:proposal.entryLine,gotoLine:proposal.gotoLine,
           createdPath:part.path,createdCpcName:part.cpcName,movedLines:proposal.linesMoved,
-          beforeMain:originalMain.source.slice(0,4096),afterMain:newMain.source.slice(0,4096),
-          newPart:part.source.slice(0,4096),
+          beforeMain:originalMain.source,afterMain:newMain.source,
+          newPart:part.source,
           originalDiskSha256:this.hash(proposal.original.disk),proposedDiskSha256:this.hash(proposal.proposed.disk),
           originalSourceSha256:this.hash(originalMain.source),newMainSha256:this.hash(newMain.source),
           newPartSha256:this.hash(part.source),checks:proposal.checks,warnings:proposal.warnings
