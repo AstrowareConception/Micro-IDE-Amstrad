@@ -43,3 +43,31 @@ test('bounded report refuses duplicate source IDs and detects circular CHAIN',()
  assert.equal(limited.truncated,true);
  assert.equal(limited.links.length,0);
 });
+
+test('agent loading contract requires a real source SHA and remains read-only, stale only after mutation',async()=>{
+ const {createHash}=await import('node:crypto');
+ const {WorkspaceTools}=await import('../packages/agent/src/workspace-tools.ts');
+ const {newProject,addProjectSource}=await import('../packages/workspace/src/project.ts');
+ const hash=(s:string|Uint8Array)=>createHash('sha256').update(s).digest('hex');
+ const main='10 CHAIN "LEVEL.BAS"\n20 END\n',second='10 END\n';
+ const manifest=addProjectSource(newProject('Chain','647f023d-1272-4b66-8c47-b064b8de9512'),'LEVEL');
+ const state={sessionId:'loading',manifest,files:manifest.sources.map(f=>({...f,source:f.id==='main'?main:second,saved:f.id==='main'?main:second}))};
+ let writes=0;
+ const tools=new WorkspaceTools(state,async()=>{writes++;},hash,[]);
+ await assert.rejects(tools.execute('language_loading_contract',{id:'invalid',expectedHash:hash(main)}),/scope-denied/);
+ await assert.rejects(tools.execute('language_loading_contract',{id:'main',expectedHash:hash('wrong')}),/stale-read/);
+ const build=await tools.execute('build_project',{});
+ assert.ok(build);
+ assert.equal(tools.buildVerified,true);
+ const report=await tools.execute('language_loading_contract',{id:'main',expectedHash:hash(main)}) as {links:{targetId:string|null}[];extractionPermitted:boolean;executableProof:string};
+ assert.equal(report.links[0]!.targetId,'level');
+ assert.equal(report.extractionPermitted,false);
+ assert.equal(report.executableProof,'not-run');
+ assert.equal(writes,0);
+ assert.equal(tools.buildVerified,true);
+ assert.equal(tools.loadingReportViews()[0]!.stale,false);
+ await tools.execute('reference_read_many',{names:['CHAIN','END']});
+ await tools.execute('project_replace_source',{id:'main',expectedHash:hash(main),source:'10 CHAIN "LEVEL.BAS"\n20 REM changed\n30 END\n'});
+ assert.equal(writes,1);
+ assert.equal(tools.loadingReportViews()[0]!.stale,true);
+});
