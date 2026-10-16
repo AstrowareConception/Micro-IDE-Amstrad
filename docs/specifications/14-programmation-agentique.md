@@ -1,5 +1,8 @@
 # 14 — Missions, outils et boucle agentique
 
+**Découpage 0.41.25 :** `language_extraction_simulate` prépare un plan immuable ; `language_extraction_apply` exige son ID, le SHA source et la même révision de projet. Une mutation journalisée couvre les deux sources et le manifeste. [Protocole, restauration durable et limites](../implementation/basic-multifile-apply-alpha.md).
+
+
 **Lisibilité et tests agent 0.41.11 :** [mission paramétrable, index des noms/types et suites CPC avant/après](../implementation/agent-readability-alpha.md). Rapports avec empreintes, limites et checkpoint ; FN et extraction multifichier restent à qualifier.
 
 **Connaissances 0.41.10 :** [espace documentaire et Markdown](../implementation/knowledge-alpha.md), édition humaine et rédaction agent BASIC/Z80 : création de notes, révision après lecture avec contrôle de version, comparaison et restauration commune code/documents. Références importées et politiques d’accès immuables pour l’agent. [ADR 0068](../adr/0068-redaction-documentaire-agent.md). Suite : recherche humaine plein texte, onglets multiples ; tests CPC agent selon la roadmap générale. La construction structurelle ne qualifie pas le contenu documentaire.

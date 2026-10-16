@@ -46,6 +46,10 @@ export interface DesktopPort {
   recentProjects?: RecentProjectsPort;
   explorer?: ExplorerPort;
   sourceOperations?: SourceOperationsPort;
+  agentMutations?: {
+    last(sessionId:string):Promise<import('../../../packages/workspace/src/source-operations.ts').SourceUndo|Failure|undefined>;
+    restore(sessionId:string,revision:string,buffers:{id:string;source:string}[]):Promise<import('../../../packages/agent/src/types.ts').AgentWorkspaceState|Failure|null>;
+  };
   basicTestSuites?: BasicTestSuitesPort;
   project?: {
     open(): Promise<ProjectSnapshot | Failure | null>;

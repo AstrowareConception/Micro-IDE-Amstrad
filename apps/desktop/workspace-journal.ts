@@ -109,13 +109,13 @@ export class WorkspaceJournal {
   private async path(source: string): Promise<string> {
     let path = this.root; const parts = source.split('/');
     for (let index = 0; index < parts.length - 1; index++) {
-      if (this.kind === 'source') await this.checkName(path, parts[index]!);
+      await this.checkName(path, parts[index]!);
       path = join(path, parts[index]!); const stat = await lstat(path);
       if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error('Parent de source ordinaire requis.');
     }
     const location = relative(this.root, await realpath(path));
     if (location.startsWith('..') || isAbsolute(location)) throw new Error('Source hors projet refusée.');
-    if (this.kind === 'source') await this.checkName(path, parts.at(-1)!);
+    await this.checkName(path, parts.at(-1)!);
     return join(path, parts.at(-1)!);
   }
   private async checkName(parent: string, name: string): Promise<void> {

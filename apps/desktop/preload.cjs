@@ -110,6 +110,10 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
     restore: (sessionId, revision) => ipcRenderer.invoke('sources:restore', { sessionId, revision }),
     draft: sessionId => ipcRenderer.invoke('sources:draft', { sessionId }),
   }),
+  agentMutations: Object.freeze({
+    last: sessionId => ipcRenderer.invoke('agent-mutations:last', {sessionId}),
+    restore: (sessionId, revision, buffers) => ipcRenderer.invoke('agent-mutations:restore', {sessionId, revision, buffers}),
+  }),
   basicTestSuites: Object.freeze({
     load: sessionId => ipcRenderer.invoke('basic-tests:load', { sessionId }),
     save: (sessionId, revision, suites) => ipcRenderer.invoke('basic-tests:save', { sessionId, revision, suites }),

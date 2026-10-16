@@ -99,10 +99,10 @@ export class AgentController {
     const job: Job = { id, store, initial, directory, documentIds: documents.map(item => item.id), initialDocuments:structuredClone(documents), documents:structuredClone(documents), abort: new AbortController(), steering: [], events: [], running: true,
       state: createRunState(objective, context), budget, provider: this.provider, model: this.provider.model, pricing: this.prices.get(this.provider.model), continuations: 0, restored: false,
       tools: undefined as unknown as WorkspaceTools, result: { status: 'blocked', turns: 0, calls: 0, tokens: 0, summary: 'Mission en cours.' } };
-    const persist = async (state: AgentWorkspaceState) => {
+    const persist = async (state: AgentWorkspaceState, expected?: AgentWorkspaceState) => {
       if (job.abort.signal.aborted) throw new Error('cancelled');
       await this.record(job, state, 'prepared');
-      await store.applyAgentState(state);
+      await store.applyAgentState(state, expected);
       // Adoption is immediate after disk commit, even if the next journal write fails.
       job.tools.state = structuredClone(state);
       job.tools.buildVerified = false;

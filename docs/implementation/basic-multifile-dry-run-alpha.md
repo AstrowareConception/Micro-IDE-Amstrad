@@ -1,5 +1,8 @@
 # Simulation de transaction de découpage BASIC — alpha 0.41.24
 
+**Évolution 0.41.25 :** la simulation pure reste sans écriture. L’agent dispose désormais d’une [application séparée, journalisée et réversible](basic-multifile-apply-alpha.md). Les absences d’application mentionnées ci-dessous décrivent la livraison historique 0.41.24.
+
+
 ## Profil livré : extraction terminale contrôlée
 
 Le moteur pur `previewTerminalExtraction` simule la séparation d'un listing Locomotive BASIC autonome en deux fichiers. Il accepte **uniquement** un GOTO littéral unique, situé juste avant une région finale contiguë qui se termine par un END. La région ne peut contenir que des affectations entières simples et des POKE vers les adresses de test `&8000` à `&8003`. Les instructions du programme principal sont limitées à MEMORY &7FFF, aux affectations simples et aux mêmes POKE. Ce profil très étroit sert d'étape de preuve et n'est pas une opération de refactorisation générale.

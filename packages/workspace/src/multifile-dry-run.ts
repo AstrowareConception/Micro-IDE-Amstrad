@@ -83,6 +83,6 @@ export function previewTerminalExtraction(input:TerminalExtractionInput):Termina
   warnings:['Simulation sans écriture : les sources originales et le manifeste ne sont jamais modifiés.',
    'CHAIN MERGE ne reproduit pas un RETURN/GOSUB ; ces structures sont explicitement refusées.',
    'Le code avant/après, la mémoire et le timing ne sont pas déclarés équivalents sans essai sur ROM CPC du cas réel.',
-   'Le futur protocole de commit devra faire une écriture atomique avec contrôle de révision et rollback.'],
+   'L’application séparée exige la même révision et une transaction journalisée ; la simulation ne modifie aucun fichier.'],
   applicationEnabled:false,persistentWrites:0,rollback:'no-write-required'};
 }

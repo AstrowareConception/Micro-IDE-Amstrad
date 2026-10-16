@@ -481,6 +481,24 @@ route('explorer:list', async payload => { const { store, value } = projectReques
 route('explorer:preview', async payload => { const { store, value } = projectRequest(payload); return new ProjectExplorer(store).preview(value.path, value.revision); });
 route('sources:prepare', async payload => { const { store, value } = projectRequest(payload); return store.prepareSourceOperation(value.request); });
 route('sources:last', async payload => { const { store } = projectRequest(payload); return store.lastSourceOperation(); }, true);
+route('agent-mutations:last', async payload => { const { store } = projectRequest(payload); return store.lastAgentMutation(); }, true);
+route('agent-mutations:restore', async payload => {
+  const {store,value}=projectRequest(payload);
+  if(dirty)throw Error('Enregistrez ou conservez les brouillons avant la restauration.');
+  if(typeof value.revision!=='string'||!Array.isArray(value.buffers))throw Error('Révision et sources courantes requises.');
+  const buffers=value.buffers.map(item=>{
+    if(!item||typeof item!=='object'||typeof item.id!=='string')throw Error('Source courante invalide.');
+    return {id:item.id,source:sourceFrom(item).source};
+  });
+  const last=await store.lastAgentMutation();
+  if(!last||last.revision!==value.revision)throw Error('Dernière modification IA périmée ; actualisez.');
+  const choice=await dialog.showMessageBox(window,{type:'warning',buttons:['Annuler','Rétablir'],defaultId:0,cancelId:0,
+    message:'Rétablir la dernière modification IA enregistrée ?',
+    detail:`${last.files.join('\n')}\n\nLes sources et le manifeste retrouvent leur état sur disque avant cette modification. Un fichier créé par cette opération sera retiré. Cette restauration reste disponible après réouverture, tant que les versions correspondent.`});
+  if(choice.response!==1)return null;
+  if(dirty)throw Error('Brouillons modifiés pendant la confirmation ; restauration refusée.');
+  return store.restoreAgentMutation(value.revision,buffers);
+});
 route('sources:draft', async payload => { const { store } = projectRequest(payload); return store.sourceDraft(); });
 route('sources:apply', async payload => {
   const { store, value } = projectRequest(payload), source = sourceFrom(value).source;

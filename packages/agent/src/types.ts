@@ -12,10 +12,11 @@ export interface PricingProfile { model: string; billedModels?: string[]; input:
 export interface AgentEvent { kind: 'model' | 'tool' | 'tool-result' | 'message' | 'limit' | 'error'; text: string; tool?: string; success?: boolean }
 export interface AgentResult { status: 'completed' | 'blocked' | 'failed' | 'cancelled' | 'paused-limit'; turns: number; calls: number; tokens: number; summary: string; usage?: TokenUsage | undefined; failedCalls?: number; estimatedUsd?: number; costComplete?: boolean }
 export interface AgentExtractionSimulation {
+ previewId:string;status:'preview'|'applied'|'obsolete'|'failed';
  profile:string;sourceId:string;entryLine:number;gotoLine:number;createdPath:string;createdCpcName:string;movedLines:number;
  beforeMain:string;afterMain:string;newPart:string;
  originalDiskSha256:string;proposedDiskSha256:string;originalSourceSha256:string;newMainSha256:string;newPartSha256:string;
- checks:string[];warnings:string[];applicationEnabled:false;persistentWrites:0;
+ checks:string[];warnings:string[];
 }
 export interface AgentExtractionSimulationView {stale:boolean;record:AgentExtractionSimulation}
 export interface AgentOverlayReviewRecord { stale:boolean; report:import('../../basic-language/src/chain-merge-overlay.ts').ChainMergeOverlayReport }
