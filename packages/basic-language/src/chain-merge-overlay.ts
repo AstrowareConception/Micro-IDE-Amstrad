@@ -41,7 +41,9 @@ export function inspectChainMergeOverlay(host:OverlaySource,overlay:OverlaySourc
     if(token.kind==='identifier'&&IDENT.test(token.text.toUpperCase())){
      const value=token.text.toUpperCase();
      identifiers.add(value);
-     if(value.endsWith('
+     if(value.endsWith('$'))stringNames.add(value);
+     if(tokens[i+1]?.text==='(')arrayNames.add(value);
+    }
    }
   }
   if(analyze(file.source).diagnostics.some(d=>d.severity==='error'))reason(blockers,file.path+' : diagnostics de syntaxe ou de cibles non résolues.');
@@ -66,7 +68,7 @@ export function inspectChainMergeOverlay(host:OverlaySource,overlay:OverlaySourc
  if(arrayNames.length||has('DIM'))reason(warnings,'Tableaux détectés : dimensions, références et empreinte mémoire après chargement nécessitent des essais CPC.');
  if(stringNames.length)reason(warnings,'Chaînes détectées : contenu, durée de vie et allocations nécessitent des essais CPC.');
  if(readWithoutRestore)reason(warnings,'READ sans RESTORE explicite : le pointeur DATA peut être repositionné par CHAIN MERGE.');
- if(hasDeleteClause)reason(warnings,'Clause DELETE détectée : les lignes effacées et toutes leurs références doivent être vérifiées sur firmware.');
+ if(hasDeleteClause)reason(warnings,'Clause DELETE détectée : les lignes effacées et leurs références doivent être vérifiées sur firmware.');
  if(!collisions.length)reason(warnings,'Absence de collision ne prouve pas la sécurité du chargement.');
  return {version:1,hostId:host.id,overlayId:overlay.id,collisions:collisions.slice(0,80),
   collisionsTruncated:collisions.length>80,sharedIdentifiers:shared.slice(0,40),sharedTruncated:shared.length>40,
@@ -74,32 +76,5 @@ export function inspectChainMergeOverlay(host:OverlaySource,overlay:OverlaySourc
   referencesData,usesMemoryControl,hasDynamicFlow,hasErrors:!!blockers.length,
   arrayNames:arrayNames.slice(0,20),stringNames:stringNames.slice(0,20),
   hasDeleteClause,readWithoutRestore,
-  blockers,warnings,extractionPermitted:false,behavioralProof:'not-run'};
-}
-))stringNames.add(value);
-     if(tokens[i+1]?.text==='(')arrayNames.add(value);
-    }
-   }
-  }
-  if(analyze(file.source).diagnostics.some(d=>d.severity==='error'))reason(blockers,file.path+' : diagnostics de syntaxe ou de cibles non résolues.');
-  return {numbers,data,identifiers,flags};
- };
- const a=inspect(host),b=inspect(overlay);
- const collisions=a.numbers.filter(n=>b.numbers.includes(n));
- const shared=[...a.identifiers].filter(x=>b.identifiers.has(x)).sort();
- const has=(word:string)=>a.flags.has(word)||b.flags.has(word);
- const referencesData=has('READ')||has('RESTORE')||has('DATA');
- const usesMemoryControl=[...MEM].some(has);
- const hasDynamicFlow=[...UNCERTAIN].some(has);
- if(collisions.length)reason(warnings,'Numéros de lignes identiques : vérifier précisément les remplacements opérés par la ROM.');
- if(shared.length)reason(warnings,'Identifiants communs : leur portée et la persistance effective ne sont pas établies.');
- if(referencesData)reason(warnings,'DATA/READ/RESTORE : qualifier ordre et pointeur de lecture avant extraction.');
- if(usesMemoryControl)reason(warnings,'HIMEM, mémoire BASIC, état machine ou directives de type : risque non qualifié.');
- if(hasDynamicFlow)reason(warnings,'Flux/chargement dynamique : la reprise et la pile ne sont pas qualifiées.');
- if(!collisions.length)reason(warnings,'Absence de collision ne prouve pas la sécurité du chargement.');
- return {version:1,hostId:host.id,overlayId:overlay.id,collisions:collisions.slice(0,80),
-  collisionsTruncated:collisions.length>80,sharedIdentifiers:shared.slice(0,40),sharedTruncated:shared.length>40,
-  hostDataLines:a.data.slice(0,40),overlayDataLines:b.data.slice(0,40),
-  referencesData,usesMemoryControl,hasDynamicFlow,hasErrors:!!blockers.length,
   blockers,warnings,extractionPermitted:false,behavioralProof:'not-run'};
 }
