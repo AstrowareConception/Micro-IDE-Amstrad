@@ -5,6 +5,7 @@ import { planBasicCommentInsert, type BasicCommentPlan } from '../../basic-langu
 import { analyzeQuality } from '../../basic-language/src/quality.ts';
 import { analyzeBasicModules, type BasicModuleReview } from '../../basic-language/src/module-review.ts';
 import { inspectLoadContract, type LoadContractReport } from '../../basic-language/src/load-contract.ts';
+import { inspectChainMergeOverlay, type ChainMergeOverlayReport } from '../../basic-language/src/chain-merge-overlay.ts';
 import type { VariableRenamePlan } from '../../basic-language/src/rename-variable.ts';
 import { TEST_DEFINITIONS, type AgentBasicTests } from './basic-tests.ts';
 import { analyze, tokenize } from '../../basic-language/src/language.ts';
@@ -45,6 +46,7 @@ export const DEFINITIONS = [
   tool('language_comment_apply', 'Applique strictement un commentaire REM dont l’aperçu est encore valable dans le même état du projet ; aucune insertion non contrôlée, checkpoint de mission et reconstruction DSK requis.', { id: s, expectedHash: s, previewId: s }),
   tool('language_module_review', 'Analyse sans écriture les sous-programmes GOSUB et les risques d’une extraction en modules BASIC : frontières RETURN, flux, état partagé, appels et chargements CHAIN/MERGE. Retourne des régions candidates pour revue seulement ; aucun découpage, DSK ou nouveau fichier créé. Hash exact du listing requis.', { id:s, expectedHash:s }),
   tool('language_loading_contract', 'Dresse en lecture seule le contrat de chargement de toutes les sources du projet : CHAIN, CHAIN MERGE, MERGE, RUN fichier et LOAD. Détecte liens CPC 8.3, cibles dynamiques, manquantes et cycles. Aucune preuve firmware ni autorisation d’extraire ; hash exact d’une source courante requis.', {id:s,expectedHash:s}),
+  tool('language_chain_merge_review', 'Étudie en lecture seule un éventuel CHAIN MERGE entre deux fichiers déclarés : numéros de ligne identiques, identifiants textuels communs, DATA/RESTORE, mémoire et flux risqués. Exige l’ID/empreinte SHA-256 de chaque source ; aucune mutation ni preuve firmware du programme utilisateur.', {id:s,expectedHash:s,overlayId:s,overlayHash:s}),
   tool('build_project', 'Construit réellement le DSK de tous les buffers et le relit ; renvoie taille/hash/noms. Ne lance pas de CPC.'),
 ];
 function args(value: unknown, fields: string[]): Record<string, unknown> {
@@ -74,6 +76,11 @@ export class WorkspaceTools implements ToolPort {
   readonly commentOperations: AgentCommentRecord[] = [];
   readonly moduleReviews:{sourceId:string;sourceSha256:string;workspaceHash:string;review:BasicModuleReview}[]=[];
   readonly loadingReports:{workspaceHash:string;report:LoadContractReport}[]=[];
+  readonly chainMergeReviews:{workspaceHash:string;report:ChainMergeOverlayReport}[]=[];
+  chainMergeViews():{stale:boolean;report:ChainMergeOverlayReport}[] {
+    const now=this.workspaceHash();
+    return this.chainMergeReviews.map(({workspaceHash,report})=>({stale:workspaceHash!==now,report}));
+  }
   loadingReportViews():{stale:boolean;report:LoadContractReport}[] {
     const now=this.workspaceHash();
     return this.loadingReports.map(({workspaceHash,report})=>({stale:workspaceHash!==now,report}));
@@ -265,6 +272,15 @@ export class WorkspaceTools implements ToolPort {
         const result=await this.execute('project_replace_source',{id:item.id,expectedHash:pending.sourceHash,source:pending.plan.after}) as Record<string,unknown>;
         pending.record.status='applied';
         return {...result,previewId:pending.id,newBasicLine:pending.plan.basicLine,comment:pending.plan.comment,checkpoint:'initial-mission',warning:'Ajout REM validé structurellement ; pertinence du commentaire et equivalence ROM non garanties. Tester le programme.'};
+      }
+      case 'language_chain_merge_review': {
+        const host=file(),overlay=this.state.files.find(item=>item.id===str(value.overlayId,64));
+        if(!overlay||overlay.id===host.id)throw Error('scope-denied : deux sources BASIC distinctes du projet sont requises.');
+        if(this.hash(host.source)!==str(value.expectedHash,64)||this.hash(overlay.source)!==str(value.overlayHash,64))throw Error('stale-read : relire les deux sources avant analyse.');
+        const report=inspectChainMergeOverlay(host,overlay);
+        this.chainMergeReviews.push({workspaceHash:this.workspaceHash(),report});
+        if(this.chainMergeReviews.length>4)this.chainMergeReviews.shift();
+        return {...report,warning:'Contrat de risque documentaire : absence de preuve de conservation de l’état, du timing ou des ressources dans le programme utilisateur.'};
       }
       case 'language_loading_contract': {
         const item=file();
