@@ -24,6 +24,7 @@ export function planBasicCommentInsert(source:string,beforeBasicLine:number,comm
   if(!match)throw Error('Listing partiellement numéroté : insertion de commentaire refusée.');
   numbers.push(Number(match[1]));positions.push(i);
   const tokens=tokenize(raw[i]!);
+  if(tokens.some(token=>token.kind==='string'&&(token.text.length<2||!token.text.endsWith('"'))))throw Error('Insertion REM refusée : chaîne BASIC non terminée.');
   if(tokens.some(token=>token.kind==='operator'&&['|','@'].includes(token.text)||
     token.kind==='keyword'&&OPAQUE.has(token.text.toUpperCase()) ||
     token.kind==='identifier'&&/^FN/i.test(token.text) && /^(?:FN)(?:RUN|GOTO)/i.test(token.text)))throw Error('Contrôle du flux ou de la machine non qualifié : commentaires refusés dans ce programme.');
