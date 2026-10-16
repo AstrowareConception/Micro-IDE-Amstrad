@@ -1,5 +1,7 @@
 import { indexSymbols, SYMBOL_METHOD } from '../../basic-language/src/symbols.ts';
 import { planSymbolRename } from '../../basic-language/src/rename-symbol.ts';
+import { planBasicReadabilityFormat, type BasicFormatPlan } from '../../basic-language/src/readability-format.ts';
+import { analyzeQuality } from '../../basic-language/src/quality.ts';
 import type { VariableRenamePlan } from '../../basic-language/src/rename-variable.ts';
 import { TEST_DEFINITIONS, type AgentBasicTests } from './basic-tests.ts';
 import { analyze, tokenize } from '../../basic-language/src/language.ts';
@@ -8,7 +10,7 @@ import { planRenumber } from '../../basic-language/src/renumber.ts';
 import { addProjectSource, buildProjectDisk } from '../../workspace/src/project.ts';
 import type { KnowledgeRequest, KnowledgeResult } from '../../workspace/src/knowledge.ts';
 import type { DocumentSnapshot } from '../../workspace/src/project.ts';
-import type { AgentWorkspaceState, ToolDefinition, ToolPort, AgentRenameRecord } from './types.ts';
+import type { AgentWorkspaceState, ToolDefinition, ToolPort, AgentRenameRecord, AgentFormatRecord } from './types.ts';
 
 const s = { type: 'string' }, n = { type: 'integer' };
 function tool(name: string, description: string, properties: Record<string, unknown> = {}): ToolDefinition {
@@ -33,6 +35,9 @@ export const DEFINITIONS = [
   tool('language_renumber', 'Renumérote et enregistre une source avec références locales littérales ; hash requis. Refuse formes opaques/collisions. Références de commandes à consulter ; même checkpoint que les autres mutations.', { id: s, expectedHash: s, start: n, step: n, from: n, to: n }),
   tool('language_rename_preview', 'Prépare sans écriture un renommage déterministe BASIC dans une source. Position physique ligne/colonne (colonne zéro-indexée), hash exact et nouveau radical requis. Refuse les identités ambiguës, effets opaques, collisions et FN non qualifiées. Retourne le plan et un identifiant pour l’application.', { id: s, expectedHash: s, line: n, column: n, newStem: s }),
   tool('language_rename_apply', 'Applique uniquement le plan de renommage précédemment prévisualisé sur la même source et la même révision de projet. Checkpoint, contrôles de références et persistance identiques aux mutations BASIC ; aucune modification arbitraire du modèle.', { id: s, expectedHash: s, previewId: s }),
+  tool('language_readability_review', 'Rapport à la demande des métriques de qualité et pistes de commentaires pour un fichier BASIC réel. Propositions documentaires non exécutables : ne jamais présenter une hypothèse IA comme une certitude.', { id: s }),
+  tool('language_format_preview', 'Aperçu non mutatif de la mise en forme BASIC conservatrice. N’affecte que les espaces de lignes lexicalement simples, laisse intacts chaînes, DATA, commentaires et branches. Exige le SHA-256 exact du fichier.', { id: s, expectedHash: s }),
+  tool('language_format_apply', 'Applique seulement le plan de mise en forme précédemment préparé, sur la même source et le même instantané du projet ; checkpoint et reconstruction DSK requis.', { id: s, expectedHash: s, previewId: s }),
   tool('build_project', 'Construit réellement le DSK de tous les buffers et le relit ; renvoie taille/hash/noms. Ne lance pas de CPC.'),
 ];
 function args(value: unknown, fields: string[]): Record<string, unknown> {
@@ -58,6 +63,8 @@ export class WorkspaceTools implements ToolPort {
   state: AgentWorkspaceState;
   buildVerified = false;
   readonly renameOperations: AgentRenameRecord[] = [];
+  readonly formatOperations: AgentFormatRecord[] = [];
+  private formatPlan: { id:string; fileId:string; sourceHash:string; workspaceHash:string; epoch:number; plan:BasicFormatPlan; record:AgentFormatRecord } | undefined;
   private renamePlan: { id: string; fileId: string; sourceHash: string; workspaceHash: string; epoch: number; plan: VariableRenamePlan; record: AgentRenameRecord } | undefined;
   private mutationEpoch = 0;
   private previewSequence = 0;
@@ -68,6 +75,8 @@ export class WorkspaceTools implements ToolPort {
     this.mutationEpoch++;
     if (this.renamePlan?.record.status==='preview') this.renamePlan.record.status='obsolete';
     this.renamePlan=undefined;
+    if (this.formatPlan?.record.status==='preview') this.formatPlan.record.status='obsolete';
+    this.formatPlan=undefined;
   }
   readonly tests: AgentBasicTests | undefined;
   private consulted = new Set<string>();
@@ -214,6 +223,43 @@ export class WorkspaceTools implements ToolPort {
         return { id: item.id, path: item.path, hash: this.hash(source), saved: true };
       }
       case 'language_analyze': return { files: this.state.files.map(file => ({ id: file.id, diagnostics: analyze(file.source).diagnostics })), coverage: 'partial-static-only' };
+      case 'language_readability_review': {
+        const item=file();
+        const quality=analyzeQuality([{id:item.id,name:item.path,source:item.source}]).sources[0]!;
+        const commentIdeas=quality.findings.slice(0,12).map(finding=>({
+          basicLine:finding.basicLine,physicalLine:finding.line,
+          reason:finding.message,
+          guidance:'Proposer un commentaire expliquant le contrat, les invariants ou le risque observé, uniquement si les sources et références permettent de le justifier. '+finding.suggestion,
+          needsHumanReview:true
+        }));
+        return {id:item.id,path:item.path,sourceSha256:this.hash(item.source),
+          metrics:quality.metrics,coverage:quality.coverage,findings:quality.findings.slice(0,30),findingsOmitted:Math.max(0,quality.findings.length-30),
+          commentIdeas,commentsInserted:false,policy:'Conseils documentaires ; les commentaires insérés au BASIC exigent une relecture et des tests. Aucun fait sur la logique métier ne peut être déduit de ces heuristiques.'};
+      }
+      case 'language_format_preview': {
+        const item=file();
+        const originalHash=str(value.expectedHash,64);
+        if(this.hash(item.source)!==originalHash)throw Error('stale-read : relire la source avant le formatage.');
+        const plan=planBasicReadabilityFormat(item.source);
+        const workspaceHash=this.workspaceHash();
+        if(this.formatPlan?.record.status==='preview')this.formatPlan.record.status='obsolete';
+        const previewId=this.hash(JSON.stringify({sessionId:this.state.sessionId,workspaceHash,epoch:this.mutationEpoch,sequence:++this.previewSequence,fileId:item.id,originalHash,after:this.hash(plan.after)}));
+        const before=analyzeQuality([{id:item.id,name:item.path,source:plan.before}]).sources[0]!;
+        const after=analyzeQuality([{id:item.id,name:item.path,source:plan.after}]).sources[0]!;
+        const record:AgentFormatRecord={previewId,fileId:item.id,path:item.path,status:'preview',changedLines:plan.edits.length,skipped:plan.skipped,warnings:[...plan.warnings],before:plan.before.slice(0,4096),after:plan.after.slice(0,4096),truncated:plan.before.length>4096||plan.after.length>4096,beforeMetrics:before.metrics,afterMetrics:after.metrics};
+        this.formatOperations.push(record); if(this.formatOperations.length>10)this.formatOperations.shift();
+        this.formatPlan={id:previewId,fileId:item.id,sourceHash:originalHash,workspaceHash,epoch:this.mutationEpoch,plan,record};
+        return {previewId,id:item.id,path:item.path,beforeSha256:originalHash,afterSha256:this.hash(plan.after),changedLines:plan.edits.length,inspectedLines:plan.inspected,skippedLines:plan.skipped,edits:plan.edits.slice(0,30),editsTruncated:plan.edits.length>30,before:record.before,after:record.after,previewTruncated:record.truncated,qualityBefore:before.metrics,qualityAfter:after.metrics,qualityCoverage:{before:before.coverage,after:after.coverage},warnings:record.warnings,method:plan.method,persisted:false};
+      }
+      case 'language_format_apply': {
+        const item=file(),pending=this.formatPlan;
+        if(!pending||pending.id!==str(value.previewId,64)||pending.fileId!==item.id)throw Error('stale-preview : préparer un nouvel aperçu du formatage.');
+        if(pending.epoch!==this.mutationEpoch||pending.workspaceHash!==this.workspaceHash()||pending.sourceHash!==str(value.expectedHash,64)||this.hash(item.source)!==pending.sourceHash||item.source!==pending.plan.before)throw Error('stale-preview : source ou projet modifié depuis la prévisualisation.');
+        if(!pending.plan.edits.length){pending.record.status='applied';this.formatPlan=undefined;return {id:item.id,noOp:true,saved:item.source===item.saved,changedLines:0,previewId:pending.id};}
+        const result=await this.execute('project_replace_source',{id:item.id,expectedHash:pending.sourceHash,source:pending.plan.after}) as Record<string,unknown>;
+        pending.record.status='applied';
+        return {...result,previewId:pending.id,changedLines:pending.plan.edits.length,skippedLines:pending.plan.skipped,checkpoint:'initial-mission',warning:'Validation par DSK et tests CPC requise ; équivalence universelle non garantie.'};
+      }
       case 'language_rename_preview': {
         const item=file();
         if(this.hash(item.source)!==str(value.expectedHash,64))throw Error('stale-read : relire la source avant de préparer le renommage.');
