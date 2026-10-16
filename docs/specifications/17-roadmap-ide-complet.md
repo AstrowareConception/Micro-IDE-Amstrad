@@ -1,5 +1,8 @@
 # 17 — Roadmap qualifiée d’un IDE CPCéleste abouti
 
+**CPC 0.41.23 :** [banc de comparaison de CHAIN MERGE en présence de tableaux/chaînes, pointeur DATA, DELETE et mémoire sollicitée](../implementation/basic-chain-merge-edge-alpha.md). Qualification limitée aux témoins et à la ROM, aucune extraction automatique. Prochain incrément : transaction d'extraction réversible et aperçu complet.
+
+
 **État CHAIN MERGE 0.41.22 :** [contrat d'overlay et témoins firmware sur variables, collisions, DATA/RESTORE, HIMEM](../implementation/basic-chain-merge-state-alpha.md). Le contrôle par source reste consultatif ; aucune extraction automatique de routine BASIC n'est permise. Qualifier ensuite DELETE, les tableaux, chaînes, fichiers ouverts, mémoire limite et restauration atomique.
 
 

@@ -1,5 +1,8 @@
 # CHAIN MERGE : variables, lignes et ressources — qualification 0.41.22
 
+**Complément 0.41.23 :** [tests de cas limites et comportements divergents](basic-chain-merge-edge-alpha.md), sans extension des garanties à des programmes arbitraires.
+
+
 ## Périmètre
 
 La 0.41.21 a confirmé sur les ROM CPC 6128 de référence le comportement d'un témoin CHAIN, ainsi que le fait qu'un MERGE ordinaire lancé pendant RUN n'enchaîne pas les instructions suivantes dans le scénario testé. Ce nouveau lot **ne convertit toujours aucun sous-programme utilisateur** : il étend la qualification par des témoins comparatifs exécutés sur le firmware.
