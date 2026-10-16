@@ -1,5 +1,7 @@
 # CPCéleste
 
+**Contrôle des sources testées 0.41.16 :** [essais CPC reliés aux vrais fichiers modifiés](docs/implementation/basic-tested-sources-alpha.md). Une suite réussie sur une copie ne couvre pas la source métier ; le panneau Agent IA distingue les essais directs et les références avant/après.
+
 **Renommage FN 0.41.15 :** [F2 sur une fonction ou un paramètre local](docs/implementation/basic-fn-rename-alpha.md). Portée affichée, définitions initiales uniques, appels couverts, aperçu et undo ; globales homonymes conservées. Types dynamiques et redéfinitions restent exclus.
 
 **Renommage de variables 0.41.14 :** [F2, aperçu avant/après et annulation](docs/implementation/basic-variable-rename-alpha.md). Premier profil autonome : variables et tableaux, suffixes préservés, collisions refusées et révision contrôlée. Fonctions FN, directives de type et accès machine/externe exclus. IDE-017 désormais partiel.
