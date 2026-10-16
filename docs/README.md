@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.41.14
+# CPCéleste — Dossier de conception et réalisation — version 0.41.15
+
+**Renommage FN 0.41.15 :** [F2 sur une fonction ou un paramètre local](implementation/basic-fn-rename-alpha.md). Portée affichée, définitions initiales uniques, appels couverts, aperçu et undo ; globales homonymes conservées. Types dynamiques et redéfinitions restent exclus.
 
 **Renommage de variables 0.41.14 :** [F2, aperçu avant/après et annulation](implementation/basic-variable-rename-alpha.md). Premier profil autonome : variables et tableaux, suffixes préservés, collisions refusées et révision contrôlée. Fonctions FN, directives de type et accès machine/externe exclus. IDE-017 désormais partiel.
 

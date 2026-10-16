@@ -130,6 +130,7 @@ jobs:
             out/basic-fn-symbols.png
             out/basic-cursor-navigation.png
             out/basic-variable-rename.png
+            out/basic-fn-rename.png
             out/basic-rename-qualification.json
             out/basic-debug-qualification.json
             out/basic-fn-qualification.json

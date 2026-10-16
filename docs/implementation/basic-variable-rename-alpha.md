@@ -1,5 +1,7 @@
 # Renommer une variable BASIC — alpha 0.41.14
 
+**Complément 0.41.15 :** le menu se nomme désormais **Renommer le symbole…** et propose un [profil distinct pour les fonctions FN et leurs paramètres](basic-fn-rename-alpha.md). Le profil des variables/tableaux décrit ci-dessous reste inchangé.
+
 Le renommage déterministe complète l’assistance IA à la lisibilité. Il fonctionne localement, sans appel au modèle, sur le fichier BASIC courant. [ADR 0073](../adr/0073-renommage-variables-basic.md), IDE-017 partiel.
 
 ## Parcours

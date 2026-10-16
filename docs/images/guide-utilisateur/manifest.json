@@ -306,6 +306,17 @@
       "sha256": "152f27b1f7f1ff138ad04def49377471253d3b42e57a7fee68931b8e162b364d",
       "origin": "local-browser",
       "scenario": "tests/basic-variable-rename-smoke.mjs"
+    },
+    {
+      "file": "34-renommage-fn.png",
+      "version": "0.41.15",
+      "baseCommit": "55722797e5ed5fac524ade4f8d4a457541961323",
+      "capturedOn": "2026-10-16",
+      "width": 720,
+      "height": 802,
+      "sha256": "0ae4a282d614eee0848356a23f0ad8f99d3bd4ac23bae214a6799197b85c281c",
+      "origin": "local-browser",
+      "scenario": "tests/basic-fn-rename-smoke.mjs"
     }
   ]
 }

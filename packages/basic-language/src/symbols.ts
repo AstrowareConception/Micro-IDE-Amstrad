@@ -1,4 +1,4 @@
-import { createFnCollector, FN_METHOD, FN_BINDING_LABELS, FN_CALL_LABELS, type FnIndex } from './function-symbols.ts';
+import { createFnCollector, FN_SEGMENT_OMISSION, FN_METHOD, FN_BINDING_LABELS, FN_CALL_LABELS, type FnIndex } from './function-symbols.ts';
 import { tokenize, type Token } from './language.ts';
 
 export const SYMBOL_LIMITS = Object.freeze({ sources: 100, totalCharacters: 4_194_304, characters: 1_048_576, lines: 10_000, lineCharacters: 8192, tokens: 2048, symbols: 4096, occurrences: 20_000, totalOccurrences: 50_000, reasons: 100, typeDeclarations: 256 });
@@ -96,7 +96,7 @@ export function indexSymbols(input: SymbolSource, occurrenceBudget: number = SYM
    if(items.some(t=>t.text==='@')) { skip('Adresse : effets non qualifiés, segment omis.');continue; }
    if(items.some(t=>t.kind==='identifier' && t.text.replace(/[$%!]$/,'').length>(/^FN/i.test(t.text)?42:40))) { skip('identifiant supérieur à 40 caractères : segment omis.');continue; }
    if(hasFn){
-    if(functions.collect(items,line,basicLine)){fnSegments++;skip('FN relevé dans la vue Fonctions ; segment exclu des usages globaux.');}
+    if(functions.collect(items,line,basicLine)){fnSegments++;skip(FN_SEGMENT_OMISSION);}
     else skip('FN : forme non couverte ou ambiguë, segment omis.');
     continue;
    }
