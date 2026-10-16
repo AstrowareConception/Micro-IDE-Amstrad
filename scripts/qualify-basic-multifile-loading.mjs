@@ -24,7 +24,7 @@ const fixtures=[
  {name:'chain-monolith',files:[{name:'MAIN',source:'10 MEMORY &7FFF\n20 POKE &8000,11\n30 POKE &8001,0\n40 POKE &8002,0\n50 POKE &8001,23\n60 POKE &8002,24\n70 END\n'}],expected:[11,23,24]},
  {name:'chain-two-files',files:[{name:'MAIN',source:'10 MEMORY &7FFF\n20 POKE &8000,11\n30 POKE &8001,0\n40 POKE &8002,0\n50 CHAIN "LEVEL.BAS"\n60 POKE &8001,99\n70 END\n'},{name:'LEVEL',source:'10 POKE &8001,23\n20 POKE &8002,24\n30 END\n'}],expected:[11,23,24]},
  {name:'merge-monolith',files:[{name:'MAIN',source:'10 MEMORY &7FFF\n20 POKE &8000,11\n30 POKE &8001,0\n40 POKE &8002,0\n50 GOSUB 100\n60 POKE &8001,PEEK(&8002)+1\n70 END\n100 POKE &8002,23\n110 RETURN\n'}],expected:[11,24,23]},
- {name:'merge-two-files',files:[{name:'MAIN',source:'10 MEMORY &7FFF\n20 POKE &8000,11\n30 POKE &8001,0\n40 POKE &8002,0\n50 MERGE "PART.BAS"\n60 GOSUB 100\n70 POKE &8001,PEEK(&8002)+1\n80 END\n'},{name:'PART',source:'100 POKE &8002,23\n110 RETURN\n'}],expected:[11,24,23]}
+ {name:'merge-two-files',files:[{name:'MAIN',source:'10 MEMORY &7FFF\n20 POKE &8000,11\n30 POKE &8001,0\n40 POKE &8002,0\n50 MERGE "PART.BAS"\n60 GOSUB 100\n70 POKE &8001,PEEK(&8002)+1\n80 END\n100 REM PLACEHOLDER\n110 RETURN\n'},{name:'PART',source:'100 POKE &8002,23\n110 RETURN\n'}],expected:[11,24,23]}
 ];
 const report={version:1,profile:'cpc6128-classic-v1',dialect:'locomotive-1.1',
  engineSha256:sha(wasmBinary),firmware:BASIC_TEST_FIRMWARE,
