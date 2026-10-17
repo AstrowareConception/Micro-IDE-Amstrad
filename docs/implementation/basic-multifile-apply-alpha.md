@@ -1,5 +1,7 @@
 # Découpage BASIC enregistré et restauration — alpha 0.41.25
 
+**Évolution 0.41.26 :** un [profil distinct pour expressions, chaînes et affichage](basic-multifile-expressions-alpha.md) complète le profil initial décrit dans ce rapport historique. Le protocole de journal et de restauration est conservé.
+
 La simulation 0.41.24 peut désormais être appliquée par l’agent. Les deux sources et le manifeste forment une seule mutation journalisée. Le profil BASIC accepté reste exactement celui de la [simulation terminale](basic-multifile-dry-run-alpha.md) : un GOTO littéral final, des affectations entières simples, des POKE de test et END. Ce lot qualifie la persistance ; il ne constitue pas un découpage général de jeux.
 
 ## Utilisation

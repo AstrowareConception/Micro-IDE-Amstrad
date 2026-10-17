@@ -89,3 +89,5 @@ Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou
 - [0051 — Boucles et portées conditionnelles](0051-boucles-et-portees-conditionnelles.md).
 
 - [0075 — Application du découpage BASIC par journal durable](0075-application-decoupage-journalise.md).
+
+- [0076 — Profil fermé d’expressions et d’affichage pour le découpage terminal](0076-expressions-decoupage-terminal.md).

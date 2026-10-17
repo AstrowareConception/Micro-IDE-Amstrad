@@ -36,7 +36,7 @@ test('unsupported GOSUB, conditional branches, DATA, RETURN, external flows and 
   source.replace('100 POKE &8001,score%','100 READ value'),
   source.replace('110 POKE &8002,24','110 RETURN'),
   source.replace('100 POKE &8001,score%','100 ON ERROR GOTO 120'),
-  source.replace('100 POKE &8001,score%','100 PRINT "OPAQUE"'),
+  source.replace('100 POKE &8001,score%','100 PRINT #9,"OPAQUE"'),
   source.replace('20 score%=42','20 DIM score%(2)'),
   source.replace('40 GOTO 100','40 GOTO 110'),
   source.replace('30 POKE &8000,11','30 GOTO 100'),

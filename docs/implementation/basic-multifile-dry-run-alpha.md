@@ -1,5 +1,7 @@
 # Simulation de transaction de découpage BASIC — alpha 0.41.24
 
+**Évolution 0.41.26 :** un [profil distinct pour expressions, chaînes et affichage](basic-multifile-expressions-alpha.md) complète le profil initial décrit dans ce rapport historique. Le protocole de journal et de restauration est conservé.
+
 **Évolution 0.41.25 :** la simulation pure reste sans écriture. L’agent dispose désormais d’une [application séparée, journalisée et réversible](basic-multifile-apply-alpha.md). Les absences d’application mentionnées ci-dessous décrivent la livraison historique 0.41.24.
 
 
