@@ -1,5 +1,7 @@
 # 14 — Missions, outils et boucle agentique
 
+**Profil expressions 0.41.26 :** les mêmes outils de simulation/application acceptent désormais un [profil v2 fermé](../implementation/basic-multifile-expressions-alpha.md) : scalaires %/$ initialisés, calculs entiers bornés, concaténation et PRINT/MODE/CLS. Identité de profil distincte, contrôle intégral des formes admises et références consultées ; aucun nouveau droit de mutation.
+
 **Découpage 0.41.25 :** `language_extraction_simulate` prépare un plan immuable ; `language_extraction_apply` exige son ID, le SHA source et la même révision de projet. Une mutation journalisée couvre les deux sources et le manifeste. [Protocole, restauration durable et limites](../implementation/basic-multifile-apply-alpha.md).
 
 

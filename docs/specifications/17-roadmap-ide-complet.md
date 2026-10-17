@@ -1,8 +1,8 @@
 # 17 — Roadmap qualifiée d’un IDE CPCéleste abouti
 
-**État courant 0.41.25 :** [application du découpage terminal et restauration après réouverture](../implementation/basic-multifile-apply-alpha.md). Une mutation journalisée pour sources/manifeste, préconditions complètes et commande durable dans Projet. Profil syntaxique 0.41.24 inchangé ; aucune atomicité physique du dossier ni extraction générale annoncée.
+**État courant 0.41.26 :** [découpage terminal avec expressions, chaînes et affichage](../implementation/basic-multifile-expressions-alpha.md). Profil v1 conservé ; profil v2 borné avec scalaires %/$, calculs +/−/×, PRINT, MODE et CLS. Quatre témoins comparés sur ROM après application réelle/réouverture/restauration, avec trois références d’affichage littérales.
 
-**Ordre actuel :** élargir progressivement les transformations avec témoins firmware ; compléter la mission de lisibilité sur des programmes représentatifs ; reprendre ensuite profiler 0.42 et observation CPC 0.43. Les anciennes indications « prochain lot » ci-dessous sont historiques et ne remplacent pas ce point ni [la reprise](../reprise.md).
+**Ordre actuel :** qualifier les conditions simples et leurs différents chemins, puis les boucles ; compléter la mission de lisibilité sur des programmes représentatifs ; reprendre ensuite profiler 0.42 et observation CPC 0.43. Les anciennes indications « prochain lot » ci-dessous sont historiques et ne remplacent pas ce point ni [la reprise](../reprise.md).
 
 
 **0.41.24 — Découpage sans écriture :** [simulation d'une extraction terminale GOTO → CHAIN MERGE](../implementation/basic-multifile-dry-run-alpha.md) avec aperçu global MAIN/PART, construction de deux DSK AMSDOS et qualification sur ROM CPC. Pas de commande apply ni d'extraction persistée. Prochain jalon : transaction atomique de commit/rollback contrôlée par révision.

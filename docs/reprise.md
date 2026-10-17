@@ -1,5 +1,18 @@
 # CPCéleste — Point de reprise du développement
 
+
+## Incrément 0.41.26 — expressions et affichage dans le découpage terminal
+
+Base distante vérifiée : `main` 0.41.25, `cca5d6fcad7de0c2ec619e61727233f31f8f18d9`. PR #87 fusionnée après réussite Specifications, J0 et Desktop Linux/Windows sur `9003e6638efafe1ae863512a1f05d01657aaef19`. Branche du nouveau lot : `feat/basic-extraction-expressions`. Vérifier sa PR et les workflows de sa tête exacte avant fusion. Aucun packaging déclenché.
+
+Réalisé : profil initial v1 conservé ; profil v2 distinct pour scalaires explicitement typés %/$ et initialisés, expressions entières +/−/× avec parenthèses et bornes, concaténation de chaînes, PRINT à séparateurs explicites, MODE 0..2 et CLS. Grammaire fermée, propagation de valeurs sur le chemin séquentiel, quotas et refus des formes opaques. Même aperçu immuable, même journal et même restauration durable. Contrôles de consultation des références préservés. Consignes envoyées au modèle alignées sur simulation/application v1/v2 : retrait de l’ancienne affirmation erronée « aucun outil d’application », sans permettre de contourner les refus ; contrat vérifié dans le test du transport fournisseur. Le panneau IA distingue les profils et l’en-tête affiche 0.41.26. [Guide](implementation/basic-multifile-expressions-alpha.md), [ADR 0076](adr/0076-expressions-decoupage-terminal.md).
+
+Preuves locales terminées : 515 tests Node, TypeScript, builds renderer/main ; contrôle documentaire réussi (184 Markdown, 21 JSON, 84 exigences, 37 scénarios, six schémas et six exemples). Quatre témoins réellement appliqués, rouverts et restaurés, avec octets CRLF et manifeste exacts : douze exécutions CPC sur ROM identifiée et trois programmes de référence littéraux pour l’affichage. Les quatre variantes arithmétiques/vidéo donnent les valeurs RAM attendues ; les trois modes vidéo correspondent aux références sur les lignes imprimées hors prompt/curseur. Aucun octet ROM dans le rapport. La recette firmware est bloquante en CI ; le parcours Electron existant garde v1 et ajoute v2 (`--expressions`). Chromium/Electron manquent localement : ne pas annoncer leur succès avant contrôle de la CI du nouveau commit.
+
+Limites : entiers et types explicites seulement dans v2 ; pas de division, fonctions, tableaux, branches, boucles, DATA, commentaires, flux PRINT #/USING ou ressources. Les anciens programmes v1 conservent leur contrat historique. La propagation de valeurs n’est pas un émulateur CPC, les témoins ne prouvent pas une équivalence universelle ou temporelle. Journal avec reprise conservé, sans écriture indivisible de tout le dossier ni garantie panne électrique/verrou interprocessus. Aucune qualification CPC physique ou émulateur indépendant ajoutée.
+
+Suite prioritaire : conditions simples et témoins distinguant leurs chemins, puis boucles et états plus complexes ; mission de lisibilité sur programmes représentatifs ; profiler 0.42 et observation CPC 0.43. Les « prochaines étapes » historiques ci-dessous sont remplacées par ce point courant.
+
 ## Incrément 0.41.25 — application du découpage et restauration durable
 
 Base distante vérifiée : `main` 0.41.24, `0cd7e9a6f36457c5b0d70f1571a540ad52114a7f`, PR #86 fusionnée et ses trois workflows réussis sur `d61ab8b9e3a93a0289cac88f72f59ad8ff7733f3`. Branche `feat/basic-multifile-apply`. Consulter sa PR et la CI exacte avant de conclure à sa fusion. Aucun packaging déclenché.
@@ -355,4 +368,4 @@ Ne pas déclarer J0–J6, R1–R9 ou la version 1.0 achevés sur la seule base d
 2. Choisir une seule tranche cohérente selon l’état le plus récent en tête de ce document, créer sa branche depuis `main`, puis fixer la matrice de preuves et les limites. Regrouper code, exemples, tests utiles, ADR/guide/roadmap et nouveau point de reprise dans une PR. Vérifier les contrôles adaptés au diff et lire la première erreur réelle avant toute relance.
 3. Avant la prochaine pause, inscrire ici commit de `main`, PR, preuves effectivement observées, limites et prochaine action. Les fichiers temporaires et logs locaux ne remplacent pas un commit publié. Ne jamais y copier clé API, ROM, document personnel ou conversation privée.
 
-**Instruction de reprise courte :** « Reprends CPCéleste après lecture d’AGENTS.md et du dernier incrément en tête de docs/reprise.md. Vérifie main distant, la PR feat/basic-multifile-apply et ses contrôles. La suite après 0.41.25 est l’élargissement progressif du découpage avec preuves firmware. Préserve le journal, les brouillons et les limites ; aucun packaging par commit. »
+**Instruction de reprise courte :** « Reprends CPCéleste après lecture d’AGENTS.md et du dernier incrément en tête de docs/reprise.md. Vérifie main distant, la PR feat/basic-extraction-expressions et ses contrôles. Après 0.41.26, qualifier les conditions et leurs chemins avant les boucles. Préserve les profils v1/v2, le journal, les brouillons et les preuves firmware ; aucun packaging par commit. »

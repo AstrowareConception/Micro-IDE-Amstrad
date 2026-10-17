@@ -1,5 +1,7 @@
 # CPCéleste — Vos idées prennent vie en BASIC
 
+**Nouveauté 0.41.26 :** le découpage terminal prend en charge les calculs entiers simples, les chaînes de texte et PRINT/MODE/CLS, avec variables explicitement typées et contrôles de limites. [Exemple, formes acceptées et témoins CPC](implementation/basic-multifile-expressions-alpha.md).
+
 **Nouveauté 0.41.25 :** l’agent peut appliquer le premier découpage BASIC terminal accepté. Après réouverture, **Projet → Rétablir la dernière modification IA…** permet de retrouver les fichiers et le manifeste antérieurs, si les versions correspondent. [Parcours, exemple et limites](implementation/basic-multifile-apply-alpha.md).
 
 

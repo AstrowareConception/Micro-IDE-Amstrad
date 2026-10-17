@@ -1,6 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.41.25
+# CPCéleste — Dossier de conception et réalisation — version 0.41.26
 
-**État courant 0.41.25 :** [découpage enregistré et restauration durable](implementation/basic-multifile-apply-alpha.md), [ADR 0075](adr/0075-application-decoupage-journalise.md). Les comptes rendus plus anciens ci-dessous décrivent leur version respective.
+**État courant 0.41.26 :** [découpage avec expressions et affichage](implementation/basic-multifile-expressions-alpha.md), [ADR 0076](adr/0076-expressions-decoupage-terminal.md). Le journal et la restauration durable de la 0.41.25 sont conservés. Les comptes rendus plus anciens ci-dessous décrivent leur version respective.
 
 
 **Renommage FN 0.41.15 :** [F2 sur une fonction ou un paramètre local](implementation/basic-fn-rename-alpha.md). Portée affichée, définitions initiales uniques, appels couverts, aperçu et undo ; globales homonymes conservées. Types dynamiques et redéfinitions restent exclus.
