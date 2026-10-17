@@ -79,6 +79,10 @@ test('OpenAI transport uses Responses, exact schemas, no storage or retry, and n
     requests++; assert.equal(url, 'https://api.openai.com/v1/responses');
     assert.equal((init!.headers as Record<string, string>).Authorization, `Bearer ${key}`); assert.equal(init!.redirect, 'error');
     const body = JSON.parse(init!.body as string); assert.equal(body.store, false); assert.equal(body.parallel_tool_calls, false); assert.deepEqual(body.tools, DEFINITIONS); assert.deepEqual(body.include, ['reasoning.encrypted_content']);
+    assert.match(body.instructions,/language_extraction_apply.*previewId/,'the provider must receive the available preview/apply workflow');
+    assert.match(body.instructions,/profil expressions v2/);
+    assert.match(body.instructions,/Ne contourne jamais un refus du profil/);
+    assert.doesNotMatch(body.instructions,/Il n'existe AUCUN outil d'application/,'obsolete dry-run-only guidance would prevent the real agent from applying');
     return Response.json({ status: 'completed', output: [message], usage: { total_tokens: 5 } });
   };
   const provider = new OpenAIProvider(key, DEFAULT_MODEL, transport);
