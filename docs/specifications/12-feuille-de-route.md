@@ -1,8 +1,8 @@
 # 12 — Feuille de route et backlog de réalisation
 
-**État courant 0.41.27 :** [découpage terminal avec conditions simples](../implementation/basic-multifile-conditions-alpha.md). Profil v3 distinct, deux branches contrôlées, six IF maximum. Huit témoins CPC couvrent comparaisons vraies/fausses sur entiers/chaînes, ELSE absent et affichage, après application réelle/réouverture/restauration. Les profils v1/v2 sont conservés.
+**État courant 0.41.28 :** [découpage terminal avec boucles simples](../implementation/basic-multifile-loops-alpha.md). Profil v4 distinct, FOR/NEXT et WHILE/WEND bornés, boucles fermées de chaque côté du chargement. Quatorze témoins CPC couvrent zéro/un/plusieurs tours, progression positive/négative, compteurs de sortie et affichage, après application réelle/réouverture/restauration. Profils v1/v2/v3 conservés.
 
-**Ordre actuel :** qualifier les boucles simples et leurs parcours ; compléter la mission de lisibilité sur des programmes représentatifs ; reprendre ensuite profiler 0.42 et observation CPC 0.43. Les anciennes indications « prochain lot » ci-dessous sont historiques et ne remplacent pas ce point ni [la reprise](../reprise.md).
+**Ordre actuel :** qualifier la mission complète de lisibilité sur des programmes représentatifs (renommage, commentaires, mise en forme, découpage admissible et tests avant/après), puis élargir les structures selon les blocages observés ; reprendre ensuite profiler 0.42 et observation CPC 0.43. Les anciennes indications « prochain lot » ci-dessous sont historiques et ne remplacent pas ce point ni [la reprise](../reprise.md).
 
 
 **Renommage FN 0.41.15 :** [F2 sur une fonction ou un paramètre local](../implementation/basic-fn-rename-alpha.md). Portée affichée, définitions initiales uniques, appels couverts, aperçu et undo ; globales homonymes conservées. Types dynamiques et redéfinitions restent exclus.

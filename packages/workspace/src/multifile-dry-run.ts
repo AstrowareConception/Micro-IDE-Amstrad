@@ -1,13 +1,13 @@
 import {analyze, tokenize} from '../../basic-language/src/language.ts';
 import {addProjectSource, buildProjectDisk, type ProjectManifest, type SourceSnapshot} from './project.ts';
-import {EXPRESSION_EXTRACTION_PROFILE,CONDITIONAL_EXTRACTION_PROFILE,validateTerminalExpressions,validateTerminalConditions} from './terminal-expressions.ts';
+import {EXPRESSION_EXTRACTION_PROFILE,CONDITIONAL_EXTRACTION_PROFILE,LOOP_EXTRACTION_PROFILE,validateTerminalExpressions,validateTerminalConditions,validateTerminalLoops} from './terminal-expressions.ts';
 
 export const TERMINAL_EXTRACTION_PROFILE='terminal-goto-chain-merge-v1';
 export interface TerminalExtractionInput {
  manifest:ProjectManifest; sources:SourceSnapshot[]; sourceId:string; entryLine:number; newFileName:string;
 }
 export interface TerminalExtractionPreview {
- version:1; profile:typeof TERMINAL_EXTRACTION_PROFILE|typeof EXPRESSION_EXTRACTION_PROFILE|typeof CONDITIONAL_EXTRACTION_PROFILE;
+ version:1; profile:typeof TERMINAL_EXTRACTION_PROFILE|typeof EXPRESSION_EXTRACTION_PROFILE|typeof CONDITIONAL_EXTRACTION_PROFILE|typeof LOOP_EXTRACTION_PROFILE;
  original:{manifest:ProjectManifest;sources:SourceSnapshot[];disk:Uint8Array};
  proposed:{manifest:ProjectManifest;sources:SourceSnapshot[];disk:Uint8Array};
  sourceId:string; createdId:string; entryLine:number; gotoLine:number; linesMoved:number;
@@ -57,7 +57,9 @@ export function previewTerminalExtraction(input:TerminalExtractionInput):Termina
  const legacy=prefix.slice(0,-1).every(row=>permitted(row.body,'host'))&&suffix.every((row,i)=>permitted(row.body,i===suffix.length-1?'end':'module'));
  const statements=[...prefix.slice(0,-1),...suffix.slice(0,-1)];
  const conditional=statements.some(row=>tokenize(row.body)[0]?.text.toUpperCase()==='IF');
- if(conditional)validateTerminalConditions(statements);
+ const loops=statements.some(row=>['FOR','NEXT','WHILE','WEND'].includes(tokenize(row.body)[0]?.text.toUpperCase()??''));
+ if(loops)validateTerminalLoops(statements,entryLine);
+ else if(conditional)validateTerminalConditions(statements);
  else if(!legacy)validateTerminalExpressions(statements);
  // A second jump, RETURN, DATA, READ, RESTORE or dynamic firmware state cannot be admitted through the whitelist.
  for(const row of entries){
@@ -75,13 +77,14 @@ export function previewTerminalExtraction(input:TerminalExtractionInput):Termina
  // Both full DSK builds validate the source-level construction and all filesystem names/quotas.
  const originalDisk=buildProjectDisk(originalManifest,originalSources);
  const proposedDisk=buildProjectDisk(nextManifest,proposedSources);
- return {version:1,profile:legacy?TERMINAL_EXTRACTION_PROFILE:conditional?CONDITIONAL_EXTRACTION_PROFILE:EXPRESSION_EXTRACTION_PROFILE,
+ return {version:1,profile:legacy?TERMINAL_EXTRACTION_PROFILE:loops?LOOP_EXTRACTION_PROFILE:conditional?CONDITIONAL_EXTRACTION_PROFILE:EXPRESSION_EXTRACTION_PROFILE,
   original:{manifest:originalManifest,sources:originalSources,disk:originalDisk},
   proposed:{manifest:nextManifest,sources:proposedSources,disk:proposedDisk},
   sourceId,createdId:declared.id,entryLine,gotoLine:goto[0]!.number,linesMoved:suffix.length,
   checks:['Source unique et identité de manifeste exactes','Un GOTO terminal littéral remplace une entrée de routine sans GOSUB',
    'Suffixe contigu et terminal END',legacy?'Affectations littérales et POKE &8000..&8003':'Scalaires %/$ initialisés, calculs entiers bornés, chaînes et PRINT/MODE/CLS entièrement contrôlés',
    ...(conditional?['Conditions simples : deux branches contrôlées, au plus 6 IF et 64 chemins conservateurs']:[]),
+   ...(loops?['Boucles fermées dans chaque fichier : au plus 4 boucles, 32 tours et 8192 visites contrôlées']:[]),
    'Construction et relecture de deux disquettes AMSDOS réussies'],
   warnings:['Simulation sans écriture : les sources originales et le manifeste ne sont jamais modifiés.',
    'CHAIN MERGE ne reproduit pas un RETURN/GOSUB ; ces structures sont explicitement refusées.',

@@ -69,6 +69,8 @@ export const COMMANDS: readonly CommandCard[] = [
   command('RUN', 'RUN line', 'Exécute le listing courant ; la variante fichier est distincte.', 249),
   command('SOUND', 'SOUND channel,period,duration,volume', 'Produit un son ; paramètres d’enveloppe supplémentaires possibles.', 262),
   command('STOP', 'STOP', 'Interrompt l’exécution.', 274),
+  command('WEND', 'WEND', 'Termine une boucle WHILE et revient au test de sa condition.', 310),
+  command('WHILE', 'WHILE condition', 'Répète les instructions jusqu’à WEND tant que la condition est vraie.', 312),
 ];
 
 export const KEYWORDS = new Set([
@@ -81,7 +83,7 @@ export const KEYWORDS = new Set([
   'BREAK', 'SQ', 'OUT', 'PLOTR', 'POS', 'RAD', 'RANDOMIZE', 'RELEASE', 'REMAIN', 'RENUM', 'RESUME',
   'RIGHT$', 'RND', 'ROUND', 'SAVE', 'SGN', 'SIN', 'SPACE$', 'SPEED', 'SQR', 'STR$', 'STRING$',
   'SYMBOL', 'TAB', 'TAG', 'TAGOFF', 'TEST', 'TESTR', 'TIME', 'TROFF', 'TRON', 'UPPER$', 'VAL',
-  'VPOS', 'WAIT', 'WEND', 'WHILE', 'WIDTH', 'WINDOW', 'WRITE', 'ZONE',
+  'VPOS', 'WAIT', 'WIDTH', 'WINDOW', 'WRITE', 'ZONE',
   // Native BASIC 1.1 spellings: recognised lexically, without an invented help card.
   'COPYCHR$', 'CURSOR', 'DEC$', 'DERR', 'FILL', 'FRAME', 'GRAPHICS', 'MASK', 'SPC', 'SWAP', 'USING',
 ]);

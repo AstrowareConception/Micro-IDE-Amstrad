@@ -4,15 +4,17 @@ import {readFile,writeFile,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import createCpc from '../out/cpc.mjs';
 import {buildProjectDisk,newProject} from '../packages/workspace/src/project.ts';
-import {EXPRESSION_EXTRACTION_PROFILE,CONDITIONAL_EXTRACTION_PROFILE} from '../packages/workspace/src/terminal-expressions.ts';
+import {EXPRESSION_EXTRACTION_PROFILE,CONDITIONAL_EXTRACTION_PROFILE,LOOP_EXTRACTION_PROFILE} from '../packages/workspace/src/terminal-expressions.ts';
 import {ProjectStore} from '../apps/desktop/project-store.ts';
 import {fixture,prepare,digest as sha} from '../tests/multifile-fixture.ts';
 import {expressionWitnesses} from '../tests/terminal-expression-fixtures.ts';
 import {conditionWitnesses} from '../tests/terminal-condition-fixtures.ts';
+import {loopWitnesses} from '../tests/terminal-loop-fixtures.ts';
 import {BASIC_TEST_FIRMWARE,BASIC_TEST_READY} from '../packages/emulator/src/basic-test-runtime.ts';
+const loops=process.argv.includes('--loops');
 const conditions=process.argv.includes('--conditions');
-const witnesses=conditions?conditionWitnesses:expressionWitnesses;
-const profile=conditions?CONDITIONAL_EXTRACTION_PROFILE:EXPRESSION_EXTRACTION_PROFILE;
+const witnesses=loops?loopWitnesses:conditions?conditionWitnesses:expressionWitnesses;
+const profile=loops?LOOP_EXTRACTION_PROFILE:conditions?CONDITIONAL_EXTRACTION_PROFILE:EXPRESSION_EXTRACTION_PROFILE;
 
 const root=process.env.CPC_TEST_ROM_DIR;
 if(!root)throw Error('CPC_TEST_ROM_DIR required; ROM remains external.');
@@ -53,7 +55,7 @@ for(const witness of witnesses){
  const f=await fixture(witness.source.replace(/\n/g,'\r\n'));
  try{
   const p=await prepare(f.root),originalDisk=buildProjectDisk(p.snapshot.manifest,p.snapshot.files);
-  await p.tools.execute('reference_read_many',{names:['MODE','CLS','LET','PRINT',...(conditions?['IF']:[])]});
+  await p.tools.execute('reference_read_many',{names:['MODE','CLS','LET','PRINT',...((conditions||loops)?['IF']:[]),...(loops?['FOR','NEXT','WHILE','WEND']:[])]});
   assert.equal(p.tools.extractionSimulationViews()[0].record.profile,profile);
   await p.apply();
   const reopened=await ProjectStore.open(f.root),appliedDisk=buildProjectDisk(reopened.snapshot.manifest,reopened.snapshot.files);
@@ -84,6 +86,6 @@ for(const witness of witnesses){
  }finally{await rm(f.root,{recursive:true,force:true});}
 }
 report.qualified=report.cases.length===witnesses.length&&report.cases.every(specimen=>specimen.passed);
-await writeFile(`out/basic-multifile-${conditions?'conditions':'expressions'}-qualification.json`,JSON.stringify(report,null,2)+'\n');
+await writeFile(`out/basic-multifile-${loops?'loops':conditions?'conditions':'expressions'}-qualification.json`,JSON.stringify(report,null,2)+'\n');
 assert.equal(report.qualified,true,'Expression/display extraction differs from its RAM or literal screen oracle.');
 console.log(`${witnesses.length} persisted/reopened/restored witnesses and ${witnesses.filter(w=>w.oracle).length} literal display oracles passed on pinned CPC 6128 ROMs (${profile}).`);

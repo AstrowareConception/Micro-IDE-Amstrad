@@ -3,8 +3,9 @@ import {KEYWORDS} from '../../basic-language/src/catalog.ts';
 
 export const EXPRESSION_EXTRACTION_PROFILE='terminal-expressions-chain-merge-v2';
 export const CONDITIONAL_EXTRACTION_PROFILE='terminal-conditions-chain-merge-v3';
+export const LOOP_EXTRACTION_PROFILE='terminal-loops-chain-merge-v4';
 type Value=number|string;
-const fail=(why:string):never=>{throw Error('Extraction simulée refusée : profil expressions/conditions — '+why);};
+const fail=(why:string):never=>{throw Error('Extraction simulée refusée : profil expressions/conditions/boucles — '+why);};
 function bounded(value:Value):Value {
  if(typeof value==='number'&&(!Number.isInteger(value)||value< -32768||value>32767))fail('résultat entier hors de -32768..32767.');
  if(typeof value==='string'&&value.length>255)fail('chaîne de plus de 255 caractères.');
@@ -103,39 +104,121 @@ function comparison(tokens:Token[],values:Map<string,Value>):void {
 }
 
 type Statement={number:number;body:string};
-function validate(statements:Statement[],conditions:boolean):void {
- let states=[new Map<string,Value>()],reserved=false,branches=0;
- for(const [index,row]of statements.entries()){
-  const body=row.body,tokens=tokenize(body);
-  if(tokens.length>96)fail('plus de 96 jetons sur une ligne.');
+type State=Map<string,Value>;
+function step(body:string,states:State[],reserved:boolean,conditions:boolean):State[] {
+ const tokens=tokenize(body);
+ if(tokens.length>96)fail('plus de 96 jetons sur une ligne.');
+ if(conditions&&tokens[0]?.kind==='keyword'&&tokens[0].text.toUpperCase()==='IF'){
+  const keyword=(name:string)=>tokens.flatMap((token,i)=>token.kind==='keyword'&&token.text.toUpperCase()===name?[i]:[]);
+  const thens=keyword('THEN'),elses=keyword('ELSE');
+  if(keyword('IF').length!==1||thens.length!==1||elses.length>1||elses[0]!==undefined&&elses[0]<thens[0]!)
+   fail('conditions : IF simple, un THEN et au plus un ELSE requis ; imbrication refusée.');
+  const then=thens[0]!,otherwise=elses[0]??tokens.length;
+  const arms=[tokens.slice(then+1,otherwise),elses.length?tokens.slice(otherwise+1):null];
+  if(arms.some(arm=>arm!==null&&!arm.length))fail('conditions : branche vide.');
+  const next:State[]=[];
+  for(const state of states){
+   comparison(tokens.slice(1,then),state);
+   for(const arm of arms){
+    const copy=new Map(state);
+    if(arm){
+     // Keep original spelling/spacing, including quoted keywords.
+     const text=body.slice(arm[0]!.start,arm.at(-1)!.end);
+     primitive(text,arm,copy,reserved);
+    }
+    next.push(copy);
+   }
+  }
+  return next;
+ }
+ for(const state of states)primitive(body,tokens,state,reserved);
+ return states;
+}
+
+const operation=(row:Statement)=>tokenize(row.body)[0]?.text.toUpperCase();
+function integer(value:number):number {bounded(value);return value;}
+function counterValue(state:State,name:string):number {
+ const value=state.get(name);
+ if(typeof value!=='number')return fail('boucle : compteur % non initialisé.');
+ return value;
+}
+interface Loop {
+ name:string;start:number|null;increment:number;
+ enters:(value:number)=>boolean;body:Statement[];end:number;
+}
+/** No live loop frame may cross the loading boundary. The body is straight-line v2. */
+function loopAt(rows:Statement[],index:number,entryLine:number):Loop {
+ const row=rows[index]!,forLoop=operation(row)==='FOR';
+ const header=forLoop?/^FOR\s+([A-Za-z][A-Za-z0-9]{0,39}%)\s*=\s*([+-]?\d{1,5})\s+TO\s+([+-]?\d{1,5})(?:\s+STEP\s+([+-]?\d{1,5}))?$/i.exec(row.body):
+  /^WHILE\s+([A-Za-z][A-Za-z0-9]{0,39}%)\s*(<=|>=|<|>)\s*([+-]?\d{1,5})$/i.exec(row.body);
+ if(!header)return fail('boucle : en-tête simple à compteur % et bornes littérales requis.');
+ const name=identity(tokenize(header[1]!)[0]);
+ const start=forLoop?integer(Number(header[2])):null,limit=integer(Number(header[3]));
+ const end=rows.findIndex((candidate,i)=>i>index&&['NEXT','WEND'].includes(operation(candidate)??''));
+ if(end<0)return fail('boucle : fermeture absente.');
+ if(row.number<entryLine&&rows[end]!.number>=entryLine)fail('boucle traversant la frontière CHAIN MERGE.');
+ const close=rows[end]!.body;
+ if(forLoop? !/^NEXT\s+[A-Za-z][A-Za-z0-9]{0,39}%$/i.test(close)||identity(tokenize(close)[1])!==name : !/^WEND$/i.test(close))
+  fail('boucle : fermeture NEXT nommée ou WEND incohérente.');
+ const body=rows.slice(index+1,end);
+ if(body.some(candidate=>['FOR','WHILE','IF'].includes(operation(candidate)??'')))
+  fail('boucle : imbrication et IF dans le corps non couverts.');
+ let increment=forLoop?integer(Number(header[4]??1)):0;
+ if(!forLoop){
+  const update=/^(?:LET\s+)?([A-Za-z][A-Za-z0-9]{0,39}%)\s*=\s*([A-Za-z][A-Za-z0-9]{0,39}%)\s*([+-])\s*(\d{1,5})$/i.exec(body.at(-1)?.body??'');
+  if(!update||update[1]!.toUpperCase()!==name||update[2]!.toUpperCase()!==name)
+   return fail('WHILE : mise à jour simple du compteur en dernière instruction requise.');
+  increment=integer(Number(update[4])*(update[3]==='-'?-1:1));
+  if((header[2]!.startsWith('<')&&increment<=0)||(header[2]!.startsWith('>')&&increment>=0))
+   fail('WHILE : pas strictement dirigé vers la sortie requis.');
+ }
+ if(increment===0)fail('boucle : pas nul refusé.');
+ for(const [i,candidate]of body.entries()){
+  const tokens=tokenize(candidate.body),at=tokens[0]?.text.toUpperCase()==='LET'?1:0;
+  if(tokens[at]?.text.toUpperCase()===name&&tokens[at+1]?.text==='='&&(forLoop||i!==body.length-1))
+   fail('boucle : modification du compteur hors mise à jour prévue.');
+ }
+ const enters=forLoop?(value:number)=>increment>0?value<=limit:value>=limit:
+  (value:number)=>header[2]==='<'?value<limit:header[2]==='<='?value<=limit:header[2]==='>'?value>limit:value>=limit;
+ return {name,start,increment,enters,body,end};
+}
+
+function validate(statements:Statement[],conditions:boolean,entryLine?:number):void {
+ let states:State[]=[new Map()],reserved=false,branches=0,loops=0,work=0;
+ const run=(body:string,inputs:State[],allowConditions:boolean):State[]=>{
+  // Count state/instruction visits, including the discarded validation of a zero-trip body.
+  if(entryLine!==undefined&&(work+=inputs.length)>8192)fail('boucles : budget de 8192 visites dépassé.');
+  return step(body,inputs,reserved,allowConditions);
+ };
+ for(let index=0;index<statements.length;index++){
+  const row=statements[index]!,body=row.body,op=operation(row);
   if(/^MEMORY\s+&7FFF$/i.test(body)){
    if(index!==0)fail('MEMORY &7FFF doit être la première instruction.');
    reserved=true;continue;
   }
-  if(conditions&&tokens[0]?.kind==='keyword'&&tokens[0].text.toUpperCase()==='IF'){
-   if(++branches>6)fail('conditions : plus de 6 IF (64 chemins maximum).');
-   const keyword=(name:string)=>tokens.flatMap((token,i)=>token.kind==='keyword'&&token.text.toUpperCase()===name?[i]:[]);
-   const thens=keyword('THEN'),elses=keyword('ELSE');
-   if(keyword('IF').length!==1||thens.length!==1||elses.length>1||elses[0]!==undefined&&elses[0]<thens[0]!)
-    fail('conditions : IF simple, un THEN et au plus un ELSE requis ; imbrication refusée.');
-   const then=thens[0]!,otherwise=elses[0]??tokens.length;
-   const arms=[tokens.slice(then+1,otherwise),elses.length?tokens.slice(otherwise+1):null];
-   if(arms.some(arm=>arm!==null&&!arm.length))fail('conditions : branche vide.');
-   const next:Map<string,Value>[]=[];
+  if(entryLine!==undefined&&(op==='FOR'||op==='WHILE')){
+   if(++loops>4)fail('boucles : plus de 4 boucles.');
+   const loop=loopAt(statements,index,entryLine),next:State[]=[];
    for(const state of states){
-    comparison(tokens.slice(1,then),state);
-    for(const arm of arms){
-     const copy=new Map(state);
-     if(arm){
-      // Keep original spelling/spacing (not token joins), including quoted keywords.
-      const text=body.slice(arm[0]!.start,arm.at(-1)!.end);
-      primitive(text,arm,copy,reserved);
-     }
-     next.push(copy);
+    if(loop.start!==null)state.set(loop.name,loop.start);
+    let value=counterValue(state,loop.name),turns=0;
+    if(!loop.enters(value)){
+     // Reject opaque/unsafe dead bodies too, but do not adopt their assignments.
+     const discarded=new Map(state);
+     for(const line of loop.body)run(line.body,[discarded],false);
     }
+    while(loop.enters(value)){
+     if(++turns>32)fail('boucle : plus de 32 tours.');
+     for(const line of loop.body)run(line.body,[state],false);
+     if(loop.start!==null)state.set(loop.name,integer(value+loop.increment));
+     value=counterValue(state,loop.name);
+    }
+    next.push(state);
    }
-   states=next;
-  }else for(const state of states)primitive(body,tokens,state,reserved);
+   states=next;index=loop.end;continue;
+  }
+  if(conditions&&op==='IF'&&++branches>6)fail('conditions : plus de 6 IF (64 chemins maximum).');
+  states=run(body,states,conditions);
  }
 }
 
@@ -143,3 +226,5 @@ function validate(statements:Statement[],conditions:boolean):void {
 export function validateTerminalExpressions(statements:Statement[]):void {validate(statements,false);}
 /** Conservative enumeration of both arms, including implicit ELSE and infeasible combinations. */
 export function validateTerminalConditions(statements:Statement[]):void {validate(statements,true);}
+/** Closed loops on one side of entryLine; no loop stack persists through CHAIN MERGE. */
+export function validateTerminalLoops(statements:Statement[],entryLine:number):void {validate(statements,true,entryLine);}

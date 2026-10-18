@@ -1,5 +1,20 @@
 # CPCéleste — Point de reprise du développement
 
+## Incrément 0.41.28 — boucles simples dans le découpage terminal
+
+Base vérifiée : `main` à `913eac4d1180beca6302ce4474675d2438b3a315`, PR #89 fusionnée, version 0.41.27. Specifications, J0 et Desktop Linux/Windows ont réussi sur `395e08a4f70236368c40266bb384938b97dab3a9`, y compris les parcours natifs v1/v2/v3. Branche de cette tranche : `feat/basic-extraction-loops`.
+
+Réalisé : profil v4 distinct pour FOR/NEXT nommé à compteur %, bornes et pas entiers littéraux, et WHILE/WEND à compteur % initialisé, borne littérale et mise à jour monotone finale. Les boucles restent entières du même côté de CHAIN MERGE ; aucun compteur FOR modifié dans son corps, aucun IF ou boucle imbriquée dans les corps. IF simples possibles hors boucles avec conservation des deux issues. Contrôle de chaque tour et du compteur de sortie ; corps sautés vérifiés sur une copie jetée sans adopter leurs affectations. Quatre boucles, 32 tours par boucle/état, 8192 visites cumulées. Profils v1/v2/v3 et journal durable conservés. Fiches éditoriales WHILE/WEND ajoutées depuis le corpus fourni ; contrôle de consultation, consignes modèle/outil et aperçu alignés. Version 0.41.28. [Guide](implementation/basic-multifile-loops-alpha.md), [ADR 0078](adr/0078-boucles-decoupage-terminal.md).
+
+Preuves locales terminées : 530 tests Node, typecheck et build desktop réussis ; documentation valide (188 Markdown, 21 JSON, 84 exigences, 37 scénarios, six schémas et exemples). Quatorze témoins v4 exécutés depuis les vrais projets original/appliqué-rouvert/restauré-rouvert et deux références d’affichage littérales : 44 exécutions CPC réussies. Zéro/un/plusieurs tours, progression positive/négative, compteurs après sortie, combinaison FOR/WHILE avec conditions hors corps, chaînes et PRINT. Restauration exacte des sources CRLF/manifeste, retrait de PART et identité du DSK restauré vérifiés. Recette v3 rejouée après partage du validateur : 26 exécutions réussies. Tests négatifs sur frontières, corps sautés, compteur précédé d’espaces, dépassements différés et budgets. ROM externes identifiées, non distribuées.
+
+CI ajoutée : recette v4 bloquante, rapport JSON et parcours Electron `--loops` (application, fermeture complète, réouverture, annulation, brouillon et restauration exacte). Recettes v1/v2/v3 conservées. La qualification native n’est pas exécutée localement ; vérifier les workflows sur le SHA exact de la PR de cette branche avant fusion. Aucun packaging par commit.
+
+Limites : profil fermé, conservateur pour les branches et corps sautés ; refus possible de programmes valides. Pas de conditions dans les corps, boucles imbriquées, bornes/pas dynamiques, NEXT multiple, sorties anticipées, GOSUB/RETURN/DATA ou ressources. Les témoins ne prouvent pas tous les programmes admis, la mémoire libre ou le timing, ni du matériel ou un émulateur indépendant.
+
+Suite prioritaire : qualifier une mission complète de lisibilité sur des programmes représentatifs — renommage, commentaires, mise en forme, découpage admissible et tests avant/après. Les blocages guideront les extensions de structures, notamment IF dans les boucles et imbrications. Profiler 0.42 et observation CPC 0.43 ensuite. Les prochaines étapes historiques ci-dessous sont remplacées par ce point.
+
+
 ## Incrément 0.41.27 — conditions simples dans le découpage terminal
 
 Base vérifiée : `main` à `426f812a1ced890b7f94da0ba9891c394d596f2e`, PR #88 fusionnée, version 0.41.26. Les trois workflows de la PR précédente ont réussi sur `93813a0ee240f7c6751ce0a3744d0e737ccd0db1`, dont les parcours natifs v1/v2. Branche de cette tranche : `feat/basic-extraction-conditions`.
@@ -383,4 +398,4 @@ Ne pas déclarer J0–J6, R1–R9 ou la version 1.0 achevés sur la seule base d
 2. Choisir une seule tranche cohérente selon l’état le plus récent en tête de ce document, créer sa branche depuis `main`, puis fixer la matrice de preuves et les limites. Regrouper code, exemples, tests utiles, ADR/guide/roadmap et nouveau point de reprise dans une PR. Vérifier les contrôles adaptés au diff et lire la première erreur réelle avant toute relance.
 3. Avant la prochaine pause, inscrire ici commit de `main`, PR, preuves effectivement observées, limites et prochaine action. Les fichiers temporaires et logs locaux ne remplacent pas un commit publié. Ne jamais y copier clé API, ROM, document personnel ou conversation privée.
 
-**Instruction de reprise courte :** « Reprends CPCéleste après lecture d’AGENTS.md et du dernier incrément en tête de docs/reprise.md. Vérifie main distant, la PR feat/basic-extraction-conditions et ses contrôles. Après 0.41.27, qualifier des boucles simples et leurs parcours. Préserve les profils v1/v2/v3, le journal, les brouillons et les preuves firmware ; aucun packaging par commit. »
+**Instruction de reprise courte :** « Reprends CPCéleste après lecture d’AGENTS.md et du dernier incrément en tête de docs/reprise.md. Vérifie main distant, la PR feat/basic-extraction-loops et ses contrôles. Après 0.41.28, qualifier la mission complète de lisibilité sur des programmes représentatifs avant d’élargir les structures selon les besoins constatés. Préserve les profils v1/v2/v3/v4, le journal, les brouillons et les preuves firmware ; aucun packaging par commit. »
