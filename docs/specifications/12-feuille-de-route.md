@@ -1,8 +1,8 @@
 # 12 — Feuille de route et backlog de réalisation
 
-**État courant 0.41.26 :** [découpage terminal avec expressions, chaînes et affichage](../implementation/basic-multifile-expressions-alpha.md). Profil v1 conservé ; profil v2 borné avec scalaires %/$, calculs +/−/×, PRINT, MODE et CLS. Quatre témoins comparés sur ROM après application réelle/réouverture/restauration, avec trois références d’affichage littérales.
+**État courant 0.41.27 :** [découpage terminal avec conditions simples](../implementation/basic-multifile-conditions-alpha.md). Profil v3 distinct, deux branches contrôlées, six IF maximum. Huit témoins CPC couvrent comparaisons vraies/fausses sur entiers/chaînes, ELSE absent et affichage, après application réelle/réouverture/restauration. Les profils v1/v2 sont conservés.
 
-**Ordre actuel :** qualifier les conditions simples et leurs différents chemins, puis les boucles ; compléter la mission de lisibilité sur des programmes représentatifs ; reprendre ensuite profiler 0.42 et observation CPC 0.43. Les anciennes indications « prochain lot » ci-dessous sont historiques et ne remplacent pas ce point ni [la reprise](../reprise.md).
+**Ordre actuel :** qualifier les boucles simples et leurs parcours ; compléter la mission de lisibilité sur des programmes représentatifs ; reprendre ensuite profiler 0.42 et observation CPC 0.43. Les anciennes indications « prochain lot » ci-dessous sont historiques et ne remplacent pas ce point ni [la reprise](../reprise.md).
 
 
 **Renommage FN 0.41.15 :** [F2 sur une fonction ou un paramètre local](../implementation/basic-fn-rename-alpha.md). Portée affichée, définitions initiales uniques, appels couverts, aperçu et undo ; globales homonymes conservées. Types dynamiques et redéfinitions restent exclus.

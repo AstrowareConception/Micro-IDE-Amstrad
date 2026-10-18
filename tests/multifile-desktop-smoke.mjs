@@ -4,9 +4,11 @@ import {readFile,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {fixture} from './multifile-fixture.ts';
 import {expressionWitnesses} from './terminal-expression-fixtures.ts';
+import {conditionWitnesses} from './terminal-condition-fixtures.ts';
+const conditions=process.argv.includes('--conditions');
 const expressions=process.argv.includes('--expressions');
-const f=await fixture(expressions?expressionWitnesses[2].source.replace(/\n/g,'\r\n'):undefined);
-const evidence=expressions?'basic-multifile-expressions-desktop':'basic-multifile-apply-desktop';
+const f=await fixture(conditions?conditionWitnesses[7].source.replace(/\n/g,'\r\n'):expressions?expressionWitnesses[2].source.replace(/\n/g,'\r\n'):undefined);
+const evidence=conditions?'basic-multifile-conditions-desktop':expressions?'basic-multifile-expressions-desktop':'basic-multifile-apply-desktop';
 let desktop,page;const errors=[];
 async function launch(){
  desktop=await electron.launch({args:['.'],timeout:30000,env:{...process.env,XDG_CONFIG_HOME:join(f.root,'config')}});
@@ -31,7 +33,7 @@ try{
    let output;
    switch(++step){
     case 1:output=[call('read','project_read_file',{id:'main',startLine:1,endLine:200})];break;
-    case 2:output=[call('refs','reference_read_many',{names:['MEMORY','POKE','END','CHAIN','MERGE','MODE','CLS','LET','PRINT']})];break;
+    case 2:output=[call('refs','reference_read_many',{names:['MEMORY','POKE','END','CHAIN','MERGE','MODE','CLS','LET','PRINT','IF']})];break;
     case 3:output=[call('preview','language_extraction_simulate',{id:'main',expectedHash:result('read').hash,entryLine:100,newFileName:'PART'})];break;
     case 4:output=[call('apply','language_extraction_apply',{id:'main',expectedHash:result('read').hash,previewId:result('preview').previewId})];break;
     case 5:output=[call('build','build_project',{})];break;
@@ -52,6 +54,7 @@ try{
  await page.getByRole('button',{name:'Lancer l’agent',exact:true}).click();
  const result=page.locator('.agent-result');await expect(result).toContainText('Mission terminée',{timeout:30000});
  await expect(page.getByRole('region',{name:'Simulation du découpage BASIC'})).toContainText('appliqué');
+ if(conditions)await expect(page.getByRole('region',{name:'Simulation du découpage BASIC'})).toContainText('Conditions simples — deux branches contrôlées');
  if(expressions)await expect(page.getByRole('region',{name:'Simulation du découpage BASIC'})).toContainText('Scalaires %/$ initialisés');
  await expect(page.getByRole('tab',{name:'src/part.bas',exact:true})).toBeVisible();
  assert.match(await readFile(join(f.root,'src/main.bas'),'utf8'),/CHAIN MERGE "PART.BAS",100/);
@@ -75,6 +78,6 @@ try{
  assert.deepEqual(await readFile(join(f.root,'microide.project.json')),f.manifest);
  await assert.rejects(readFile(join(f.root,'src/part.bas')),{code:'ENOENT'});
  assert.deepEqual(errors,[]);
- console.log(`${expressions?'Expressions v2':'Original v1'}: native agent extraction, actual persistence, full restart, cancellation, dirty-buffer guard and durable exact-byte restoration passed.`);
+ console.log(`${conditions?'Conditions v3':expressions?'Expressions v2':'Original v1'}: native agent extraction, actual persistence, full restart, cancellation, dirty-buffer guard and durable exact-byte restoration passed.`);
 }catch(error){console.error('Editor at failure:',await page?.locator('.view-lines').allTextContents().catch(()=>[]));await page?.screenshot({path:`out/${evidence}-failure.png`}).catch(()=>undefined);throw error;}
 finally{if(desktop)await close().catch(()=>undefined);await rm(f.root,{recursive:true,force:true});}

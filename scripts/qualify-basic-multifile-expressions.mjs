@@ -4,11 +4,15 @@ import {readFile,writeFile,rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import createCpc from '../out/cpc.mjs';
 import {buildProjectDisk,newProject} from '../packages/workspace/src/project.ts';
-import {EXPRESSION_EXTRACTION_PROFILE} from '../packages/workspace/src/terminal-expressions.ts';
+import {EXPRESSION_EXTRACTION_PROFILE,CONDITIONAL_EXTRACTION_PROFILE} from '../packages/workspace/src/terminal-expressions.ts';
 import {ProjectStore} from '../apps/desktop/project-store.ts';
 import {fixture,prepare,digest as sha} from '../tests/multifile-fixture.ts';
 import {expressionWitnesses} from '../tests/terminal-expression-fixtures.ts';
+import {conditionWitnesses} from '../tests/terminal-condition-fixtures.ts';
 import {BASIC_TEST_FIRMWARE,BASIC_TEST_READY} from '../packages/emulator/src/basic-test-runtime.ts';
+const conditions=process.argv.includes('--conditions');
+const witnesses=conditions?conditionWitnesses:expressionWitnesses;
+const profile=conditions?CONDITIONAL_EXTRACTION_PROFILE:EXPRESSION_EXTRACTION_PROFILE;
 
 const root=process.env.CPC_TEST_ROM_DIR;
 if(!root)throw Error('CPC_TEST_ROM_DIR required; ROM remains external.');
@@ -42,15 +46,15 @@ async function observe(disk,screenRows){
   return {ram,screenSha256:screen.length?sha(Uint8Array.from(screen)):null};
  }finally{cpc._cpc_bridge_release_keys();cpc._cpc_bridge_dispose();for(const pointer of allocations)cpc._free(pointer);}
 }
-const report={version:1,profile:EXPRESSION_EXTRACTION_PROFILE,firmware:BASIC_TEST_FIRMWARE,engineSha256:sha(wasmBinary),
+const report={version:1,profile,firmware:BASIC_TEST_FIRMWARE,engineSha256:sha(wasmBinary),
  actualProjectWrites:true,reopened:true,physicalCpc:false,independentEmulator:false,
  screenObservation:'First printed text rows in video RAM after MODE; literal oracle, excludes Ready and cursor; no timing equivalence.',cases:[],qualified:false};
-for(const witness of expressionWitnesses){
+for(const witness of witnesses){
  const f=await fixture(witness.source.replace(/\n/g,'\r\n'));
  try{
   const p=await prepare(f.root),originalDisk=buildProjectDisk(p.snapshot.manifest,p.snapshot.files);
-  await p.tools.execute('reference_read_many',{names:['MODE','CLS','LET','PRINT']});
-  assert.equal(p.tools.extractionSimulationViews()[0].record.profile,EXPRESSION_EXTRACTION_PROFILE);
+  await p.tools.execute('reference_read_many',{names:['MODE','CLS','LET','PRINT',...(conditions?['IF']:[])]});
+  assert.equal(p.tools.extractionSimulationViews()[0].record.profile,profile);
   await p.apply();
   const reopened=await ProjectStore.open(f.root),appliedDisk=buildProjectDisk(reopened.snapshot.manifest,reopened.snapshot.files);
   assert.equal(sha(appliedDisk),p.preview.proposedDiskSha256);
@@ -79,7 +83,7 @@ for(const witness of expressionWitnesses){
   report.cases.push(specimen);
  }finally{await rm(f.root,{recursive:true,force:true});}
 }
-report.qualified=report.cases.length===4&&report.cases.every(specimen=>specimen.passed);
-await writeFile('out/basic-multifile-expressions-qualification.json',JSON.stringify(report,null,2)+'\n');
+report.qualified=report.cases.length===witnesses.length&&report.cases.every(specimen=>specimen.passed);
+await writeFile(`out/basic-multifile-${conditions?'conditions':'expressions'}-qualification.json`,JSON.stringify(report,null,2)+'\n');
 assert.equal(report.qualified,true,'Expression/display extraction differs from its RAM or literal screen oracle.');
-console.log('Four persisted/reopened/restored witnesses and three literal display oracles passed on pinned CPC 6128 ROMs.');
+console.log(`${witnesses.length} persisted/reopened/restored witnesses and ${witnesses.filter(w=>w.oracle).length} literal display oracles passed on pinned CPC 6128 ROMs (${profile}).`);
