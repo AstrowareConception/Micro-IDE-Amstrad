@@ -1,5 +1,7 @@
 # Découpage avec conditions simples — alpha 0.41.27
 
+**Suite 0.41.28 :** les [boucles simples](basic-multifile-loops-alpha.md) disposent d’un profil v4 distinct. Les conditions v3 décrites ci-dessous conservent leur contrat.
+
 Le profil `terminal-conditions-chain-merge-v3` ajoute les conditions simples au [profil expressions v2](basic-multifile-expressions-alpha.md). Les profils v1/v2 gardent leur identité. Le parcours d’application journalisée, de réouverture et de restauration durable reste celui de la [0.41.25](basic-multifile-apply-alpha.md).
 
 ## Grammaire et contrôles

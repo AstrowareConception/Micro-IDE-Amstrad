@@ -105,6 +105,7 @@ jobs:
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-basic-multifile-apply.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-basic-multifile-expressions.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-basic-multifile-expressions.mjs --conditions
+          CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-basic-multifile-expressions.mjs --loops
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node tests/basic-test-runtime-smoke.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node tests/basic-tests-firmware-smoke.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-basic-debug.mjs
@@ -115,6 +116,7 @@ jobs:
           xvfb-run -a node tests/multifile-desktop-smoke.mjs
           xvfb-run -a node tests/multifile-desktop-smoke.mjs --expressions
           xvfb-run -a node tests/multifile-desktop-smoke.mjs --conditions
+          xvfb-run -a node tests/multifile-desktop-smoke.mjs --loops
       - name: Native source organization and draft restoration
         run: xvfb-run -a npm run test:sources-desktop
       - name: Native personalization, notifications and restart
@@ -154,6 +156,8 @@ jobs:
             out/basic-multifile-expressions-desktop*.png
             out/basic-multifile-conditions-qualification.json
             out/basic-multifile-conditions-desktop*.png
+            out/basic-multifile-loops-qualification.json
+            out/basic-multifile-loops-desktop*.png
             out/basic-debug-qualification.json
             out/basic-fn-qualification.json
             out/basic-quality-browser.png

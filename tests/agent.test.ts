@@ -82,6 +82,8 @@ test('OpenAI transport uses Responses, exact schemas, no storage or retry, and n
     assert.match(body.instructions,/language_extraction_apply.*previewId/,'the provider must receive the available preview/apply workflow');
     assert.match(body.instructions,/profil expressions v2/);
     assert.match(body.instructions,/profil conditions v3/);
+    assert.match(body.instructions,/profil boucles v4/);
+    assert.match(body.instructions,/32 tours par boucle/);
     assert.match(body.instructions,/six IF maximum/);
     assert.match(body.instructions,/Ne contourne jamais un refus du profil/);
     assert.doesNotMatch(body.instructions,/Il n'existe AUCUN outil d'application/,'obsolete dry-run-only guidance would prevent the real agent from applying');
