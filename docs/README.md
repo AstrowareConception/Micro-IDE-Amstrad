@@ -1,6 +1,8 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.41.26
+# CPCéleste — Dossier de conception et réalisation — version 0.41.27
 
-**État courant 0.41.26 :** [découpage avec expressions et affichage](implementation/basic-multifile-expressions-alpha.md), [ADR 0076](adr/0076-expressions-decoupage-terminal.md). Le journal et la restauration durable de la 0.41.25 sont conservés. Les comptes rendus plus anciens ci-dessous décrivent leur version respective.
+**État courant 0.41.27 :** [conditions simples et deux branches contrôlées](implementation/basic-multifile-conditions-alpha.md), [ADR 0077](adr/0077-conditions-decoupage-terminal.md). Huit témoins CPC ; profils v1/v2 et restauration durable conservés.
+
+**Incrément 0.41.26 :** [découpage avec expressions et affichage](implementation/basic-multifile-expressions-alpha.md), [ADR 0076](adr/0076-expressions-decoupage-terminal.md). Le journal et la restauration durable de la 0.41.25 sont conservés. Les comptes rendus plus anciens ci-dessous décrivent leur version respective.
 
 
 **Renommage FN 0.41.15 :** [F2 sur une fonction ou un paramètre local](implementation/basic-fn-rename-alpha.md). Portée affichée, définitions initiales uniques, appels couverts, aperçu et undo ; globales homonymes conservées. Types dynamiques et redéfinitions restent exclus.

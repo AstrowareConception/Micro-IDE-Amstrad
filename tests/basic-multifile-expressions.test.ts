@@ -30,7 +30,7 @@ test('uninitialized variables, implicit types, type mismatches and arithmetic or
 });
 
 test('opaque syntax, dynamic state, extra statements and unsupported PRINT forms never enter the widened profile',()=>{
- for(const body of ['PRINT #9,title$','PRINT USING "##";score%','PRINT title$,score%','PRINT title$ score%','PRINT ;score%','PRINT score%;;','PRINT "unterminated','PRINT CHR$(7)','score%=RND*3','score%=TIME','score%=PEEK(&8000)','score%=score%(1)','score%=FNvalue(1)','score%=1/2','score%=1\\2','score%=2^3','score%=7 MOD 3','score%=1.5','score%=1e2','score%=&FF','score%=1:POKE &0000,1','score%=1 REM comment','IF score%=7 THEN PRINT title$','FOR score%=1 TO 4','READ score%','END','MEMORY &7FFF','CALL &BB00','PRINT% = 1'])assert.throws(()=>preview(listing(body)),/Extraction simulée refusée/,body);
+ for(const body of ['PRINT #9,title$','PRINT USING "##";score%','PRINT title$,score%','PRINT title$ score%','PRINT ;score%','PRINT score%;;','PRINT "unterminated','PRINT CHR$(7)','score%=RND*3','score%=TIME','score%=PEEK(&8000)','score%=score%(1)','score%=FNvalue(1)','score%=1/2','score%=1\\2','score%=2^3','score%=7 MOD 3','score%=1.5','score%=1e2','score%=&FF','score%=1:POKE &0000,1','score%=1 REM comment','IF score% THEN PRINT title$','FOR score%=1 TO 4','READ score%','END','MEMORY &7FFF','CALL &BB00','PRINT% = 1'])assert.throws(()=>preview(listing(body)),/Extraction simulée refusée/,body);
 });
 
 test('expression budgets, initialized memory and scalar/string limits are enforced before a candidate is built',()=>{

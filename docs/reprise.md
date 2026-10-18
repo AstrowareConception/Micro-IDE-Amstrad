@@ -1,5 +1,20 @@
 # CPCéleste — Point de reprise du développement
 
+## Incrément 0.41.27 — conditions simples dans le découpage terminal
+
+Base vérifiée : `main` à `426f812a1ced890b7f94da0ba9891c394d596f2e`, PR #88 fusionnée, version 0.41.26. Les trois workflows de la PR précédente ont réussi sur `93813a0ee240f7c6751ce0a3744d0e737ccd0db1`, dont les parcours natifs v1/v2. Branche de cette tranche : `feat/basic-extraction-conditions`.
+
+Réalisé : profil v3 distinct pour IF comparaison THEN instruction [ELSE instruction], comparateurs =/<>/</<=/>/>= entre expressions de même type, une instruction par branche. Validation des deux issues, y compris constantes et sans ELSE ; propagation des états jusqu’à la fin, six IF et 64 chemins maximum. Profils v1/v2, aperçu immuable, journal, révisions et restauration durable conservés. Consultation de IF avant application ; consignes modèle, description d’outil et profil du panneau alignés. Version 0.41.27. [Guide](implementation/basic-multifile-conditions-alpha.md), [ADR 0077](adr/0077-conditions-decoupage-terminal.md).
+
+Preuves locales terminées : 521 tests Node réussis ; typecheck et build desktop réussis ; documentation (186 Markdown, 21 JSON, 84 exigences, 37 scénarios, six schémas et exemples) valide. Huit témoins v3 exécutés depuis les vrais projets original/appliqué-rouvert/restauré-rouvert, plus deux références d’affichage littérales : 26 exécutions CPC réussies, comparateurs vrais/faux sur entiers et chaînes, ELSE absent, POKE et affichage conditionnels. Restauration exacte des sources CRLF/manifeste, retrait de PART et identité du DSK restauré vérifiés. Recette v2 partagée rejouée : quinze exécutions CPC réussies. ROM externes identifiées, non distribuées.
+
+CI ajoutée : recette v3 bloquante, rapport JSON et parcours Electron `--conditions` (application, fermeture complète, réouverture, annulation, brouillon et restauration exacte), en conservant les recettes v1/v2. La qualification native n’est pas exécutée dans l’environnement local ; contrôler les workflows sur le SHA exact de la PR de cette branche avant fusion. Aucun packaging par commit.
+
+Limites : exploration conservatrice, sans suppression des combinaisons impossibles ; des programmes valides peuvent donc être refusés. Pas de IF imbriqués, sauts conditionnels, plusieurs instructions par branche, boucles, fonctions, DATA ou ressources. Les témoins ne prouvent pas tous les programmes admis, la mémoire libre ou le timing, ni du matériel ou un émulateur indépendant.
+
+Suite prioritaire : boucles simples avec témoins couvrant leurs parcours et frontières, puis mission de lisibilité sur programmes représentatifs ; profiler 0.42 et observation CPC 0.43 ensuite. Les prochaines étapes historiques ci-dessous sont remplacées par ce point.
+
+
 
 ## Incrément 0.41.26 — expressions et affichage dans le découpage terminal
 
@@ -368,4 +383,4 @@ Ne pas déclarer J0–J6, R1–R9 ou la version 1.0 achevés sur la seule base d
 2. Choisir une seule tranche cohérente selon l’état le plus récent en tête de ce document, créer sa branche depuis `main`, puis fixer la matrice de preuves et les limites. Regrouper code, exemples, tests utiles, ADR/guide/roadmap et nouveau point de reprise dans une PR. Vérifier les contrôles adaptés au diff et lire la première erreur réelle avant toute relance.
 3. Avant la prochaine pause, inscrire ici commit de `main`, PR, preuves effectivement observées, limites et prochaine action. Les fichiers temporaires et logs locaux ne remplacent pas un commit publié. Ne jamais y copier clé API, ROM, document personnel ou conversation privée.
 
-**Instruction de reprise courte :** « Reprends CPCéleste après lecture d’AGENTS.md et du dernier incrément en tête de docs/reprise.md. Vérifie main distant, la PR feat/basic-extraction-expressions et ses contrôles. Après 0.41.26, qualifier les conditions et leurs chemins avant les boucles. Préserve les profils v1/v2, le journal, les brouillons et les preuves firmware ; aucun packaging par commit. »
+**Instruction de reprise courte :** « Reprends CPCéleste après lecture d’AGENTS.md et du dernier incrément en tête de docs/reprise.md. Vérifie main distant, la PR feat/basic-extraction-conditions et ses contrôles. Après 0.41.27, qualifier des boucles simples et leurs parcours. Préserve les profils v1/v2/v3, le journal, les brouillons et les preuves firmware ; aucun packaging par commit. »

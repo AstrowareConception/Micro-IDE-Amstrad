@@ -1,5 +1,7 @@
 # Découpage avec expressions et affichage — alpha 0.41.26
 
+**Suite 0.41.27 :** les [conditions simples](basic-multifile-conditions-alpha.md) disposent d’un profil v3 distinct. Le contrat v2 décrit ci-dessous reste inchangé.
+
 Le découpage terminal accepte désormais des calculs entiers, des chaînes et de l’affichage. Il conserve le parcours livré en [0.41.25](basic-multifile-apply-alpha.md) : aperçu exact, application journalisée, réouverture, construction du DSK et restauration durable depuis le menu Projet. Un programme déjà accepté par le profil initial conserve son identifiant `terminal-goto-chain-merge-v1`. Les formes supplémentaires relèvent du profil distinct `terminal-expressions-chain-merge-v2`.
 
 ## Ce que le profil v2 accepte
