@@ -4,6 +4,7 @@
 *.py text eol=lf
 *.yml text eol=lf
 *.bas text eol=lf
+*.bin binary
 *.dsk binary
 *.rom binary
 *.sna binary

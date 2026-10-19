@@ -1,5 +1,20 @@
 # CPCéleste — Point de reprise du développement
 
+## Incrément 0.41.30 — tests du vrai projet dans la mission
+
+Base vérifiée : `main` à `3ac8f3d8d80fe0a4d536ac83296861ccced3c2a5`, PR #91 fusionnée après Specifications, J0 et Desktop Linux/Windows réussis sur `d383e63e1ddc45c74f24d069bda0d7a6bd595cd9`. Branche : `feat/agent-project-tests`.
+
+Réalisé : outils `project_tests_list/run`, bibliothèque humaine `microide.project-tests.json` en lecture seule pour l’agent, vrai DSK construit depuis sources/ressources et entrée du manifeste. Worker CPC isolé, ROM 6128 anglaises identifiées, 1–15 secondes émulées, 60 secondes réelles, cinq essais par mission. Observations écran RGBA ou fichiers ASCII, saisies bornées, aucune instrumentation ni injection de fixture, aucune sortie copiée dans le projet hôte. Rapports avec empreintes, historique borné et statut final contrôlé : dernier essai de chaque scénario invoqué réussi sur la révision finale ; référence initiale aux mêmes attentes/ROM distinguée. Notes exclues de l’identité d’exécution. Attentes modifiées et anciennes révisions invalidées. Panneau séparé des listings autonomes, mission et consignes alignées. Exemple utilisable ressource/clavier/sortie, contrat JSON version 1 et contrôle documentaire des ressources brutes corrigé ; les `.bin` sont marqués binaires dans Git pour préserver leurs octets CRLF/EOF. [Guide](implementation/agent-project-tests-alpha.md), [ADR 0080](adr/0080-tests-vrai-projet-agent.md).
+
+Preuves locales : six témoins de lisibilité avec le vrai contrôleur, fournisseur déterministe et vrai worker CPC ; six oracles littéraux, douze essais avant/après, un module volontairement altéré rejeté et un projet ressource/clavier/sortie réussi, soit vingt exécutions observées. ROM manquantes et annulation du worker contrôlées. Attentes et ressources intactes, sorties isolées, historique relu. Banc historique rejoué après partage de l’observation : 202 cas avec verdicts attendus, puis recette worker historique réussie. 545 tests Node, TypeScript et build desktop réussis ; exemple aussi exécuté via le worker JavaScript compilé et le WASM empaqueté. Contrôle documentaire valide : 193 Markdown, 24 JSON, 84 exigences, 37 scénarios, sept schémas et huit exemples. Voir le bilan de PR pour la qualification CI finale.
+
+CI : recette firmware ajoutée et parcours Electron `--project-tests` avec import ROM par l’interface, deux missions avant/après, restauration initiale, fermeture/réouverture, retour durable à la dernière mutation et conservation des quatre rapports. Pas de serveur d’affichage local ; contrôler cette recette et les workflows sur le SHA exact de la PR avant fusion. Aucun packaging par commit.
+
+Limites : attentes à préparer dans un JSON humain, pas encore d’éditeur/capture/historique projet dans l’interface ; seuls les résultats de la mission courante y sont montrés. Observations à la fin du budget, sans preuve de terminaison, de couverture de chaque fichier/chemin ni d’équivalence universelle. Petits témoins, fournisseur déterministe, pas de matériel ou d’émulateur indépendant. Restauration complète en session et dernière mutation durable restent distinctes.
+
+Suite prioritaire : préparation et consultation humaines des scénarios projet dans l’interface, puis élargissement des structures selon les besoins (IF dans les corps et imbrications), profiler 0.42 et observation CPC 0.43. Ce point remplace les suites historiques ci-dessous.
+
+
 ## Incrément 0.41.29 — mission de lisibilité composée
 
 Base distante vérifiée : `main` à `aa2e40e4df04d23f1316a3e7ce1ae44c39077da1`, PR #90 fusionnée en 0.41.28 après réussite Specifications, J0 et Desktop Linux/Windows sur `9d47c6496877e88355218ce1f13434435dd9e992`. Les boucles sont donc déjà livrées. Branche de cette tranche : `feat/basic-readability-pipeline`.

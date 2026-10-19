@@ -1,3 +1,4 @@
+import {agentProjectTestRunner} from './agent-project-test-runner.ts';
 import { agentTestRunner } from './agent-test-runner.ts';
 import { BasicTestSuiteStore } from './basic-test-suite-store.ts';
 import { app, BrowserWindow, dialog, ipcMain, protocol, net, shell } from 'electron';
@@ -115,7 +116,7 @@ protocol.handle('cpceleste', async request => {
   } catch { return new Response('Ressource absente', { status: 404 }); }
 });
 const firmware = new FirmwareStore(join(app.getPath('userData'), 'firmware'));
-agent = new AgentController(join(app.getPath('userData'), 'agent-checkpoints'), join(base, '../../knowledge/locomotive-basic'), undefined, agentTestRunner(firmware,join(rendererRoot,'emulator')));
+agent = new AgentController(join(app.getPath('userData'), 'agent-checkpoints'), join(base, '../../knowledge/locomotive-basic'), undefined, agentTestRunner(firmware,join(rendererRoot,'emulator')),agentProjectTestRunner(firmware,join(rendererRoot,'emulator')));
 const recents = new RecentProjectsStore(app.getPath('userData'));
 async function rememberProject(store: ProjectStore) {
   try { await recents.remember(store.root, store.manifest.projectId, store.manifest.name); return ''; }

@@ -131,8 +131,12 @@ def check_project(path: Path, project: dict) -> None:
                     numbers.append(int(match.group(1)))
                 if numbers != sorted(set(numbers)) or any(n < 1 or n > 65535 for n in numbers):
                     problem(path, f"invalid line numbering in {relative}")
-            if category == "assets" and item["loadAddress"] + item["length"] > 65536:
-                problem(path, f"asset outside 16-bit memory: {relative}")
+            if category == "assets":
+                if "byteLength" in item:
+                    if len(target.read_bytes()) != item["byteLength"]:
+                        problem(path, f"raw asset byte length mismatch: {relative}")
+                elif item.get("loadAddress", 0) + item.get("length", 0) > 65536:
+                    problem(path, f"asset outside 16-bit memory: {relative}")
     if project.get("entryPoint") not in source_ids:
         problem(path, "entry point is not a source id")
     for label, values in (("id", all_ids), ("path", all_paths), ("CPC filename", names)):
@@ -203,6 +207,7 @@ def check_schemas(data: dict[Path, object]) -> int:
         "proposal": ROOT / "contracts/ai-proposal.schema.json",
         "build": ROOT / "contracts/build-report.schema.json",
         "task": ROOT / "contracts/agent-task.schema.json",
+        "project-tests": ROOT / "contracts/project-tests.schema.json",
         "test-suites": ROOT / "contracts/basic-test-suites.schema.json",
         "binary-analysis": ROOT / "contracts/binary-analysis.schema.json",
     }
@@ -216,6 +221,7 @@ def check_schemas(data: dict[Path, object]) -> int:
             problem(path, f"invalid schema: {exc}")
     examples = [(p, "project") for p in ROOT.glob("examples/**/microide.project.json")]
     examples.extend([(ROOT / "examples/ai-proposal.json", "proposal"), (ROOT / "examples/build-report.json", "build"), (ROOT / "examples/agent-task.json", "task")])
+    examples.extend((p, "project-tests") for p in ROOT.glob("examples/**/microide.project-tests.json"))
     examples.extend((p, "test-suites") for p in ROOT.glob("examples/**/microide.tests.json"))
     examples.extend((p, "binary-analysis") for p in ROOT.glob("examples/**/binary-z80.json"))
     count = 0
@@ -255,7 +261,7 @@ def main() -> int:
         return 1
     print(f"OK: {markdown_count} Markdown files, {len(data)} JSON files, {requirement_count} requirements, {scenario_count} acceptance scenarios.")
     if args.schemas:
-        print(f"OK: 6 Draft 2020-12 schemas and {validated_count} examples validated.")
+        print(f"OK: 7 Draft 2020-12 schemas and {validated_count} examples validated.")
     print("CPC execution, disk compatibility and application performance have not been tested by this check.")
     return 0
 

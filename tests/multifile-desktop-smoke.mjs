@@ -1,19 +1,25 @@
 import assert from 'node:assert/strict';
 import {_electron as electron,expect} from '@playwright/test';
-import {readFile,rm} from 'node:fs/promises';
-import {join} from 'node:path';
+import {readFile,writeFile,rm} from 'node:fs/promises';
+import {join,resolve} from 'node:path';
 import {fixture} from './multifile-fixture.ts';
 import {expressionWitnesses} from './terminal-expression-fixtures.ts';
 import {conditionWitnesses} from './terminal-condition-fixtures.ts';
 import {loopWitnesses} from './terminal-loop-fixtures.ts';
 import {readabilityWitnesses} from './readability-pipeline-fixture.mjs';
 import {createReadabilityTransport} from './readability-pipeline-transport.mjs';
-const readability=process.argv.includes('--readability');
+const projectTests=process.argv.includes('--project-tests');
+const readability=projectTests||process.argv.includes('--readability');
 const loops=process.argv.includes('--loops');
 const conditions=process.argv.includes('--conditions');
 const expressions=process.argv.includes('--expressions');
 const f=await fixture(readability?readabilityWitnesses.at(-1).source.replace(/\n/g,'\r\n'):loops?loopWitnesses[13].source.replace(/\n/g,'\r\n'):conditions?conditionWitnesses[7].source.replace(/\n/g,'\r\n'):expressions?expressionWitnesses[2].source.replace(/\n/g,'\r\n'):undefined);
-const evidence=readability?'basic-readability-desktop':loops?'basic-multifile-loops-desktop':conditions?'basic-multifile-conditions-desktop':expressions?'basic-multifile-expressions-desktop':'basic-multifile-apply-desktop';
+const evidence=projectTests?'agent-project-tests-desktop':readability?'basic-readability-desktop':loops?'basic-multifile-loops-desktop':conditions?'basic-multifile-conditions-desktop':expressions?'basic-multifile-expressions-desktop':'basic-multifile-apply-desktop';
+if(projectTests){
+ const {projectRunner,literalOracle,displayScenario}=await import('./project-test-fixture.mjs');
+ const oracle=await literalOracle(await projectRunner(),readabilityWitnesses.at(-1).oracle);
+ await writeFile(join(f.root,'microide.project-tests.json'),JSON.stringify({schemaVersion:1,scenarios:[displayScenario(oracle.screenSha256)]}));
+}
 let desktop,page;const errors=[];
 async function launch(){
  desktop=await electron.launch({args:['.'],timeout:30000,env:{...process.env,XDG_CONFIG_HOME:join(f.root,'config')}});
@@ -27,6 +33,13 @@ async function close(){await desktop.evaluate(({BrowserWindow})=>BrowserWindow.g
 async function restoreMenu(){await page.getByRole('button',{name:'Projet',exact:true}).click();return page.getByRole('menuitem',{name:'Rétablir la dernière modification IA…',exact:true});}
 try{
  await launch();
+ if(projectTests){
+  await page.keyboard.press('Control+Alt+r');
+  for(const [role,label] of [['os','OS CPC'],['basic','BASIC 1.1'],['amsdos','AMSDOS']]){
+   await desktop.evaluate(({dialog},path)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[path]});},resolve(process.env.CPC_TEST_ROM_DIR,`cpc6128_${role}.bin`));
+   const button=page.getByRole('button',{name:`Importer ${label}`,exact:true});await button.click();await expect(button.locator('..')).toContainText('Disponible');
+  }
+ }
  await desktop.evaluate(()=>{
   let step=0;const model='gpt-5.6-luna';
   globalThis.fetch=async(url,init)=>{
@@ -47,7 +60,7 @@ try{
    return Response.json({model,status:'completed',output,usage:{input_tokens:100,output_tokens:20,total_tokens:120}});
   };
  });
- if(readability)await desktop.evaluate(createReadabilityTransport,true);
+ if(readability)await desktop.evaluate(createReadabilityTransport,projectTests?{projectTests:true}:true);
  if(!await page.getByLabel('Mission de programmation',{exact:true}).isVisible())await page.getByRole('button',{name:'Afficher l’agent IA',exact:true}).click();
  await page.getByRole('button',{name:'Réglages IA',exact:true}).click();
  const settings=page.getByRole('dialog',{name:'Réglages de l’agent IA',exact:true});
@@ -73,7 +86,11 @@ try{
  let expectedRestored=f.original;
  if(readability){
   await expect(page.getByRole('region',{name:'Simulation du découpage BASIC'})).toContainText('Code commenté');
-  await expect(result).toContainText('Aucun test CPC exécuté');
+  if(projectTests){
+   const tests=page.getByRole('region',{name:'Tests du projet CPC',exact:true});
+   await expect(tests).toContainText('1 avec référence initiale');await expect(tests).toContainText('révision antérieure');await expect(tests).toContainText('révision courante');
+   const history=JSON.parse(await readFile(join(f.root,'.microide/project-test-reports.json'),'utf8'));assert.equal(history.reports.length,2);assert.ok(history.reports.every(r=>r.result.outcome==='passed'));assert.equal(history.reports[0].project.sources.length,2);
+  }else await expect(result).toContainText('Aucun test CPC exécuté');
   const main=await readFile(join(f.root,'src/main.bas'),'utf8'),part=await readFile(join(f.root,'src/part.bas'),'utf8');
   expectedRestored=Buffer.from(main.replace('CHAIN MERGE "PART.BAS",100','GOTO 100')+part);
   assert.match(expectedRestored.toString(),/99 REM Suite du calcul/);assert.match(expectedRestored.toString(),/score%/);
@@ -82,7 +99,7 @@ try{
   await expect(page.getByRole('tab',{name:'src/part.bas',exact:true})).toHaveCount(0);
   assert.equal(await readFile(join(f.root,'src/main.bas'),'utf8'),readabilityWitnesses.at(-1).source);
   assert.equal(JSON.parse(await readFile(join(f.root,'microide.project.json'),'utf8')).documents.length,0);
-  await desktop.evaluate(createReadabilityTransport,true);
+  await desktop.evaluate(createReadabilityTransport,projectTests?{projectTests:true}:true);
   await page.getByRole('button',{name:'Lancer l’agent',exact:true}).click();
   await expect(result).toContainText('Mission terminée',{timeout:30000});
   await expect(page.getByRole('tab',{name:'src/part.bas',exact:true})).toBeVisible();
@@ -107,6 +124,7 @@ try{
  if(readability){const manifest=JSON.parse(await readFile(join(f.root,'microide.project.json'),'utf8'));assert.equal(manifest.sources.length,1);assert.equal(manifest.documents.length,1);}
  else assert.deepEqual(await readFile(join(f.root,'microide.project.json')),f.manifest);
  await assert.rejects(readFile(join(f.root,'src/part.bas')),{code:'ENOENT'});
+ if(projectTests){const history=JSON.parse(await readFile(join(f.root,'.microide/project-test-reports.json'),'utf8'));assert.equal(history.reports.length,4);}
  assert.deepEqual(errors,[]);
  console.log(`${readability?'Readability pipeline v5':loops?'Loops v4':conditions?'Conditions v3':expressions?'Expressions v2':'Original v1'}: native agent extraction, actual persistence, full restart, cancellation, dirty-buffer guard and durable exact-byte restoration passed.`);
 }catch(error){console.error('Editor at failure:',await page?.locator('.view-lines').allTextContents().catch(()=>[]));await page?.screenshot({path:`out/${evidence}-failure.png`}).catch(()=>undefined);throw error;}

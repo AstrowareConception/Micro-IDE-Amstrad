@@ -1,8 +1,8 @@
 # 12 — Feuille de route et backlog de réalisation
 
-**État courant 0.41.29 :** [mission de lisibilité composée](../implementation/basic-readability-pipeline-alpha.md). Renommage, espaces, REM, note et découpage exercés ensemble ; profil commenté v5, six témoins et 30 exécutions CPC des projets/oracles. Les tests CPC de projet restent externes à la mission. Profils v1/v2/v3/v4 et journal conservés.
+**État courant 0.41.30 :** [tests du vrai projet par l’agent](../implementation/agent-project-tests-alpha.md). Scénarios externes en lecture seule, exécution du DSK complet, empreintes des sources/ressources/attentes/ROM et bilan avant/après. Six témoins composés qualifiés ; une régression du module est détectée. Les suites autonomes restent distinctes.
 
-**Ordre actuel :** relier des scénarios CPC au vrai projet/DSK, utilisables avant/après par l’agent ; élargir ensuite les structures selon les besoins observés, puis profiler 0.42 et observation CPC 0.43. Les prochains lots historiques ci-dessous sont remplacés par ce point et [la reprise](../reprise.md).
+**Ordre actuel :** faciliter la préparation humaine et la consultation des scénarios projet dans l’interface ; élargir ensuite les structures selon les besoins observés, puis profiler 0.42 et observation CPC 0.43. Les prochains lots historiques ci-dessous sont remplacés par ce point et [la reprise](../reprise.md).
 
 
 **Renommage FN 0.41.15 :** [F2 sur une fonction ou un paramètre local](../implementation/basic-fn-rename-alpha.md). Portée affichée, définitions initiales uniques, appels couverts, aperçu et undo ; globales homonymes conservées. Types dynamiques et redéfinitions restent exclus.

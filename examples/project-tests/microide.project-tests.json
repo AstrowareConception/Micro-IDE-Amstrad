@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "scenarios": [
+    {
+      "id": "io",
+      "name": "Ressource et clavier",
+      "seconds": 12,
+      "inputs": [
+        {
+          "atMs": 4000,
+          "text": "CPC\r"
+        }
+      ],
+      "checks": [
+        {
+          "kind": "file",
+          "name": "OUT.TXT",
+          "text": "BONJOUR CPC\r\n"
+        }
+      ]
+    }
+  ]
+}
