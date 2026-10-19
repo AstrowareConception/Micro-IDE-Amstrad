@@ -15,7 +15,7 @@ export function ProjectTestsPanel({sessionId,buffers,visible,busy,binary,onDirty
  const buffersKey=JSON.stringify(buffers),latestBuffers=useRef(buffers);latestBuffers.current=buffers;
  const generation=useRef(0),mounted=useRef(true),activeJob=useRef('');
  const locked=busy||working||!!jobId;
- const reports=[...memoryReports,...(snapshot?.reports??[]).filter(r=>!memoryReports.some(m=>m.id===r.id))].slice(0,10);
+ const reports=[...memoryReports,...(snapshot?.reports??[]).filter(r=>!memoryReports.some(m=>m.id===r.id))].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,10);
  const report=reports.find(r=>r.id===reportId)??reports[0];
  const scenario=drafts.find(s=>s.id===selected);
  useEffect(()=>{onDirty(dirty);},[dirty,onDirty]);
@@ -71,6 +71,12 @@ export function ProjectTestsPanel({sessionId,buffers,visible,busy,binary,onDirty
   }catch(reason){if(mounted.current)setError(reason instanceof Error?reason.message:'Lancement impossible.');}
   finally{if(mounted.current)setWorking(false);}
  }
+ async function exportReport(){
+  if(!port||!sessionId||!report||locked)return;setWorking(true);setError('');
+  try{const result=await port.export(sessionId,report.id);if(!mounted.current)return;if(result&&'error' in result)throw Error(result.error);setNotice(result?`Rapport exporté : ${result.name}`:'Export annulé.');}
+  catch(reason){if(mounted.current)setError(reason instanceof Error?reason.message:'Export impossible.');}
+  finally{if(mounted.current)setWorking(false);}
+ }
  async function cancel(){if(!port||!sessionId||!jobId)return;try{const result=await port.cancel(sessionId,jobId);if(mounted.current)setNotice('error' in result?result.error:'Arrêt demandé…');}catch{if(mounted.current)setError('Arrêt impossible. Réessayez.');}}
  function reload(){if(!dirty||window.confirm('Abandonner les modifications des scénarios et relire les fichiers ?')){setNotice('');void refresh();}}
  function add(){const id=crypto.randomUUID();setDrafts([...drafts,{id,name:'Nouveau scénario',seconds:8,inputs:[],checks:[{kind:'file',name:'OUT.TXT',text:''}]}]);setSelected(id);}
@@ -91,7 +97,7 @@ export function ProjectTestsPanel({sessionId,buffers,visible,busy,binary,onDirty
    </>}
    {error&&<p role="alert" className="error">{error}</p>}{notice&&<p role="status">{notice}</p>}{snapshot?.historyError&&<p role="alert">{snapshot.historyError}</p>}
    <h4>Historique du projet</h4><p>Les dix derniers rapports, y compris ceux des missions agent. Leur consultation ne relance aucun essai.</p>
-   {reports.length?<><label>Rapport<select value={report?.id??''} onChange={e=>setReportId(e.target.value)}>{reports.map(r=><option key={r.id} value={r.id}>{new Date(r.createdAt).toLocaleString()} · {r.scenario.name} · {projectOutcome[r.result.outcome]}</option>)}</select></label>{report&&<ProjectTestReportView report={report} current={current}/>}</>:<p>Aucun rapport disponible.</p>}
+   {reports.length?<><label>Rapport<select value={report?.id??''} onChange={e=>setReportId(e.target.value)}>{reports.map(r=><option key={r.id} value={r.id}>{new Date(r.createdAt).toLocaleString()} · {r.scenario.name} · {projectOutcome[r.result.outcome]}</option>)}</select></label>{report&&<ProjectTestReportView report={report} current={current} disabled={locked} onExport={()=>void exportReport()}/>}</>:<p>Aucun rapport disponible.</p>}
   </>}
  </section>;
 }

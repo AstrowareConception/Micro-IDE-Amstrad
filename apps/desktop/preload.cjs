@@ -118,6 +118,7 @@ contextBridge.exposeInMainWorld('desktop', Object.freeze({
     inspect: (sessionId,buffers) => ipcRenderer.invoke('project-tests:inspect',{sessionId,buffers}),
     save: (sessionId,revision,scenarios) => ipcRenderer.invoke('project-tests:save',{sessionId,revision,scenarios}),
     start: (sessionId,buffers,scenarioId,revision,projectSha256) => ipcRenderer.invoke('project-tests:start',{sessionId,buffers,scenarioId,revision,projectSha256}),
+    export: (sessionId,reportId) => ipcRenderer.invoke('project-tests:export',{sessionId,reportId}),
     status: (sessionId,id) => ipcRenderer.invoke('project-tests:status',{sessionId,id}),
     cancel: (sessionId,id) => ipcRenderer.invoke('project-tests:cancel',{sessionId,id}),
   }),

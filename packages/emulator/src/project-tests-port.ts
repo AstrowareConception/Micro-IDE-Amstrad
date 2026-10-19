@@ -13,6 +13,7 @@ export interface ProjectTestsPort {
  inspect(sessionId:string,buffers:Buffers):Promise<ProjectTestsSnapshot|Failure>;
  save(sessionId:string,revision:string|null,scenarios:ProjectScenario[]):Promise<ProjectTestLibrary|Failure>;
  start(sessionId:string,buffers:Buffers,scenarioId:string,revision:string,projectSha256:string):Promise<{id:string}|Failure>;
+ export(sessionId:string,reportId:string):Promise<{name:string}|Failure|null>;
  status(sessionId:string,id:string):Promise<ProjectTestJob|Failure>;
  cancel(sessionId:string,id:string):Promise<{stopped:boolean}|Failure>;
 }

@@ -46,8 +46,9 @@ test('human execution requires matching project and expectations and archives ma
   const fresh=await controller.inspect(store,changed),{id}=await controller.start(store,changed,'io',fresh.library.revision,fresh.projectSha256);
   assert.throws(()=>controller.status('wrong',id),/session/);assert.throws(()=>controller.cancel(store.sessionId,'wrong'),/session/);
   const done=await finished(controller,store.sessionId,id);assert.equal(done.report!.project.projectSha256,fresh.projectSha256);assert.equal(done.report!.project.sources[0]!.sha256,hash(changed[0]!.source));
+  assert.deepEqual(await controller.report(store,done.report!.id),done.report);await assert.rejects(controller.report(store,'missing'),/Rapport absent/);
   assert.deepEqual(await readFile(join(f.root,'src/main.bas')),f.original);
-  const reopened=await ProjectStore.open(f.root),history=await controller.inspect(reopened.store,reopened.snapshot.files);assert.equal(history.reports.length,1);assert.notEqual(history.projectSha256,history.reports[0]!.project.projectSha256);
+  const reopened=await ProjectStore.open(f.root),history=await controller.inspect(reopened.store,reopened.snapshot.files);assert.equal(history.reports.length,1);assert.deepEqual(await controller.report(reopened.store,done.report!.id),done.report);assert.notEqual(history.projectSha256,history.reports[0]!.project.projectSha256);
  }finally{await rm(f.root,{recursive:true,force:true});}
 });
 test('active human job rejects overlap, cancels and preserves malformed history for export',async()=>{
@@ -59,6 +60,6 @@ test('active human job rejects overlap, cancels and preserves malformed history 
   assert.equal(controller.cancel(store.sessionId,job.id).stopped,true);assert.equal((await finished(controller,store.sessionId,job.id)).report!.result.outcome,'cancelled');
   const path=join(f.root,'.microide/project-test-reports.json');await writeFile(path,'broken history');
   const second=new ProjectTestsController(async()=>blocked()),broken=await second.inspect(store,snapshot.files);assert.ok(broken.historyError);
-  const started=await second.start(store,snapshot.files,'io',broken.library.revision,broken.projectSha256),result=await finished(second,store.sessionId,started.id);assert.ok(result.archiveError);assert.ok(result.report);assert.equal(await readFile(path,'utf8'),'broken history');
+  const started=await second.start(store,snapshot.files,'io',broken.library.revision,broken.projectSha256),result=await finished(second,store.sessionId,started.id);assert.ok(result.archiveError);assert.ok(result.report);const exported=await second.report(store,result.report.id);assert.deepEqual(exported,result.report);exported.result.message='modified copy';assert.notEqual((await second.report(store,result.report.id)).result.message,exported.result.message);assert.equal(await readFile(path,'utf8'),'broken history');
  }finally{await rm(f.root,{recursive:true,force:true});}
 });

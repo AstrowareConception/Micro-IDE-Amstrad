@@ -307,6 +307,13 @@ route('binary:export', async payload => {
 route('project-tests:inspect', async payload => { const {store,value}=projectRequest(payload); return projectTests.inspect(store,bufferRequest(value.buffers)); });
 route('project-tests:save', async payload => { const {store,value}=projectRequest(payload); await store.assertCurrent(); return new ProjectTestStore(store.root,store.manifest.projectId).save(value.revision,value.scenarios); });
 route('project-tests:start', async payload => { const {store,value}=projectRequest(payload); return projectTests.start(store,bufferRequest(value.buffers),value.scenarioId,value.revision,value.projectSha256); });
+route('project-tests:export', async payload => {
+  const {store,value}=projectRequest(payload),report=await projectTests.report(store,value.reportId);
+  const selection=await dialog.showSaveDialog(window,{defaultPath:`rapport-projet-${report.id}.json`,filters:[{name:'Rapport JSON',extensions:['json']}]});
+  if(selection.canceled||!selection.filePath)return null;
+  await store.assertExportDestination(selection.filePath);
+  await atomicWrite(selection.filePath,Buffer.from(JSON.stringify(report,null,2)+'\n'));return {name:basename(selection.filePath)};
+});
 route('project-tests:status', async payload => { const {store,value}=projectRequest(payload); return projectTests.status(store.sessionId,value.id); },true);
 route('project-tests:cancel', async payload => { const {store,value}=projectRequest(payload); return projectTests.cancel(store.sessionId,value.id); },true);
 function testSuiteStore(store: ProjectStore) { return new BasicTestSuiteStore(store.root, store.manifest.projectId); }

@@ -18,7 +18,7 @@ Une attente écran propose nom, rectangle et SHA-256 RGBA de la référence, dan
 
 ## Cohérence, historique et responsabilités
 
-Le processus principal construit le DSK et les rapports à partir du projet courant. Le renderer ne fournit ni chemin de destination, ni rapport à archiver, ni résultat CPC. Les canaux humains `project-tests:inspect/save/start/status/cancel` sont distincts des outils agent `project_tests_list/run`.
+Le processus principal construit le DSK et les rapports à partir du projet courant. Le renderer ne fournit ni chemin de destination, ni rapport à archiver ou exporter, ni résultat CPC. L’export reçoit un identifiant : le processus principal retrouve le rapport dans sa mémoire ou dans l’historique validé, puis propose un dialogue natif de sauvegarde hors du dossier projet. Les canaux humains `project-tests:inspect/save/start/status/cancel/export` sont distincts des outils agent `project_tests_list/run`.
 
 Enregistrer contrôle deux fois la révision exacte de la bibliothèque ; une modification concurrente, un fichier invalide, excessif ou lié est refusé sans remplacement. **Actualiser les scénarios et rapports** relit le disque et demande d’abord l’abandon d’un éventuel brouillon. Changer de projet ou fermer la fenêtre protège aussi les attentes non enregistrées. Les protections existantes des sources restent actives.
 

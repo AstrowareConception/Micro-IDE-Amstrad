@@ -557,6 +557,6 @@ export class ProjectStore {
   async assertExportDestination(path: string): Promise<void> {
     // Canonicalize the parent so a directory alias cannot redirect export into the project.
     const parent = await realpath(dirname(path)); const location = relative(this.root, join(parent, path.split(/[\\/]/).at(-1)!));
-    if (!location.startsWith('..') && !isAbsolute(location)) throw new Error('Exportez le DSK hors du dossier projet pour protéger ses fichiers.');
+    if (!location.startsWith('..') && !isAbsolute(location)) throw new Error('Exportez le fichier hors du dossier projet pour protéger ses fichiers.');
   }
 }
