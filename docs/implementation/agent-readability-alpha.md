@@ -1,5 +1,7 @@
 # Lisibilité et tests CPC de l’agent — alpha 0.41.11
 
+**Complément 0.41.29 :** le [parcours composé](basic-readability-pipeline-alpha.md) remplace les anciennes restrictions FN et plan sans déplacement ci-dessous. Les outils bornés peuvent appliquer ces transformations ; les suites CPC autonomes ne couvrent toujours pas un projet CHAIN MERGE.
+
 **Complément 0.41.20 :** [analyse exploratoire des sous-programmes et des risques de découpage multifichier](basic-module-analysis-alpha.md). Les résultats sont des propositions documentaires, non des transformations automatiques.
 
 

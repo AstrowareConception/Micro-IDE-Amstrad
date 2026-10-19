@@ -1,8 +1,8 @@
 # 17 — Roadmap qualifiée d’un IDE CPCéleste abouti
 
-**État courant 0.41.28 :** [découpage terminal avec boucles simples](../implementation/basic-multifile-loops-alpha.md). Profil v4 distinct, FOR/NEXT et WHILE/WEND bornés, boucles fermées de chaque côté du chargement. Quatorze témoins CPC couvrent zéro/un/plusieurs tours, progression positive/négative, compteurs de sortie et affichage, après application réelle/réouverture/restauration. Profils v1/v2/v3 conservés.
+**État courant 0.41.29 :** [mission de lisibilité composée](../implementation/basic-readability-pipeline-alpha.md). Renommage, espaces, REM, note et découpage exercés ensemble ; profil commenté v5, six témoins et 30 exécutions CPC des projets/oracles. Les tests CPC de projet restent externes à la mission. Profils v1/v2/v3/v4 et journal conservés.
 
-**Ordre actuel :** qualifier la mission complète de lisibilité sur des programmes représentatifs (renommage, commentaires, mise en forme, découpage admissible et tests avant/après), puis élargir les structures selon les blocages observés ; reprendre ensuite profiler 0.42 et observation CPC 0.43. Les anciennes indications « prochain lot » ci-dessous sont historiques et ne remplacent pas ce point ni [la reprise](../reprise.md).
+**Ordre actuel :** relier des scénarios CPC au vrai projet/DSK, utilisables avant/après par l’agent ; élargir ensuite les structures selon les besoins observés, puis profiler 0.42 et observation CPC 0.43. Les prochains lots historiques ci-dessous sont remplacés par ce point et [la reprise](../reprise.md).
 
 
 **0.41.24 — Découpage sans écriture :** [simulation d'une extraction terminale GOTO → CHAIN MERGE](../implementation/basic-multifile-dry-run-alpha.md) avec aperçu global MAIN/PART, construction de deux DSK AMSDOS et qualification sur ROM CPC. Pas de commande apply ni d'extraction persistée. Prochain jalon : transaction atomique de commit/rollback contrôlée par révision.

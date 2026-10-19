@@ -1,6 +1,8 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.41.28
+# CPCéleste — Dossier de conception et réalisation — version 0.41.29
 
-**État courant 0.41.28 :** [boucles simples et frontières du découpage](implementation/basic-multifile-loops-alpha.md), [ADR 0078](adr/0078-boucles-decoupage-terminal.md). Quatorze témoins CPC, profils v1/v2/v3 et journal conservés.
+**État courant 0.41.29 :** [composition des outils de lisibilité](implementation/basic-readability-pipeline-alpha.md), [ADR 0079](adr/0079-composition-lisibilite-basic.md). Profil REM v5, six programmes exécutés sur CPC après transformation réelle ; suites agent multifichiers encore à réaliser.
+
+**Incrément 0.41.28 :** [boucles simples et frontières du découpage](implementation/basic-multifile-loops-alpha.md), [ADR 0078](adr/0078-boucles-decoupage-terminal.md). Quatorze témoins CPC, profils v1/v2/v3 et journal conservés.
 
 **Incrément 0.41.27 :** [conditions simples et deux branches contrôlées](implementation/basic-multifile-conditions-alpha.md), [ADR 0077](adr/0077-conditions-decoupage-terminal.md). Huit témoins CPC ; profils v1/v2 et restauration durable conservés.
 

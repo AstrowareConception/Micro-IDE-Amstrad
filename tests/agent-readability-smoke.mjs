@@ -30,8 +30,8 @@ export async function verifyAgentReadability(browser){
   if(!await page.getByRole('region',{name:'Agent OpenAI',exact:true}).isVisible())await page.getByRole('button',{name:'Afficher l’agent IA',exact:true}).click();
   const agent=page.getByRole('region',{name:'Agent OpenAI',exact:true}),objective=agent.getByLabel('Mission de programmation',{exact:true});
   await objective.fill('Mission précédente');await agent.getByText('Améliorer la lisibilité du code…',{exact:true}).click();
-  await agent.getByLabel('Plan de découpage en fichiers (sans déplacement de code)',{exact:true}).check();await agent.getByRole('button',{name:'Préparer la mission de lisibilité',exact:true}).click();
-  await expect(objective).toHaveValue(/Ne déplace pas de code/);await expect(objective).toHaveValue(/DEFINT/);assert.equal(step,0);
+  await agent.getByLabel('Découpage en fichiers des blocs admissibles',{exact:true}).check();await agent.getByRole('button',{name:'Préparer la mission de lisibilité',exact:true}).click();
+  await expect(objective).toHaveValue(/language_extraction_apply/);await expect(objective).toHaveValue(/DEFINT/);assert.equal(step,0);
   await agent.getByRole('button',{name:'Rétablir la mission précédente',exact:true}).click();await expect(objective).toHaveValue('Mission précédente');await agent.getByRole('button',{name:'Préparer la mission de lisibilité',exact:true}).click();
   await agent.locator('.readability-panel').evaluate(e=>e.scrollIntoView({block:'start'}));
   await page.screenshot({path:'out/agent-readability-alpha.png'});
