@@ -16,6 +16,10 @@ async function launch(){
 }
 async function close(){await desktop.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().forEach(w=>w.destroy()));await desktop.close();desktop=undefined;}
 const button=name=>panel.getByRole('button',{name,exact:true});
+async function confirmAndClick(name,expected){
+ await page.evaluate(()=>{const previous=window.confirm;window.confirm=message=>{window.confirm=previous;globalThis.scenarioConfirmation=message;return true;};});
+ await button(name).click();assert.match(await page.evaluate(()=>globalThis.scenarioConfirmation),expected);
+}
 async function save(){await button('Enregistrer les scénarios').click();await expect(panel).toContainText('Scénarios enregistrés.');await expect(button('Exécuter le scénario')).toBeEnabled();}
 async function run(outcome){await button('Exécuter le scénario').click();await expect(panel.getByRole('article',{name:'Rapport de test projet'}).getByRole('heading',{name:`${outcome} · Dialogue CPC`,exact:true})).toBeVisible({timeout:65000});await expect(button('Exécuter le scénario')).toBeEnabled();}
 try{
@@ -44,10 +48,10 @@ try{
  await close();await launch();await expect(panel.getByLabel('Texte ASCII attendu',{exact:true})).toHaveValue('MAUVAIS\\r\\n');await expect(panel.getByRole('article').getByRole('heading')).toContainText('Échec');await expect(panel.getByLabel('Rapport',{exact:true}).locator('option')).toHaveCount(3);
  await panel.getByLabel('Nom du scénario',{exact:true}).fill('Brouillon');const external=JSON.parse(await readFile(path,'utf8'));external.scenarios[0].name='Autre éditeur';await writeFile(path,JSON.stringify(external));
  await button('Enregistrer les scénarios').click();await expect(panel.getByRole('alert')).toContainText('changé sur disque');assert.equal(JSON.parse(await readFile(path,'utf8')).scenarios[0].name,'Autre éditeur');
- page.once('dialog',dialog=>dialog.accept());await button('Actualiser les scénarios et rapports').click();await expect(panel.getByLabel('Nom du scénario',{exact:true})).toHaveValue('Autre éditeur');
+ await confirmAndClick('Actualiser les scénarios et rapports',/Abandonner les modifications/);await expect(panel.getByLabel('Nom du scénario',{exact:true})).toHaveValue('Autre éditeur');
  await button('Nouveau scénario').click();await panel.getByLabel('Nom du scénario',{exact:true}).fill('Zone témoin');await button('Retirer l’attente 1').click();await button('Ajouter une attente écran').click();await panel.getByLabel('Empreinte SHA-256 attendue',{exact:true}).fill('a'.repeat(64));await save();
  await button('Actualiser les scénarios et rapports').click();await expect(panel.getByLabel('Empreinte SHA-256 attendue',{exact:true})).toHaveValue('a'.repeat(64));
- page.once('dialog',dialog=>dialog.accept());await button('Supprimer le scénario').click();await save();assert.equal(JSON.parse(await readFile(path,'utf8')).scenarios.length,1);
+ await confirmAndClick('Supprimer le scénario',/Supprimer le scénario/);await save();assert.equal(JSON.parse(await readFile(path,'utf8')).scenarios.length,1);
  await panel.getByLabel('Nom du scénario',{exact:true}).fill('Dialogue CPC');await panel.getByLabel('Texte ASCII attendu',{exact:true}).fill('BONJOUR CPC\\r\\n');await save();
  await button('Exécuter le scénario').click();await button('Arrêter l’essai').click();await expect(panel.getByRole('article').getByRole('heading')).toContainText('Arrêté',{timeout:65000});await expect(button('Exécuter le scénario')).toBeEnabled();
  await page.getByRole('button',{name:'Agrandir les sorties',exact:true}).click();await panel.getByRole('article').scrollIntoViewIfNeeded();await page.screenshot({path:'out/project-scenarios-desktop.png'});

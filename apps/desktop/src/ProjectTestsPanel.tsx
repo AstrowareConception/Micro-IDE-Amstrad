@@ -88,7 +88,7 @@ export function ProjectTestsPanel({sessionId,buffers,visible,busy,binary,onDirty
   {!sessionId||!port||binary?<p>Ouvrez un projet BASIC dans l’application desktop pour préparer et exécuter ses scénarios.</p>:<>
    <div className="project-test-actions"><button disabled={locked} onClick={reload}>Actualiser les scénarios et rapports</button><button disabled={locked} onClick={onConfigure}>Configurer les ROM</button></div>
    {snapshot&&<>
-    <div className="project-test-actions"><label>Scénario<select disabled={locked} value={selected} onChange={e=>setSelected(e.target.value)}><option value="">Choisir un scénario</option>{drafts.map(s=><option key={s.id} value={s.id}>{s.name||'Sans nom'}</option>)}</select></label><button disabled={locked||drafts.length>=16} onClick={add}>Nouveau scénario</button><button disabled={locked||!scenario} onClick={remove}>Supprimer le scénario</button></div>
+    <div className="project-test-actions"><label>Scénario<select aria-label="Scénario" disabled={locked} value={selected} onChange={e=>setSelected(e.target.value)}><option value="">Choisir un scénario</option>{drafts.map(s=><option key={s.id} value={s.id}>{s.name||'Sans nom'}</option>)}</select></label><button disabled={locked||drafts.length>=16} onClick={add}>Nouveau scénario</button><button disabled={locked||!scenario} onClick={remove}>Supprimer le scénario</button></div>
     {scenario&&<ProjectScenarioEditor scenario={scenario} disabled={locked} onChange={value=>setDrafts(drafts.map(s=>s.id===value.id?value:s))}/>}
     {dirty&&<p role="status">Modifications des scénarios non enregistrées. Enregistrez avant de lancer un essai.</p>}
     {invalid&&<p className="error">{invalid}</p>}
@@ -97,7 +97,7 @@ export function ProjectTestsPanel({sessionId,buffers,visible,busy,binary,onDirty
    </>}
    {error&&<p role="alert" className="error">{error}</p>}{notice&&<p role="status">{notice}</p>}{snapshot?.historyError&&<p role="alert">{snapshot.historyError}</p>}
    <h4>Historique du projet</h4><p>Les dix derniers rapports, y compris ceux des missions agent. Leur consultation ne relance aucun essai.</p>
-   {reports.length?<><label>Rapport<select value={report?.id??''} onChange={e=>setReportId(e.target.value)}>{reports.map(r=><option key={r.id} value={r.id}>{new Date(r.createdAt).toLocaleString()} · {r.scenario.name} · {projectOutcome[r.result.outcome]}</option>)}</select></label>{report&&<ProjectTestReportView report={report} current={current} disabled={locked} onExport={()=>void exportReport()}/>}</>:<p>Aucun rapport disponible.</p>}
+   {reports.length?<><label>Rapport<select aria-label="Rapport" value={report?.id??''} onChange={e=>setReportId(e.target.value)}>{reports.map(r=><option key={r.id} value={r.id}>{new Date(r.createdAt).toLocaleString()} · {r.scenario.name} · {projectOutcome[r.result.outcome]}</option>)}</select></label>{report&&<ProjectTestReportView report={report} current={current} disabled={locked} onExport={()=>void exportReport()}/>}</>:<p>Aucun rapport disponible.</p>}
   </>}
  </section>;
 }
