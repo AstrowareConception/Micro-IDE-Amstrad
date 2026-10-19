@@ -1,5 +1,19 @@
 # CPCéleste — Point de reprise du développement
 
+## Incrément 0.41.31 — scénarios projet dans l’interface
+
+Base vérifiée : `main` à `62a9ae080d34a4bbcac1247df1b9911b8c5c6705`, PR #92 fusionnée après Specifications, J0 et Desktop Linux/Windows réussis sur `921606de8a14eec24959fe9d85126db302e0488a`. Branche : `feat/project-scenarios-ui`.
+
+Réalisé : panneau Tests projet, création/édition/suppression de scénarios, clavier avec échappements réversibles, attentes fichier et rectangle/empreinte écran. Sauvegarde humaine avec contrôle de révision, brouillons protégés à la fermeture/changement de projet. Lancement du vrai DSK depuis les buffers ouverts et ressources, sans clé IA, worker annulable et opérations concurrentes bloquées. Rapport construit dans le processus principal, historique partagé avec les missions, comparaison des révisions, export JSON et erreurs d’archivage visibles. Formats existants conservés ; aucun outil agent d’écriture des attentes. [Guide](implementation/project-scenarios-ui-alpha.md), [ADR 0081](adr/0081-interface-scenarios-projet.md).
+
+Preuves locales : 550 tests Node, TypeScript et build desktop réussis ; trois essais réels via le nouveau contrôleur (succès, buffer PART altéré rejeté, retour au succès) avec attentes identiques, sources hôte/ressource intactes et historique relu. Rapport `out/project-scenarios-qualification.json`. Contrôle documentaire réussi : 195 Markdown, 24 JSON, 84 exigences, 37 scénarios, sept schémas et huit exemples. Voir le bilan de PR pour la qualification CI finale sur le SHA exact.
+
+CI : ajout de la recette CPC et d’un parcours Electron de préparation clavier/fichier/écran, protection du brouillon, blocage sans ROM, import ROM, succès/échec, export, réouverture, conflit externe, suppression et arrêt. Pas de serveur d’affichage local ; contrôler logs et capture CI avant fusion. Aucun packaging par commit.
+
+Limites : référence écran encore renseignée par empreinte, sans capture de référence ni adoption automatique d’un résultat. Correspondance de l’historique établie au dernier état relu ; actualiser après édition externe des attentes. Observations au terme du budget, sans preuve de terminaison, couverture exhaustive ou équivalence universelle ; pas de matériel ou d’émulateur indépendant.
+
+Suite prioritaire : préparer une référence écran par capture inspectable et adoption humaine explicite, puis élargir les structures selon les besoins (IF dans les corps et imbrications), profiler 0.42 et observation CPC 0.43. Ce point remplace les suites historiques ci-dessous.
+
 ## Incrément 0.41.30 — tests du vrai projet dans la mission
 
 Base vérifiée : `main` à `3ac8f3d8d80fe0a4d536ac83296861ccced3c2a5`, PR #91 fusionnée après Specifications, J0 et Desktop Linux/Windows réussis sur `d383e63e1ddc45c74f24d069bda0d7a6bd595cd9`. Branche : `feat/agent-project-tests`.

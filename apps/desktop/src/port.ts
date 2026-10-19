@@ -50,6 +50,7 @@ export interface DesktopPort {
     last(sessionId:string):Promise<import('../../../packages/workspace/src/source-operations.ts').SourceUndo|Failure|undefined>;
     restore(sessionId:string,revision:string,buffers:{id:string;source:string}[]):Promise<import('../../../packages/agent/src/types.ts').AgentWorkspaceState|Failure|null>;
   };
+  projectTests?: import('../../../packages/emulator/src/project-tests-port.ts').ProjectTestsPort;
   basicTestSuites?: BasicTestSuitesPort;
   project?: {
     open(): Promise<ProjectSnapshot | Failure | null>;

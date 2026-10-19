@@ -1,3 +1,5 @@
+import {ProjectTestsController} from './project-tests-controller.ts';
+import {ProjectTestStore} from './project-test-store.ts';
 import {agentProjectTestRunner} from './agent-project-test-runner.ts';
 import { agentTestRunner } from './agent-test-runner.ts';
 import { BasicTestSuiteStore } from './basic-test-suite-store.ts';
@@ -44,6 +46,7 @@ let project: ProjectStore | undefined;
 let diskImport: DiskImportSession | undefined;
 let inFlight = false;
 let agent: AgentController;
+let projectTests: ProjectTestsController;
 let gitSession: { id: string; inspector: GitInspection; operations: GitOperations } | undefined;
 let gitTransfer: GitOperations | undefined;
 async function gitWork<T>(operations: GitOperations, work: () => Promise<T>): Promise<T> {
@@ -86,6 +89,7 @@ function route(channel: string, handler: (payload: unknown) => Promise<unknown>,
   let inspecting = false;
   ipcMain.handle(channel, async (event, payload: unknown) => {
     trusted(event);
+    if (projectTests?.running && !['project-tests:status','project-tests:cancel'].includes(channel)) return {error:'Un essai projet est actif ; arrêtez-le avant les opérations disque ou IA.'};
     if (terminal.running && !channel.startsWith('terminal:')) return { error: 'Une commande terminal est active ; arrêtez-la avant les opérations disque ou IA.' };
     if (agent?.running && !channel.startsWith('agent:')) return { error: 'Une mission agent est active ; arrêtez-la avant les opérations disque.' };
     if (inFlight || passive && inspecting) return { error: 'Une opération disque est déjà en cours.' };
@@ -116,6 +120,7 @@ protocol.handle('cpceleste', async request => {
   } catch { return new Response('Ressource absente', { status: 404 }); }
 });
 const firmware = new FirmwareStore(join(app.getPath('userData'), 'firmware'));
+projectTests = new ProjectTestsController(agentProjectTestRunner(firmware,join(rendererRoot,'emulator')));
 agent = new AgentController(join(app.getPath('userData'), 'agent-checkpoints'), join(base, '../../knowledge/locomotive-basic'), undefined, agentTestRunner(firmware,join(rendererRoot,'emulator')),agentProjectTestRunner(firmware,join(rendererRoot,'emulator')));
 const recents = new RecentProjectsStore(app.getPath('userData'));
 async function rememberProject(store: ProjectStore) {
@@ -132,6 +137,7 @@ window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
 window.webContents.on('will-navigate', (event, url) => { if (url !== page) event.preventDefault(); });
 window.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
 window.on('close', event => {
+  if (projectTests.running) { event.preventDefault(); dialog.showMessageBoxSync(window, {message:'Arrêtez l’essai projet avant de fermer la fenêtre.'}); return; }
   if (terminal.running) { event.preventDefault(); dialog.showMessageBoxSync(window, { message: 'Arrêtez la commande terminal avant de fermer la fenêtre.' }); return; }
   if (inFlight) { event.preventDefault(); dialog.showMessageBoxSync(window, { message: 'Attendez la fin de l’opération disque avant de fermer la fenêtre.' }); return; }
   if (agent.running) { event.preventDefault(); dialog.showMessageBoxSync(window, { message: 'Arrêtez la mission agent avant de fermer la fenêtre.' }); return; }
@@ -298,6 +304,11 @@ route('binary:export', async payload => {
   const result = await workbench.disk(value.revision);
   await atomicWrite(selection.filePath, result.disk); return { name: selection.filePath.split(/[\\/]/).at(-1) };
 });
+route('project-tests:inspect', async payload => { const {store,value}=projectRequest(payload); return projectTests.inspect(store,bufferRequest(value.buffers)); });
+route('project-tests:save', async payload => { const {store,value}=projectRequest(payload); await store.assertCurrent(); return new ProjectTestStore(store.root,store.manifest.projectId).save(value.revision,value.scenarios); });
+route('project-tests:start', async payload => { const {store,value}=projectRequest(payload); return projectTests.start(store,bufferRequest(value.buffers),value.scenarioId,value.revision,value.projectSha256); });
+route('project-tests:status', async payload => { const {store,value}=projectRequest(payload); return projectTests.status(store.sessionId,value.id); },true);
+route('project-tests:cancel', async payload => { const {store,value}=projectRequest(payload); return projectTests.cancel(store.sessionId,value.id); },true);
 function testSuiteStore(store: ProjectStore) { return new BasicTestSuiteStore(store.root, store.manifest.projectId); }
 route('basic-tests:load', async payload => { const { store } = projectRequest(payload); await store.assertCurrent(); return testSuiteStore(store).load(); });
 route('basic-tests:save', async payload => { const { store, value } = projectRequest(payload); await store.assertCurrent(); return testSuiteStore(store).save(value.revision, value.suites, store.manifest.sources.map(source => source.id)); });

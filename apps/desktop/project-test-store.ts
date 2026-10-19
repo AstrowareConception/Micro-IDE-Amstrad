@@ -5,7 +5,7 @@ import {createHash} from 'node:crypto';
 import {durableReplace} from './save-journal.ts';
 import {PROJECT_TEST_LIMITS,parseProjectTests,parseProjectTestReport,type ProjectTestLibrary,type ProjectTestReport} from '../../packages/emulator/src/project-tests.ts';
 const hash=(value:string|Uint8Array)=>createHash('sha256').update(value).digest('hex');
-/** Agent reads expectations only; it can append reports to a fixed private destination. */
+/** Fixed destinations. Only the human desktop port exposes save; the agent reads expectations. */
 export class ProjectTestStore{
  private readonly root:string;private readonly projectId:string;
  constructor(root:string,projectId:string){this.root=root;this.projectId=projectId;}
@@ -23,6 +23,15 @@ export class ProjectTestStore{
  }
  private decode(bytes:Buffer):unknown{return JSON.parse(new TextDecoder('utf8',{fatal:true}).decode(bytes));}
  async load():Promise<ProjectTestLibrary>{const bytes=await this.read(join(this.root,'microide.project-tests.json'),PROJECT_TEST_LIMITS.libraryBytes);return bytes?{revision:hash(bytes),scenarios:parseProjectTests(this.decode(bytes)).scenarios}:{revision:null,scenarios:[]};}
+ async save(revision:unknown,scenarios:unknown):Promise<ProjectTestLibrary>{
+  const file=parseProjectTests({schemaVersion:1,scenarios});
+  if((await this.load()).revision!==revision)throw Error('Les scénarios ont changé sur disque. Actualisez avant d’enregistrer.');
+  const bytes=Buffer.from(JSON.stringify(file,null,2)+'\n');
+  if(bytes.length>PROJECT_TEST_LIMITS.libraryBytes)throw Error('Scénarios limités à 128 Kio.');
+  if((await this.load()).revision!==revision)throw Error('Les scénarios ont changé sur disque.');
+  await durableReplace(join(this.root,'microide.project-tests.json'),bytes);
+  return {revision:hash(bytes),scenarios:file.scenarios};
+ }
  private async historyPath(create=false):Promise<string|undefined>{
   const dir=join(this.root,'.microide');
   try{await lstat(dir);}catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;if(!create)return undefined;await mkdir(dir,{mode:0o700});}

@@ -1,6 +1,6 @@
 # CPCéleste
 
-**Tests projet 0.41.30 :** [l’agent teste le vrai DSK avant/après](docs/implementation/agent-project-tests-alpha.md), avec les mêmes attentes externes et les empreintes du projet. Exemple multifichier avec ressource, clavier et fichier de sortie.
+**Scénarios projet 0.41.31 :** [préparation, exécution et historique dans l’interface](docs/implementation/project-scenarios-ui-alpha.md). Attentes humaines, essais directs du vrai CPC sans clé IA, rapports liés aux révisions et conservés après réouverture.
 
 **Boucles simples 0.41.28 :** [découpage terminal avec FOR/NEXT et WHILE/WEND](docs/implementation/basic-multifile-loops-alpha.md). Boucles fermées dans chaque fichier, parcours bornés, quatorze témoins CPC et restauration durable.
 
@@ -80,7 +80,7 @@ Les archives Actions initiales 0.38.1 du 7 octobre restent disponibles jusqu’a
 | Complétion, diagnostics, recherche et renumérotation | Projets, documents, agent OpenAI et rapports de qualité | Historique, brouillons, checkpoints et Git/GitHub |
 | F5 depuis les buffers, CPC 6128 intégré et export DSK | Thèmes, profils, raccourcis et panneaux ajustables | Sources locales et utilisation sans IA possible |
 
-**Version du code : alpha desktop 0.41.30 — tests du vrai projet par l’agent.** Les binaires publiés peuvent correspondre à une version antérieure : consulter la version de la release. L’édition et la construction DSK fonctionnent sans ROM ni clé IA. L’exécution demande vos ROM locales ; l’agent utilise votre accès API OpenAI. La notice distingue les fonctions disponibles des évolutions encore prévues.
+**Version du code : alpha desktop 0.41.31 — scénarios projet dans l’interface.** Les binaires publiés peuvent correspondre à une version antérieure : consulter la version de la release. L’édition et la construction DSK fonctionnent sans ROM ni clé IA. L’exécution demande vos ROM locales ; l’agent utilise votre accès API OpenAI. La notice distingue les fonctions disponibles des évolutions encore prévues.
 
 [Installer et démarrer](docs/guide-utilisateur.md#premiers-pas) · [Exécuter avec F5](docs/guide-utilisateur.md#execution) · [Découvrir l’agent](docs/guide-utilisateur.md#agent) · [Personnaliser l’atelier](docs/guide-utilisateur.md#personnalisation) · [Roadmap](docs/specifications/17-roadmap-ide-complet.md)
 
