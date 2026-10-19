@@ -1,5 +1,19 @@
 # CPCéleste — Point de reprise du développement
 
+## Incrément 0.41.29 — mission de lisibilité composée
+
+Base distante vérifiée : `main` à `aa2e40e4df04d23f1316a3e7ce1ae44c39077da1`, PR #90 fusionnée en 0.41.28 après réussite Specifications, J0 et Desktop Linux/Windows sur `9d47c6496877e88355218ce1f13434435dd9e992`. Les boucles sont donc déjà livrées. Branche de cette tranche : `feat/basic-readability-pipeline`.
+
+Réalisé : mission et libellés alignés sur les outils déterministes disponibles ; profil v5 pour REM documentaires autonomes autour des instructions v2/v3/v4, avec transfert des commentaires d’entrée dans PART et conservation des lignes. Directives, commentaires inline et états opaques refusés ; consultation REM obligatoire. CLS sans argument ne bloque plus l’index des variables. Six programmes composent renommage, formatage effectif, insertion REM, note, renouvellement du plan puis extraction avec le vrai contrôleur, fournisseur déterministe et disque réel. Journal inchangé. [Guide](implementation/basic-readability-pipeline-alpha.md), [ADR 0079](adr/0079-composition-lisibilite-basic.md).
+
+Preuves locales : 537 tests Node réussis, typecheck réussi ; six témoins (expression, condition vraie/fausse, FOR zéro/trois tours, WHILE décroissant) et six références littérales, soit 30 exécutions CPC réussies sur les projets original/appliqué-rouvert/dernière mutation rétablie/checkpoint initial restauré. Rapport avec empreintes sans ROM. Restauration complète des sources et documents en session ; retour durable au monolithe déjà renommé/commenté après réouverture. La source du checkpoint initial est normalisée LF, sans promesse de CRLF byte pour byte. Recette v4 rejouée après partage de l’observateur firmware : 44 exécutions réussies. Build desktop réussi ; documentation valide (190 Markdown, 21 JSON, 84 exigences, 37 scénarios, six schémas et exemples).
+
+CI : ajout de la recette firmware bloquante et du parcours natif `--readability` aux profils v1/v2/v3/v4 ; préparation par options UI, application, restauration initiale, nouvelle mission, fermeture complète/réouverture, annulation, brouillon et retour durable à la seule extraction. Chromium/Electron absents localement : contrôler les workflows et la capture sur le SHA exact de la PR avant fusion. Aucun packaging par commit.
+
+Limites : profils fermés, petits témoins et fournisseur déterministe ; ni validation des choix d’un modèle réel, ni équivalence universelle/mémoire/temps, ni matériel/émulateur indépendant. Les suites agent actuelles exécutent des listings autonomes ; le test du vrai DSK multifichier est encore une recette externe, explicitement distinguée dans le bilan. Après redémarrage, seule la dernière mutation disque est restaurable, pas toute la mission.
+
+Suite prioritaire : scénarios CPC liés au vrai projet/DSK et à ses empreintes pour permettre à l’agent de tester avant/après le découpage ; ensuite IF dans les corps et imbrications selon les besoins, profiler 0.42 et observation CPC 0.43. Les suites historiques ci-dessous sont remplacées par ce point.
+
 ## Incrément 0.41.28 — boucles simples dans le découpage terminal
 
 Base vérifiée : `main` à `913eac4d1180beca6302ce4474675d2438b3a315`, PR #89 fusionnée, version 0.41.27. Specifications, J0 et Desktop Linux/Windows ont réussi sur `395e08a4f70236368c40266bb384938b97dab3a9`, y compris les parcours natifs v1/v2/v3. Branche de cette tranche : `feat/basic-extraction-loops`.
@@ -398,4 +412,4 @@ Ne pas déclarer J0–J6, R1–R9 ou la version 1.0 achevés sur la seule base d
 2. Choisir une seule tranche cohérente selon l’état le plus récent en tête de ce document, créer sa branche depuis `main`, puis fixer la matrice de preuves et les limites. Regrouper code, exemples, tests utiles, ADR/guide/roadmap et nouveau point de reprise dans une PR. Vérifier les contrôles adaptés au diff et lire la première erreur réelle avant toute relance.
 3. Avant la prochaine pause, inscrire ici commit de `main`, PR, preuves effectivement observées, limites et prochaine action. Les fichiers temporaires et logs locaux ne remplacent pas un commit publié. Ne jamais y copier clé API, ROM, document personnel ou conversation privée.
 
-**Instruction de reprise courte :** « Reprends CPCéleste après lecture d’AGENTS.md et du dernier incrément en tête de docs/reprise.md. Vérifie main distant, la PR feat/basic-extraction-loops et ses contrôles. Après 0.41.28, qualifier la mission complète de lisibilité sur des programmes représentatifs avant d’élargir les structures selon les besoins constatés. Préserve les profils v1/v2/v3/v4, le journal, les brouillons et les preuves firmware ; aucun packaging par commit. »
+**Instruction de reprise courte :** « Reprends CPCéleste après lecture d’AGENTS.md et du dernier incrément de docs/reprise.md. Vérifie main distant, la PR feat/basic-readability-pipeline et ses contrôles. Après 0.41.29, relier les tests CPC au vrai projet/DSK pour les missions de transformation. Préserve les profils v1/v2/v3/v4/v5, journal, brouillons et preuves firmware ; aucun packaging par commit. »

@@ -133,6 +133,7 @@ export function indexSymbols(input: SymbolSource, occurrenceBudget: number = SYM
     if(!targets.length || targets.some(t=>!t || command==='DIM' && !t.array || ['NEXT','ERASE'].includes(command) && t.array)) { skip(`${command} : liste de cibles non reconnue.`);continue; }
     for(const t of targets) { add(t!.token,command==='ERASE'||t!.array,command==='DIM'?'dimension':command==='ERASE'?'erase':command==='NEXT'?'read-write':'write');reads(t!.indices); }continue;
    }
+   if(command==='CLS'&&!args.length)continue; // Standalone CLS has no symbol operands.
    if(readCommands.has(command)) { reads(args);continue; }
    if(emptyCommands.has(command) && !args.some(t=>t.kind==='identifier') || items.length===1 && items[0]!.kind==='number')continue;
    skip('commande hors du périmètre des usages : segment omis.');

@@ -6,11 +6,14 @@ import {fixture} from './multifile-fixture.ts';
 import {expressionWitnesses} from './terminal-expression-fixtures.ts';
 import {conditionWitnesses} from './terminal-condition-fixtures.ts';
 import {loopWitnesses} from './terminal-loop-fixtures.ts';
+import {readabilityWitnesses} from './readability-pipeline-fixture.mjs';
+import {createReadabilityTransport} from './readability-pipeline-transport.mjs';
+const readability=process.argv.includes('--readability');
 const loops=process.argv.includes('--loops');
 const conditions=process.argv.includes('--conditions');
 const expressions=process.argv.includes('--expressions');
-const f=await fixture(loops?loopWitnesses[13].source.replace(/\n/g,'\r\n'):conditions?conditionWitnesses[7].source.replace(/\n/g,'\r\n'):expressions?expressionWitnesses[2].source.replace(/\n/g,'\r\n'):undefined);
-const evidence=loops?'basic-multifile-loops-desktop':conditions?'basic-multifile-conditions-desktop':expressions?'basic-multifile-expressions-desktop':'basic-multifile-apply-desktop';
+const f=await fixture(readability?readabilityWitnesses.at(-1).source.replace(/\n/g,'\r\n'):loops?loopWitnesses[13].source.replace(/\n/g,'\r\n'):conditions?conditionWitnesses[7].source.replace(/\n/g,'\r\n'):expressions?expressionWitnesses[2].source.replace(/\n/g,'\r\n'):undefined);
+const evidence=readability?'basic-readability-desktop':loops?'basic-multifile-loops-desktop':conditions?'basic-multifile-conditions-desktop':expressions?'basic-multifile-expressions-desktop':'basic-multifile-apply-desktop';
 let desktop,page;const errors=[];
 async function launch(){
  desktop=await electron.launch({args:['.'],timeout:30000,env:{...process.env,XDG_CONFIG_HOME:join(f.root,'config')}});
@@ -44,15 +47,21 @@ try{
    return Response.json({model,status:'completed',output,usage:{input_tokens:100,output_tokens:20,total_tokens:120}});
   };
  });
+ if(readability)await desktop.evaluate(createReadabilityTransport,true);
  if(!await page.getByLabel('Mission de programmation',{exact:true}).isVisible())await page.getByRole('button',{name:'Afficher l’agent IA',exact:true}).click();
  await page.getByRole('button',{name:'Réglages IA',exact:true}).click();
  const settings=page.getByRole('dialog',{name:'Réglages de l’agent IA',exact:true});
  await settings.getByLabel('Clé API OpenAI',{exact:true}).fill('sk-test-fixture-not-real');
  await settings.getByRole('button',{name:'Configurer la clé',exact:true}).click();
  await settings.getByLabel('Modèle OpenAI',{exact:true}).selectOption('gpt-5.6-luna');
- await settings.getByLabel('Tours modèle maximum',{exact:true}).fill('10');
+ await settings.getByLabel('Tours modèle maximum',{exact:true}).fill(readability?'25':'10');
  await settings.getByRole('button',{name:'Fermer les réglages IA',exact:true}).click();
  await page.getByLabel('Mission de programmation',{exact:true}).fill('Découpe le bloc terminal en PART, puis construis le DSK.');
+ if(readability){
+  await page.getByText('Améliorer la lisibilité du code…',{exact:true}).click();
+  await page.getByLabel('Découpage en fichiers des blocs admissibles',{exact:true}).check();
+  await page.getByRole('button',{name:'Préparer la mission de lisibilité',exact:true}).click();
+ }
  await page.getByRole('button',{name:'Lancer l’agent',exact:true}).click();
  const result=page.locator('.agent-result');await expect(result).toContainText('Mission terminée',{timeout:30000});
  await expect(page.getByRole('region',{name:'Simulation du découpage BASIC'})).toContainText('appliqué');
@@ -61,6 +70,23 @@ try{
  if(expressions)await expect(page.getByRole('region',{name:'Simulation du découpage BASIC'})).toContainText('Scalaires %/$ initialisés');
  await expect(page.getByRole('tab',{name:'src/part.bas',exact:true})).toBeVisible();
  assert.match(await readFile(join(f.root,'src/main.bas'),'utf8'),/CHAIN MERGE "PART.BAS",100/);
+ let expectedRestored=f.original;
+ if(readability){
+  await expect(page.getByRole('region',{name:'Simulation du découpage BASIC'})).toContainText('Code commenté');
+  await expect(result).toContainText('Aucun test CPC exécuté');
+  const main=await readFile(join(f.root,'src/main.bas'),'utf8'),part=await readFile(join(f.root,'src/part.bas'),'utf8');
+  expectedRestored=Buffer.from(main.replace('CHAIN MERGE "PART.BAS",100','GOTO 100')+part);
+  assert.match(expectedRestored.toString(),/99 REM Suite du calcul/);assert.match(expectedRestored.toString(),/score%/);
+  // Restore the complete mission in the live controller, then run it again for restart undo.
+  await page.getByRole('button',{name:'Restaurer le checkpoint initial',exact:true}).click();
+  await expect(page.getByRole('tab',{name:'src/part.bas',exact:true})).toHaveCount(0);
+  assert.equal(await readFile(join(f.root,'src/main.bas'),'utf8'),readabilityWitnesses.at(-1).source);
+  assert.equal(JSON.parse(await readFile(join(f.root,'microide.project.json'),'utf8')).documents.length,0);
+  await desktop.evaluate(createReadabilityTransport,true);
+  await page.getByRole('button',{name:'Lancer l’agent',exact:true}).click();
+  await expect(result).toContainText('Mission terminée',{timeout:30000});
+  await expect(page.getByRole('tab',{name:'src/part.bas',exact:true})).toBeVisible();
+ }
  await page.screenshot({path:`out/${evidence}.png`});
  await close();await launch(); // A new controller has no mission in memory.
  await expect(page.getByRole('tab',{name:'src/part.bas',exact:true})).toBeVisible();
@@ -77,10 +103,11 @@ try{
  await expect(page.getByRole('status').filter({hasText:'Dernière modification IA rétablie'})).toBeVisible();
  await expect(page.getByRole('tab',{name:'src/part.bas',exact:true})).toHaveCount(0);
  await expect(page.locator('.view-lines')).toContainText('GOTO 100');
- assert.deepEqual(await readFile(join(f.root,'src/main.bas')),f.original);
- assert.deepEqual(await readFile(join(f.root,'microide.project.json')),f.manifest);
+ assert.deepEqual(await readFile(join(f.root,'src/main.bas')),expectedRestored);
+ if(readability){const manifest=JSON.parse(await readFile(join(f.root,'microide.project.json'),'utf8'));assert.equal(manifest.sources.length,1);assert.equal(manifest.documents.length,1);}
+ else assert.deepEqual(await readFile(join(f.root,'microide.project.json')),f.manifest);
  await assert.rejects(readFile(join(f.root,'src/part.bas')),{code:'ENOENT'});
  assert.deepEqual(errors,[]);
- console.log(`${loops?'Loops v4':conditions?'Conditions v3':expressions?'Expressions v2':'Original v1'}: native agent extraction, actual persistence, full restart, cancellation, dirty-buffer guard and durable exact-byte restoration passed.`);
+ console.log(`${readability?'Readability pipeline v5':loops?'Loops v4':conditions?'Conditions v3':expressions?'Expressions v2':'Original v1'}: native agent extraction, actual persistence, full restart, cancellation, dirty-buffer guard and durable exact-byte restoration passed.`);
 }catch(error){console.error('Editor at failure:',await page?.locator('.view-lines').allTextContents().catch(()=>[]));await page?.screenshot({path:`out/${evidence}-failure.png`}).catch(()=>undefined);throw error;}
 finally{if(desktop)await close().catch(()=>undefined);await rm(f.root,{recursive:true,force:true});}

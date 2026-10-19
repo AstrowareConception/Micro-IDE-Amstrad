@@ -3,11 +3,12 @@ import {addProjectSource, buildProjectDisk, type ProjectManifest, type SourceSna
 import {EXPRESSION_EXTRACTION_PROFILE,CONDITIONAL_EXTRACTION_PROFILE,LOOP_EXTRACTION_PROFILE,validateTerminalExpressions,validateTerminalConditions,validateTerminalLoops} from './terminal-expressions.ts';
 
 export const TERMINAL_EXTRACTION_PROFILE='terminal-goto-chain-merge-v1';
+export const COMMENTED_EXTRACTION_PROFILE='terminal-commented-chain-merge-v5';
 export interface TerminalExtractionInput {
  manifest:ProjectManifest; sources:SourceSnapshot[]; sourceId:string; entryLine:number; newFileName:string;
 }
 export interface TerminalExtractionPreview {
- version:1; profile:typeof TERMINAL_EXTRACTION_PROFILE|typeof EXPRESSION_EXTRACTION_PROFILE|typeof CONDITIONAL_EXTRACTION_PROFILE|typeof LOOP_EXTRACTION_PROFILE;
+ version:1; profile:typeof TERMINAL_EXTRACTION_PROFILE|typeof EXPRESSION_EXTRACTION_PROFILE|typeof CONDITIONAL_EXTRACTION_PROFILE|typeof LOOP_EXTRACTION_PROFILE|typeof COMMENTED_EXTRACTION_PROFILE;
  original:{manifest:ProjectManifest;sources:SourceSnapshot[];disk:Uint8Array};
  proposed:{manifest:ProjectManifest;sources:SourceSnapshot[];disk:Uint8Array};
  sourceId:string; createdId:string; entryLine:number; gotoLine:number; linesMoved:number;
@@ -49,13 +50,20 @@ export function previewTerminalExtraction(input:TerminalExtractionInput):Termina
   deny('diagnostics BASIC préexistants.');
  const index=entries.findIndex(x=>x.number===entryLine);
  if(index<2||index>=entries.length-1)deny('suffixe final insuffisant : au moins deux lignes avant et une après l’entrée.');
- const prefix=entries.slice(0,index),suffix=entries.slice(index);
- if(suffix.length>20||suffix.at(-1)!.body.toUpperCase()!=='END')deny('bloc terminal sans END unique ou plus de 20 lignes.');
- const goto=prefix.filter(x=>/^GOTO\s+\d+$/i.test(x.body));
- if(goto.length!==1||Number(/^GOTO\s+(\d+)$/i.exec(goto[0]!.body)?.[1])!==entryLine||prefix.at(-1)!.number!==goto[0]!.number)
+ // Only standalone, bounded documentary REM lines: no directives or inline comments.
+ const isComment=(row:{body:string})=>/^REM(?: [A-Za-z0-9][A-Za-z0-9 ,.;()/_!?+\-=]{0,95})?$/i.test(row.body);
+ const commented=entries.some(isComment);
+ if(isComment(entries[index]!))deny('l’entrée doit désigner une instruction, pas un commentaire.');
+ const hostCode=entries.slice(0,index).filter(row=>!isComment(row));
+ const goto=hostCode.filter(x=>/^GOTO\s+\d+$/i.test(x.body));
+ if(hostCode.length<2||goto.length!==1||Number(/^GOTO\s+(\d+)$/i.exec(goto[0]!.body)?.[1])!==entryLine||hostCode.at(-1)!.number!==goto[0]!.number)
   deny('un seul GOTO littéral vers le suffixe, en dernière ligne avant la routine, est requis.');
- const legacy=prefix.slice(0,-1).every(row=>permitted(row.body,'host'))&&suffix.every((row,i)=>permitted(row.body,i===suffix.length-1?'end':'module'));
- const statements=[...prefix.slice(0,-1),...suffix.slice(0,-1)];
+ // Attach comments immediately before the entry to the module, retaining their numbers.
+ const cut=entries.indexOf(goto[0]!)+1,prefix=entries.slice(0,cut),suffix=entries.slice(cut);
+ const moduleCode=suffix.filter(row=>!isComment(row));
+ if(suffix.length>20||moduleCode.at(-1)?.body.toUpperCase()!=='END')deny('bloc terminal sans END unique ou plus de 20 lignes.');
+ const legacy=!commented&&hostCode.slice(0,-1).every(row=>permitted(row.body,'host'))&&moduleCode.every((row,i)=>permitted(row.body,i===moduleCode.length-1?'end':'module'));
+ const statements=[...hostCode.slice(0,-1),...moduleCode.slice(0,-1)];
  const conditional=statements.some(row=>tokenize(row.body)[0]?.text.toUpperCase()==='IF');
  const loops=statements.some(row=>['FOR','NEXT','WHILE','WEND'].includes(tokenize(row.body)[0]?.text.toUpperCase()??''));
  if(loops)validateTerminalLoops(statements,entryLine);
@@ -63,6 +71,7 @@ export function previewTerminalExtraction(input:TerminalExtractionInput):Termina
  else if(!legacy)validateTerminalExpressions(statements);
  // A second jump, RETURN, DATA, READ, RESTORE or dynamic firmware state cannot be admitted through the whitelist.
  for(const row of entries){
+  if(isComment(row))continue;
   const tokens=tokenize(row.raw);
   if(tokens.some(t=>t.kind==='comment'||t.kind==='data'||legacy&&t.kind==='string'))
    deny('formes opaques, commentaires, chaînes ou données non couvertes.');
@@ -77,7 +86,7 @@ export function previewTerminalExtraction(input:TerminalExtractionInput):Termina
  // Both full DSK builds validate the source-level construction and all filesystem names/quotas.
  const originalDisk=buildProjectDisk(originalManifest,originalSources);
  const proposedDisk=buildProjectDisk(nextManifest,proposedSources);
- return {version:1,profile:legacy?TERMINAL_EXTRACTION_PROFILE:loops?LOOP_EXTRACTION_PROFILE:conditional?CONDITIONAL_EXTRACTION_PROFILE:EXPRESSION_EXTRACTION_PROFILE,
+ return {version:1,profile:commented?COMMENTED_EXTRACTION_PROFILE:legacy?TERMINAL_EXTRACTION_PROFILE:loops?LOOP_EXTRACTION_PROFILE:conditional?CONDITIONAL_EXTRACTION_PROFILE:EXPRESSION_EXTRACTION_PROFILE,
   original:{manifest:originalManifest,sources:originalSources,disk:originalDisk},
   proposed:{manifest:nextManifest,sources:proposedSources,disk:proposedDisk},
   sourceId,createdId:declared.id,entryLine,gotoLine:goto[0]!.number,linesMoved:suffix.length,
@@ -85,6 +94,7 @@ export function previewTerminalExtraction(input:TerminalExtractionInput):Termina
    'Suffixe contigu et terminal END',legacy?'Affectations littérales et POKE &8000..&8003':'Scalaires %/$ initialisés, calculs entiers bornés, chaînes et PRINT/MODE/CLS entièrement contrôlés',
    ...(conditional?['Conditions simples : deux branches contrôlées, au plus 6 IF et 64 chemins conservateurs']:[]),
    ...(loops?['Boucles fermées dans chaque fichier : au plus 4 boucles, 32 tours et 8192 visites contrôlées']:[]),
+   ...(commented?['REM documentaires autonomes conservés ; commentaires précédant l’entrée rattachés au module ; grammaire exécutable v2/v3/v4 inchangée']:[]),
    'Construction et relecture de deux disquettes AMSDOS réussies'],
   warnings:['Simulation sans écriture : les sources originales et le manifeste ne sont jamais modifiés.',
    'CHAIN MERGE ne reproduit pas un RETURN/GOSUB ; ces structures sont explicitement refusées.',
