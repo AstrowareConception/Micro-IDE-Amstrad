@@ -58,5 +58,5 @@ try{
  const history=JSON.parse(await readFile(join(f.root,'.microide/project-test-reports.json'),'utf8'));assert.equal(history.reports.length,4);assert.deepEqual(history.reports.map(r=>r.result.outcome),['cancelled','failed','passed','blocked']);
  assert.deepEqual(await readFile(join(f.root,'assets/input.bin')),await readFile('examples/project-tests/assets/input.bin'));assert.deepEqual(await readFile(join(f.root,'src/part.bas')),await readFile('examples/project-tests/src/part.bas'));await assert.rejects(readFile(join(f.root,'OUT.TXT')),{code:'ENOENT'});assert.deepEqual(errors,[]);
  console.log('Project scenarios desktop: human creation/edit/deletion, escaped keyboard/file text, screen form, dirty close guard, real CPC pass/failure, ROM block, cancellation, export, concurrent-edit guard and reopen history passed.');
-}catch(error){await page?.screenshot({path:'out/project-scenarios-desktop-failure.png'}).catch(()=>undefined);throw error;}
+}catch(error){console.error('Project scenarios at failure:',await panel?.ariaSnapshot().catch(()=>''));await page?.screenshot({path:'out/project-scenarios-desktop-failure.png'}).catch(()=>undefined);throw error;}
 finally{if(desktop)await close().catch(()=>undefined);await rm(exported,{force:true});await rm(f.root,{recursive:true,force:true});}

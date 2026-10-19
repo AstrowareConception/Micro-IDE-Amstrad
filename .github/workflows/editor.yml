@@ -89,10 +89,14 @@ jobs:
         run: npm run test:editor
       - name: Bounded BASIC parser benchmark
         run: node scripts/benchmark-basic-analysis.mjs > out/basic-analysis-benchmark.json
-      - name: CPC firmware reference and real runtime recipe
+      - name: Prepare pinned CPC firmware reference
         run: |
           git clone --no-checkout https://github.com/floooh/chips-test.git .cache/firmware-reference
           git -C .cache/firmware-reference checkout 3785836e76c43922f78a50e1f8adfed259ab9672
+      - name: Human project scenarios, real CPC execution and history
+        run: CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms xvfb-run -a node tests/project-scenarios-desktop-smoke.mjs
+      - name: CPC firmware reference and real runtime recipe
+        run: |
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-basic-recovery.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-binary-workbench.mjs
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node tests/firmware-runtime.mjs
@@ -122,8 +126,6 @@ jobs:
           xvfb-run -a node tests/multifile-desktop-smoke.mjs --loops
           xvfb-run -a node tests/multifile-desktop-smoke.mjs --readability
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms xvfb-run -a node tests/multifile-desktop-smoke.mjs --project-tests
-      - name: Human project scenarios, real CPC execution and history
-        run: CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms xvfb-run -a node tests/project-scenarios-desktop-smoke.mjs
       - name: Native source organization and draft restoration
         run: xvfb-run -a npm run test:sources-desktop
       - name: Native personalization, notifications and restart
