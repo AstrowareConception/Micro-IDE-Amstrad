@@ -39,6 +39,9 @@ test('human execution requires matching project and expectations and archives ma
  const f=await fixture();try{
   const {store,snapshot}=await ProjectStore.open(f.root),tests=new ProjectTestStore(f.root,store.manifest.projectId);await tests.save(null,[scenario]);
   const controller=new ProjectTestsController(async()=>blocked()),view=await controller.inspect(store,snapshot.files);
+  const invalid=snapshot.files.map(file=>({...file,source:'10 END\n10 END\n'})),invalidView=await controller.inspect(store,invalid);
+  const invalidJob=await controller.start(store,invalid,'io',invalidView.library.revision,invalidView.projectSha256),invalidResult=await finished(controller,store.sessionId,invalidJob.id);
+  assert.match(invalidResult.error!,/strictement croissants/);assert.equal(invalidResult.report,undefined);
   const changed=snapshot.files.map(file=>({...file,source:file.source+'500 REM buffer only\n'}));
   await assert.rejects(controller.start(store,changed,'io',view.library.revision,view.projectSha256),/changé/);
   await assert.rejects(controller.start(store,snapshot.files,'missing',view.library.revision,view.projectSha256),/enregistré/);

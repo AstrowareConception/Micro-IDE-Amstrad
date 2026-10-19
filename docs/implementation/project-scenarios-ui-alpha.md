@@ -26,7 +26,7 @@ Un seul essai natif peut être actif ; les opérations disque, le terminal et l�
 
 Chaque rapport garde son résultat original et les empreintes projet, sources, ressources, DSK, bibliothèque, scénario et ROM. Le panneau compare ce rapport au dernier état relu et aux buffers affichés : correspondant, historique ou révision non vérifiée. Un brouillon d’attentes interdit de présenter le rapport comme courant. Les changements externes des attentes sont détectés à l’actualisation, à l’enregistrement et au lancement ; l’affichage n’est pas un observateur permanent du fichier JSON. Un ancien succès consulté dans l’historique ne valide pas une mission agent : celle-ci conserve son propre contrôle du dernier essai et de sa référence avant/après.
 
-Un historique illisible reste intact. L’essai reste possible ; son rapport est visible et exportable pendant la session si l’archivage échoue. Seuls les dix derniers rapports sont conservés, avec une limite totale de 2 Mio. Les résultats « bloqué » et « arrêté » restent distincts des observations réussies ou en échec.
+Un historique illisible reste intact. L’essai reste possible ; son rapport est visible et exportable pendant la session si l’archivage échoue. Seuls les dix derniers rapports sont conservés, avec une limite totale de 2 Mio. Les résultats « bloqué » et « arrêté » restent distincts des observations réussies ou en échec. Une erreur de construction avant démarrage reste affichée après actualisation, sans créer de rapport d’exécution CPC.
 
 ## Vérifications et limites
 

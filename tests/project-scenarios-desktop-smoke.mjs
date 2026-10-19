@@ -29,6 +29,10 @@ try{
  assert.match(await desktop.evaluate(()=>globalThis.closeGuard),/non enregistrées/);await expect(panel.getByLabel('Nom du scénario',{exact:true})).toHaveValue('Dialogue CPC');
  await save();const scenario=JSON.parse(await readFile(path,'utf8')).scenarios[0];assert.equal(scenario.inputs[0].text,'CPC\r');assert.equal(scenario.checks[0].text,'BONJOUR CPC\r\n');
  await page.getByRole('button',{name:'Agrandir les sorties',exact:true}).click();await panel.getByRole('heading',{name:'Scénarios du projet CPC',exact:true}).scrollIntoViewIfNeeded();await page.screenshot({path:'out/project-scenarios-desktop-form.png'});await page.getByRole('button',{name:'Réancrer les sorties',exact:true}).click();
+ // A DSK construction error must survive the automatic refresh at job completion.
+ const editor=page.locator('.listing .monaco-editor textarea'),originalMain=await readFile(join(f.root,'src/main.bas'),'utf8');
+ await editor.focus();await page.keyboard.press('Control+a');await page.keyboard.insertText('10 END\n10 END\n');await button('Actualiser les scénarios et rapports').click();await button('Exécuter le scénario').click();await expect(panel.getByRole('alert')).toContainText(/strictement croissants/);
+ await editor.focus();await page.keyboard.press('Control+a');await page.keyboard.insertText(originalMain);await button('Actualiser les scénarios et rapports').click();
  await run('Bloqué');
  await button('Configurer les ROM').click();
  for(const [role,label] of [['os','OS CPC'],['basic','BASIC 1.1'],['amsdos','AMSDOS']]){

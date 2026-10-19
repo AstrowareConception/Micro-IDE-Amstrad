@@ -44,8 +44,9 @@ export function ProjectTestsPanel({sessionId,buffers,visible,busy,binary,onDirty
     if('error' in result&&!('running' in result)){setError(result.error);timer=setTimeout(()=>void poll(),500);return;}
     if(result.running){timer=setTimeout(()=>void poll(),200);return;}
     if(result.report){setMemoryReports(previous=>[result.report!,...previous.filter(r=>r.id!==result.report!.id)].slice(0,10));setReportId(result.report.id);}
-    setNotice(result.archiveError??'');activeJob.current='';setJobId('');
-    await refresh();if(result.error&&!stopped)setError(result.error);
+    setNotice(result.archiveError??'');
+    await refresh();if(stopped)return;
+    activeJob.current='';setJobId('');if(result.error)setError(result.error);
    }catch(reason){if(!stopped){setError(reason instanceof Error?reason.message:'Lecture de l’essai impossible.');timer=setTimeout(()=>void poll(),500);}}
   };
   void poll();return()=>{stopped=true;if(timer)clearTimeout(timer);};
