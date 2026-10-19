@@ -33,7 +33,7 @@ test('REM extension never admits executable tails, test directives, opaque contr
 
 test('readability composition invokes deterministic tools and states both test and restore limits',()=>{
  const mission=readabilityMission('MAIN',{...DEFAULT_READABILITY,splitPlan:true});
- for(const term of ['language_rename_preview','language_rename_apply','language_extraction_simulate','language_extraction_apply','project_replace_source','dernière mutation disque','projet après CHAIN MERGE'])assert.ok(mission.includes(term),term);
+ for(const term of ['language_rename_preview','language_rename_apply','language_extraction_simulate','language_extraction_apply','project_replace_source','dernière mutation disque','project_tests_list','project_tests_run','vrai DSK multifichier'])assert.ok(mission.includes(term),term);
  assert.doesNotMatch(mission,/Ne déplace pas de code|conserve le code tant que les portées/);
  assert.ok(!readabilityMission('MAIN',DEFAULT_READABILITY).includes('language_extraction_apply'));
 });

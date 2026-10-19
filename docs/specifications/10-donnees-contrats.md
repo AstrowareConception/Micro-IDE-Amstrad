@@ -1,5 +1,7 @@
 # 10 — Données, persistence et contrats
 
+**Contrat 0.41.30 :** [scénarios projet version 1](../../contracts/project-tests.schema.json), attentes externes au BASIC en lecture seule pour l’agent ; [provenance et historique](../implementation/agent-project-tests-alpha.md). Les suites de listings autonomes conservent leur format.
+
 **Extension 0.41.3 :** ressources brutes sous assets/ (`id`, `path`, `cpcName`, `sha256`, `byteLength`) acceptées dans le manifeste v1 et incluses au build. Les modèles de ressources converties plus riches du schéma restent une cible. [Décision et compatibilité](../adr/0062-recuperation-distribution-basic.md).
 
 ## Dossier de projet

@@ -1,3 +1,4 @@
+import {PROJECT_TEST_DEFINITIONS,type AgentProjectTests} from './project-tests.ts';
 import { indexSymbols, SYMBOL_METHOD } from '../../basic-language/src/symbols.ts';
 import { planSymbolRename } from '../../basic-language/src/rename-symbol.ts';
 import { planBasicReadabilityFormat, type BasicFormatPlan } from '../../basic-language/src/readability-format.ts';
@@ -120,6 +121,7 @@ export class WorkspaceTools implements ToolPort {
     this.commentPlan=undefined;
   }
   readonly tests: AgentBasicTests | undefined;
+  readonly projectTests: AgentProjectTests | undefined;
   private consulted = new Set<string>();
   private readonly persist: (state: AgentWorkspaceState, expected?: AgentWorkspaceState) => Promise<void>;
   private readonly hash: (value: string | Uint8Array) => string;
@@ -129,10 +131,10 @@ export class WorkspaceTools implements ToolPort {
   private readonly writeKnowledge: ((request: Extract<KnowledgeRequest, { action: 'create' | 'save' }>) => Promise<KnowledgeResult>) | undefined;
   updateDocuments(documents: DocumentSnapshot[]): void { this.documents = structuredClone(documents); }
 
-  constructor(state: AgentWorkspaceState, persist: (state: AgentWorkspaceState, expected?: AgentWorkspaceState) => Promise<void>, hash: (value: string | Uint8Array) => string, corpus: { id: string; text: string; sha256: string }[], documents: DocumentSnapshot[] = [], writeKnowledge?: (request: Extract<KnowledgeRequest, { action: 'create' | 'save' }>) => Promise<KnowledgeResult>, tests?: AgentBasicTests) {
+  constructor(state: AgentWorkspaceState, persist: (state: AgentWorkspaceState, expected?: AgentWorkspaceState) => Promise<void>, hash: (value: string | Uint8Array) => string, corpus: { id: string; text: string; sha256: string }[], documents: DocumentSnapshot[] = [], writeKnowledge?: (request: Extract<KnowledgeRequest, { action: 'create' | 'save' }>) => Promise<KnowledgeResult>, tests?: AgentBasicTests, projectTests?: AgentProjectTests) {
     this.state = structuredClone(state); this.persist = persist; this.hash = hash; this.corpus = corpus;
-    this.documents = structuredClone(documents); this.writeKnowledge = writeKnowledge; this.tests = tests;
-    this.definitions = [...DEFINITIONS, ...(tests ? TEST_DEFINITIONS : []), ...(writeKnowledge ? [
+    this.documents = structuredClone(documents); this.writeKnowledge = writeKnowledge; this.tests = tests;this.projectTests=projectTests;
+    this.definitions = [...DEFINITIONS, ...(tests ? TEST_DEFINITIONS : []), ...(projectTests ? PROJECT_TEST_DEFINITIONS : []), ...(writeKnowledge ? [
       tool('documents_create_note', 'Crée une nouvelle note Markdown du projet, consultable par l’agent, avec checkpoint. Ne remplace aucun document ; 64 Kio UTF-8 maximum.', { title: s, source: s, category: { type: 'string', enum: ['reference','design','progress','resource'] } }),
       tool('documents_replace_note', 'Enregistre une note Markdown éditable et autorisée, après lecture de son contenu. Révision exacte requise ; original importé et droits immuables, version précédente conservée.', { id: s, expectedRevision: s, source: s }),
     ] : [])];
@@ -154,6 +156,8 @@ export class WorkspaceTools implements ToolPort {
         const index=indexSymbols({id:item.id,name:item.path,source:item.source}); const offset=Number(value.offset);
         return {method:SYMBOL_METHOD,hash:this.hash(item.source),status:index.status,reasons:index.reasons,typeDeclarations:index.typeDeclarations,omittedReasons:index.omittedReasons,totalSymbols:index.symbols.length,truncated:offset+50<index.symbols.length,symbols:index.symbols.slice(offset,offset+50).map(symbol=>({...symbol,totalOccurrences:symbol.occurrences.length,occurrences:symbol.occurrences.slice(0,10),occurrencesTruncated:symbol.occurrences.length>10}))};
       }
+      case 'project_tests_list': return this.projectTests!.list(this.state);
+      case 'project_tests_run': return this.projectTests!.run(this.state,value.scenarioId,value.expectedRevision,value.expectedProjectSha256);
       case 'basic_tests_list': return this.tests!.list(this.state);
       case 'basic_tests_run': return this.tests!.run(structuredClone(this.state),value.suiteId,value.expectedRevision);
       case 'documents_create_note':

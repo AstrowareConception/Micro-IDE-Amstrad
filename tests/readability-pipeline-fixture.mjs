@@ -12,16 +12,16 @@ export const readabilityWitnesses=[
  ...[0,3].map(n=>specimen('for-'+n,`100 FOR i%=1 TO ${n}\n110 s%=s%+i%\n120 NEXT i%\n130 PRINT "SCORE";s%;"I";i%`,'SCORE '+(n?6:0)+' I '+(n?4:1)+' ')),
  specimen('while-3','100 i%=3\n110 WHILE i%>0\n120 s%=s%+i%\n130 i%=i%-1\n140 WEND\n150 PRINT "SCORE";s%;"I";i%','SCORE 6 I 0 ')
 ];
-export async function runReadabilityMission(root){
+export async function runReadabilityMission(root,projectRunner,expectedStatus='completed'){
  const {store,snapshot}=await ProjectStore.open(root);
- const controller=new AgentController(join(root,'checkpoints'),'knowledge/locomotive-basic',createReadabilityTransport(),async()=>assert.fail("No registered suite should run in this controlled mission."));
+ const controller=new AgentController(join(root,'checkpoints'),'knowledge/locomotive-basic',createReadabilityTransport(undefined,false,!!projectRunner),async()=>assert.fail("No registered suite should run in this controlled mission."),projectRunner);
  controller.configure('sk-fixture-not-real','gpt-5.6-luna');
  const {taskId}=await controller.start(store,readabilityMission('src/main.bas',{...DEFAULT_READABILITY,splitPlan:true}),snapshot.files,false,{maxTurns:25,maxCalls:40,maxTokens:10000});
- const deadline=Date.now()+15000;
+ const deadline=Date.now()+120000;
  while(controller.running&&Date.now()<deadline)await new Promise(resolve=>setTimeout(resolve,5));
  assert.equal(controller.running,false);
  const view=controller.status(taskId);
- assert.equal(view.status,'completed',JSON.stringify(view.events));
+ assert.equal(view.status,expectedStatus,JSON.stringify(view.events));
  assert.deepEqual(view.events.filter(event=>event.kind==='tool-result'&&!event.success),[]);
  assert.ok(view.buildVerified);
  assert.equal(view.renameOperations[0].status,'applied');assert.equal(view.formatOperations[0].status,'applied');assert.equal(view.commentOperations[0].status,'applied');

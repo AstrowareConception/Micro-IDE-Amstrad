@@ -1,6 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.41.29
+# CPCéleste — Dossier de conception et réalisation — version 0.41.30
 
-**État courant 0.41.29 :** [composition des outils de lisibilité](implementation/basic-readability-pipeline-alpha.md), [ADR 0079](adr/0079-composition-lisibilite-basic.md). Profil REM v5, six programmes exécutés sur CPC après transformation réelle ; suites agent multifichiers encore à réaliser.
+**État courant 0.41.30 :** [tests du vrai projet CPC par l’agent](implementation/agent-project-tests-alpha.md), [ADR 0080](adr/0080-tests-vrai-projet-agent.md). Attentes externes, DSK complet, observations avant/après et résultats liés aux révisions. Préparation des scénarios encore en JSON humain.
 
 **Incrément 0.41.28 :** [boucles simples et frontières du découpage](implementation/basic-multifile-loops-alpha.md), [ADR 0078](adr/0078-boucles-decoupage-terminal.md). Quatorze témoins CPC, profils v1/v2/v3 et journal conservés.
 

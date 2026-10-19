@@ -1,3 +1,5 @@
+import {AgentProjectTests,type AgentProjectTestPort} from '../../packages/agent/src/project-tests.ts';
+import {ProjectTestStore} from './project-test-store.ts';
 import { AgentBasicTests, type AgentTestPort } from '../../packages/agent/src/basic-tests.ts';
 import { BasicTestSuiteStore } from './basic-test-suite-store.ts';
 import type { DocumentSnapshot } from '../../packages/workspace/src/project.ts';
@@ -28,7 +30,8 @@ export class AgentController {
   private readonly prices = new Map<string, PricingProfile>();
   private readonly transport: typeof fetch | undefined;
   private readonly testRunner: AgentTestPort['run'] | undefined;
-  constructor(storage: string, corpusRoot: string, transport?: typeof fetch, testRunner?: AgentTestPort['run']) { this.storage = storage; this.corpusRoot = corpusRoot; this.transport = transport; this.testRunner = testRunner; }
+  private readonly projectTestRunner: AgentProjectTestPort['run'] | undefined;
+  constructor(storage: string, corpusRoot: string, transport?: typeof fetch, testRunner?: AgentTestPort['run'], projectTestRunner?: AgentProjectTestPort['run']) { this.storage = storage; this.corpusRoot = corpusRoot; this.transport = transport; this.testRunner = testRunner; this.projectTestRunner=projectTestRunner; }
   get running(): boolean { return this.job?.running ?? false; }
   async suggestCommit(diff: string): Promise<{ message: string; model: string }> {
     if (this.running || this.selectionRequired || !this.provider) throw new Error('Configurez la clé et choisissez un modèle OpenAI dans le panneau IA avant cette suggestion.');
@@ -125,7 +128,9 @@ export class AgentController {
     };
     const suiteStore=new BasicTestSuiteStore(store.root,store.manifest.projectId);
     const tests=!binary && this.testRunner ? new AgentBasicTests({load:()=>suiteStore.load(),run:this.testRunner,record:async report=>{await suiteStore.record(report);}},digest,randomUUID,()=>job.abort.signal) : undefined;
-    job.tools = binary ? new BinaryWorkspaceTools(initial, persist, digest, documents,writeKnowledge) : new WorkspaceTools(initial, persist, digest, corpus, documents,writeKnowledge,tests);
+    const projectTestStore=new ProjectTestStore(store.root,store.manifest.projectId);
+    const projectTests=!binary&&this.projectTestRunner?new AgentProjectTests({load:()=>projectTestStore.load(),run:this.projectTestRunner,record:report=>projectTestStore.record(report)},digest,randomUUID,()=>job.abort.signal):undefined;
+    job.tools = binary ? new BinaryWorkspaceTools(initial, persist, digest, documents,writeKnowledge) : new WorkspaceTools(initial, persist, digest, corpus, documents,writeKnowledge,tests,projectTests);
     await this.record(job, initial, 'initial'); this.job = job;
     this.launch(job);
     return { taskId: id };
@@ -154,6 +159,11 @@ export class AgentController {
           coverage?.sources.length ? `${coverage.directlyTested}/${coverage.sources.length} sources modifiées directement testées ; ${coverage.baselined} avec essai initial sur la même suite. Les assertions ne prouvent pas une équivalence universelle.` :
           'Aucune source BASIC modifiée à rattacher.';
         job.result={...result,status:latest&&!valid?'blocked':result.status,summary:`${result.summary}\nValidation IDE : DSK structurel. ${latest ? valid ? 'Suites CPC réussies sur cette révision.' : 'Tests CPC non concluants ou sources modifiées non couvertes ; validation non obtenue.' : 'Aucun test CPC exécuté ; comportement non vérifié.'} ${proof}`};
+        if(job.tools instanceof WorkspaceTools&&job.tools.projectTests){
+          await job.tools.projectTests.validate(job.tools.state);
+          const assessment=job.tools.projectTests.assessment(job.initial,job.tools.state);
+          if(assessment.attempted)job.result={...result,status:assessment.valid&&(!latest||valid)?'completed':'blocked',summary:result.summary+'\nValidation IDE : DSK structurel. '+assessment.message+(latest&&!valid?' Les suites autonomes invoquées restent non concluantes.':'')};
+        }
       }
       if (result.status === 'completed' && !job.tools.buildVerified) job.result = { ...job.result, status: 'blocked', summary: `${job.result.summary}\nAucune construction réussie de la révision finale ; mission non validée.` };
       try { await this.record(job, job.tools.state, 'finished'); }
@@ -182,7 +192,7 @@ export class AgentController {
     });
     const { assets: _assets, ...binaryWorkspace } = job.tools.state;
     const workspace = job.tools.state.binaryAnalysis ? binaryWorkspace : job.tools.state;
-    return structuredClone({ ...job.result, taskId: job.id, running: job.running, events: job.events, workspace, changed, documentChanges, testRuns:job.tools instanceof WorkspaceTools ? job.tools.tests?.views(job.tools.state) ?? [] : [], renameOperations:job.tools instanceof WorkspaceTools ? structuredClone(job.tools.renameOperations) : [], formatOperations:job.tools instanceof WorkspaceTools ? structuredClone(job.tools.formatOperations) : [], commentOperations:job.tools instanceof WorkspaceTools ? structuredClone(job.tools.commentOperations) : [], moduleReviews:job.tools instanceof WorkspaceTools ? job.tools.moduleReviewViews() : [], loadContracts:job.tools instanceof WorkspaceTools ? job.tools.loadingReportViews() : [], overlayReviews:job.tools instanceof WorkspaceTools ? job.tools.chainMergeViews() : [], extractionSimulations:job.tools instanceof WorkspaceTools ? job.tools.extractionSimulationViews() : [], testCoverage:job.tools instanceof WorkspaceTools ? job.tools.tests?.coverage(job.initial,job.tools.state) : undefined, before: job.initial.files.filter(file => changed.includes(file.path)).map(({ id, source }) => ({ id, source })), ...(job.initial.binaryAnalysis ? { binaryBefore: job.initial.binaryAnalysis } : {}), buildVerified: job.tools.buildVerified,
+    return structuredClone({ ...job.result, taskId: job.id, running: job.running, events: job.events, workspace, changed, documentChanges, projectTestRuns:job.tools instanceof WorkspaceTools?job.tools.projectTests?.views(job.tools.state)??[]:[], projectTestAssessment:job.tools instanceof WorkspaceTools?job.tools.projectTests?.assessment(job.initial,job.tools.state):undefined, testRuns:job.tools instanceof WorkspaceTools ? job.tools.tests?.views(job.tools.state) ?? [] : [], renameOperations:job.tools instanceof WorkspaceTools ? structuredClone(job.tools.renameOperations) : [], formatOperations:job.tools instanceof WorkspaceTools ? structuredClone(job.tools.formatOperations) : [], commentOperations:job.tools instanceof WorkspaceTools ? structuredClone(job.tools.commentOperations) : [], moduleReviews:job.tools instanceof WorkspaceTools ? job.tools.moduleReviewViews() : [], loadContracts:job.tools instanceof WorkspaceTools ? job.tools.loadingReportViews() : [], overlayReviews:job.tools instanceof WorkspaceTools ? job.tools.chainMergeViews() : [], extractionSimulations:job.tools instanceof WorkspaceTools ? job.tools.extractionSimulationViews() : [], testCoverage:job.tools instanceof WorkspaceTools ? job.tools.tests?.coverage(job.initial,job.tools.state) : undefined, before: job.initial.files.filter(file => changed.includes(file.path)).map(({ id, source }) => ({ id, source })), ...(job.initial.binaryAnalysis ? { binaryBefore: job.initial.binaryAnalysis } : {}), buildVerified: job.tools.buildVerified,
       model: job.model, budget: job.budget, pricing: job.pricing, resumable: !!job.provider && !job.running && !job.restored && job.continuations < 10 && job.result.status === 'paused-limit' && !/^Budget de contexte|^Stagnation/.test(job.result.summary) });
   }
   cancel(id: unknown): { ok: boolean } { this.get(id).abort.abort(); return { ok: true }; }

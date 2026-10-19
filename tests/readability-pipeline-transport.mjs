@@ -1,7 +1,8 @@
 // Controlled provider transcript, shared by Node and native Electron recipes.
 // Self-contained so Electron can install it in the main process without imports.
-export function createReadabilityTransport(_electron,install=false){
- let step=0;const model='gpt-5.6-luna';
+export function createReadabilityTransport(_electron,install=false,projectMode=false){
+ projectMode ||= !!install?.projectTests;
+ let step=0,phase='before-list';const model='gpt-5.6-luna';
  const transport=async(url,init)=>{
   if(String(url).endsWith('/models'))return Response.json({data:[{id:model,created:100,owned_by:'openai'}]});
   if(String(url).endsWith(`/${model}.md`))return new Response('Model ID: `gpt-5.6-luna`\n\n## Pricing\n\n| Input | $0.2 | 1M tokens |\n| Cached input | $0.02 | 1M tokens |\n| Output | $1.2 | 1M tokens |\n\n## Endpoints\n');
@@ -12,10 +13,16 @@ export function createReadabilityTransport(_electron,install=false){
    if(!item)throw Error('Missing result '+id);
    const output=JSON.parse(item.output);if(output.error)throw Error(JSON.stringify(output));return output;
   };
-  if(!body.input.some(x=>x.type==='function_call_output'))step=0; // A new mission starts a new transcript.
+  if(!body.input.some(x=>x.type==='function_call_output')){step=0;phase='before-list';} // A new mission starts a new transcript.
   const read=id=>call(id,'project_read_file',{id:'main',startLine:1,endLine:200});
   const preview=(kind,from,extra={})=>call(kind+'-preview','language_'+kind+'_preview',{id:'main',expectedHash:result(from).hash,...extra});
   const apply=(kind,from)=>call(kind+'-apply','language_'+kind+'_apply',{id:'main',expectedHash:result(from).hash,previewId:result(kind+'-preview').previewId});
+  const respond=output=>Response.json({model,status:'completed',output,usage:{input_tokens:100,output_tokens:20,total_tokens:120}});
+  if(projectMode){
+   if(step===16&&phase==='transforms')phase='after-list';
+   if(phase.endsWith('-list')){const when=phase.split('-')[0];phase=when+'-run';return respond([call('project-'+when,'project_tests_list',{})]);}
+   if(phase.endsWith('-run')){const when=phase.split('-')[0],library=result('project-'+when);phase=when==='before'?'transforms':'done';return respond([call('run-'+when,'project_tests_run',{scenarioId:'display',expectedRevision:library.revision,expectedProjectSha256:library.projectSha256})]);}
+  }
   let output;
   switch(++step){
    case 1:output=[read('initial'),call('suites-before','basic_tests_list',{}),call('audit','language_readability_review',{id:'main'})];break;
@@ -31,15 +38,15 @@ export function createReadabilityTransport(_electron,install=false){
    case 11:output=[read('commented')];break;
    case 12:output=[call('extraction-preview','language_extraction_simulate',{id:'main',expectedHash:result('commented').hash,entryLine:100,newFileName:'PART'})];break;
    // The note precedes the final preview: documentation mutations invalidate plans too.
-   case 13:output=[call('note','documents_create_note',{title:'Bilan lisibilite',category:'progress',source:'# Lisibilité\n\nRenommage s% → score%, espaces normalisés et REM ajouté. Découpage terminal prévu dans PART.BAS.\n\nAucune suite CPC enregistrée pour ces témoins. Construction DSK structurelle seulement ; aucun test CPC de projet multifichier dans cette mission. Le banc firmware externe doit comparer les vrais projets.\n'})];break;
+   case 13:output=[call('note','documents_create_note',{title:'Bilan lisibilite',category:'progress',source:projectMode?'# Lisibilité\n\nEssai initial du vrai projet demandé. Renommage, formatage, REM et découpage prévus. Le bilan final devra vérifier le projet transformé avec les mêmes attentes.\n':'# Lisibilité\n\nRenommage s% → score%, espaces normalisés et REM ajouté. Découpage terminal prévu dans PART.BAS.\n\nAucune suite CPC enregistrée pour ces témoins. Construction DSK structurelle seulement ; aucun test CPC de projet multifichier dans cette mission. Le banc firmware externe doit comparer les vrais projets.\n'})];break;
    case 14:output=[call('final-preview','language_extraction_simulate',{id:'main',expectedHash:result('commented').hash,entryLine:100,newFileName:'PART'})];break;
    case 15:output=[call('extraction-apply','language_extraction_apply',{id:'main',expectedHash:result('commented').hash,previewId:result('final-preview').previewId})];break;
    case 16:output=[call('suites-after','basic_tests_list',{}),call('build','build_project',{})];break;
    default:
     result('extraction-apply');result('build');
-    output=[{type:'message',content:[{type:'output_text',text:'Renommage, espaces, commentaire et découpage enregistrés ; note de préparation conservée. DSK construit. Aucune suite CPC disponible : comportement du projet multifichier non testé dans la mission.'}]}];
+    output=[{type:'message',content:[{type:'output_text',text:projectMode?'Transformations et DSK enregistrés. Essais initial et final du vrai projet demandés avec les mêmes attentes ; consulter leurs résultats et empreintes.':'Renommage, espaces, commentaire et découpage enregistrés ; note de préparation conservée. DSK construit. Aucune suite CPC disponible : comportement du projet multifichier non testé dans la mission.'}]}];
   }
-  return Response.json({model,status:'completed',output,usage:{input_tokens:100,output_tokens:20,total_tokens:120}});
+  return respond(output);
  };
  if(install)globalThis.fetch=transport;
  return transport;

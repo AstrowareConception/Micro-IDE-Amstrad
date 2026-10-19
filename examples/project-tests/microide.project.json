@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "projectId": "627d7ac7-625e-49d5-a4a6-342e5aa18753",
+  "name": "Projet CPC testé",
+  "target": {
+    "machineProfileId": "cpc6128-classic-v1",
+    "dialect": "locomotive-1.1"
+  },
+  "entryPoint": "main",
+  "sources": [
+    {
+      "id": "main",
+      "path": "src/main.bas",
+      "cpcName": "MAIN.BAS"
+    },
+    {
+      "id": "part",
+      "path": "src/part.bas",
+      "cpcName": "PART.BAS"
+    }
+  ],
+  "assets": [
+    {
+      "id": "data",
+      "path": "assets/input.bin",
+      "cpcName": "INPUT.TXT",
+      "sha256": "2d64c22e11784d281e4c4ad6d9c35e2b68579a937fae8c6dd2f2ae03793b4c59",
+      "byteLength": 10
+    }
+  ],
+  "documents": [],
+  "build": {
+    "listingFormat": "ascii",
+    "diskFormat": "standard-dsk",
+    "filesystem": "amsdos-data",
+    "textEncoding": "ascii-strict",
+    "lineEnding": "crlf",
+    "asciiEof": "ctrl-z",
+    "fileOrder": "cpc-name"
+  }
+}

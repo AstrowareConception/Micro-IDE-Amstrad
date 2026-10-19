@@ -1,5 +1,7 @@
 # Mission de lisibilité composée — 0.41.29
 
+**Suite livrée en 0.41.30 :** les [outils de test du vrai projet](agent-project-tests-alpha.md) permettent maintenant les essais avant/après dans la mission. Les limitations ci-dessous décrivent le périmètre historique 0.41.29.
+
 Les outils de renommage, formatage, commentaires et découpage sont désormais exercés ensemble sur six petits programmes représentatifs des profils admis. Cette qualification couvre les raccords entre transformations, avec un fournisseur IA déterministe et de vraies écritures. Elle ne mesure pas les choix d’un modèle réel sur un jeu historique.
 
 ## Ce que construisent les derniers incréments

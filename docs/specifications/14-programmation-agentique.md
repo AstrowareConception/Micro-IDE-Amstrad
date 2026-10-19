@@ -1,6 +1,6 @@
 # 14 — Missions, outils et boucle agentique
 
-**État courant 0.41.29 :** [mission de lisibilité composée](../implementation/basic-readability-pipeline-alpha.md). Renommage, espaces, REM, note et découpage exercés ensemble ; profil commenté v5, six témoins et 30 exécutions CPC des projets/oracles. Les tests CPC de projet restent externes à la mission. Profils v1/v2/v3/v4 et journal conservés.
+**État courant 0.41.30 :** [tests du vrai projet par l’agent](../implementation/agent-project-tests-alpha.md). Scénarios externes en lecture seule, exécution du DSK complet, empreintes des sources/ressources/attentes/ROM et bilan avant/après. Six témoins composés qualifiés ; une régression du module est détectée. Les suites autonomes restent distinctes.
 
 **Profil boucles 0.41.28 :** le [profil v4](../implementation/basic-multifile-loops-alpha.md) admet FOR/NEXT nommé et WHILE/WEND à compteur entier et progression imposée. Quatre boucles, 32 tours et 8192 visites maximum ; aucune boucle active à travers CHAIN MERGE, aucun IF dans les corps. Les références FOR/NEXT et WHILE/WEND sont requises selon les commandes utilisées ; protocole d’application inchangé.
 
