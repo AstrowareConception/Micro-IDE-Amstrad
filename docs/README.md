@@ -1,6 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.41.30
+# CPCéleste — Dossier de conception et réalisation — version 0.41.31
 
-**État courant 0.41.30 :** [tests du vrai projet CPC par l’agent](implementation/agent-project-tests-alpha.md), [ADR 0080](adr/0080-tests-vrai-projet-agent.md). Attentes externes, DSK complet, observations avant/après et résultats liés aux révisions. Préparation des scénarios encore en JSON humain.
+**État courant 0.41.31 :** [préparation, exécution et historique des scénarios projet](implementation/project-scenarios-ui-alpha.md), [ADR 0081](adr/0081-interface-scenarios-projet.md). Formulaire humain, vrai CPC sans clé IA, révisions contrôlées et rapports persistants ; outils agent toujours en lecture seule pour les attentes.
 
 **Incrément 0.41.28 :** [boucles simples et frontières du découpage](implementation/basic-multifile-loops-alpha.md), [ADR 0078](adr/0078-boucles-decoupage-terminal.md). Quatorze témoins CPC, profils v1/v2/v3 et journal conservés.
 

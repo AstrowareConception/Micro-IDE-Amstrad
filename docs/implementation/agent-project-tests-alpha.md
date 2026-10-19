@@ -1,5 +1,7 @@
 # Tests du vrai projet par l’agent — 0.41.30
 
+**Suite 0.41.31 :** la [préparation et la consultation dans l’interface](project-scenarios-ui-alpha.md) remplacent la préparation obligatoire en JSON. Les limites d’interface décrites ci-dessous concernent la tranche historique 0.41.30.
+
 L’agent peut désormais lancer le vrai DSK du projet avant et après une transformation. MAIN, PART et les ressources déclarées sont embarqués tels que construits, sans concaténation ni copie de routine dans un test. Les suites de listings autonomes restent disponibles séparément.
 
 ## Utilisation
