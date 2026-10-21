@@ -276,7 +276,7 @@ try {
         return { models: [{ id: 'gpt-99-ui', created: 100, owner: 'openai' }, ...(calls > 1 ? [{ id: 'gpt-100-ui-new', created: 200, owner: 'openai' }] : []), ...(calls >= 4 ? [{ id: 'gpt-101-ui-timer', created: 300, owner: 'openai' }] : []), ...(calls >= 5 ? [{ id: 'gpt-102-ui-focus', created: 400, owner: 'openai' }] : [])], fetchedAt: new Date(Date.now()).toISOString(), model: chosen };
       },
       selectModel: async model => { chosen = model; return { model }; },
-      configure: async key => { if (key !== '') throw new Error('UI must use official listing'); chosen = ''; return { configured: false, model: '' }; },
+      configure: async key => { chosen = ''; return { configured: key!=='', model: '' }; },
     } };
   });
   await modelsPage.goto('http://127.0.0.1:5173');

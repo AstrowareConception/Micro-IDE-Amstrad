@@ -76,7 +76,7 @@ export function AgentPanel(props: Props) {
     modelRequest.current = true; setRequesting(true);
     try {
       const result = await port.models();
-      if ('error' in result) setMessage(`Actualisation impossible. Dernière liste conservée : ${result.error}`);
+      if ('error' in result) setMessage(`${catalog?'Actualisation impossible. Dernière liste conservée':'Clé conservée en mémoire ; connexion à vérifier'}. ${result.error}`);
       else { setCatalog(result); setModel(result.models.some(item => item.id === result.model) ? result.model : ''); setMessage('Liste officielle OpenAI actualisée.'); }
     } catch { setMessage('Actualisation impossible ; dernière liste conservée. Réessayez.'); }
     finally { modelRequest.current = false; setRequesting(false); }
@@ -95,12 +95,18 @@ export function AgentPanel(props: Props) {
         if ('error' in result) { reportError(result.error); }
         else { pricingRequest.current++; setConfigured(false); setView(previous => previous ? { ...previous, resumable: false } : previous); setCatalog(undefined); setModel(''); setPricing(undefined); setPricingNotice(''); setMessage('Clé oubliée.'); }
       } else {
-        const result = await port.models(key);
-        if ('error' in result) { reportError(result.error); }
-        else { pricingRequest.current++; setConfigured(true); setView(previous => previous ? { ...previous, resumable: false } : previous); setCatalog(result); setModel(result.model); setPricing(undefined); setPricingNotice(''); setMessage('Clé vérifiée, conservée en mémoire. Choisissez un modèle dans la liste OpenAI.'); }
+        const saved = await port.configure(key.trim(), '');
+        if ('error' in saved) { reportError(saved.error); return; }
+        pricingRequest.current++; setConfigured(true); setKey(''); setView(previous => previous ? { ...previous, resumable: false } : previous); setCatalog(undefined); setModel(''); setPricing(undefined); setPricingNotice('');
+        setMessage('Clé conservée en mémoire. Chargement des modèles…');
+        try {
+          const result = await port.models();
+          if ('error' in result) setMessage(`Clé conservée en mémoire ; connexion à vérifier. ${result.error} Cliquez sur « Actualiser les modèles » pour réessayer.`);
+          else { setCatalog(result); setModel(result.model); setMessage('Connexion vérifiée. Choisissez un modèle dans la liste OpenAI.'); }
+        } catch { setMessage('Clé conservée en mémoire ; connexion indisponible. Cliquez sur « Actualiser les modèles » pour réessayer.'); }
       }
     } catch { reportError('Configuration impossible.'); }
-    finally { setKey(''); modelRequest.current = false; setRequesting(false); }
+    finally { if(forget)setKey(''); modelRequest.current = false; setRequesting(false); }
   }
   async function selectModel(value: string) {
     if (!port || props.busy || modelRequest.current || !value) return;
@@ -152,7 +158,7 @@ export function AgentPanel(props: Props) {
     {libraryOpen && !props.busy && !requesting && <MissionLibraryDialog key={`${props.sessionId}:${props.binary}`} kind={props.binary ? 'binary' : 'basic'} objective={objective} onClose={() => setLibraryOpen(false)} onUse={text => { setPreviousObjective(objective); setObjective(text); }} />}
     {settingsOpen && <AgentSettingsDialog onClose={() => setSettingsOpen(false)}>
     <fieldset><legend><span className="agent-setting-step" aria-hidden="true">1</span> Connexion OpenAI</legend>
-      <p className="agent-connection-status" role="status">{configured ? 'Clé configurée pour cette session' : 'Clé API à configurer'}</p>
+      <p className="agent-connection-status" role="status">{configured ? catalog ? 'Clé configurée pour cette session · connexion vérifiée' : 'Clé mémorisée pour cette session · connexion à vérifier' : 'Clé API à configurer'}</p>
       <div className="agent-setting-field">
         <label htmlFor="openai-key">Clé API OpenAI</label>
         <input id="openai-key" type="password" autoComplete="off" spellCheck={false} aria-describedby="openai-key-help" placeholder={configured ? 'Saisir une autre clé pour la remplacer' : 'Collez votre clé API'} value={key} disabled={props.busy || requesting} onChange={event => setKey(event.target.value)} />

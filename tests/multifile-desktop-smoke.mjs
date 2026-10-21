@@ -1,3 +1,4 @@
+import {installAgentNetworkFixture} from './agent-network-fixture.mjs';
 import assert from 'node:assert/strict';
 import {_electron as electron,expect} from '@playwright/test';
 import {readFile,writeFile,rm} from 'node:fs/promises';
@@ -23,6 +24,7 @@ if(projectTests){
 let desktop,page;const errors=[];
 async function launch(){
  desktop=await electron.launch({args:['.'],timeout:30000,env:{...process.env,XDG_CONFIG_HOME:join(f.root,'config')}});
+ await installAgentNetworkFixture(desktop);
  page=await desktop.firstWindow();page.on('pageerror',error=>errors.push(error.message));
  await page.locator('.view-lines').first().waitFor();
  await desktop.evaluate(({dialog},root)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[root]});dialog.showMessageBox=async()=>({response:1});},f.root);

@@ -15,9 +15,9 @@ export async function verifyAgentWorkbench(browser, errors) {
     window.desktop = { setDirty() {}, open: async () => null, save: async () => null, exportDisk: async () => null,
       project: { open: async () => snapshot },
       agent: {
-        models: async () => { configured = true; return { models: [{ id: 'gpt-5.6-luna', created: 100, owner: 'openai' }], fetchedAt: new Date().toISOString(), model }; },
+        models: async () => { if(window.failModels)return {error:'Connexion indisponible (recette)'}; configured = true; return { models: [{ id: 'gpt-5.6-luna', created: 100, owner: 'openai' }], fetchedAt: new Date().toISOString(), model }; },
         selectModel: async value => { model = value; return { model }; },
-        configure: async () => { configured = false; model = ''; return { configured: false, model: '' }; },
+        configure: async key => { configured = key!==''; model = ''; return { configured, model: '' }; },
         pricing: async () => window.delayPricing ? new Promise(resolve => { window.resolvePricing = () => resolve(pricing); }) : pricing,
         start: async (session, objective, buffers, docs, budget) => { window.agentCalls.push({ action: 'start', session, objective, buffers, docs, budget }); if (!configured || model !== pricing.model) throw new Error('Missing configuration'); return { taskId: 'mission-ui' }; },
         resume: async (taskId, buffers, session) => { window.agentCalls.push({ action: 'resume', taskId, buffers, session }); phase = 'resume'; return { taskId }; },
@@ -37,6 +37,12 @@ export async function verifyAgentWorkbench(browser, errors) {
   }, { manifest: newProject('Agent interface', '20000000-0000-4000-8000-000000000001') });
   try {
     await page.goto('http://127.0.0.1:5173'); await page.locator('.view-lines').first().waitFor();
+    // A hidden, detached agent from the previous session must reopen docked on the right.
+    await page.getByRole('button',{name:'Détacher l’agent IA',exact:true}).click();
+    await page.getByRole('button',{name:'Masquer l’agent IA',exact:true}).click();
+    await page.reload();await page.locator('.view-lines').first().waitFor();
+    await expect(page.getByRole('complementary',{name:'Assistant IA',exact:true})).toBeVisible();
+    await expect(page.getByRole('button',{name:'Détacher l’agent IA',exact:true})).toBeVisible();
     await page.getByRole('button', { name: 'Ouvrir projet', exact: true }).click();
     const panel = page.getByRole('region', { name: 'Agent OpenAI', exact: true });
     await verifyMissionLibrary(page, panel);
@@ -63,11 +69,17 @@ export async function verifyAgentWorkbench(browser, errors) {
       if (viewport.width === 420) await page.screenshot({ path: 'out/agent-settings-narrow.png' });
     }
     await page.setViewportSize({ width: 1440, height: 960 });
+    await page.evaluate(()=>{window.failModels=true;});
     await settings.getByLabel('Clé API OpenAI', { exact: true }).fill('sk-ui-fixture-not-real');
     await page.keyboard.press('Tab');
     await expect(settings.getByRole('button', { name: 'Configurer la clé', exact: true })).toBeFocused();
     await settings.getByRole('button', { name: 'Configurer la clé', exact: true }).click();
     await expect(settings.getByLabel('Clé API OpenAI', { exact: true })).toHaveValue('');
+    await expect(settings).toContainText('Clé mémorisée pour cette session · connexion à vérifier');
+    await expect(settings.getByLabel('Modèle OpenAI',{exact:true})).toBeDisabled();
+    await expect(settings.getByRole('button',{name:'Oublier la clé',exact:true})).toBeEnabled();
+    await page.evaluate(()=>{window.failModels=false;});
+    await settings.getByRole('button',{name:'Actualiser les modèles',exact:true}).click();
     await settings.getByLabel('Modèle OpenAI', { exact: true }).selectOption('gpt-5.6-luna');
     await settings.getByText('Tarifs et estimation (USD)', { exact: true }).click();
     await expect(settings).toContainText('Tarif officiel actualisé.');

@@ -1,5 +1,21 @@
 # CPCéleste — Point de reprise du développement
 
+## Incrément 0.41.32 — références écran et accès IA
+
+Base vérifiée : `main` à `6f14fa2dc04cdd281b95831075b566901cb9ae26`, PR #93 fusionnée ; Specifications, J0 et Desktop Linux/Windows réussis sur `23227b772bb42181c5a13a28aac51ff96c838712`. Branche : `feat/project-screen-reference`.
+
+Réalisé : capture sur vrai DSK par le même parcours CPC, préparation possible sans attente, aperçu RGBA complet, sélection souris/coordonnées et détail agrandi, adoption explicite calculée dans le processus principal, ajout/remplacement dans le brouillon puis sauvegarde séparée. Révisions projet/plan/bibliothèque et session contrôlées. Aucun verdict ni rapport de capture, aucun pixel persisté, aucun outil agent d’adoption. Bibliothèque et rapports version 1 conservés. [Guide](implementation/project-screen-reference-alpha.md), [ADR 0082](adr/0082-reference-ecran-humaine.md).
+
+Demande complémentaire utilisateur : clé API difficile à configurer, panneau IA essentiel au démarrage. Correction de la perte de clé après échec de catalogue : mémorisation de session séparée, retry sans recoller, modèle explicitement choisi après lecture réussie, diagnostic réseau borné. Transport IA natif Electron pour le proxy système, TLS conservé. Agent ouvert et ancré à droite à chaque lancement. [Guide](implementation/agent-connection-alpha.md), [ADR 0083](adr/0083-connexion-agent-reessayable.md).
+
+Preuves locales : 556 tests Node et typage réussis. Capture réelle, adoption, comparaison avec une assertion du même moteur, puis succès/échec du buffer altéré/retour au succès ; bibliothèque et sources intactes, réouverture vérifiée. Rapport `out/project-screen-reference-qualification.json`. Image CPC examinée. Build desktop et contrôle documentaire réussis (199 Markdown, 24 JSON, 84 exigences, 37 scénarios, sept schémas et huit exemples). Recette historique des scénarios rejouée : trois exécutions CPC réussies avec les verdicts attendu succès/échec/succès.
+
+CI : parcours Electron enrichi (premier brouillon sans attente, sélection, dépassement, révision périmée, adoption, sauvegarde, vrai essai, abandon/arrêt et réouverture), placé avant le banc historique. Parcours connexion avec premier échec puis retry sans clé et ouverture après disposition masquée ajouté. Premier passage de la PR #94 : Specifications, J0 et Windows réussis ; navigateur connexion/disposition, qualification CPC et capture/adoption native réussis. La destruction immédiate de la fenêtre dans la recette précédait la sauvegarde différée du réancrage : attendre cette sauvegarde avant la réouverture. Captures CI examinées. Adoption rendue indépendante des autres attentes encore incomplètes dans le brouillon, avec régression native. Environnement local sans serveur X ; valider la totalité des parcours sur le dernier SHA avant fusion. Aucun packaging par commit.
+
+Limites : capture temporaire au terme du budget, pas de comparaison visuelle persistante ni de masque multiple ; aucune terminaison, couverture exhaustive ou équivalence universelle déduite. Pas de matériel physique ou d’émulateur indépendant. Connexion IA testée avec fixtures ; succès sur le réseau de l’utilisateur non constaté.
+
+Suite prioritaire : élargir les structures selon les besoins (IF dans les corps et imbrications), puis profiler 0.42 et observation CPC 0.43. Les points historiques ci-dessous sont remplacés par celui-ci.
+
 ## Incrément 0.41.31 — scénarios projet dans l’interface
 
 Base vérifiée : `main` à `62a9ae080d34a4bbcac1247df1b9911b8c5c6705`, PR #92 fusionnée après Specifications, J0 et Desktop Linux/Windows réussis sur `921606de8a14eec24959fe9d85126db302e0488a`. Branche : `feat/project-scenarios-ui`.

@@ -1,3 +1,4 @@
+import {installAgentNetworkFixture} from './agent-network-fixture.mjs';
 import { verifyKnowledgeDesktop } from './knowledge-smoke.mjs';
 import { verifyBinaryWorkbenchDesktop } from './binary-workbench-smoke.mjs';
 import { verifyAgentDesktop } from './agent-desktop-smoke.mjs';
@@ -25,6 +26,7 @@ await writeFile(listing, '10 PRINT "DESKTOP"\r\n20 END\r\n');
 // CI runs an unprivileged user with Chromium sandbox enabled. Do not disable sandbox to pass tests.
 const desktopEnv = { ...process.env, XDG_CONFIG_HOME: join(temporary, 'config'), ELECTRON_ENABLE_LOGGING: '1' };
 let desktop = await electron.launch({ args: ['.'], timeout: 30000, env: desktopEnv });
+ await installAgentNetworkFixture(desktop);
 let page;
 try {
   page = await desktop.firstWindow();
@@ -935,6 +937,7 @@ try {
   const child = desktop.process(); const exit = new Promise((resolve, reject) => { const timer = setTimeout(() => reject(new Error('Electron SIGKILL timeout')), 10000); child.once('exit', () => { clearTimeout(timer); resolve(); }); });
   child.kill('SIGKILL'); await exit; await desktop.close().catch(() => undefined);
   desktop = await electron.launch({ args: ['.'], timeout: 30000, env: desktopEnv });
+ await installAgentNetworkFixture(desktop);
   page = await desktop.firstWindow(); page.on('pageerror', error => errors.push(error.message));
   await page.getByRole('heading', { name: 'CPCéleste', exact: true }).waitFor();
   await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, draftRoot);
@@ -1145,6 +1148,7 @@ try {
   const recentsBeforeRestart = await page.evaluate(() => window.desktop.recentProjects.list());
   const profileChild = desktop.process(), profileExit = new Promise(resolve => profileChild.once('exit', resolve)); profileChild.kill('SIGKILL'); await profileExit; await desktop.close().catch(() => undefined);
   desktop = await electron.launch({ args: ['.'], timeout: 30000, env: desktopEnv }); page = await desktop.firstWindow();
+ await installAgentNetworkFixture(desktop);
   await page.getByRole('heading', { name: 'CPCéleste', exact: true }).waitFor();
   assert.deepEqual(await page.evaluate(() => window.desktop.recentProjects.list()), recentsBeforeRestart);
   await desktop.evaluate(({ dialog }, path) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] }); }, commitRoot);

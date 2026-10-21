@@ -1,4 +1,8 @@
 import {parseProjectTests,type ProjectScenario} from '../../../packages/emulator/src/project-tests.ts';
+import {parseProjectCapturePlan} from '../../../packages/emulator/src/project-screen-reference.ts';
+export function capturePlanFromForm(s:ProjectScenario){
+ return parseProjectCapturePlan({id:s.id,name:s.name,seconds:s.seconds,inputs:s.inputs.map(i=>({...i,text:unescapeScenarioText(i.text)}))});
+}
 /** Display control characters without losing CR/CRLF in HTML text controls. */
 export function escapeScenarioText(text:string):string{return text.replace(/\\/g,'\\\\').replace(/\r/g,'\\r').replace(/\n/g,'\\n').replace(/\t/g,'\\t');}
 export function unescapeScenarioText(text:string):string{

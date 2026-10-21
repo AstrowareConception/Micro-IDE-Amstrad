@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {resolve,join} from 'node:path';
-import {agentProjectTestRunner} from '../apps/desktop/agent-project-test-runner.ts';
+import {agentProjectTestRunner,projectScreenRunner} from '../apps/desktop/agent-project-test-runner.ts';
 import {prepareProjectTest} from '../packages/agent/src/project-tests.ts';
 import {newProject} from '../packages/workspace/src/project.ts';
 import {BASIC_TEST_FIRMWARE} from '../packages/emulator/src/basic-test-runtime.ts';
 import {digest as hash} from './multifile-fixture.ts';
-export async function projectRunner(){
+export async function projectRunner(capture=false){
  const root=process.env.CPC_TEST_ROM_DIR;if(!root)throw Error('CPC_TEST_ROM_DIR requis ; ROM externes au dépôt.');
  const roms={};for(const role of ['os','basic','amsdos']){roms[role]=new Uint8Array(await readFile(join(root,`cpc6128_${role}.bin`)));assert.equal(hash(roms[role]),BASIC_TEST_FIRMWARE[role]);}
- return agentProjectTestRunner({load:async()=>roms},resolve('out'));
+ return (capture?projectScreenRunner:agentProjectTestRunner)({load:async()=>roms},resolve('out'));
 }
 export const displayScenario=sha256=>({id:'display',name:'Score affiché',seconds:8,inputs:[],checks:[{kind:'screen',name:'score',x:64,y:36,width:640,height:8,sha256}]});
 export async function literalOracle(runner,source){

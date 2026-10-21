@@ -42,7 +42,9 @@ export class AgentController {
     if (this.running) throw new Error('Arrêtez la mission avant de changer la configuration.');
     if (key === '') { if (this.job) this.job.provider = undefined; this.provider = undefined; this.catalog = undefined; this.selectionRequired = false; this.configurationRevision++; return { configured: false, model: DEFAULT_MODEL }; }
     if (typeof key !== 'string' || typeof model !== 'string') throw new Error('Configuration invalide.');
-    const candidate = new OpenAIProvider(key, model, this.transport ?? fetch); if (this.job) this.job.provider = undefined; this.provider = candidate; this.catalog = undefined; this.selectionRequired = false; this.configurationRevision++; return { configured: true, model };
+    // Key retention is local and independent of catalog availability. An empty model
+    // requires a subsequent explicit choice from the successfully loaded catalog.
+    const candidate = new OpenAIProvider(key.trim(), model || DEFAULT_MODEL, this.transport ?? fetch); if (this.job) this.job.provider = undefined; this.provider = candidate; this.catalog = undefined; this.selectionRequired = model === ''; this.configurationRevision++; return { configured: true, model };
   }
   async models(key?: unknown): Promise<ModelCatalog> {
     if (this.running) throw new Error('Arrêtez la mission avant d’actualiser les modèles.');

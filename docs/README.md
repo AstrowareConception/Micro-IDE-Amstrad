@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.41.31
+# CPCéleste — Dossier de conception et réalisation — version 0.41.32
+
+**Nouveauté 0.41.32 :** [capture et adoption visuelle des références écran](implementation/project-screen-reference-alpha.md), [connexion IA réessayable et panneau ouvert au démarrage](implementation/agent-connection-alpha.md).
 
 **État courant 0.41.31 :** [préparation, exécution et historique des scénarios projet](implementation/project-scenarios-ui-alpha.md), [ADR 0081](adr/0081-interface-scenarios-projet.md). Formulaire humain, vrai CPC sans clé IA, révisions contrôlées et rapports persistants ; outils agent toujours en lecture seule pour les attentes.
 

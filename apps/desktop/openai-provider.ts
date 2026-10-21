@@ -3,6 +3,16 @@ import { readUsage } from '../../packages/agent/src/consumption.ts';
 import type { ModelPort, ModelTurn, ToolDefinition, OpenAIModel } from '../../packages/agent/src/types.ts';
 
 export const DEFAULT_MODEL = 'gpt-5.4-2026-03-05';
+function connectionHint(error:unknown):string {
+  if(!(error instanceof Error))return 'connexion ou délai OpenAI.';
+  const code=String((error.cause as {code?:unknown}|undefined)?.code??''),details=`${code} ${error.message}`;
+  // Match known categories only; never reflect network messages or credentials.
+  if(error.name==='TimeoutError'||/ERR_TIMED_OUT|ETIMEDOUT|UND_ERR_CONNECT_TIMEOUT/.test(details))return 'délai dépassé. Réessayez et vérifiez votre connexion.';
+  if(/ERR_PROXY_CONNECTION_FAILED|ERR_TUNNEL_CONNECTION_FAILED|ERR_NO_SUPPORTED_PROXIES/.test(details))return 'connexion au proxy système impossible. Vérifiez le proxy ou le VPN.';
+  if(/ERR_NAME_NOT_RESOLVED|ENOTFOUND|EAI_AGAIN/.test(details))return 'résolution du nom api.openai.com impossible. Vérifiez le réseau ou le DNS.';
+  if(/ERR_CERT_|CERT_HAS_EXPIRED|UNABLE_TO_VERIFY|SELF_SIGNED_CERT/.test(details))return 'certificat TLS refusé. Vérifiez la date du poste et les certificats du réseau.';
+  return 'connexion ou délai OpenAI. Vérifiez le réseau, le proxy ou le VPN, puis réessayez.';
+}
 /** Key and network stay in main. No SDK dependency, remote tool or automatic billable retry. */
 export class OpenAIProvider implements ModelPort {
   private readonly key: string;
@@ -17,7 +27,7 @@ export class OpenAIProvider implements ModelPort {
     const response = await this.transport('https://api.openai.com/v1/models', {
       method: 'GET', redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(15000),
       headers: { Authorization: `Bearer ${this.key}`, Accept: 'application/json' },
-    }).catch(() => { throw new Error('Liste des modèles inaccessible : connexion ou délai OpenAI.'); });
+    }).catch(error => { throw new Error(`Liste des modèles inaccessible : ${connectionHint(error)}`); });
     if (!response.ok) { await response.body?.cancel(); throw new Error(response.status === 401 ? 'Clé OpenAI refusée (401).' : response.status === 403 ? 'Accès à la liste des modèles refusé (403). Vérifiez les permissions de la clé.' : `Liste des modèles : OpenAI HTTP ${response.status}.`); }
     if (!response.body) throw new Error('Liste des modèles OpenAI absente.');
     const reader = response.body.getReader(), chunks: Uint8Array[] = []; let length = 0;

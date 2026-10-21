@@ -439,3 +439,10 @@ select{font:inherit;width:100%;margin:8px 0;background:var(--input);color:inheri
 .project-test-report { border-top: 1px solid var(--line); padding-top: 8px; }
 .project-test-report code, .project-test-hash { overflow-wrap: anywhere; font-family: monospace; }
 .project-test-report dd { margin-left: 0; }
+
+.project-screen-preview { margin: 1rem 0; padding: 1rem; border: 1px solid var(--accent, #78ccdd); border-radius: 8px; }
+.project-screen-stage { position: relative; width: 100%; max-width: 768px; overflow: hidden; background: #000; }
+.project-screen-stage canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; touch-action: none; cursor: crosshair; }
+.project-screen-selection { position: absolute; pointer-events: none; border: 1px solid #fff; outline: 1px solid #111; background: #ffffff18; box-sizing: border-box; }
+.project-screen-crop { max-width: 100%; max-height: 200px; overflow: auto; padding: 8px; background: #101820; }
+.project-screen-crop canvas { display: block; image-rendering: pixelated; max-width: none; }

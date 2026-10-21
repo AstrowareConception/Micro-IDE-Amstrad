@@ -1,5 +1,7 @@
 # CPCéleste — Vos idées prennent vie en BASIC
 
+**Nouveauté 0.41.32 :** [capture et adoption visuelle des références écran](implementation/project-screen-reference-alpha.md), [connexion IA réessayable et panneau ouvert au démarrage](implementation/agent-connection-alpha.md).
+
 **Nouveauté 0.41.28 :** le découpage terminal accepte les boucles simples FOR/NEXT et WHILE/WEND, entièrement contenues dans chaque fichier et avec nombre de tours contrôlé. [Exemple, limites et témoins CPC](implementation/basic-multifile-loops-alpha.md).
 
 **Nouveauté 0.41.27 :** le découpage terminal accepte les conditions simples IF/THEN/ELSE, avec contrôle des deux branches et restauration après réouverture. [Exemple, limites et huit témoins CPC](implementation/basic-multifile-conditions-alpha.md).

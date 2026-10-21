@@ -50,3 +50,18 @@ test('a delayed listing cannot resurrect a forgotten key or replace newer config
   await assert.rejects(pending, /Configuration modifiée/);
   await assert.rejects(controller.models(), /Configurez une clé/);
 });
+
+test('key retention survives catalog outage; retry needs no pasted secret and selection is still mandatory',async()=>{
+ let offline=true,calls=0;
+ const controller=new AgentController('/unused','/unused',async(_url,init)=>{
+  calls++;assert.equal((init?.headers as Record<string,string>).Authorization,`Bearer ${key}`);
+  if(offline)throw Error('network fixture');return Response.json({data:[row('gpt-99-future')]});
+ });
+ assert.deepEqual(controller.configure(` ${key}\n`,''),{configured:true,model:''});assert.equal(calls,0);
+ await assert.rejects(controller.models(),/connexion ou délai/);
+ assert.throws(()=>controller.selectModel('gpt-99-future'),/liste OpenAI/);
+ await assert.rejects(controller.suggestCommit('diff'),/Configurez/);
+ offline=false;const catalog=await controller.models();assert.equal(catalog.model,'');assert.equal(calls,2);
+ assert.deepEqual(controller.selectModel('gpt-99-future'),{model:'gpt-99-future'});
+ controller.configure('','');await assert.rejects(controller.models(),/Configurez une clé/);
+});

@@ -1,8 +1,8 @@
 # 12 — Feuille de route et backlog de réalisation
 
-**État courant 0.41.31 :** [scénarios projet dans l’interface](../implementation/project-scenarios-ui-alpha.md). Création, édition, essais directs sur le vrai CPC et consultation de l’historique ; attentes sous contrôle humain, agent en lecture seule.
+**État courant 0.41.32 :** [références écran capturées et adoptées explicitement](../implementation/project-screen-reference-alpha.md). Scénarios projet dans l’interface et dans les missions ; empreintes contrôlées, aucun apprentissage automatique des attentes. [Connexion IA réessayable et panneau ouvert au démarrage](../implementation/agent-connection-alpha.md).
 
-**Ordre actuel :** faciliter la préparation des références écran par capture et validation visuelle humaines explicites ; élargir ensuite les structures selon les besoins observés, puis profiler 0.42 et observation CPC 0.43. Les prochains lots historiques ci-dessous sont remplacés par ce point et [la reprise](../reprise.md).
+**Ordre actuel :** élargir les structures selon les besoins observés (IF dans les corps et imbrications), puis profiler 0.42 et observation CPC 0.43. Les prochains lots historiques ci-dessous sont remplacés par ce point et [la reprise](../reprise.md).
 
 
 **Renommage FN 0.41.15 :** [F2 sur une fonction ou un paramètre local](../implementation/basic-fn-rename-alpha.md). Portée affichée, définitions initiales uniques, appels couverts, aperçu et undo ; globales homonymes conservées. Types dynamiques et redéfinitions restent exclus.

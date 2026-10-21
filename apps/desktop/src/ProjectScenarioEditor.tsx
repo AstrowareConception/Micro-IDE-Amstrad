@@ -19,7 +19,7 @@ export function ProjectScenarioEditor({scenario:s,disabled,onChange}:Props){
    {c.kind==='file'?<><label>Texte ASCII attendu<textarea aria-label="Texte ASCII attendu" rows={2} value={c.text} onChange={e=>check(index,{...c,text:e.target.value})}/></label><p><code>\r\n</code> pour une fin de ligne CPC, <code>\t</code> pour une tabulation, <code>\\</code> pour une barre oblique inverse. Maximum 2 048 caractères décodés.</p></>:<>
     <div className="project-screen-rectangle">{(['x','y','width','height'] as const).map((key,i)=><label key={key}>{['X','Y','Largeur','Hauteur'][i]}<input type="number" min={i<2?0:1} max={i%2===0?768:272} value={Number.isFinite(c[key])?c[key]:''} onChange={e=>check(index,{...c,[key]:e.target.valueAsNumber})}/></label>)}</div>
     <label>Empreinte SHA-256 attendue<input className="project-test-hash" value={c.sha256} maxLength={64} onChange={e=>check(index,{...c,sha256:e.target.value})}/></label>
-    <p>Zone dans le cadre 768 × 272, maximum 16 384 pixels. Empreinte d’une référence écran vérifiée par vos soins ; aucune capture automatique de référence.</p>
+    <p>Zone dans le cadre 768 × 272, maximum 16 384 pixels. Utilisez « Capturer un écran de référence » pour examiner une image et adopter sa zone, ou renseignez une empreinte vérifiée par vos soins.</p>
    </>}
    <button onClick={()=>onChange({...s,checks:s.checks.filter((_,i)=>i!==index)})}>Retirer l’attente {index+1}</button>
   </fieldset>)}
