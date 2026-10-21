@@ -46,10 +46,15 @@ export function AgentPanel(props: Props) {
     scope.current=props.sessionId;setTaskId(undefined);setView(undefined);setObjective('');setSentObjective('');setSelectedDocuments([]);setArchives([]);setMessage('');setContextOpen(false);setToolsOpen(false);setHistoryOpen(false);setLibraryOpen(false);setPreviousObjective(undefined);
   },[props.sessionId]);
   useEffect(()=>{
-    const el=scroll.current;if(!followScroll.current||!el)return;
-    const reply=Array.from(el.querySelectorAll<HTMLElement>('.agent-result .agent-message.assistant')).at(-1);
-    if(view&&!view.running&&reply)el.scrollTop+=reply.getBoundingClientRect().top-el.getBoundingClientRect().top-8;
-    else el.scrollTop=el.scrollHeight;
+    const el=scroll.current;if(!el)return;
+    const place=()=>{
+      if(!followScroll.current)return;
+      const reply=Array.from(el.querySelectorAll<HTMLElement>('.agent-result .agent-message.assistant')).at(-1);
+      if(view&&!view.running&&reply)el.scrollTop+=reply.getBoundingClientRect().top-el.getBoundingClientRect().top-8;
+      else el.scrollTop=el.scrollHeight;
+    };
+    place();const observer=new ResizeObserver(place);observer.observe(el);
+    return()=>observer.disconnect();
   },[view?.events.length,view?.running,view?.turns,view?.calls,taskId]);
 
   const [documentConsentSession, setDocumentConsentSession] = useState<string | undefined>();
@@ -201,7 +206,10 @@ export function AgentPanel(props: Props) {
       <Button icon="history" aria-label="Historique des conversations" title="Historique de cette session" disabled={!archives.length} onClick={()=>setHistoryOpen(!historyOpen)}/>
       <Button icon="settings" aria-label="Réglages IA" title="Connexion, modèle et budgets" disabled={props.busy||requesting} onClick={()=>setSettingsOpen(true)}/>
     </header>
-    <div className="agent-conversation-scroll" ref={scroll} onScroll={e=>{const el=e.currentTarget;followScroll.current=el.scrollHeight-el.scrollTop-el.clientHeight<60;}}>
+    <div className="agent-conversation-scroll" ref={scroll}
+      onWheel={()=>{followScroll.current=false;}} onTouchMove={()=>{followScroll.current=false;}} onPointerDown={()=>{followScroll.current=false;}}
+      onKeyDown={e=>{if(['ArrowUp','ArrowDown','PageUp','PageDown','Home','End'].includes(e.key))followScroll.current=false;}}
+      onScroll={e=>{const el=e.currentTarget;if(el.scrollHeight-el.scrollTop-el.clientHeight<60)followScroll.current=true;}}>
       {historyOpen&&<section className="agent-history" aria-label="Historique de session"><h3>Conversations précédentes</h3><p className="muted">Lecture seule · conservées jusqu’à la fermeture du projet ou de l’application.</p>{archives.map((item,i)=><details key={i}><summary>{item.title.slice(0,80)}</summary><AgentConversation events={item.view.events}/><p>{item.view.summary}</p></details>)}<Button onClick={()=>setHistoryOpen(false)}>Fermer l’historique</Button></section>}
       {!taskId&&<div className="agent-welcome"><span className="agent-welcome-mark" aria-hidden="true">✦</span><h2>Que souhaitez-vous {props.binary?'explorer':'créer'} ?</h2><p>Décrivez votre idée ou la modification souhaitée. L’agent peut modifier et enregistrer les fichiers du projet.</p>
        <div className="agent-suggestions"><button onClick={()=>{setObjective(props.binary?'Explique cette routine Z80 et ses effets, sans modifier les octets.':'Explique le programme actuel et ses principales routines, sans modifier le code.');composer.current?.focus();}}>Expliquer le code</button><button onClick={()=>{setObjective(props.binary?'Annote les zones Z80 enregistrées en distinguant les faits et les hypothèses.':'Crée un écran de titre en MODE 1 pour mon jeu.');composer.current?.focus();}}>{props.binary?'Documenter les zones':'Créer un écran titre'}</button></div>

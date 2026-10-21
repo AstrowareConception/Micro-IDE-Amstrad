@@ -63,6 +63,8 @@ try {
  await page.setViewportSize({width:1000,height:740});
  await expect(agent.locator('.agent-message.assistant').last()).toBeInViewport();const box=await input.boundingBox();assert.ok(box&&box.y>=0&&box.y+box.height<=740,'Composer remains in view');
  assert.equal(await agent.evaluate(el=>el.scrollWidth<=el.clientWidth+1),true);await page.screenshot({path:'out/agent-conversation-narrow.png'});
+ const thread=agent.locator('.agent-conversation-scroll');await thread.hover();await page.mouse.wheel(0,-2000);await expect.poll(()=>thread.evaluate(el=>el.scrollTop)).toBe(0);
+ await page.setViewportSize({width:1280,height:960});await expect.poll(()=>thread.evaluate(el=>el.scrollTop)).toBe(0);
  await agent.getByRole('button',{name:'Restaurer le checkpoint initial',exact:true}).click();await expect(agent).toContainText('Checkpoint initial restauré');await expect(page.getByRole('tab',{name:'src/detail.bas',exact:true})).toHaveCount(0);
  assert.equal(await readFile(join(root,'project/src/main.bas'),'utf8'),snapshot.files[0].source);
  await assert.rejects(readFile(join(root,'project/src/detail.bas')),{code:'ENOENT'});assert.deepEqual(errors,[]);
