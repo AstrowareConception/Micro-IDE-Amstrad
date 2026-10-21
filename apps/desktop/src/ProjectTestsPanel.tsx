@@ -98,7 +98,7 @@ export function ProjectTestsPanel({sessionId,buffers,visible,busy,binary,onDirty
    const result=await port.adopt(sessionId,latestBuffers.current,preview.id,capturePlanFromForm(scenario),snapshot.library.revision,region);
    if(!mounted.current)return;if('error' in result)throw Error(result.error);
    const checks=target<0?[...scenario.checks,result]:scenario.checks.map((c,i)=>i===target?result:c);
-   scenariosFromForm([{...scenario,checks}]);
+   // Other draft expectations may still be incomplete; validate the whole library only on save.
    setDrafts(previous=>previous.map(s=>s.id===scenario.id?{...s,checks}:s));setPreview(undefined);
    setNotice('Référence adoptée dans le brouillon. Enregistrez les scénarios, puis exécutez un essai.');
   }catch(reason){if(mounted.current)setError(reason instanceof Error?reason.message:'Adoption impossible.');}

@@ -22,6 +22,8 @@ export async function verifyScreenReference({page,panel,root}){
  const adopt=preview.getByRole('button',{name:'Adopter cette zone comme référence',exact:true});
  await panel.getByLabel('Budget en secondes émulées',{exact:true}).fill('9');await expect(adopt).toBeDisabled();await expect(preview).toContainText('Capture périmée');
  await panel.getByLabel('Budget en secondes émulées',{exact:true}).fill('8');await expect(adopt).toBeEnabled();
+ // Adoption remains possible while another expectation is still incomplete.
+ await button('Ajouter une attente écran').click();await button('Ajouter une attente écran').click();await preview.getByLabel('Destination de la référence',{exact:true}).selectOption('0');
  // Actual pointer selection on a responsive canvas, followed by exact coordinate editing.
  const canvas=preview.locator('canvas').first();await canvas.scrollIntoViewIfNeeded();const box=await canvas.boundingBox();assert.ok(box);
  await page.mouse.move(box.x+box.width*64/768,box.y+box.height*36/272);await page.mouse.down();await page.mouse.move(box.x+box.width*703/768,box.y+box.height*43/272,{steps:5});await page.mouse.up();
@@ -31,8 +33,9 @@ export async function verifyScreenReference({page,panel,root}){
   const bytes=element.getContext('2d').getImageData(64,36,640,8).data;
   return [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(v=>v.toString(16).padStart(2,'0')).join('');
  });
- await page.getByRole('button',{name:'Agrandir les sorties',exact:true}).click();await preview.scrollIntoViewIfNeeded();await page.screenshot({path:'out/project-screen-reference-desktop.png'});
- await adopt.click();await expect(preview).toHaveCount(0);await expect(panel.getByLabel('Empreinte SHA-256 attendue',{exact:true})).toHaveValue(expected);
+ await page.getByRole('button',{name:'Agrandir les sorties',exact:true}).click();await preview.scrollIntoViewIfNeeded();await preview.screenshot({path:'out/project-screen-reference-desktop.png'});
+ await adopt.click();await expect(preview).toHaveCount(0);await expect(panel.getByLabel('Empreinte SHA-256 attendue',{exact:true}).first()).toHaveValue(expected);
+ await expect(panel.getByLabel('Empreinte SHA-256 attendue',{exact:true}).nth(1)).toHaveValue('');await button('Retirer l’attente 2').click();
  assert.deepEqual(await readFile(definitions),previousDefinitions);await expect(button('Exécuter le scénario')).toBeDisabled();
  await button('Enregistrer les scénarios').click();await expect(button('Exécuter le scénario')).toBeEnabled();await button('Exécuter le scénario').click();
  await expect(panel.getByRole('article').getByRole('heading')).toContainText('Réussi · Capture visuelle',{timeout:65000});await expect(button('Exécuter le scénario')).toBeEnabled();
@@ -44,6 +47,8 @@ export async function verifyScreenReference({page,panel,root}){
  assert.equal(JSON.parse(await readFile(definitions,'utf8')).scenarios.at(-1).checks[0].sha256,expected);
  // Restore host-equivalent buffers before reopening; no write of the temporary program.
  await page.getByRole('button',{name:'Réancrer les sorties',exact:true}).click();await editor.focus();await page.keyboard.press('Control+a');await page.keyboard.insertText(await readFile(join(root,'src/main.bas'),'utf8'));
+ // The test destroys BrowserWindow immediately (no pagehide); let the debounced layout save finish.
+ await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('cpceleste.panels.v1')??'null')?.output.floating)).toBe(false);
  console.log('Native screen reference: unsaved first scenario, genuine preview pixels, pointer/coordinate crop, stale/oversize rejection, explicit adoption, save, real CPC pass, discard and cancellation verified.');
  return expected;
 }
