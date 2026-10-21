@@ -1,5 +1,7 @@
 # 14 — Missions, outils et boucle agentique
 
+**État courant 0.41.33 :** [conversation agent et contexte joint](../implementation/agent-conversation-alpha.md). Priorité utilisateur réalisée : saisie unique, retouches dans le même contexte, fonctionnalités avancées repliées ; checkpoints, contrôles de révision et rapports conservés. [ADR 0084](../adr/0084-conversation-agent-progressive.md).
+
 **État courant 0.41.31 :** [scénarios projet dans l’interface](../implementation/project-scenarios-ui-alpha.md). Création, édition, essais directs sur le vrai CPC et consultation de l’historique ; attentes sous contrôle humain, agent en lecture seule.
 
 **Profil boucles 0.41.28 :** le [profil v4](../implementation/basic-multifile-loops-alpha.md) admet FOR/NEXT nommé et WHILE/WEND à compteur entier et progression imposée. Quatre boucles, 32 tours et 8192 visites maximum ; aucune boucle active à travers CHAIN MERGE, aucun IF dans les corps. Les références FOR/NEXT et WHILE/WEND sont requises selon les commandes utilisées ; protocole d’application inchangé.
@@ -26,6 +28,10 @@ Une mission doit transformer un objectif en travail réel sur le projet. Elle n'
 Le [contrat AgentTask](../../contracts/agent-task.schema.json) porte identité, objectif, projet, mode, révision de départ, corpus, scope, outils et budget. Les fichiers concernés ne sont pas nécessairement tous connus avant le premier tour : l'exploration est un outil. Les droits portent un périmètre et des catégories d'opérations, pas une liste artificiellement figée de tous les extraits futurs.
 
 Un seul agent mutatif est actif par projet. Les lectures indépendantes sont parallélisables ; écritures, conversions publiant des ressources, lancements machine et application de consignes sont ordonnés. Le MVP n'a pas besoin de sous-agents concurrents. Le port fournisseur peut plus tard évoluer sans changer ce verrou d'écriture.
+
+## Interaction conversationnelle livrée en 0.41.33
+
+`start` accepte les identifiants des documents choisis ; une sélection ne contourne jamais une politique Exclu. `steer` transmet une précision pendant la boucle, y compris si elle arrive durant la dernière réponse. `resume` accepte une consigne lors de la reprise d’une pause. `followUp` prolonge une mission terminée ou bloquée : même contexte fournisseur, même catalogue, mêmes droits et checkpoint, consommation cumulée et nouveau budget de lancement. Projet, manifeste et buffers doivent correspondre à la dernière révision connue ; dix reprises/retouches maximum, contexte borné à 512 Kio. Une restauration invalide la continuation. Les événements publics portent facultativement un rôle utilisateur, assistant ou système ; aucun raisonnement privé n’est exposé.
 
 ## Catalogue d'outils MVP
 

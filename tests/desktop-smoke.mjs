@@ -367,8 +367,10 @@ try {
   await expect(documentsPanel).toContainText('PDF invalide');
   assert.deepEqual(JSON.parse(await readFile(join(moved, 'microide.project.json'), 'utf8')), importedManifest);
   await documentReader.getByRole('button', { name: 'Revenir au code', exact: true }).click();
+  await page.getByRole('button',{name:'Joindre des fichiers',exact:true}).click();
+  await page.getByText('Accès avancé et données transmises',{exact:true}).click();
   const consent = page.getByRole('checkbox', { name: /^Autoriser les documents du projet/ });
-  await expect(consent).not.toBeChecked(); await consent.check();
+  await expect(consent).not.toBeChecked(); await consent.check();await page.getByRole('button',{name:'Terminé',exact:true}).click();
   await desktop.evaluate(async () => {
     let step = 0;
     globalThis.fetch = async (url, init) => {
@@ -415,8 +417,8 @@ try {
   await expect(page.getByLabel('Modèle OpenAI', { exact: true })).toContainText('gpt-99-test-future');
   await expect(page.getByLabel('Modèle OpenAI', { exact: true })).toHaveValue('gpt-5.4-2026-03-05');
   await page.getByRole('button', { name: 'Fermer les réglages IA', exact: true }).click();
-  await page.getByLabel('Mission de programmation', { exact: true }).fill('Crée un titre et un programme auxiliaire, puis construis le DSK.');
-  await page.getByRole('button', { name: 'Lancer l’agent', exact: true }).click();
+  await page.getByLabel('Message à l’agent', { exact: true }).fill('Crée un titre et un programme auxiliaire, puis construis le DSK.');
+  await page.getByRole('button', { name: 'Envoyer', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Arrêter l’agent', exact: true })).toBeEnabled();
   const concurrent = await page.evaluate(() => window.desktop.save('10 END'));
   assert.match(concurrent.error, /mission agent/);
@@ -467,11 +469,14 @@ try {
   await showTool(page, 'Connaissances');
   await expect(documentReader).toContainText('Page 1 sur 2');
   await expect(documentReader.getByLabel('Texte du document', { exact: true })).toHaveValue('TITRE PDF\nRegles originales');
-  await expect(consent).not.toBeChecked();
+  await page.getByRole('button',{name:'Joindre des fichiers',exact:true}).click();
+  await page.getByText('Accès avancé et données transmises',{exact:true}).click();
+  await expect(consent).not.toBeChecked();await page.getByRole('button',{name:'Terminé',exact:true}).click();
   await documentReader.getByRole('button', { name: 'Revenir au code', exact: true }).click();
 
   // Cancel a pending generation. The controlled fetch rejects on AbortSignal.
   await desktop.evaluate(() => { globalThis.fetch = async (url, init) => String(url).startsWith('https://developers.openai.com/') ? Promise.resolve(new Response('', { status: 404 })) : url === 'https://api.openai.com/v1/models' ? Response.json({ data: [{ id: 'gpt-5.4-2026-03-05', created: 1700000000, owned_by: 'openai' }] }) : new Promise((_resolve, reject) => init.signal.addEventListener('abort', () => reject(new Error('Aborted')), { once: true })); });
+  await page.getByLabel('Message à l’agent',{exact:true}).fill('Démarre une mission annulable.');
   // Reconfigure so the adapter captures the new controlled transport.
   await page.getByRole('button', { name: 'Réglages IA', exact: true }).click();
   await page.getByLabel('Clé API OpenAI', { exact: true }).fill('sk-test-fixture-not-real');
@@ -479,7 +484,7 @@ try {
   await expect(page.getByLabel('Modèle OpenAI', { exact: true })).toBeEnabled();
   await page.getByLabel('Modèle OpenAI', { exact: true }).selectOption('gpt-5.4-2026-03-05');
   await page.getByRole('button', { name: 'Fermer les réglages IA', exact: true }).click();
-  await page.getByRole('button', { name: 'Lancer l’agent', exact: true }).click();
+  await page.getByRole('button', { name: 'Envoyer', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Arrêter l’agent', exact: true })).toBeEnabled();
   await page.getByRole('button', { name: 'Arrêter l’agent', exact: true }).click();
   await page.locator('.agent-result').getByText('Mission arrêtée', { exact: true }).waitFor();

@@ -101,14 +101,15 @@ export async function verifyAgentWorkbench(browser, errors) {
     await page.screenshot({ path: 'out/agent-settings-alpha.png' });
     await page.keyboard.press('Escape'); await expect(settings).toHaveCount(0);
     await expect(panel.getByRole('button', { name: 'Réglages IA', exact: true })).toBeFocused();
-    await panel.getByLabel('Mission de programmation', { exact: true }).fill('Crée un écran de titre Mahjong en MODE 1.');
-    await panel.getByRole('button', { name: 'Lancer l’agent', exact: true }).click();
+    await panel.getByLabel('Message à l’agent', { exact: true }).fill('Crée un écran de titre Mahjong en MODE 1.');
+    await panel.getByRole('button', { name: 'Envoyer', exact: true }).click();
     await expect(panel).toContainText('Mission en pause — limite atteinte');
     await expect(panel).toContainText('Aucun fichier modifié');
     await expect(panel.locator('.agent-tool-error').first()).toContainText('reference-required');
     await expect(panel).toContainText('0.001234 USD');
     await expect(panel.getByRole('button', { name: 'Restaurer le checkpoint initial', exact: true })).toBeDisabled();
     await expect(panel.locator('.agent-events')).toBeHidden();
+    await panel.getByText('Détails de la mission',{exact:true}).click();
     await panel.getByText(/Journal technique/).click();
     await expect(panel.locator('.agent-events')).toContainText('Échec');
     await page.screenshot({ path: 'out/agent-pause-alpha.png' });

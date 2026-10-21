@@ -1,4 +1,6 @@
-# CPCéleste — Dossier de conception et réalisation — version 0.41.32
+# CPCéleste — Dossier de conception et réalisation — version 0.41.33
+
+**Nouveauté 0.41.33 :** [conversation agent, pièces jointes et outils avancés à la demande](implementation/agent-conversation-alpha.md). Un champ pour démarrer, préciser et demander une modification ; fonctions existantes conservées.
 
 **Nouveauté 0.41.32 :** [capture et adoption visuelle des références écran](implementation/project-screen-reference-alpha.md), [connexion IA réessayable et panneau ouvert au démarrage](implementation/agent-connection-alpha.md).
 

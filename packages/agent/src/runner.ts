@@ -55,13 +55,14 @@ export async function runAgent(options: {
     failedCalls: state.failedCalls, usage: { ...state.usage }, estimatedUsd: state.estimatedUsd, costComplete: state.costComplete });
   const update = () => options.progress?.(result('blocked', 'Mission en cours.'));
   const pause = (summary: string) => { emit({ kind: 'limit', text: summary }); return result('paused-limit', summary); };
+  const consumeSteering = () => { const instructions = options.takeSteering(); for (const content of instructions) input.push({ role: 'user', content }); return instructions.length > 0; };
   try {
     while (true) {
       if (signal.aborted) return result('cancelled', 'Mission arrêtée ; étapes terminées conservées.');
       if (!state.pending.length) {
         if (state.turns >= ceilings.turns) return pause('Budget de tours modèle atteint. Reprenez pour continuer avec le même contexte.');
         if (state.tokens >= ceilings.tokens) return pause('Budget tokens atteint.');
-        for (const instruction of options.takeSteering()) input.push({ role: 'user', content: instruction });
+        consumeSteering();
         if (JSON.stringify(input).length > 512 * 1024) return pause('Budget de contexte atteint. Démarrez une nouvelle mission ciblée.');
         emit({ kind: 'model', text: `Tour modèle ${++state.turns}` }); update();
         const response = await model.respond(input, tools.definitions, signal);
@@ -81,7 +82,11 @@ export async function runAgent(options: {
           .filter((part: Record<string, unknown>) => part.type === 'output_text' && typeof part.text === 'string')
           .map((part: Record<string, unknown>) => part.text as string).join('\n').slice(0, 16000);
         if (messages) emit({ kind: 'message', text: messages });
-        if (!state.pending.length) return result('completed', messages || 'Mission terminée ; consulter le journal des outils.');
+        if (!state.pending.length) {
+          // A precision received during the last model request must not be silently dropped.
+          if (consumeSteering()) continue;
+          return result('completed', messages || 'Mission terminée ; consulter le journal des outils.');
+        }
         if (state.tokens >= ceilings.tokens) return pause('Budget tokens atteint ; appels en attente conservés pour la reprise.');
       }
       while (state.pending.length) {

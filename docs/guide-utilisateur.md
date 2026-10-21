@@ -1,5 +1,7 @@
 # CPCéleste — Vos idées prennent vie en BASIC
 
+**Nouveauté 0.41.33 :** [conversation agent, pièces jointes et outils avancés à la demande](implementation/agent-conversation-alpha.md). Un champ pour démarrer, préciser et demander une modification ; fonctions existantes conservées.
+
 **Nouveauté 0.41.32 :** [capture et adoption visuelle des références écran](implementation/project-screen-reference-alpha.md), [connexion IA réessayable et panneau ouvert au démarrage](implementation/agent-connection-alpha.md).
 
 **Nouveauté 0.41.28 :** le découpage terminal accepte les boucles simples FOR/NEXT et WHILE/WEND, entièrement contenues dans chaque fichier et avec nombre de tours contrôlé. [Exemple, limites et témoins CPC](implementation/basic-multifile-loops-alpha.md).
@@ -408,7 +410,7 @@ L’assistant de CPCéleste sait utiliser des outils de programmation : explorer
 2. Dans l’assistant, ouvrez **Réglages IA**.
 3. Dans **Connexion OpenAI**, saisissez votre clé puis cliquez sur **Configurer la clé**.
 4. Dans **Modèle et estimation**, choisissez un modèle accessible et compatible avec les outils requis. Dépliez **Tarifs et estimation (USD)** pour consulter les informations disponibles, puis ajustez les trois limites dans **Budget par lancement ou reprise**.
-5. Fermez les réglages et formulez votre mission dans le panneau principal.
+5. Fermez les réglages, écrivez dans **Message à l’agent**, puis cliquez sur **Envoyer** (Ctrl+Entrée ou Cmd+Entrée).
 
 ![Réglages IA : connexion, modèle et budget, dans l’ordre de configuration](images/guide-utilisateur/22-reglages-ia.png)
 
@@ -417,6 +419,14 @@ Les libellés restent au-dessus de leur champ, y compris dans une fenêtre étro
 Le catalogue présente les modèles accessibles à votre clé et peut être actualisé ; son rafraîchissement automatique est prévu toutes les 15 minutes. L’accès au modèle ne garantit pas à lui seul sa prise en charge des outils : celle-ci est vérifiée lors de la mission. Les modèles avec une date de retrait connue sont signalés.
 
 La clé est retirée du champ après configuration et conservée en mémoire côté application jusqu’à son oubli ou sa fermeture. L’accès API et sa facturation sont distincts d’un abonnement ChatGPT. Le fournisseur livré est OpenAI ; l’architecture extensible ne signifie pas que plusieurs fournisseurs sont déjà proposés.
+
+### Dialoguer et joindre des fichiers
+
+Le panneau de droite s’ouvre au démarrage. Le champ **Message à l’agent** reste en bas pendant la lecture des échanges. **Entrée** ajoute une ligne ; **Ctrl+Entrée / Cmd+Entrée** envoie. Pendant le travail, utilisez ce même champ pour préciser votre demande ; après la réponse, demandez directement une modification, en conservant le contexte et le checkpoint initial. Un arrêt, une restauration ou une révision externe peut imposer une nouvelle conversation.
+
+Le bouton **Joindre des fichiers** ouvre la liste du contexte. **Importer un fichier…** accepte texte, Markdown, PNG, JPEG ou PDF ; le fichier importé est sélectionné pour la prochaine conversation. Les documents déjà consultables sont indiqués, les documents exclus restent exclus. Choisissez les fichiers avant le premier envoi : le périmètre est ensuite fixe. L’import ne fait aucun appel IA. **Connaissances** conserve le classement et les politiques d’accès.
+
+**Changements** donne accès aux comparaisons. **Détails de la mission** contient consommation, journal et rapports techniques. **Outils et modèles de mission** ouvre les fonctionnalités spécialisées. Les icônes d’en-tête donnent accès à une nouvelle conversation, à l’historique de session et aux réglages. L’historique conserve huit conversations en lecture seule jusqu’à la fermeture ou au changement de projet.
 
 ### Formuler une mission utile
 
@@ -430,15 +440,15 @@ L’agent dispose des buffers autorisés au lancement. Les documents du projet d
 
 **Connaissances**, dans la colonne gauche, classe références, conception, suivi et ressources. Créez un contexte, une roadmap ou un journal en Markdown ; cliquez sur un `.md` pour le lire au centre de l’atelier, avec titres, tableaux, listes et code. **Édition** affiche sa source, **Vue partagée** affiche les deux. Les références importées restent intactes ; une copie explicite devient modifiable. **Revenir au code** retrouve les buffers BASIC et les sorties.
 
-Dans **Classement, accès IA et versions**, choisissez Exclu, Consultable ou Essentiel. Ces choix sont conservés avec le projet. Les extraits essentiels sont transmis au démarrage d’une mission ; les autres documents sont lus à la demande. Dix versions précédentes sont restaurables. L’écriture documentaire automatique par l’agent reste une étape suivante. [Mode d’emploi et limites](implementation/knowledge-alpha.md).
+Dans **Classement, accès IA et versions**, choisissez Exclu, Consultable ou Essentiel. Ces choix sont conservés avec le projet. Les extraits essentiels sont transmis au démarrage d’une mission ; les autres documents sont lus à la demande. Dix versions précédentes sont restaurables. L’agent peut créer et réviser les notes modifiables avec comparaison et checkpoint ; les références importées restent protégées. [Mode d’emploi et limites](implementation/knowledge-alpha.md).
 
 ![Connaissances et Markdown](images/guide-utilisateur/28-connaissances-markdown.png)
 
 ### Choisir une mission guidée
 
-Le bouton **Choisir une mission…**, sous votre objectif, ouvre une bibliothèque adaptée au projet BASIC ou Z80. Recherchez un modèle, précisez le périmètre et l’objectif, puis cliquez sur **Générer l’aperçu**. Vous pouvez retoucher librement le texte avant de l’insérer. Si une consigne existe, choisissez **Ajouter à ma mission** ou **Remplacer ma mission** ; **Rétablir la mission précédente** annule cette insertion dans la session.
+Dans **Outils et modèles de mission**, le bouton **Choisir une mission…** ouvre une bibliothèque adaptée au projet BASIC ou Z80. Recherchez un modèle, précisez le périmètre et l’objectif, puis cliquez sur **Générer l’aperçu**. Vous pouvez retoucher librement le texte avant de l’insérer. Si une consigne existe, choisissez **Ajouter à ma mission** ou **Remplacer ma mission** ; **Rétablir la mission précédente** annule cette insertion dans la session.
 
-Sept modèles couvrent compréhension BASIC, amélioration, écran de titre dessiné en BASIC, préparation d’une recette, explication Z80, étude d’optimisation et modification ciblée d’une zone. Chaque fiche annonce son résultat et ses limites. **L’insertion ne lance aucun appel IA** : relisez puis utilisez **Lancer l’agent**.
+Sept modèles couvrent compréhension BASIC, amélioration, écran de titre dessiné en BASIC, préparation d’une recette, explication Z80, étude d’optimisation et modification ciblée d’une zone. Chaque fiche annonce son résultat et ses limites. **L’insertion ne lance aucun appel IA** : relisez puis utilisez **Envoyer**.
 
 **Conserver comme modèle personnel** enregistre le titre et l’aperçu sur cet ordinateur, pour les projets du même type. Création de copie, mise à jour, suppression et rétablissement de la dernière suppression sont disponibles. Ces modèles ne sont pas inclus dans le DSK ni synchronisés entre ordinateurs. [Guide détaillé et crédits](implementation/mission-library-alpha.md).
 
