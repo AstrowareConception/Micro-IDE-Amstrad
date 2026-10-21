@@ -11,7 +11,7 @@ Le panneau ouvert à droite privilégie l’échange : historique au-dessus, **M
 5. Après le résultat, écrire une retouche : les échanges précédents, les outils et le checkpoint initial sont conservés. Une pause de budget propose une reprise, avec ou sans nouvelle consigne.
 6. Ouvrir **Changements** pour les comparaisons, **Détails de la mission** pour les rapports et le journal, ou restaurer le checkpoint initial.
 
-Les réponses utilisent le lecteur Markdown existant, sans exécuter de HTML ni charger de ressources distantes. Les erreurs d’envoi conservent le brouillon. Une précision reçue pendant la dernière réponse provoque un nouveau tour, ou reste dans le contexte si le budget impose une pause.
+Après une réponse, le fil se positionne sur le dernier message de l’assistant ; le bilan technique reste dans les détails. Les réponses utilisent le lecteur Markdown existant, sans exécuter de HTML ni charger de ressources distantes. Les erreurs d’envoi conservent le brouillon. Une précision reçue pendant la dernière réponse provoque un nouveau tour, ou reste dans le contexte si le budget impose une pause.
 
 ## Pièces jointes et permissions
 

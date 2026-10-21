@@ -1,7 +1,8 @@
 import type {AgentView} from '../../../packages/agent/src/types.ts';
 import {ProjectTestResults} from './ProjectTestResults.tsx';
-export function AgentMissionDetails({view}:{view:AgentView}) {
+export function AgentMissionDetails({view,outcome}:{view:AgentView;outcome:string|undefined}) {
  return <details className="agent-advanced"><summary>Détails de la mission</summary>
+  {!view.running&&outcome&&<p className="agent-outcome">{outcome}</p>}
   <p>{view.model} · {view.turns} tours · {view.calls} outils ({view.failedCalls ?? 0} échecs) · {view.tokens.toLocaleString('fr-FR')} tokens</p>
       {view.usage && <dl className="agent-stats"><div><dt>Entrée</dt><dd>{view.usage.input.toLocaleString('fr-FR')}</dd></div><div><dt>Sortie</dt><dd>{view.usage.output.toLocaleString('fr-FR')}</dd></div><div><dt>Cache lu / écrit</dt><dd>{view.usage.cached} / {view.usage.cacheWrite}</dd></div><div><dt>Raisonnement inclus dans la sortie</dt><dd>{view.usage.reasoning}</dd></div></dl>}
       {view.usage && !view.usage.complete && <p className="muted">Détail d’usage incomplet : les sous-totaux ne couvrent que les données reçues.</p>}

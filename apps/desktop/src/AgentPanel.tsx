@@ -45,7 +45,12 @@ export function AgentPanel(props: Props) {
     if(scope.current===props.sessionId)return;
     scope.current=props.sessionId;setTaskId(undefined);setView(undefined);setObjective('');setSentObjective('');setSelectedDocuments([]);setArchives([]);setMessage('');setContextOpen(false);setToolsOpen(false);setHistoryOpen(false);setLibraryOpen(false);setPreviousObjective(undefined);
   },[props.sessionId]);
-  useEffect(()=>{if(followScroll.current && scroll.current)scroll.current.scrollTop=scroll.current.scrollHeight;},[view?.events.length,view?.running,taskId]);
+  useEffect(()=>{
+    const el=scroll.current;if(!followScroll.current||!el)return;
+    const reply=Array.from(el.querySelectorAll<HTMLElement>('.agent-result .agent-message.assistant')).at(-1);
+    if(view&&!view.running&&reply)el.scrollTop+=reply.getBoundingClientRect().top-el.getBoundingClientRect().top-8;
+    else el.scrollTop=el.scrollHeight;
+  },[view?.events.length,view?.running,view?.turns,view?.calls,taskId]);
 
   const [documentConsentSession, setDocumentConsentSession] = useState<string | undefined>();
   const includeDocuments = !!props.sessionId && documentConsentSession === props.sessionId && props.documentCount > 0;
@@ -141,7 +146,7 @@ export function AgentPanel(props: Props) {
   async function resume(text?:string) {
     if (!port?.resume || !taskId || !props.sessionId) return;
     setRequesting(true); props.onRunning(true);
-    try { const result = await port.resume(taskId, props.buffers, props.sessionId, text); if ('error' in result) { reportError(result.error); props.onRunning(false); } else { if(text)setObjective('');setMessage(''); setView(previous => previous ? { ...previous, running: true } : previous); setPollRevision(previous => previous + 1); } }
+    try { const result = await port.resume(taskId, props.buffers, props.sessionId, text); if ('error' in result) { reportError(result.error); props.onRunning(false); } else { if(text)setObjective('');followScroll.current=true;setMessage(''); setView(previous => previous ? { ...previous, running: true } : previous); setPollRevision(previous => previous + 1); } }
     catch { reportError('Reprise impossible ; fichiers conservés.'); props.onRunning(false); }
     finally { setRequesting(false); }
   }
@@ -174,12 +179,12 @@ export function AgentPanel(props: Props) {
     if(!taskId){await start();return;}
     if(view?.running){
       setRequesting(true);
-      try {const result=await port!.steer(taskId,text);if('error' in result)reportError(result.error);else{setObjective('');setMessage('Précision reçue. Elle sera prise en compte au prochain tour.');}}
+      try {const result=await port!.steer(taskId,text);if('error' in result)reportError(result.error);else{followScroll.current=true;setObjective('');setMessage('Précision reçue. Elle sera prise en compte au prochain tour.');}}
       catch{reportError('Envoi impossible ; votre message est conservé.');}finally{setRequesting(false);}
     }else if(view?.resumable){await resume(text);}
     else if(view?.followUpAllowed && port?.followUp && props.sessionId){
       setRequesting(true);props.onRunning(true);
-      try{const result=await port.followUp(taskId,text,props.buffers,props.sessionId);if('error' in result){reportError(result.error);props.onRunning(false);}else{setObjective('');setMessage('');setView(previous=>previous?{...previous,running:true}:previous);setPollRevision(previous=>previous+1);}}
+      try{const result=await port.followUp(taskId,text,props.buffers,props.sessionId);if('error' in result){reportError(result.error);props.onRunning(false);}else{followScroll.current=true;setObjective('');setMessage('');setView(previous=>previous?{...previous,running:true}:previous);setPollRevision(previous=>previous+1);}}
       catch{reportError('Suite impossible ; votre message est conservé.');props.onRunning(false);}finally{setRequesting(false);}
     }
   }
@@ -198,7 +203,7 @@ export function AgentPanel(props: Props) {
     </header>
     <div className="agent-conversation-scroll" ref={scroll} onScroll={e=>{const el=e.currentTarget;followScroll.current=el.scrollHeight-el.scrollTop-el.clientHeight<60;}}>
       {historyOpen&&<section className="agent-history" aria-label="Historique de session"><h3>Conversations précédentes</h3><p className="muted">Lecture seule · conservées jusqu’à la fermeture du projet ou de l’application.</p>{archives.map((item,i)=><details key={i}><summary>{item.title.slice(0,80)}</summary><AgentConversation events={item.view.events}/><p>{item.view.summary}</p></details>)}<Button onClick={()=>setHistoryOpen(false)}>Fermer l’historique</Button></section>}
-      {!taskId&&<div className="agent-welcome"><span className="agent-welcome-mark" aria-hidden="true">✦</span><h2>Que souhaitez-vous {props.binary?'explorer':'créer'} ?</h2><p>Décrivez votre idée ou la modification souhaitée. L’agent peut modifier et enregistrer les fichiers du projet.</p>
+      {!taskId&&<div className="agent-welcome"><span className="agent-welcome-mark" aria-hidden="true">✦</span><h2>Que souhaitez-vous {props.binary?'explorer':'créer'} ?</h2><p>Décrivez votre idée ou la modification souhaitée. L’agent peut modifier et enregistrer les fichiers du projet.</p>
        <div className="agent-suggestions"><button onClick={()=>{setObjective(props.binary?'Explique cette routine Z80 et ses effets, sans modifier les octets.':'Explique le programme actuel et ses principales routines, sans modifier le code.');composer.current?.focus();}}>Expliquer le code</button><button onClick={()=>{setObjective(props.binary?'Annote les zones Z80 enregistrées en distinguant les faits et les hypothèses.':'Crée un écran de titre en MODE 1 pour mon jeu.');composer.current?.focus();}}>{props.binary?'Documenter les zones':'Créer un écran titre'}</button></div>
        {!connected&&<Button icon="key" className="primary" disabled={props.busy||requesting||!port} onClick={()=>setSettingsOpen(true)}>Connecter OpenAI</Button>}
       </div>}
@@ -207,12 +212,11 @@ export function AgentPanel(props: Props) {
        <AgentConversation events={view.events} initialPrompt={sentObjective}/>
        <p className="agent-status" role="status"><strong>{statusLabel}</strong></p>
        {view.running&&<p className="muted">{TOOL_LABELS[view.events.at(-1)?.tool??'']??'L’agent prépare la suite…'}</p>}
-       {!view.running&&outcome&&<p className="agent-outcome">{outcome}</p>}
        <p className="muted">{view.changed.length?`${view.changed.length} fichier(s) modifié(s), enregistrés dans le projet.`:'Aucun fichier modifié pour le moment.'} {view.buildVerified?'DSK construit et relu.':'Construction finale non validée.'}</p>
        {view.events.filter(event=>event.kind==='tool-result'&&event.success===false).slice(-1).map((event,i)=><details className="agent-tool-error" key={i}><summary>Dernière difficulté rencontrée</summary><p>{event.tool} : {event.text}</p></details>)}
        {view.resumable&&<div className="agent-resume"><p>Le budget est atteint. Reprenez la mission ou précisez la suite ci-dessous.</p><Button icon="run" disabled={props.busy||requesting||props.binaryDirty||props.documentDirty||!port?.resume||props.sessionId!==view.workspace.sessionId} onClick={()=>void resume()}>Reprendre la mission</Button><small>La reprise accorde un budget supplémentaire facturable.</small></div>}
        <AgentChanges view={view} props={props} requesting={requesting}/>
-       <AgentMissionDetails view={view}/>
+       <AgentMissionDetails view={view} outcome={outcome}/>
        <Button icon="undo" disabled={!view.changed.length||view.running||props.busy||requesting||props.binaryDirty||props.documentDirty||props.sessionId!==view.workspace.sessionId} onClick={()=>void restore()}>Restaurer le checkpoint initial</Button>
        {!view.running&&!view.resumable&&!view.followUpAllowed&&<p className="muted">Pour une nouvelle demande, ouvrez une nouvelle conversation. Les changements restent dans le projet.</p>}
       </div>}

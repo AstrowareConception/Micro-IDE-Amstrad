@@ -59,9 +59,9 @@ try {
  await input.fill('Ajoute DETAIL');await page.keyboard.press('Enter');assert.equal(await desktop.evaluate(()=>globalThis.chatRequests),3,'Plain Enter adds a line without sending');
  await page.keyboard.press('Control+Enter');await expect(page.getByRole('tab',{name:'src/detail.bas',exact:true})).toBeVisible();await expect(agent.locator('.agent-status')).toHaveText('Mission terminée');
  await expect(agent.locator('.agent-message.user')).toHaveCount(3);assert.equal(await readFile(join(root,'project/src/detail.bas'),'utf8'),'10 PRINT "DETAIL"\n20 END\n');
- await expect(input).toHaveValue('');await page.screenshot({path:'out/agent-conversation-desktop.png'});
+ await expect(input).toHaveValue('');await expect(agent.locator('.agent-message.assistant').last()).toBeInViewport();await page.screenshot({path:'out/agent-conversation-desktop.png'});
  await page.setViewportSize({width:1000,height:740});
- const box=await input.boundingBox();assert.ok(box&&box.y>=0&&box.y+box.height<=740,'Composer remains in view');
+ await expect(agent.locator('.agent-message.assistant').last()).toBeInViewport();const box=await input.boundingBox();assert.ok(box&&box.y>=0&&box.y+box.height<=740,'Composer remains in view');
  assert.equal(await agent.evaluate(el=>el.scrollWidth<=el.clientWidth+1),true);await page.screenshot({path:'out/agent-conversation-narrow.png'});
  await agent.getByRole('button',{name:'Restaurer le checkpoint initial',exact:true}).click();await expect(agent).toContainText('Checkpoint initial restauré');await expect(page.getByRole('tab',{name:'src/detail.bas',exact:true})).toHaveCount(0);
  assert.equal(await readFile(join(root,'project/src/main.bas'),'utf8'),snapshot.files[0].source);
