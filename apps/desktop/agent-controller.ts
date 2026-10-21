@@ -18,7 +18,7 @@ import { OpenAIProvider, DEFAULT_MODEL } from './openai-provider.ts';
 import type { ProjectStore } from './project-store.ts';
 
 const digest = (value: string | Uint8Array) => createHash('sha256').update(value).digest('hex');
-interface Job { id: string; store: ProjectStore; initial: AgentWorkspaceState; tools: WorkspaceTools | BinaryWorkspaceTools; result: AgentResult; running: boolean; events: AgentEvent[]; steering: string[]; abort: AbortController; directory: string; documentIds: string[]; initialDocuments: DocumentSnapshot[]; documents: DocumentSnapshot[]; state: AgentRunState; budget: AgentBudget; provider: OpenAIProvider | undefined; model: string; pricing?: PricingProfile | undefined; continuations: number; restored: boolean }
+interface Job { id: string; store: ProjectStore; initial: AgentWorkspaceState; tools: WorkspaceTools | BinaryWorkspaceTools; result: AgentResult; running: boolean; acceptingSteering:boolean; events: AgentEvent[]; steering: string[]; abort: AbortController; directory: string; documentIds: string[]; initialDocuments: DocumentSnapshot[]; documents: DocumentSnapshot[]; state: AgentRunState; budget: AgentBudget; provider: OpenAIProvider | undefined; model: string; pricing?: PricingProfile | undefined; continuations: number; restored: boolean }
 export class AgentController {
   private provider: OpenAIProvider | undefined;
   private job: Job | undefined;
@@ -89,7 +89,7 @@ export class AgentController {
     await writeFile(temp, JSON.stringify({ schemaVersion: 1, taskId: job.id, phase, projectRoot: job.store.root, authorizedDocumentIds: job.documentIds, ...(documentOperation ? {documentOperation} : {}), initial: job.initial, current: state, result: job.result, events: job.events }, null, 2), { flag: 'wx', mode: 0o600 });
     await rename(temp, join(job.directory, 'checkpoint.json'));
   }
-  async start(store: ProjectStore, objective: unknown, buffers: { id: string; source: string }[], includeDocuments = false, budgetInput?: unknown): Promise<{ taskId: string }> {
+  async start(store: ProjectStore, objective: unknown, buffers: { id: string; source: string }[], includeDocuments = false, budgetInput?: unknown, documentIdsInput?: unknown): Promise<{ taskId: string }> {
     if (this.selectionRequired) throw new Error('Choisissez un modèle OpenAI avant de lancer une mission.');
     if (this.running) throw new Error('Une mission est déjà active.');
     if (!this.provider) throw new Error('Configurez une clé API OpenAI.');
@@ -98,10 +98,13 @@ export class AgentController {
     const initial = await store.agentState(buffers); const binary = initial.manifest.kind === 'binary';
     if (binary && !initial.binaryAnalysis?.regions.length) throw Error('Enregistrez une zone Z80 avant la mission.');
     const corpus = binary ? [] : await this.corpus();
-    const documents = (await store.agentDocuments()).filter(document => documentAllowed(document,includeDocuments));
+    const allDocuments = await store.agentDocuments();
+    if (documentIdsInput !== undefined && (!Array.isArray(documentIdsInput) || documentIdsInput.length > 10 || new Set(documentIdsInput).size !== documentIdsInput.length || documentIdsInput.some(id => typeof id !== 'string' || !allDocuments.some(d => d.id === id && d.knowledge?.access !== 'excluded')))) throw new Error('Fichier joint inconnu, exclu ou sélection invalide.');
+    const selected = new Set(documentIdsInput as string[] | undefined);
+    const documents = allDocuments.filter(document => documentAllowed(document,includeDocuments || selected.has(document.id)));
     const id = randomUUID(), directory = join(this.storage, id); await mkdir(directory, { recursive: true, mode: 0o700 });
     const context = { kind: binary ? 'binary' : 'basic', target: initial.manifest.target, entryPoint: initial.manifest.entryPoint, files: binary ? initial.manifest.assets.map(({ id, cpcName, byteLength, sha256 }) => ({ id, cpcName, byteLength, sha256 })) : initial.manifest.sources, documents: documents.map(item => ({ id: item.id, originalName: item.originalName, mediaType: item.mediaType, sha256: item.sha256, bytes: item.bytes })), knowledge: knowledgeContext(documents), corpusVersion: 'initial-import-1' };
-    const job: Job = { id, store, initial, directory, documentIds: documents.map(item => item.id), initialDocuments:structuredClone(documents), documents:structuredClone(documents), abort: new AbortController(), steering: [], events: [], running: true,
+    const job: Job = { id, store, initial, directory, documentIds: documents.map(item => item.id), initialDocuments:structuredClone(documents), documents:structuredClone(documents), abort: new AbortController(), steering: [], acceptingSteering:false, events: [{ kind: 'message', role: 'user', text: objective }], running: true,
       state: createRunState(objective, context), budget, provider: this.provider, model: this.provider.model, pricing: this.prices.get(this.provider.model), continuations: 0, restored: false,
       tools: undefined as unknown as WorkspaceTools, result: { status: 'blocked', turns: 0, calls: 0, tokens: 0, summary: 'Mission en cours.' } };
     const persist = async (state: AgentWorkspaceState, expected?: AgentWorkspaceState) => {
@@ -139,11 +142,13 @@ export class AgentController {
   }
   private launch(job: Job): void {
     const provider = job.provider; if (!provider) throw new Error('Connexion IA modifiée ; nouvelle mission requise.');
+    job.acceptingSteering=true;
     const deadline=setTimeout(()=>job.abort.abort(),15*60*1000);
     void runAgent({ model: job.initial.binaryAnalysis ? { respond: (input, tools, signal) => provider.respond(input, tools, signal, BINARY_INSTRUCTIONS) } : provider, tools: job.tools, objective: '', context: {}, state: job.state, pricing: job.pricing, ...job.budget,
       signal: job.abort.signal, progress: result => { job.result = result; },
       emit: event => { job.events.push(event); if (job.events.length > 300) job.events.shift(); }, takeSteering: () => job.steering.splice(0),
     }).then(async result => {
+      job.acceptingSteering=false;
       if (result.status === 'completed') {
         await job.store.agentDocuments();
         const current = await job.store.agentState(job.tools.state.files.map(({id,source})=>({id,source})));
@@ -171,17 +176,37 @@ export class AgentController {
       try { await this.record(job, job.tools.state, 'finished'); }
       catch { job.result = { ...job.result, status: 'failed', summary: 'Journal final non écrit ; modifications terminées conservées.' }; }
       finally { clearTimeout(deadline); job.running = false; }
-    }).catch(() => { clearTimeout(deadline); job.result = { ...job.result, status: 'failed', summary: 'Échec du contrôleur ; consulter le checkpoint local.' }; job.running = false; });
+    }).catch(() => { job.acceptingSteering=false; clearTimeout(deadline); job.result = { ...job.result, status: 'failed', summary: 'Échec du contrôleur ; consulter le checkpoint local.' }; job.running = false; });
   }
-  async resume(id: unknown, store: ProjectStore, buffers: { id: string; source: string }[]): Promise<{ taskId: string }> {
+  async resume(id: unknown, store: ProjectStore, buffers: { id: string; source: string }[], instruction?: unknown): Promise<{ taskId: string }> {
     const job = this.get(id);
+    if (instruction !== undefined) this.validateInstruction(instruction);
     if (this.running || !job.provider || job.store !== store || job.restored || job.continuations >= 10 || job.result.status !== 'paused-limit' || /^Budget de contexte|^Stagnation/.test(job.result.summary)) throw new Error('Cette mission ne peut pas être reprise. Démarrez une nouvelle mission ciblée.');
     await store.assertCurrent(); await store.agentDocuments();
     const now = await store.agentState(buffers);
     if (JSON.stringify(now) !== JSON.stringify(job.tools.state)) throw new Error('stale-read : projet ou buffers modifiés depuis la pause ; reprise refusée.');
+    if (instruction !== undefined) { job.steering.push(instruction as string); job.events.push({kind:'message',role:'user',text:instruction as string}); }
     job.abort = new AbortController(); job.continuations++; job.running = true;
-    job.events.push({ kind: 'message', text: `Reprise ${job.continuations} : contexte conservé, budget supplémentaire de ${job.budget.maxTurns} tours et ${job.budget.maxTokens} tokens. API facturée.` });
+    job.events.push({ kind: 'message', role: 'system', text: `Reprise ${job.continuations} : contexte conservé, budget supplémentaire de ${job.budget.maxTurns} tours et ${job.budget.maxTokens} tokens. API facturée.` });
     this.launch(job); return { taskId: job.id };
+  }
+  private validateInstruction(instruction: unknown): asserts instruction is string {
+    if (typeof instruction !== 'string' || !instruction.trim() || instruction.length > 20000) throw new Error('Message requis, 20 000 caractères maximum.');
+  }
+  private canFollowUp(job: Job): boolean {
+    return !!job.provider && !job.running && !job.restored && job.continuations < 10 && !job.state.pending.length && ['completed','blocked'].includes(job.result.status) && JSON.stringify(job.state.input).length < 512 * 1024;
+  }
+  async followUp(id: unknown, instruction: unknown, store: ProjectStore, buffers: { id: string; source: string }[]): Promise<{ taskId: string }> {
+    const job = this.get(id); this.validateInstruction(instruction);
+    if (!this.canFollowUp(job) || job.store !== store || this.running) throw new Error('Cette conversation ne peut plus continuer. Ouvrez une nouvelle conversation.');
+    await store.assertCurrent(); await store.agentDocuments();
+    const now = await store.agentState(buffers);
+    if (JSON.stringify(now) !== JSON.stringify(job.tools.state)) throw new Error('stale-read : projet ou buffers modifiés. Ouvrez une nouvelle conversation pour partir du projet actuel.');
+    if (JSON.stringify(job.state.input).length + JSON.stringify(instruction).length + 64 > 512 * 1024) throw new Error('Budget de contexte atteint. Ouvrez une nouvelle conversation ciblée.');
+    job.state.input.push({role:'user',content:instruction});
+    job.events.push({kind:'message',role:'user',text:instruction});
+    job.abort = new AbortController(); job.continuations++; job.running = true;
+    this.launch(job); return {taskId:job.id};
   }
   private get(id: unknown): Job { if (!this.job || this.job.id !== id) throw new Error('Mission périmée.'); return this.job; }
   status(id: unknown): AgentView {
@@ -195,13 +220,13 @@ export class AgentController {
     const { assets: _assets, ...binaryWorkspace } = job.tools.state;
     const workspace = job.tools.state.binaryAnalysis ? binaryWorkspace : job.tools.state;
     return structuredClone({ ...job.result, taskId: job.id, running: job.running, events: job.events, workspace, changed, documentChanges, projectTestRuns:job.tools instanceof WorkspaceTools?job.tools.projectTests?.views(job.tools.state)??[]:[], projectTestAssessment:job.tools instanceof WorkspaceTools?job.tools.projectTests?.assessment(job.initial,job.tools.state):undefined, testRuns:job.tools instanceof WorkspaceTools ? job.tools.tests?.views(job.tools.state) ?? [] : [], renameOperations:job.tools instanceof WorkspaceTools ? structuredClone(job.tools.renameOperations) : [], formatOperations:job.tools instanceof WorkspaceTools ? structuredClone(job.tools.formatOperations) : [], commentOperations:job.tools instanceof WorkspaceTools ? structuredClone(job.tools.commentOperations) : [], moduleReviews:job.tools instanceof WorkspaceTools ? job.tools.moduleReviewViews() : [], loadContracts:job.tools instanceof WorkspaceTools ? job.tools.loadingReportViews() : [], overlayReviews:job.tools instanceof WorkspaceTools ? job.tools.chainMergeViews() : [], extractionSimulations:job.tools instanceof WorkspaceTools ? job.tools.extractionSimulationViews() : [], testCoverage:job.tools instanceof WorkspaceTools ? job.tools.tests?.coverage(job.initial,job.tools.state) : undefined, before: job.initial.files.filter(file => changed.includes(file.path)).map(({ id, source }) => ({ id, source })), ...(job.initial.binaryAnalysis ? { binaryBefore: job.initial.binaryAnalysis } : {}), buildVerified: job.tools.buildVerified,
-      model: job.model, budget: job.budget, pricing: job.pricing, resumable: !!job.provider && !job.running && !job.restored && job.continuations < 10 && job.result.status === 'paused-limit' && !/^Budget de contexte|^Stagnation/.test(job.result.summary) });
+      model: job.model, budget: job.budget, pricing: job.pricing, followUpAllowed: this.canFollowUp(job), resumable: !!job.provider && !job.running && !job.restored && job.continuations < 10 && job.result.status === 'paused-limit' && !/^Budget de contexte|^Stagnation/.test(job.result.summary) });
   }
   cancel(id: unknown): { ok: boolean } { this.get(id).abort.abort(); return { ok: true }; }
   steer(id: unknown, instruction: unknown): { ok: boolean } {
     const job = this.get(id);
-    if (!job.running || typeof instruction !== 'string' || !instruction.trim() || instruction.length > 20000 || job.steering.length >= 8) throw new Error('Consigne invalide ou mission terminée.');
-    job.steering.push(instruction); job.events.push({ kind: 'message', text: `Consigne utilisateur reçue : ${instruction}` }); return { ok: true };
+    if (!job.running || !job.acceptingSteering || typeof instruction !== 'string' || !instruction.trim() || instruction.length > 20000 || job.steering.length >= 8) throw new Error('Consigne invalide ou mission terminée.');
+    job.steering.push(instruction); job.events.push({ kind: 'message', role: 'user', text: instruction }); return { ok: true };
   }
   async restore(id: unknown, buffers: { id: string; source: string }[]): Promise<AgentWorkspaceState> {
     const job = this.get(id); if (job.running) throw new Error('Arrêtez la mission avant restauration.');

@@ -96,3 +96,5 @@ Date initiale : 2026-10-03. Une décision est reconsidérée sur besoin réel ou
 
 - [0082 — Capture éphémère et adoption humaine des références écran](0082-reference-ecran-humaine.md).
 - [0083 — Connexion agent réessayable et ouverture au démarrage](0083-connexion-agent-reessayable.md).
+
+- [0084 — Conversation agent et découverte progressive des outils](0084-conversation-agent-progressive.md).

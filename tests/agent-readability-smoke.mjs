@@ -28,15 +28,16 @@ export async function verifyAgentReadability(browser){
  try{
   await page.goto('http://127.0.0.1:5173');await page.getByRole('button',{name:'Ouvrir projet',exact:true}).click();
   if(!await page.getByRole('region',{name:'Agent OpenAI',exact:true}).isVisible())await page.getByRole('button',{name:'Afficher l’agent IA',exact:true}).click();
-  const agent=page.getByRole('region',{name:'Agent OpenAI',exact:true}),objective=agent.getByLabel('Mission de programmation',{exact:true});
-  await objective.fill('Mission précédente');await agent.getByText('Améliorer la lisibilité du code…',{exact:true}).click();
+  const agent=page.getByRole('region',{name:'Agent OpenAI',exact:true}),objective=agent.getByLabel('Message à l’agent',{exact:true});
+  await objective.fill('Mission précédente');await agent.getByRole('button',{name:'Outils et modèles de mission',exact:true}).click();await agent.getByText('Améliorer la lisibilité du code…',{exact:true}).click();
   await agent.getByLabel('Découpage en fichiers des blocs admissibles',{exact:true}).check();await agent.getByRole('button',{name:'Préparer la mission de lisibilité',exact:true}).click();
   await expect(objective).toHaveValue(/language_extraction_apply/);await expect(objective).toHaveValue(/DEFINT/);assert.equal(step,0);
   await agent.getByRole('button',{name:'Rétablir la mission précédente',exact:true}).click();await expect(objective).toHaveValue('Mission précédente');await agent.getByRole('button',{name:'Préparer la mission de lisibilité',exact:true}).click();
   await agent.locator('.readability-panel').evaluate(e=>e.scrollIntoView({block:'start'}));
   await page.screenshot({path:'out/agent-readability-alpha.png'});
   await agent.getByRole('button',{name:'Réglages IA',exact:true}).click();const settings=page.getByRole('dialog',{name:'Réglages de l’agent IA',exact:true});await settings.getByLabel('Clé API OpenAI',{exact:true}).fill('sk-fixture-not-real');await settings.getByRole('button',{name:'Configurer la clé',exact:true}).click();await settings.getByLabel('Modèle OpenAI',{exact:true}).selectOption('gpt-5.6-luna');await settings.getByRole('button',{name:'Fermer les réglages IA',exact:true}).click();
-  await agent.getByRole('button',{name:'Lancer l’agent',exact:true}).click();await expect(agent.locator('.agent-result')).toContainText('Mission terminée');
+  await agent.getByRole('button',{name:'Envoyer',exact:true}).click();await expect(agent.locator('.agent-result')).toContainText('Mission terminée');
+  await agent.getByText('Détails de la mission',{exact:true}).click();
   const reports=agent.getByRole('region',{name:'Vérifications CPC de la mission'});await expect(reports).toContainText('Essai 1 · Score · révision antérieure');await expect(reports).toContainText('Essai 2 · Score · révision courante');
   await expect(page.locator('.monaco-editor').first()).toContainText('points');
   await agent.getByRole('button',{name:'Restaurer le checkpoint initial',exact:true}).click();await expect(agent).toContainText('Checkpoint initial restauré');await expect(agent.locator('.agent-result')).toHaveCount(0);

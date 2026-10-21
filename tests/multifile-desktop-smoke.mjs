@@ -63,7 +63,7 @@ try{
   };
  });
  if(readability)await desktop.evaluate(createReadabilityTransport,projectTests?{projectTests:true}:true);
- if(!await page.getByLabel('Mission de programmation',{exact:true}).isVisible())await page.getByRole('button',{name:'Afficher l’agent IA',exact:true}).click();
+ if(!await page.getByLabel('Message à l’agent',{exact:true}).isVisible())await page.getByRole('button',{name:'Afficher l’agent IA',exact:true}).click();
  await page.getByRole('button',{name:'Réglages IA',exact:true}).click();
  const settings=page.getByRole('dialog',{name:'Réglages de l’agent IA',exact:true});
  await settings.getByLabel('Clé API OpenAI',{exact:true}).fill('sk-test-fixture-not-real');
@@ -71,14 +71,16 @@ try{
  await settings.getByLabel('Modèle OpenAI',{exact:true}).selectOption('gpt-5.6-luna');
  await settings.getByLabel('Tours modèle maximum',{exact:true}).fill(readability?'25':'10');
  await settings.getByRole('button',{name:'Fermer les réglages IA',exact:true}).click();
- await page.getByLabel('Mission de programmation',{exact:true}).fill('Découpe le bloc terminal en PART, puis construis le DSK.');
+ await page.getByLabel('Message à l’agent',{exact:true}).fill('Découpe le bloc terminal en PART, puis construis le DSK.');
  if(readability){
+  await page.getByRole('button',{name:'Outils et modèles de mission',exact:true}).click();
   await page.getByText('Améliorer la lisibilité du code…',{exact:true}).click();
   await page.getByLabel('Découpage en fichiers des blocs admissibles',{exact:true}).check();
   await page.getByRole('button',{name:'Préparer la mission de lisibilité',exact:true}).click();
  }
- await page.getByRole('button',{name:'Lancer l’agent',exact:true}).click();
+ await page.getByRole('button',{name:'Envoyer',exact:true}).click();
  const result=page.locator('.agent-result');await expect(result).toContainText('Mission terminée',{timeout:30000});
+ await page.getByText('Détails de la mission',{exact:true}).click();
  await expect(page.getByRole('region',{name:'Simulation du découpage BASIC'})).toContainText('appliqué');
  if(loops)await expect(page.getByRole('region',{name:'Simulation du découpage BASIC'})).toContainText('Boucles bornées — FOR/NEXT et WHILE/WEND');
  if(conditions)await expect(page.getByRole('region',{name:'Simulation du découpage BASIC'})).toContainText('Conditions simples — deux branches contrôlées');
@@ -102,7 +104,7 @@ try{
   assert.equal(await readFile(join(f.root,'src/main.bas'),'utf8'),readabilityWitnesses.at(-1).source);
   assert.equal(JSON.parse(await readFile(join(f.root,'microide.project.json'),'utf8')).documents.length,0);
   await desktop.evaluate(createReadabilityTransport,projectTests?{projectTests:true}:true);
-  await page.getByRole('button',{name:'Lancer l’agent',exact:true}).click();
+  await page.getByRole('button',{name:'Envoyer',exact:true}).click();
   await expect(result).toContainText('Mission terminée',{timeout:30000});
   await expect(page.getByRole('tab',{name:'src/part.bas',exact:true})).toBeVisible();
  }

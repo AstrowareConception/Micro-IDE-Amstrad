@@ -25,6 +25,7 @@ export async function verifyAgentDesktop(desktop, page) {
       return Response.json({ model, service_tier: 'default', status: 'completed', output, usage: { input_tokens: 100, output_tokens: 20, total_tokens: 120, input_tokens_details: { cached_tokens: 40, cache_write_tokens: 10 }, output_tokens_details: { reasoning_tokens: 5 } } });
     };
   });
+  await page.getByRole('button',{name:'Nouvelle conversation',exact:true}).click();
   await page.getByRole('button', { name: 'Réglages IA', exact: true }).click();
   const settings = page.getByRole('dialog', { name: 'Réglages de l’agent IA', exact: true });
   await settings.getByLabel('Clé API OpenAI', { exact: true }).fill('sk-test-fixture-not-real');
@@ -33,8 +34,8 @@ export async function verifyAgentDesktop(desktop, page) {
   await expect(settings).toContainText('Tarif officiel actualisé.');
   await settings.getByLabel('Tours modèle maximum', { exact: true }).fill('1');
   await settings.getByRole('button', { name: 'Fermer les réglages IA', exact: true }).click();
-  await page.getByLabel('Mission de programmation', { exact: true }).fill('Ajoute un titre puis construis le DSK.');
-  await page.getByRole('button', { name: 'Lancer l’agent', exact: true }).click();
+  await page.getByLabel('Message à l’agent', { exact: true }).fill('Ajoute un titre puis construis le DSK.');
+  await page.getByRole('button', { name: 'Envoyer', exact: true }).click();
   const result = page.locator('.agent-result');
   for (let turn = 1; turn <= 4; turn++) {
     await expect(result).toContainText(`${turn} tours`);

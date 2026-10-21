@@ -53,7 +53,7 @@ export function MissionLibraryDialog({ kind, objective, onUse, onClose }: Props)
   }
   return <dialog ref={dialog} className="command-dialog mission-library" aria-labelledby="mission-library-title" onClose={onClose}>
     <div className="mission-library-heading"><div><p className="mission-eyebrow">ATELIER IA · {kind === 'basic' ? 'BASIC' : 'Z80'}</p><h2 id="mission-library-title">Bibliothèque de missions</h2></div><Button icon="close" onClick={() => dialog.current?.close()}>Fermer</Button></div>
-    <p className="muted">Choisissez une intention, précisez votre objectif, puis préparez la mission. Aucun appel IA avant « Lancer l’agent ».</p>
+    <p className="muted">Choisissez une intention, précisez votre objectif, puis préparez la mission. Aucun appel IA avant « Envoyer ».</p>
     <div className="mission-library-layout">
       <div className="mission-library-browser">
         <label htmlFor="mission-search">Rechercher un modèle</label><input ref={search} id="mission-search" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Routine, titre, optimisation…" />

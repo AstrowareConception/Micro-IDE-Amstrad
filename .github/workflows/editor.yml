@@ -87,6 +87,8 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Browser editing and exports
         run: npm run test:editor
+      - name: Native agent conversation and attachments
+        run: xvfb-run -a node tests/agent-conversation-desktop.mjs
       - name: Bounded BASIC parser benchmark
         run: node scripts/benchmark-basic-analysis.mjs > out/basic-analysis-benchmark.json
       - name: Prepare pinned CPC firmware reference
@@ -184,6 +186,8 @@ jobs:
             out/cpc-inspection-desktop.png
             out/models-alpha.png
             out/agent-settings-alpha.png
+            out/agent-conversation-*.png
+            out/agent-context-desktop.png
             out/agent-pause-alpha.png
             out/agent-missions-alpha.png
             out/agent-missions-desktop-alpha.png

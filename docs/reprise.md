@@ -1,5 +1,19 @@
 # CPCéleste — Point de reprise du développement
 
+## Incrément 0.41.33 — conversation agent et pièces jointes
+
+Base vérifiée : `main` à `5d172746f4932980c417ab9f1942fe6fea2bcd20`, PR #94 fusionnée après Specifications, J0 et Desktop Linux/Windows réussis. Branche : `feat/agent-conversation`.
+
+Demande utilisateur : rendre le panneau aussi lisible qu’une intégration de conversation dans un IDE, avec un endroit évident pour écrire, préciser, demander une retouche et joindre des fichiers, tout en conservant les fonctions avancées.
+
+Réalisé : conversation utilisateur/assistant, réponses Markdown sûres, compositeur fixe et raccourci Ctrl/Cmd+Entrée, précision en cours et vraie continuation après résultat. Contexte et checkpoint communs, révisions contrôlées, budget par reprise et consommation cumulée. Import et sélection de pièces jointes avant envoi ; politiques documentaires respectées. Rapports, diffs, restauration, lisibilité et bibliothèque de missions conservés derrière des accès secondaires. Nouvelle conversation et historique de session en lecture seule. Connexion réessayable et ouverture au démarrage conservées. [Guide](implementation/agent-conversation-alpha.md), [ADR 0084](adr/0084-conversation-agent-progressive.md).
+
+Preuves locales : 560 tests Node réussis, dont continuation réelle, rejet des révisions divergentes, documents sélectionnés, reprise avec consigne et précision tardive non perdue. Typage, build desktop et contrôle documentaire réussis (201 Markdown, 24 JSON, sept schémas et huit exemples). Nouvelle recette Electron : import annulé puis réussi, précision pendant une requête, Markdown, retouche créant un vrai fichier, restauration commune et fenêtre étroite. Parcours existants adaptés aux accès repliés, sans suppression de leurs assertions. L’environnement local n’a pas de serveur X ; recette native et captures à contrôler dans la CI sur le dernier SHA avant fusion. Aucun packaging par commit.
+
+Limites : historique de huit conversations pour cette session et ce projet, sans réouverture interactive des anciennes ; contexte documentaire choisi avant le premier envoi ; dix continuations maximum et contexte borné. Les appels fournisseur sont simulés dans les recettes ; aucun succès réseau sur la clé de l’utilisateur n’est déduit. Le fournisseur reste OpenAI, aucun mode Claude/Codex supplémentaire n’est ajouté.
+
+Suite : qualifier le nouveau parcours dans la CI, puis reprendre les structures BASIC selon les besoins, profiler 0.42 et observation CPC 0.43. Ce point remplace les suites historiques ci-dessous.
+
 ## Incrément 0.41.32 — références écran et accès IA
 
 Base vérifiée : `main` à `6f14fa2dc04cdd281b95831075b566901cb9ae26`, PR #93 fusionnée ; Specifications, J0 et Desktop Linux/Windows réussis sur `23227b772bb42181c5a13a28aac51ff96c838712`. Branche : `feat/project-screen-reference`.

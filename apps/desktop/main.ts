@@ -604,10 +604,10 @@ route('project:entry', async payload => {
 });
 route('documents:import', async payload => {
   const { store, value } = projectRequest(payload);
-  if (value.kind !== 'text' && value.kind !== 'image' && value.kind !== 'pdf') throw new Error('Catégorie documentaire invalide.');
-  const selection = await dialog.showOpenDialog(window, { properties: ['openFile'], filters: [{ name: value.kind === 'pdf' ? 'Document PDF' : value.kind === 'image' ? 'Image PNG / JPEG' : 'Document UTF-8 TXT / Markdown', extensions: value.kind === 'pdf' ? ['pdf'] : value.kind === 'image' ? ['png', 'jpg', 'jpeg'] : ['txt', 'md'] }] });
+  if (value.kind !== 'text' && value.kind !== 'image' && value.kind !== 'pdf' && value.kind !== 'any') throw new Error('Catégorie documentaire invalide.');
+  const selection = await dialog.showOpenDialog(window, { properties: ['openFile'], filters: [{ name: value.kind === 'any' ? 'Fichier joint (TXT, Markdown, PNG, JPEG, PDF)' : value.kind === 'pdf' ? 'Document PDF' : value.kind === 'image' ? 'Image PNG / JPEG' : 'Document UTF-8 TXT / Markdown', extensions: value.kind === 'any' ? ['txt','md','png','jpg','jpeg','pdf'] : value.kind === 'pdf' ? ['pdf'] : value.kind === 'image' ? ['png', 'jpg', 'jpeg'] : ['txt', 'md'] }] });
   if (selection.canceled || !selection.filePaths[0]) return null;
-  if (!(value.kind === 'pdf' ? /\.pdf$/i : value.kind === 'image' ? /\.(png|jpe?g)$/i : /\.(txt|md)$/i).test(selection.filePaths[0])) throw new Error('Extension hors de la catégorie choisie.');
+  if (!(value.kind === 'any' ? /\.(txt|md|png|jpe?g|pdf)$/i : value.kind === 'pdf' ? /\.pdf$/i : value.kind === 'image' ? /\.(png|jpe?g)$/i : /\.(txt|md)$/i).test(selection.filePaths[0])) throw new Error('Extension hors de la catégorie choisie.');
   return store.importDocument(selection.filePaths[0]);
 });
 route('knowledge:write', async payload => { const { store, value } = projectRequest(payload); return store.writeKnowledge(value.request); });
@@ -678,12 +678,17 @@ route('agent:start', async payload => {
   const { store, value } = projectRequest(payload);
   if (value.includeDocuments !== undefined && typeof value.includeDocuments !== 'boolean') throw new Error('Scope documentaire invalide.');
   if (store.manifest.kind === 'binary' && dirty) throw Error('Enregistrez l’analyse Z80 avant la mission.');
-  return agent.start(store, value.objective, bufferRequest(value.buffers), value.includeDocuments === true, value.budget);
+  return agent.start(store, value.objective, bufferRequest(value.buffers), value.includeDocuments === true, value.budget, value.documentIds);
 });
 route('agent:resume', async payload => {
   const { store, value } = projectRequest(payload);
   if (store.manifest.kind === 'binary' && dirty) throw Error('Enregistrez l’analyse Z80 avant la reprise.');
-  return agent.resume(value.taskId, store, bufferRequest(value.buffers));
+  return agent.resume(value.taskId, store, bufferRequest(value.buffers), value.instruction);
+});
+route('agent:follow-up', async payload => {
+  const { store, value } = projectRequest(payload);
+  if (store.manifest.kind === 'binary' && dirty) throw Error('Enregistrez l’analyse Z80 avant de continuer.');
+  return agent.followUp(value.taskId, value.instruction, store, bufferRequest(value.buffers));
 });
 route('agent:status', async payload => agent.status(payload));
 route('agent:cancel', async payload => agent.cancel(payload));

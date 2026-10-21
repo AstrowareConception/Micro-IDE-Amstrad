@@ -1,5 +1,7 @@
 # 17 — Roadmap qualifiée d’un IDE CPCéleste abouti
 
+**État courant 0.41.33 :** [conversation agent et contexte joint](../implementation/agent-conversation-alpha.md). Priorité utilisateur réalisée : saisie unique, retouches dans le même contexte, fonctionnalités avancées repliées ; checkpoints, contrôles de révision et rapports conservés. [ADR 0084](../adr/0084-conversation-agent-progressive.md).
+
 **État courant 0.41.32 :** [références écran capturées et adoptées explicitement](../implementation/project-screen-reference-alpha.md). Scénarios projet dans l’interface et dans les missions ; empreintes contrôlées, aucun apprentissage automatique des attentes. [Connexion IA réessayable et panneau ouvert au démarrage](../implementation/agent-connection-alpha.md).
 
 **Ordre actuel :** élargir les structures selon les besoins observés (IF dans les corps et imbrications), puis profiler 0.42 et observation CPC 0.43. Les prochains lots historiques ci-dessous sont remplacés par ce point et [la reprise](../reprise.md).

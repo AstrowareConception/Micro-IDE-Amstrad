@@ -541,7 +541,7 @@ export function App() {
   ] : [];
   return <main className="workbench" style={{ '--sidebar-width': `${preferences.sidebarWidth}px`, '--agent-width': `${preferences.agentWidth}px`, '--output-height': `${preferences.outputHeight}px` } as CSSProperties}>
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.41.32 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.41.33 · AstroWare Conception</p></div></div>
       <div className="topbar-actions"><Button icon="bell" aria-label={`Centre de notifications · ${unreadNotifications} non lue(s)`} onClick={() => setNotificationsOpen(true)}><span className="notification-badge">{unreadNotifications}</span></Button><span className="profile">CPC 6128 · BASIC 1.1</span></div>
     </header>
     <WorkbenchMenus groups={[
@@ -661,7 +661,7 @@ export function App() {
       </section>
       <ResizeHandle label="Largeur de l’assistant" orientation="vertical" reverse value={Math.min(preferences.agentWidth, Math.max(240, workspaceSize.width * .35))} min={240} max={Math.min(800, Math.max(240, workspaceSize.width * .35))} hidden={!agentOpen || panels.agent.floating} onChange={agentWidth => setPreferences(previous => ({ ...previous, agentWidth }))} />
       <DockPanel as="aside" className="ai-sidebar" label="Assistant IA" name="l’agent IA" hidden={!agentOpen} layout={panels.agent} onLayout={value => updatePanel('agent', value)} onHide={() => setAgentOpen(false)}>
-        <AgentPanel onDocument={id=>{setDocumentRequest({id,nonce:crypto.randomUUID()});showTool('documents');}} knowledgeCount={project?.manifest.documents.filter(d=>d.knowledge && d.knowledge.access!=='excluded').length ?? 0} documentDirty={knowledgeDirty} binary={binaryProject} seed={agentSeed} binaryDirty={binaryDirty} sessionId={project?.sessionId} documentCount={project?.manifest.documents.length ?? 0} buffers={documents.map(document => ({ id: document.sourceId, source: document.source }))} busy={busy} onRunning={setAgentBusy} onState={acceptAgent} onNotify={notify} />
+        <AgentPanel projectName={project?.manifest.name} projectDocuments={project?.manifest.documents ?? []} onManifest={manifest=>setProject(previous=>previous?{...previous,manifest}:previous)} onImportBusy={setBusy} onDocument={id=>{setDocumentRequest({id,nonce:crypto.randomUUID()});showTool('documents');}} knowledgeCount={project?.manifest.documents.filter(d=>d.knowledge && d.knowledge.access!=='excluded').length ?? 0} documentDirty={knowledgeDirty} binary={binaryProject} seed={agentSeed} binaryDirty={binaryDirty} sessionId={project?.sessionId} documentCount={project?.manifest.documents.length ?? 0} buffers={documents.map(document => ({ id: document.sourceId, source: document.source }))} busy={busy} onRunning={setAgentBusy} onState={acceptAgent} onNotify={notify} />
       </DockPanel>
     </div>
     {githubOpen && <GitHubDialog busy={busy} onClone={cloneProject} {...(project ? { onRemote: associateRemote } : {})} onClose={() => setGithubOpen(false)} />}

@@ -1,9 +1,9 @@
 import { expect } from '@playwright/test';
 
 export async function verifyMissionLibrary(page, panel, kind = 'basic') {
-  const objective = panel.getByLabel('Mission de programmation', { exact: true });
+  const objective = panel.getByLabel('Message à l’agent', { exact: true });
   await objective.fill('Ma consigne à conserver.');
-  const open = () => panel.getByRole('button', { name: 'Choisir une mission…', exact: true }).click();
+  const open = async () => { const menu=panel.getByRole('button',{name:'Outils et modèles de mission',exact:true}); if(await menu.getAttribute('aria-expanded')!=='true')await menu.click(); await panel.getByRole('button', { name: 'Choisir une mission…', exact: true }).click(); };
   await open();
   const dialog = page.getByRole('dialog', { name: 'Bibliothèque de missions', exact: true });
   await expect(dialog.getByRole('heading', { name: 'Bibliothèque de missions', exact: true })).toBeVisible();
