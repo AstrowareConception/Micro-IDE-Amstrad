@@ -1,3 +1,4 @@
+import {verifyScreenReference} from './project-screen-reference-desktop.mjs';
 import assert from 'node:assert/strict';
 import {_electron as electron,expect} from '@playwright/test';
 import {cp,readFile,writeFile,rm} from 'node:fs/promises';
@@ -61,6 +62,8 @@ try{
  await page.getByRole('button',{name:'Agrandir les sorties',exact:true}).click();await panel.getByRole('article').scrollIntoViewIfNeeded();await page.screenshot({path:'out/project-scenarios-desktop.png'});
  const history=JSON.parse(await readFile(join(f.root,'.microide/project-test-reports.json'),'utf8'));assert.equal(history.reports.length,4);assert.deepEqual(history.reports.map(r=>r.result.outcome),['cancelled','failed','passed','blocked']);
  assert.deepEqual(await readFile(join(f.root,'assets/input.bin')),await readFile('examples/project-tests/assets/input.bin'));assert.deepEqual(await readFile(join(f.root,'src/part.bas')),await readFile('examples/project-tests/src/part.bas'));await assert.rejects(readFile(join(f.root,'OUT.TXT')),{code:'ENOENT'});assert.deepEqual(errors,[]);
+ const screenHash=await verifyScreenReference({page,panel,root:f.root});
+ await close();await launch();await panel.getByLabel('Scénario',{exact:true}).selectOption({label:'Capture visuelle'});await expect(panel.getByLabel('Empreinte SHA-256 attendue',{exact:true})).toHaveValue(screenHash);await expect(panel.getByRole('region',{name:'Aperçu de référence écran',exact:true})).toHaveCount(0);await expect(panel.getByLabel('Rapport',{exact:true}).locator('option')).toHaveCount(5);assert.deepEqual(errors,[]);
  console.log('Project scenarios desktop: human creation/edit/deletion, escaped keyboard/file text, screen form, dirty close guard, real CPC pass/failure, ROM block, cancellation, export, concurrent-edit guard and reopen history passed.');
 }catch(error){console.error('Project scenarios at failure:',await panel?.ariaSnapshot().catch(()=>''));await page?.screenshot({path:'out/project-scenarios-desktop-failure.png'}).catch(()=>undefined);throw error;}
 finally{if(desktop)await close().catch(()=>undefined);await rm(exported,{force:true});await rm(f.root,{recursive:true,force:true});}

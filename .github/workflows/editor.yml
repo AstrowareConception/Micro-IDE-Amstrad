@@ -94,7 +94,9 @@ jobs:
           git clone --no-checkout https://github.com/floooh/chips-test.git .cache/firmware-reference
           git -C .cache/firmware-reference checkout 3785836e76c43922f78a50e1f8adfed259ab9672
       - name: Human project scenarios, real CPC execution and history
-        run: CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms xvfb-run -a node tests/project-scenarios-desktop-smoke.mjs
+        run: |
+          CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-project-screen-reference.mjs
+          CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms xvfb-run -a node tests/project-scenarios-desktop-smoke.mjs
       - name: CPC firmware reference and real runtime recipe
         run: |
           CPC_TEST_ROM_DIR=.cache/firmware-reference/examples/roms node scripts/qualify-basic-recovery.mjs
@@ -165,6 +167,8 @@ jobs:
             out/basic-multifile-expressions-desktop*.png
             out/basic-multifile-conditions-qualification.json
             out/basic-multifile-conditions-desktop*.png
+            out/project-screen-reference-qualification.json
+            out/project-screen-reference-desktop.png
             out/project-scenarios-qualification.json
             out/project-scenarios-desktop*.png
             out/agent-project-tests-qualification.json

@@ -1,5 +1,7 @@
 # CPCéleste
 
+**Nouveauté 0.41.32 :** [capture et adoption visuelle des références écran](docs/implementation/project-screen-reference-alpha.md), [connexion IA réessayable et panneau ouvert au démarrage](docs/implementation/agent-connection-alpha.md).
+
 **Scénarios projet 0.41.31 :** [préparation, exécution et historique dans l’interface](docs/implementation/project-scenarios-ui-alpha.md). Attentes humaines, essais directs du vrai CPC sans clé IA, rapports liés aux révisions et conservés après réouverture.
 
 **Boucles simples 0.41.28 :** [découpage terminal avec FOR/NEXT et WHILE/WEND](docs/implementation/basic-multifile-loops-alpha.md). Boucles fermées dans chaque fichier, parcours bornés, quatorze témoins CPC et restauration durable.

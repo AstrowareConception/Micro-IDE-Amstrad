@@ -1,6 +1,6 @@
 import {ProjectTestsController} from './project-tests-controller.ts';
 import {ProjectTestStore} from './project-test-store.ts';
-import {agentProjectTestRunner} from './agent-project-test-runner.ts';
+import {agentProjectTestRunner,projectScreenRunner} from './agent-project-test-runner.ts';
 import { agentTestRunner } from './agent-test-runner.ts';
 import { BasicTestSuiteStore } from './basic-test-suite-store.ts';
 import { app, BrowserWindow, dialog, ipcMain, protocol, net, shell } from 'electron';
@@ -120,8 +120,9 @@ protocol.handle('cpceleste', async request => {
   } catch { return new Response('Ressource absente', { status: 404 }); }
 });
 const firmware = new FirmwareStore(join(app.getPath('userData'), 'firmware'));
-projectTests = new ProjectTestsController(agentProjectTestRunner(firmware,join(rendererRoot,'emulator')));
-agent = new AgentController(join(app.getPath('userData'), 'agent-checkpoints'), join(base, '../../knowledge/locomotive-basic'), undefined, agentTestRunner(firmware,join(rendererRoot,'emulator')),agentProjectTestRunner(firmware,join(rendererRoot,'emulator')));
+projectTests = new ProjectTestsController(agentProjectTestRunner(firmware,join(rendererRoot,'emulator')),projectScreenRunner(firmware,join(rendererRoot,'emulator')));
+// Chromium transport follows the user's system proxy settings; all credentials stay in main.
+agent = new AgentController(join(app.getPath('userData'), 'agent-checkpoints'), join(base, '../../knowledge/locomotive-basic'), (input,init)=>net.fetch(input instanceof URL?input.href:input,init), agentTestRunner(firmware,join(rendererRoot,'emulator')),agentProjectTestRunner(firmware,join(rendererRoot,'emulator')));
 const recents = new RecentProjectsStore(app.getPath('userData'));
 async function rememberProject(store: ProjectStore) {
   try { await recents.remember(store.root, store.manifest.projectId, store.manifest.name); return ''; }
@@ -307,6 +308,8 @@ route('binary:export', async payload => {
 route('project-tests:inspect', async payload => { const {store,value}=projectRequest(payload); return projectTests.inspect(store,bufferRequest(value.buffers)); });
 route('project-tests:save', async payload => { const {store,value}=projectRequest(payload); await store.assertCurrent(); return new ProjectTestStore(store.root,store.manifest.projectId).save(value.revision,value.scenarios); });
 route('project-tests:start', async payload => { const {store,value}=projectRequest(payload); return projectTests.start(store,bufferRequest(value.buffers),value.scenarioId,value.revision,value.projectSha256); });
+route('project-tests:capture', async payload => { const {store,value}=projectRequest(payload); return projectTests.capture(store,bufferRequest(value.buffers),value.plan,value.revision,value.projectSha256); });
+route('project-tests:adopt', async payload => { const {store,value}=projectRequest(payload); return projectTests.adopt(store,bufferRequest(value.buffers),value.id,value.plan,value.revision,value.region); });
 route('project-tests:export', async payload => {
   const {store,value}=projectRequest(payload),report=await projectTests.report(store,value.reportId);
   const selection=await dialog.showSaveDialog(window,{defaultPath:`rapport-projet-${report.id}.json`,filters:[{name:'Rapport JSON',extensions:['json']}]});

@@ -1,8 +1,10 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import type {ProjectScenario,ProjectTestReport} from '../../../packages/emulator/src/project-tests.ts';
+import type {ProjectScreenPreview as ScreenPreview,ScreenRegion} from '../../../packages/emulator/src/project-screen-reference.ts';
+import {ProjectScreenPreview} from './ProjectScreenPreview.tsx';
 import type {ProjectTestsSnapshot} from '../../../packages/emulator/src/project-tests-port.ts';
 import {files} from './port.ts';
-import {scenarioForForm,scenariosFromForm} from './project-scenario-form.ts';
+import {scenarioForForm,scenariosFromForm,capturePlanFromForm} from './project-scenario-form.ts';
 import {ProjectScenarioEditor} from './ProjectScenarioEditor.tsx';
 import {ProjectTestReportView,projectOutcome} from './ProjectTestReportView.tsx';
 interface Props {sessionId?:string|undefined;buffers:{id:string;source:string}[];visible:boolean;busy:boolean;binary:boolean;onDirty(value:boolean):void;onBusy(value:boolean):void;onConfigure():void}
@@ -11,6 +13,7 @@ export function ProjectTestsPanel({sessionId,buffers,visible,busy,binary,onDirty
  const [snapshot,setSnapshot]=useState<ProjectTestsSnapshot>(),[drafts,setDrafts]=useState<ProjectScenario[]>([]),[selected,setSelected]=useState('');
  const [working,setWorking]=useState(false),[jobId,setJobId]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [memoryReports,setMemoryReports]=useState<ProjectTestReport[]>([]),[reportId,setReportId]=useState(''),[inspectedBuffers,setInspectedBuffers]=useState('');
+ const [preview,setPreview]=useState<ScreenPreview>();
  const dirty=!!snapshot&&JSON.stringify(drafts)!==JSON.stringify(snapshot.library.scenarios.map(scenarioForForm));
  const buffersKey=JSON.stringify(buffers),latestBuffers=useRef(buffers);latestBuffers.current=buffers;
  const generation=useRef(0),mounted=useRef(true),activeJob=useRef('');
@@ -45,7 +48,8 @@ export function ProjectTestsPanel({sessionId,buffers,visible,busy,binary,onDirty
     if(result.running){timer=setTimeout(()=>void poll(),200);return;}
     if(result.report){setMemoryReports(previous=>[result.report!,...previous.filter(r=>r.id!==result.report!.id)].slice(0,10));setReportId(result.report.id);}
     setNotice(result.archiveError??'');
-    await refresh();if(stopped)return;
+    if(result.kind==='capture'){setPreview(result.preview);setNotice(result.preview?'Capture prête à examiner. Aucune attente enregistrée.':'');}
+    else {await refresh();if(stopped)return;}
     activeJob.current='';setJobId('');if(result.error)setError(result.error);
    }catch(reason){if(!stopped){setError(reason instanceof Error?reason.message:'Lecture de l’essai impossible.');timer=setTimeout(()=>void poll(),500);}}
   };
@@ -53,7 +57,7 @@ export function ProjectTestsPanel({sessionId,buffers,visible,busy,binary,onDirty
  },[jobId,port,sessionId,refresh]);
  async function save(){
   if(!port||!sessionId||!snapshot||locked)return;
-  setWorking(true);setError('');
+  setWorking(true);setError('');setPreview(undefined);
   try{
    const scenarios=scenariosFromForm(drafts),saved=await port.save(sessionId,snapshot.library.revision,scenarios);
    if(!mounted.current)return;if('error' in saved)throw Error(saved.error);
@@ -63,13 +67,41 @@ export function ProjectTestsPanel({sessionId,buffers,visible,busy,binary,onDirty
  }
  async function start(){
   if(!port||!sessionId||!snapshot?.library.revision||!scenario||locked||dirty)return;
-  setWorking(true);setError('');setNotice('');
+  setWorking(true);setError('');setNotice('');setPreview(undefined);
   try{
    const result=await port.start(sessionId,latestBuffers.current,scenario.id,snapshot.library.revision,snapshot.projectSha256);
    if(!mounted.current){if(!('error' in result))void port.cancel(sessionId,result.id);return;}
    if('error' in result)throw Error(result.error);
    activeJob.current=result.id;setJobId(result.id);
   }catch(reason){if(mounted.current)setError(reason instanceof Error?reason.message:'Lancement impossible.');}
+  finally{if(mounted.current)setWorking(false);}
+ }
+ async function capture(){
+  if(!port||!sessionId||!snapshot||!scenario||locked)return;
+  setWorking(true);setError('');setNotice('');setPreview(undefined);
+  try{
+   const input=latestBuffers.current,current=await port.inspect(sessionId,input);
+   if(!mounted.current)return;if('error' in current)throw Error(current.error);
+   if(current.library.revision!==snapshot.library.revision)throw Error('Les scénarios ont changé sur disque. Actualisez avant de capturer ; votre brouillon est conservé.');
+   setSnapshot(current);setInspectedBuffers(JSON.stringify(input));
+   const result=await port.capture(sessionId,input,capturePlanFromForm(scenario),current.library.revision,current.projectSha256);
+   if(!mounted.current){if(!('error' in result))void port.cancel(sessionId,result.id);return;}
+   if('error' in result)throw Error(result.error);
+   activeJob.current=result.id;setJobId(result.id);
+  }catch(reason){if(mounted.current)setError(reason instanceof Error?reason.message:'Capture impossible.');}
+  finally{if(mounted.current)setWorking(false);}
+ }
+ async function adopt(region:ScreenRegion,target:number){
+  if(!port||!sessionId||!snapshot||!scenario||!preview||locked)return;
+  setWorking(true);setError('');
+  try{
+   const result=await port.adopt(sessionId,latestBuffers.current,preview.id,capturePlanFromForm(scenario),snapshot.library.revision,region);
+   if(!mounted.current)return;if('error' in result)throw Error(result.error);
+   const checks=target<0?[...scenario.checks,result]:scenario.checks.map((c,i)=>i===target?result:c);
+   scenariosFromForm([{...scenario,checks}]);
+   setDrafts(previous=>previous.map(s=>s.id===scenario.id?{...s,checks}:s));setPreview(undefined);
+   setNotice('Référence adoptée dans le brouillon. Enregistrez les scénarios, puis exécutez un essai.');
+  }catch(reason){if(mounted.current)setError(reason instanceof Error?reason.message:'Adoption impossible.');}
   finally{if(mounted.current)setWorking(false);}
  }
  async function exportReport(){
@@ -79,9 +111,11 @@ export function ProjectTestsPanel({sessionId,buffers,visible,busy,binary,onDirty
   finally{if(mounted.current)setWorking(false);}
  }
  async function cancel(){if(!port||!sessionId||!jobId)return;try{const result=await port.cancel(sessionId,jobId);if(mounted.current)setNotice('error' in result?result.error:'Arrêt demandé…');}catch{if(mounted.current)setError('Arrêt impossible. Réessayez.');}}
- function reload(){if(!dirty||window.confirm('Abandonner les modifications des scénarios et relire les fichiers ?')){setNotice('');void refresh();}}
+ function reload(){if(!dirty||window.confirm('Abandonner les modifications des scénarios et relire les fichiers ?')){setNotice('');setPreview(undefined);void refresh();}}
  function add(){const id=crypto.randomUUID();setDrafts([...drafts,{id,name:'Nouveau scénario',seconds:8,inputs:[],checks:[{kind:'file',name:'OUT.TXT',text:''}]}]);setSelected(id);}
  function remove(){if(scenario&&window.confirm(`Supprimer le scénario « ${scenario.name} » ? La suppression sera appliquée à l’enregistrement.`)){setDrafts(drafts.filter(s=>s.id!==scenario.id));setSelected(drafts.find(s=>s.id!==scenario.id)?.id??'');}}
+ let capturePlan='',captureInvalid='';try{if(scenario)capturePlan=JSON.stringify(capturePlanFromForm(scenario));}catch(reason){captureInvalid=reason instanceof Error?reason.message:'Paramètres de capture invalides.';}
+ const previewStale=!!preview&&(capturePlan!==JSON.stringify(preview.plan)||inspectedBuffers!==buffersKey||snapshot?.projectSha256!==preview.project.projectSha256||snapshot?.library.revision!==preview.libraryRevision);
  let invalid='';try{scenariosFromForm(drafts);}catch(reason){invalid=reason instanceof Error?reason.message:'Scénario invalide.';}
  const current=report&&snapshot&&inspectedBuffers===buffersKey?(dirty?false:report.project.projectSha256===snapshot.projectSha256&&report.libraryRevision===snapshot.library.revision):undefined;
  return <section className="quality-panel project-tests-panel" aria-label="Tests projet">
@@ -91,7 +125,10 @@ export function ProjectTestsPanel({sessionId,buffers,visible,busy,binary,onDirty
    {snapshot&&<>
     <div className="project-test-actions"><label>Scénario<select aria-label="Scénario" disabled={locked} value={selected} onChange={e=>setSelected(e.target.value)}><option value="">Choisir un scénario</option>{drafts.map(s=><option key={s.id} value={s.id}>{s.name||'Sans nom'}</option>)}</select></label><button disabled={locked||drafts.length>=16} onClick={add}>Nouveau scénario</button><button disabled={locked||!scenario} onClick={remove}>Supprimer le scénario</button></div>
     {scenario&&<ProjectScenarioEditor scenario={scenario} disabled={locked} onChange={value=>setDrafts(drafts.map(s=>s.id===value.id?value:s))}/>}
-    {dirty&&<p role="status">Modifications des scénarios non enregistrées. Enregistrez avant de lancer un essai.</p>}
+    {scenario&&<div className="project-test-actions"><button disabled={locked||!!captureInvalid} onClick={()=>void capture()}>Capturer un écran de référence</button><span>Utilise les saisies et le budget du brouillon, sans modifier les attentes.</span></div>}
+    {captureInvalid&&<p className="error">{captureInvalid}</p>}
+    {preview&&scenario&&preview.plan.id===scenario.id&&<ProjectScreenPreview key={preview.id} preview={preview} scenario={scenario} disabled={locked} stale={previewStale} onAdopt={(region,target)=>void adopt(region,target)} onDiscard={()=>setPreview(undefined)}/>}
+    {dirty&&<p role="status">Modifications des scénarios non enregistrées. Enregistrez avant de lancer un essai ; la capture reste possible.</p>}
     {invalid&&<p className="error">{invalid}</p>}
     <div className="project-test-actions"><button disabled={locked||!dirty||!!invalid} onClick={()=>void save()}>Enregistrer les scénarios</button><button disabled={locked||dirty||!scenario||inspectedBuffers!==buffersKey} onClick={()=>void start()}>Exécuter le scénario</button><button disabled={!jobId} onClick={()=>void cancel()}>Arrêter l’essai</button></div>
     {jobId&&<p role="status">Essai CPC en cours… Budget réel maximum : 60 secondes.</p>}

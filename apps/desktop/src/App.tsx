@@ -7,7 +7,7 @@ import { GitHubDialog } from './GitHubDialog.tsx';
 import { RecentProjectsDialog } from './RecentProjectsDialog.tsx';
 import { DockPanel } from './DockPanel.tsx';
 import { ResizeHandle } from './ResizeHandle.tsx';
-import { defaultPanelLayouts, loadPanelLayouts, persistPanelLayouts, type PanelId, type PanelLayout, type PanelLayouts } from './panel-layout.ts';
+import { defaultPanelLayouts, startupPanelLayouts, persistPanelLayouts, type PanelId, type PanelLayout, type PanelLayouts } from './panel-layout.ts';
 import { Button } from './Icon.tsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { NotificationCenter } from './NotificationCenter.tsx';
@@ -63,7 +63,7 @@ interface Document { id: string; sourceId: string; name: string; source: string;
 
 export function App() {
   const [preferences, setPreferences] = useState<Preferences>(loadPreferences);
-  const [panels, setPanels] = useState(loadPanelLayouts);
+  const [panels, setPanels] = useState(startupPanelLayouts);
   const [focused, setFocused] = useState(false);
   const focusReturn = useRef<{ panels: PanelLayouts; sidebar: boolean; agent: boolean; output: boolean }>(undefined);
   const livePreferences = useRef(preferences); livePreferences.current = preferences;
@@ -541,7 +541,7 @@ export function App() {
   ] : [];
   return <main className="workbench" style={{ '--sidebar-width': `${preferences.sidebarWidth}px`, '--agent-width': `${preferences.agentWidth}px`, '--output-height': `${preferences.outputHeight}px` } as CSSProperties}>
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.41.31 · AstroWare Conception</p></div></div>
+      <div className="brand"><img className="brand-mark" src="./brand/cpceleste-icon.png" width={56} height={56} alt="" /><div><h1>CPC<span>éleste</span></h1><p className="brand-tagline">Vos idées prennent vie en BASIC.</p><p>Atelier Amstrad CPC · alpha 0.41.32 · AstroWare Conception</p></div></div>
       <div className="topbar-actions"><Button icon="bell" aria-label={`Centre de notifications · ${unreadNotifications} non lue(s)`} onClick={() => setNotificationsOpen(true)}><span className="notification-badge">{unreadNotifications}</span></Button><span className="profile">CPC 6128 · BASIC 1.1</span></div>
     </header>
     <WorkbenchMenus groups={[

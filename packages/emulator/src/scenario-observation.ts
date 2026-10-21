@@ -16,15 +16,7 @@ export async function observeBasicScenario(cpc:BasicTestCpc,scenario:BasicScenar
      try { actual = scenarioFileBytes(exported!, assertion.name); message = actual ? 'Contenu ASCII comparé après fermeture du fichier.' : 'Fichier absent du DSK final.'; }
      catch { message = 'Fichier ou DSK final hors du profil ASCII DATA qualifié.'; }
     } else {
-     const width = cpc._cpc_bridge_width(), height = cpc._cpc_bridge_height(), stride = cpc._cpc_bridge_stride(), frame = cpc._cpc_bridge_frame(), palette = cpc._cpc_bridge_palette();
-     if (width !== 768 || height !== 272 || stride < width || frame < 1 || frame + stride * height > cpc.HEAPU8.length || palette < 1 || palette + 32 * 4 > cpc.HEAPU8.length) throw new Error('Écran de scénario hors profil.');
-     actual = new Uint8Array(assertion.width * assertion.height * 4);
-     for (let y = 0; y < assertion.height; y++) for (let x = 0; x < assertion.width; x++) {
-      const color = cpc.HEAPU8[frame + (assertion.y + y) * stride + assertion.x + x]!;
-      if (color > 31) throw new Error('Indice de palette CPC hors profil.');
-      const offset = (y * assertion.width + x) * 4;
-      actual.set(cpc.HEAPU8.subarray(palette + color * 4, palette + color * 4 + 3), offset); actual[offset + 3] = 255;
-     }
+     actual = readCpcScreen(cpc,assertion);
      onCapture?.({ name: assertion.name, line: assertion.line, width: assertion.width, height: assertion.height, rgba: actual.slice() });
      message = screenMessage;
     }
@@ -33,3 +25,18 @@ export async function observeBasicScenario(cpc:BasicTestCpc,scenario:BasicScenar
    }
    return observations;
   }
+
+/** Read opaque RGBA pixels from the same indexed frame/palette used by assertions. */
+export function readCpcScreen(cpc:BasicTestCpc,region:{x:number;y:number;width:number;height:number}):Uint8Array {
+ if(![region.x,region.y,region.width,region.height].every(Number.isSafeInteger)||region.x<0||region.y<0||region.width<1||region.height<1||region.x+region.width>768||region.y+region.height>272)throw Error("Rectangle CPC invalide.");
+ const width = cpc._cpc_bridge_width(), height = cpc._cpc_bridge_height(), stride = cpc._cpc_bridge_stride(), frame = cpc._cpc_bridge_frame(), palette = cpc._cpc_bridge_palette();
+     if (width !== 768 || height !== 272 || stride < width || frame < 1 || frame + stride * height > cpc.HEAPU8.length || palette < 1 || palette + 32 * 4 > cpc.HEAPU8.length) throw new Error('Écran de scénario hors profil.');
+     const actual = new Uint8Array(region.width * region.height * 4);
+     for (let y = 0; y < region.height; y++) for (let x = 0; x < region.width; x++) {
+      const color = cpc.HEAPU8[frame + (region.y + y) * stride + region.x + x]!;
+      if (color > 31) throw new Error('Indice de palette CPC hors profil.');
+      const offset = (y * region.width + x) * 4;
+      actual.set(cpc.HEAPU8.subarray(palette + color * 4, palette + color * 4 + 3), offset); actual[offset + 3] = 255;
+     }
+ return actual;
+}

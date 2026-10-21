@@ -40,6 +40,12 @@ export function loadPanelLayouts(): PanelLayouts {
   try { return parsePanelLayouts(JSON.parse(localStorage.getItem(PANEL_LAYOUT_KEY) ?? 'null')); }
   catch { return defaultPanelLayouts(); }
 }
+/** Agent is essential at launch; closing/detaching it remains possible for this session. */
+export function startupPanelLayouts(): PanelLayouts {
+  const result=loadPanelLayouts();
+  result.agent={...result.agent,visible:true,floating:false,maximized:false};
+  return result;
+}
 export function persistPanelLayouts(value: PanelLayouts): boolean {
   try { localStorage.setItem(PANEL_LAYOUT_KEY, JSON.stringify(parsePanelLayouts(value))); return true; }
   catch { return false; }

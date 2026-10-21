@@ -14,7 +14,7 @@ Pour l’[exemple ressource/clavier/sortie](../../examples/project-tests/microid
 
 Les caractères de contrôle sont visibles dans le formulaire : `\r` représente Entrée, `\r\n` une fin de ligne CPC, `\t` une tabulation et `\\` une barre oblique inverse. Cette notation préserve les octets malgré la normalisation des zones de texte HTML. Le clavier n’accepte que l’ASCII imprimable et Retour ; les attentes fichier autorisent aussi tabulation et saut de ligne. Les délais sont des multiples de 20 ms, sans chevauchement, avec 120 ms par touche.
 
-Une attente écran propose nom, rectangle et SHA-256 RGBA de la référence, dans le cadre 768 × 272 et jusqu’à 16 384 pixels. Cette tranche ne capture pas une nouvelle référence et ne propose pas de transformer automatiquement un échec en attente. L’empreinte doit provenir d’une référence vérifiée par la personne qui prépare le scénario. La capture avec validation visuelle explicite est la suite proposée.
+Une attente écran propose nom, rectangle et SHA-256 RGBA de la référence, dans le cadre 768 × 272 et jusqu’à 16 384 pixels. La 0.41.32 ajoute la [capture inspectable et son adoption explicite](project-screen-reference-alpha.md), y compris pendant la préparation d’un scénario sans attente. La saisie manuelle d’une empreinte reste disponible. Aucun échec n’est automatiquement transformé en référence.
 
 ## Cohérence, historique et responsabilités
 
@@ -34,6 +34,6 @@ Un historique illisible reste intact. L’essai reste possible ; son rapport est
 - `scripts/qualify-project-scenarios.mjs` : trois exécutions avec le vrai worker CPC et les ROM externes identifiées. L’exemple passe, une altération du buffer PART échoue avec les mêmes attentes, puis le projet restauré passe. Sources hôte, attentes et ressource restent intactes ; les rapports sont relus après réouverture. Preuve : `out/project-scenarios-qualification.json`.
 - `tests/project-scenarios-desktop-smoke.mjs` : recette Electron bloquante en CI, formulaire clavier/fichier/écran, fermeture protégée, ROM manquantes, import ROM, succès et échec réels, export, réouverture, modification externe refusée, suppression et annulation. Capture : `out/project-scenarios-desktop.png`.
 
-L’exécution observe la fin du budget ; elle ne prouve ni terminaison, ni couverture de chaque fichier ou chemin, ni équivalence universelle. Pas de nouvelle qualification matérielle ou d’émulateur indépendant, ni de référence écran capturée par l’interface. Les tests de listings autonomes restent accessibles dans **Tests BASIC**.
+L’exécution observe la fin du budget ; elle ne prouve ni terminaison, ni couverture de chaque fichier ou chemin, ni équivalence universelle. Pas de nouvelle qualification matérielle ou d’émulateur indépendant, la capture de référence est décrite dans le guide 0.41.32. Les tests de listings autonomes restent accessibles dans **Tests BASIC**.
 
 [Décision d’architecture](../adr/0081-interface-scenarios-projet.md).
